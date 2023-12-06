@@ -1,0 +1,9 @@
+name: multimodal_decoding
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - notebook
+  - tensorboard
+  - matplotlib
+  - nipype
