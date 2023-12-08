@@ -7,3 +7,11 @@ dependencies:
   - tensorboard
   - matplotlib
   - nipype
+  - cpuonly
+  - torchvision
+  - pytorch
+  - tqdm
+  - scikit-learn
+  - transformers
+  - pandas
+  - tokenizers
