@@ -85,6 +85,7 @@ class DecodingContainer():
             return self.results[key]
         return super().__getattr__(key)
 
+
 def extract_stim_ids_from_event_files(subject_folder):
     event_files = list(sorted(glob(opj(subject_folder,'**','*events*.tsv'), recursive=True)))
     ids = {'images_train':[], 'images_test':[], 'captions_train':[], 'captions_test':[]}
@@ -108,6 +109,7 @@ def extract_stim_ids_from_event_files(subject_folder):
                 else:
                     ids[name].append(s)
     return ids
+
 
 def split_vision_and_language_beta_files(beta_dir, wbf=False):
     r"""
@@ -178,6 +180,7 @@ def split_vision_and_language_beta_files(beta_dir, wbf=False):
         if slink_name:
             print(slink_name)
             os.symlink(add, slink_name)
+
 
 def split_vision_and_language_beta_files_2phase_glm(beta_dir, wbf=False):
     r"""
@@ -259,6 +262,7 @@ def split_vision_and_language_beta_files_2phase_glm(beta_dir, wbf=False):
             print(slink_name)
             os.symlink(add, slink_name)
 
+
 def load_beta_files(file_addresses, dtype=np.float64, threads_load=0.8, flatten=True):
     r"""
     loads beta files from the disk (`file_addresses`) and returns them as a 4D numpy array.
@@ -298,6 +302,7 @@ def load_beta_files(file_addresses, dtype=np.float64, threads_load=0.8, flatten=
         beta_array = beta_array.reshape(beta_array.shape[0],-1)
     return beta_array.squeeze()
 
+
 def load_beta_files_sequential(file_addresses, stack=True, dtype=np.float64):
     r"""
     loads beta files from the disk (`file_addresses`) and returns them.
@@ -315,6 +320,7 @@ def load_beta_files_sequential(file_addresses, stack=True, dtype=np.float64):
         return np.array(beta_files)
     return beta_files
 
+
 def compute_inverse_covariance(w):
     r"""
     computes (ww^t)^-1 using pinv.
@@ -325,6 +331,7 @@ def compute_inverse_covariance(w):
     if rank_cov < icov.shape[0]:
         warnings.warn(f'RANK DEFICIENT Covariance Matrix!!! rank is {rank_cov} instead of {icov.shape[0]}', stacklevel=2)
     return icov
+
 
 def decode(y, w, invcov=None):
     r"""
@@ -337,6 +344,7 @@ def decode(y, w, invcov=None):
     x = np.matmul(a, invcov)
     return x
 
+
 def pairwise_decoding_score(predictions, originals, metric='cosine'):
     dist_mat = cdist(predictions, originals, metric=metric)     # d(i,j) -> distance of the prediction of i to the original of j
     diag     = dist_mat.diagonal()[np.newaxis, :]               # all congruent distances
@@ -346,6 +354,7 @@ def pairwise_decoding_score(predictions, originals, metric='cosine'):
     n = diag.shape[1]
     score = corrects / (n*n-n)
     return score
+
 
 def pairwise_decoding_score_duo(predictions, originals, metric='cosine'):
     dist_mat = cdist(predictions, originals, metric=metric)     # d(i,j) -> distance of the prediction of i to the original of j
@@ -360,6 +369,7 @@ def pairwise_decoding_score_duo(predictions, originals, metric='cosine'):
     
     score = corrects / (n*(n-1)/2)
     return score
+
 
 def pairwise_decoding_score_duo_classes(predictions, originals, classes, metric='cosine'):
     dist_mat = cdist(predictions, originals, metric=metric)     # d(i,j) -> distance of the prediction of i to the original of j
@@ -378,6 +388,7 @@ def pairwise_decoding_score_duo_classes(predictions, originals, classes, metric=
     score = corrects / count
     return score
 
+
 def decoding_rank_score(predictions, originals, metric='cosine'):
     dist_mat = cdist(predictions, originals, metric=metric)              # d(i,j) -> distance of the prediction of i to the original of j
     ranks    = 1 - ((rankdata(dist_mat,axis=1)-1)/(dist_mat.shape[1]-1)) 
@@ -387,8 +398,10 @@ def decoding_rank_score(predictions, originals, metric='cosine'):
     scores = ranks.sum() / n
     return scores
 
+
 def get_distance_matrix(predictions, originals, metric='cosine'):
     return cdist(predictions, originals, metric=metric)
+
 
 def get_nearest_neighbors_indices(vector, dataset_vectors, n_neighbors, mean_correction=None, metric='cosine'):
     r"""
@@ -411,6 +424,7 @@ def get_nearest_neighbors_indices(vector, dataset_vectors, n_neighbors, mean_cor
 
     return nearests_ids, nearests_dists
 
+
 def generate_random_mask(brain_mask, top_percentile=20):
     if isinstance(top_percentile, float):
         top_percentile = [top_percentile]
@@ -429,6 +443,7 @@ def generate_random_mask(brain_mask, top_percentile=20):
         return masks[0]
     return masks
 
+
 def denormalize(vectors, mean, std, normalize_first=False, normalize_axis=None):
     r"""
     if `normalize_first` is `True`, the vectors will be first normalized with their own mean and std (along the `normalize_axis`)
@@ -445,6 +460,7 @@ def denormalize(vectors, mean, std, normalize_first=False, normalize_axis=None):
     vectors = vectors + mean
 
     return vectors
+
 
 if __name__ == "__main__":
     # extract_stim_ids_from_event_files('/home/leilar/Data/SEMREPS/SEMREPS_BIDS/sub-01')
