@@ -3,6 +3,8 @@ import numpy as np
 from glob import glob
 import os
 from os.path import join as opj
+
+import torch
 from tqdm import tqdm
 import shutil
 import multiprocessing
@@ -12,50 +14,6 @@ import warnings
 from scipy.spatial.distance import cdist
 from scipy.stats import rankdata
 import pandas as pd
-
-IMAGERY_SCENES = {
-    'sub-01':
-        [
-            ('A woman sits in a beach chair as a man walks along the sand', 406591),
-            ('White bird sitting in front of a lighthouse with a red roof', 324670),
-            ('A little cat standing on the lap of a man sitting in a chair', 563723),
-        ],
-
-    'sub-02':
-        [
-            ("A woman sits in a beach chair as a man walks along the sand", 406591),
-            ("A little cat standing on the lap of a man sitting in a chair", 563723), 
-            ("A lonely giraffe is walking in the middle of a grassy field", 254568)
-        ],
-
-    'sub-03':
-        [
-            ("A party of young people in a bedroom with a large box of pizza", 42685),
-            ("A man walking across a field of snow holding skis and ski poles", 473773),
-            ("Two men are discussing something next to a desk with a laptop", 485909),
-        ],
-
-    'sub-04':
-        [
-            ('A young male holding a racket and tennis ball in a tennis court', 544502),
-            ('A group of kids swimming in the ocean around a man on a surfboard', 556512),
-            ('A cat and a dog staring intensely at each other on an armchair', 410573),
-        ],
-
-    'sub-05':
-        [
-            ('A man stands by a rainy street with an umbrella over his head', 48670),
-            ('A woman working on her computer while also using her cell phone', 263212),
-            ('An old broken down church and graffiti on surrounding structures', 214816),
-        ],
-
-    'sub-07':
-        [
-            ('A teddy bear lying down on the sidewalk in front of a store', 141343),
-            ('A woman leaning out a window to talk to someone on the sidewal', 213506),
-            ('The man on the skateboard and the dog are getting their picture taken', 162396),
-        ],
-}
 
 
 class DecodingContainer():
@@ -460,6 +418,10 @@ def denormalize(vectors, mean, std, normalize_first=False, normalize_axis=None):
     vectors = vectors + mean
 
     return vectors
+
+
+def to_tensor(v):
+    return torch.from_numpy(v)
 
 
 if __name__ == "__main__":

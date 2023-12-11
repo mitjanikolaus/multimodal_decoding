@@ -10,8 +10,9 @@ from PIL import Image
 import pickle
 from tqdm import tqdm
 
-from feature_extraction.extract_nn_features import IMAGE_STIMULI_IDS_PATH, COCO_2017_TRAIN_IMAGES_DIR, \
-    COCOSelected, FEATURES_DIR, IMAGES_IMAGERY_CONDITION, apply_pca, PCA_NUM_COMPONENTS
+from feature_extraction.extract_nn_features import COCOSelected, apply_pca, PCA_NUM_COMPONENTS
+
+from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, IMAGE_STIMULI_IDS_PATH, COCO_2017_TRAIN_IMAGES_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
