@@ -2,7 +2,7 @@
 # Save features of various dnns
 # The script contains several utility functions to extract latent vectors (or features) from DNNs and apply PCA if
 # necessary. Current functions might not be suitable for all types of models. You can always add your own functions.
-# The importatnt thing is to store the data in a python dictionary with the following nested structure (to be compatible
+# The important thing is to store the data in a python dictionary with the following nested structure (to be compatible
 # with other functions and the analysis scripts):
 #
 # ```
@@ -213,7 +213,7 @@ class COCOSelected(Dataset):
         self.data.extend(IMAGES_IMAGERY_CONDITION)
         self.data.extend(np.load(selection_file, allow_pickle=True))
         # TODO
-        self.data = self.data[:10]
+        self.data = self.data[:100]
         self.root = coco_root
         self.mode = mode
         self.transform = transform
@@ -472,6 +472,7 @@ def extract_linguistic_features(model_name, path_out):
     pickle.dump(cf, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
     apply_pca(PCA_NUM_COMPONENTS, path_out)
 
+
 if __name__ == "__main__":
     ##########
     # ViT-L-16
@@ -503,28 +504,6 @@ if __name__ == "__main__":
     path_out = f"{FEATURES_DIR}/gpt/gpt2_xl_avg_selected_coco.pickle"
     extract_linguistic_features(model_name, path_out)
 
-
-# combine_visual_and_lingual_features_in_one_file(
-#     f'/home/milad/projects/multimodal_decoding/latent_vectors/resnet152/avgpool_selected_coco_crop_PCA_{PCA_NUM_COMPONENTS}.pickle',
-#     f'/home/milad/projects/multimodal_decoding/latent_vectors/gpt2_xl/avg_selected_coco_PCA_{PCA_NUM_COMPONENTS}.pickle',
-#     f'/home/milad/projects/multimodal_decoding/latent_vectors/resnet_gpt/resnet_avgpool_gpt2xl_avg_selected_coco_PCA_{PCA_NUM_COMPONENTS}.pickle'
-# )
-# apply_pca(PCA_NUM_COMPONENTS, '/mnt/HD1/milad/multimodal_decoding/latent_vectors/gpt/gpt2_xl_avg_selected_coco.pickle')
-
-# combine_visual_and_lingual_features_in_one_file('/mnt/HD1/milad/multimodal_decoding/latent_vectors/vit/vit_l_16_encoder_selected_coco_crop_v.pickle',
-# '/mnt/HD1/milad/multimodal_decoding/latent_vectors/gpt/gpt2_xl_avg_selected_coco.pickle',
-# '/mnt/HD1/milad/multimodal_decoding/latent_vectors/vitl16_gpt2xl/vitl16_encoder_gpt2xl_avg_selected_coco_crop_vl.pickle')
-
-# combine_visual_and_lingual_features_in_one_file(f'/mnt/HD1/milad/multimodal_decoding/latent_vectors/resnet/resnet152_avgpool_selected_coco_crop_v_pca_{PCA_NUM_COMPONENTS}.pickle',
-# f'/mnt/HD1/milad/multimodal_decoding/latent_vectors/gpt/gpt2_xl_avg_selected_coco_pca_{PCA_NUM_COMPONENTS}.pickle',
-# '/mnt/HD1/milad/multimodal_decoding/latent_vectors/resnet152xgptxl/resnet152_avgpool_gpt2xl_avg_selected_coco_crop_vl.pickle')
-
-# combine_visual_and_lingual_features_in_one_file('/mnt/HD1/milad/multimodal_decoding/latent_vectors/resnet/resnet152_avgpool_selected_coco_crop_v.pickle',
-# '/mnt/HD1/milad/multimodal_decoding/latent_vectors/gpt/gpt2_xl_avg_selected_coco.pickle',
-# '/mnt/HD1/milad/multimodal_decoding/latent_vectors/resnet152xgptxl/resnet152_avgpool_gpt2xl_avg_selected_coco_crop_vl.pickle')
-
-
-# apply_pca(PCA_NUM_COMPONENTS, '/mnt/HD1/milad/multimodal_decoding/latent_vectors/vitl16_gpt2xl/vitl16_encoder_gpt2xl_avg_selected_coco_crop_vl.pickle')
 
 # ds = COCOSelected(COCO_2017_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'caption')
 # data = np.load(IMAGE_STIMULI_IDS_PATH, allow_pickle=True)
