@@ -314,7 +314,7 @@ def apply_pca(n_components, data_pickle_file):
 
     filename = os.path.basename(data_pickle_file)
     dirname = os.path.dirname(data_pickle_file)
-    base_filename = filename[:filename.find('.pickle')]
+    base_filename = filename[:filename.find('.p')]
 
     with open(data_pickle_file, 'rb') as f:
         data = pickle.load(f)
@@ -353,10 +353,10 @@ def apply_pca(n_components, data_pickle_file):
             transformed_data[sid][feature] = reduced_all_vectors[idx]
 
         # save PCA and scaler modules for future transformations
-        pca_file = join(dirname, f"{base_filename}_pca_{n_components}_pca_{feature}_module.pickle")
+        pca_file = join(dirname, f"{base_filename}_pca_{n_components}_pca_{feature}_module.p")
         with open(pca_file, 'wb') as handle:
             pickle.dump(pca, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        scaler_file = join(dirname, f"{base_filename}_pca_{n_components}_scaler_{feature}_module.pickle")
+        scaler_file = join(dirname, f"{base_filename}_pca_{n_components}_scaler_{feature}_module.p")
         with open(scaler_file, 'wb') as handle:
             pickle.dump(scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -367,7 +367,7 @@ def apply_pca(n_components, data_pickle_file):
                 transformed_data[sid][k] = data[sid][k]
 
     # saving transformed data in the same place with PCA_ncomp postfix
-    new_file = join(dirname, f"{base_filename}_pca_{n_components}.pickle")
+    new_file = join(dirname, f"{base_filename}_pca_{n_components}.p")
 
     with open(new_file, 'wb') as handle:
         pickle.dump(transformed_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -477,7 +477,7 @@ if __name__ == "__main__":
     ##########
     model = vit_l_16(weights=ViT_L_16_Weights.DEFAULT)
     model_name = "vit_l_16"
-    path_out = f"{FEATURES_DIR}/vit/{model_name}_encoder_selected_coco_crop.pickle"
+    path_out = f"{FEATURES_DIR}/vit/{model_name}_encoder_selected_coco_crop.p"
     extract_visual_features(model, path_out)
 
     ##########
@@ -485,21 +485,21 @@ if __name__ == "__main__":
     ##########
     model = resnet152(weights=ResNet152_Weights.DEFAULT)
     model_name = "resnet152"
-    path_out = f"{FEATURES_DIR}/resnet/{model_name}_avgpool_selected_coco_crop.pickle"
+    path_out = f"{FEATURES_DIR}/resnet/{model_name}_avgpool_selected_coco_crop.p"
     extract_visual_features(model, path_out)
 
     #########
     # BERT LARGE
     #########
     model_name = 'bert-large-uncased'
-    path_out = f"{FEATURES_DIR}/bert/bert_large_avg_selected_coco.pickle"
+    path_out = f"{FEATURES_DIR}/bert/bert_large_avg_selected_coco.p"
     extract_linguistic_features(model_name, path_out)
 
     #########
     # GPT-2xl
     #########
     model_name = 'gpt2-xl'
-    path_out = f"{FEATURES_DIR}/gpt/gpt2_xl_avg_selected_coco.pickle"
+    path_out = f"{FEATURES_DIR}/gpt/gpt2_xl_avg_selected_coco.p"
     extract_linguistic_features(model_name, path_out)
 
 
