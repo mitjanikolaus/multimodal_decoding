@@ -93,9 +93,6 @@ def extract_language_features():
             all_feats = dict()
             print("extracting linguistic feats.. ")
             for idx in tqdm(range(0, len(captions), BATCH_SIZE)):
-                if idx > 900:
-                    #TODO
-                    break
                 end = min(idx + BATCH_SIZE, len(captions))
 
                 captions_batch = captions[idx:end]

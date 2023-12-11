@@ -212,8 +212,6 @@ class COCOSelected(Dataset):
         self.data = []
         self.data.extend(IMAGES_IMAGERY_CONDITION)
         self.data.extend(np.load(selection_file, allow_pickle=True))
-        # TODO
-        self.data = self.data[:100]
         self.root = coco_root
         self.mode = mode
         self.transform = transform
