@@ -49,7 +49,7 @@ from typing import Tuple
 from torch import nn, Tensor
 
 from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, \
-    IMAGES_TEST
+    IMAGES_TEST, PCA_NUM_COMPONENTS
 
 NUM_WORKERS = 8
 
@@ -63,8 +63,6 @@ else:
     device = "cpu"
 
 print("device: ", device)
-
-PCA_NUM_COMPONENTS = 768
 
 CROP_SIZE = 224
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
