@@ -1,6 +1,8 @@
 name: multimodal_decoding
 channels:
   - defaults
+  - conda-forge
+  - pytorch
 dependencies:
   - python=3.9
   - notebook
