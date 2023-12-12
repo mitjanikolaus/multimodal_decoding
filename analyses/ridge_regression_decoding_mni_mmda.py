@@ -20,7 +20,7 @@ import gc
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
-from utils import FEATURES_DIR, IMAGERY_SCENES, PCA_NUM_COMPONENTS
+from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -200,8 +200,8 @@ class Normalize():
         return ((x - self.mean) / self.std).astype(np.float32).squeeze()
 
 
-def save_mean_std_for_a_subject(fmri_data_dir, subject, latent_vectors_file, output_dir, training_mode,
-                                bold_std_mean_name=None, model_std_mean_name=None, overwrite=False):
+def calc_mean_std_per_subject(fmri_data_dir, subject, latent_vectors_file, output_dir, training_mode,
+                              model_name=None, overwrite=False):
     r"""
     Saves mean and std of training BOLD and/or latent vectors for a subject as dictionary (pickle) files.
     The resulting dictionary has two keys: (1): `"mean"` and (2): `"std"`, each linked to a numpy array representing
@@ -213,30 +213,28 @@ def save_mean_std_for_a_subject(fmri_data_dir, subject, latent_vectors_file, out
         `latent_vectors_file` (str): address to the dictionaty containing latent vectors
         `output_dir` (str): address to the output directory
         `training_mode` (str): `"multimodal"`/`"captiononly"`/`"imageonly"`
-        `bold_std_mean_name` (str): name of the pickle file containing bold mean and std. If `None`, BOLD mean and std won't be computed.
         `model_std_mean_name` (str): name of the pickle file containing model mean and std. If `None`, model mean and std won't be computed.
         `overwrite` (boolean): if `True`, the mean and std will be recomputed and replaced by the old ones.
     """
     with open(latent_vectors_file, 'rb') as handle:
         latent_vectors = pickle.load(handle)
 
+    calc_bold_std_mean = True
+    model_std_mean_name = f'{model_name}_mean_std'
+
     m = training_mode
     if not overwrite:
-        if bold_std_mean_name is not None and os.path.exists(os.path.join(output_dir, f'{bold_std_mean_name}_{m}.p')):
-            bold_std_mean_name = None
-        if model_std_mean_name is not None and os.path.exists(os.path.join(output_dir, f'{model_std_mean_name}_{m}.p')):
+        if os.path.exists(os.path.join(output_dir, f'bold_multimodal_mean_std_{m}.p')):
+            calc_bold_std_mean = False
+        if model_name is not None and os.path.exists(os.path.join(output_dir, f'{model_std_mean_name}_{m}.p')):
             model_std_mean_name = None
-
-    if bold_std_mean_name is not None:
-        print(f"Calculating Mean and STD of BOLD Signals for {m} Samples")
-    if model_std_mean_name is not None:
-        print(f"Calculating Mean and STD of Model Latent Variables for {m} Samples")
 
     dataset = COCOBOLDDataset(fmri_data_dir, subject, latent_vectors, m)
 
-
     os.makedirs(output_dir, exist_ok=True)
-    if bold_std_mean_name is not None:
+    if calc_bold_std_mean:
+        print(f"Calculating Mean and STD of BOLD Signals for {m} Samples")
+
         bold_data_size = dataset.get_brain_vector(0).shape[0]
         bold_data = np.empty((len(dataset), bold_data_size))
 
@@ -246,10 +244,12 @@ def save_mean_std_for_a_subject(fmri_data_dir, subject, latent_vectors_file, out
 
         mean_std = {'mean': bold_data.mean(axis=0).astype('float32'),
                     'std': bold_data.std(axis=0).astype('float32')}
-        file_name = f'{bold_std_mean_name}_{m}.p'
+        file_name = f'bold_multimodal_mean_std_{m}.p'
         pickle.dump(mean_std, open(os.path.join(output_dir, file_name), 'wb'), pickle.HIGHEST_PROTOCOL)
 
     if model_std_mean_name is not None:
+        print(f"Calculating Mean and STD of Model Latent Variables for {m} Samples")
+
         model_data_size = dataset.get_latent_vector(0).shape[0]
         model_data = np.empty((len(dataset), model_data_size))
 
@@ -341,32 +341,20 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
         return predictions, cum_loss, dist_matrices
 
 
-SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']   # TODO 'sub-03'
-model_names_latent_files = {
-    "RESNET152_AVGPOOL_PCA768": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop_pca_768.p"),
-    "RESNET152_AVGPOOL": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop.p"),
-    "GPT2XL_AVG_PCA768": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco_pca_768.p"),
-    "GPT2XL_AVG": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco.p"),
-    "VITL16_ENCODER": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop.p"),
-    "VITL16_ENCODER_PCA768": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop_pca_768.p"),
-    "CLIP_L": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop.p"),
-    "CLIP_V": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop.p"),
-    "CLIP_L_PCA768": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
-    "CLIP_V_PCA768": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
-    "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
-}
+SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
+
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
 MODEL_NAMES = ['RESNET152_AVGPOOL']
 # MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768']  # RESNET152_AVGPOOL_PCA768
 # MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
-DECODER_TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
+TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
+DISTANCE_METRICS = ['cosine', 'euclidean']
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 
 if __name__ == "__main__":
     print("device: ", device)
@@ -375,29 +363,24 @@ if __name__ == "__main__":
     for subject in SUBJECTS:
         for model_name in MODEL_NAMES:
             print(subject)
-            latent_vectors_file = model_names_latent_files[model_name]
+            latent_vectors_file = MODEL_FEATURES_FILES[model_name]
             two_stage_glm_dir = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
-            bold_std_mean_name = f'bold_multimodal_mean_std'
-            model_std_mean_name = f'{model_name}_mean_std'
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 
-            # saving dataset mean and std for the normalization
-            save_mean_std_for_a_subject(
+            # calculating dataset mean and std for the normalization
+            calc_mean_std_per_subject(
                 fmri_data_dir=two_stage_glm_dir,
                 subject=subject,
                 latent_vectors_file=latent_vectors_file,
                 output_dir=std_mean_dir,
-                training_mode=DECODER_TRAINING_MODE,
-                bold_std_mean_name=bold_std_mean_name,
-                model_std_mean_name=model_std_mean_name
+                training_mode=TRAINING_MODE,
+                model_name=model_name
             )
 
-            # preparing the data transforms
-            with open(latent_vectors_file, 'rb') as handle:
-                latent_vectors = pickle.load(handle)
+            latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
             # bold transform
-            with open(os.path.join(std_mean_dir, f'{bold_std_mean_name}_{DECODER_TRAINING_MODE}.p'), 'rb') as handle:
+            with open(os.path.join(std_mean_dir, f'bold_multimodal_mean_std_{TRAINING_MODE}.p'), 'rb') as handle:
                 bold_mean_std = pickle.load(handle)
             bold_transform = Compose([
                 Normalize(bold_mean_std['mean'], bold_mean_std['std']),
@@ -405,7 +388,7 @@ if __name__ == "__main__":
             ])
 
             # latent transform
-            with open(os.path.join(std_mean_dir, f'{model_std_mean_name}_{DECODER_TRAINING_MODE}.p'), 'rb') as handle:
+            with open(os.path.join(std_mean_dir, f'bold_multimodal_mean_std__{TRAINING_MODE}.p'), 'rb') as handle:
                 model_mean_std = pickle.load(handle)
             latent_transform = Compose([
                 Normalize(model_mean_std['mean'], model_mean_std['std']),
@@ -414,7 +397,7 @@ if __name__ == "__main__":
 
             # preloading datasets for faster execution
             print("preloading bold train dataset")
-            train_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TRAINING_MODE}',
+            train_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{TRAINING_MODE}',
                                             bold_transform=bold_transform, latent_transform=latent_transform)
             train_dataset.preload()
 
@@ -426,7 +409,8 @@ if __name__ == "__main__":
             # imagery_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
             # imagery_dataset.preload()
 
-            results_dir = os.path.join(GLM_OUT_DIR, f'regression_results_mni_mmda4_{DECODER_TRAINING_MODE}/{subject}/{model_name}')
+            results_dir = os.path.join(GLM_OUT_DIR,
+                                       f'regression_results_mni_mmda4_{TRAINING_MODE}/{subject}/{model_name}')
 
             batch_size = len(train_dataset) // 8
             train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
@@ -437,7 +421,7 @@ if __name__ == "__main__":
 
             # training setting
             max_epochs = 400
-            if DECODER_TRAINING_MODE != 'train':
+            if TRAINING_MODE != 'train':
                 max_epochs = max_epochs * 2
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
@@ -492,29 +476,17 @@ if __name__ == "__main__":
 
                     train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
-                    # test_images_predictions, testing_images_loss, rank_images_accuracy = evaluate_decoder(net, test_images_loader, loss_fn, True, device=DEVICE)
-                    # test_captions_predictions, testing_captions_loss, rank_captions_accuracy = evaluate_decoder(net, test_captions_loader, loss_fn, True, device=DEVICE)
-                    # test_predictions, test_loss, test_acc = evaluate_decoder(net, test_loader, loss_fn, True, device=DEVICE)
-                    # test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, ['cosine', 'euclidean'], device=DEVICE)
-                    test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, ['cosine', 'euclidean'],
+                    test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn,
+                                                                                      distance_metrics=DISTANCE_METRICS,
                                                                                       device=device)
 
                     # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
 
                     # test_loss = (testing_images_loss+testing_captions_loss)/2
-                    # test_acc  = (rank_images_accuracy+rank_captions_accuracy)/2
-                    # if epoch % SAVE_INT == (SAVE_INT-1):
-                    #     torch.save(net.state_dict(), f'{checkpoint_dir}/net_{epoch}')
 
                     sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
                     sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
-                    # sumwriter.add_scalar(f"Testing/rank accuracy", test_acc, epoch)
-                    # sumwriter.add_scalar(f"Testing/pairwise duo accuracy", test_acc, epoch)
-                    # sumwriter.add_scalar(f"Testing Captions/{loss_type} loss", testing_captions_loss, epoch)
-                    # sumwriter.add_scalar(f"Testing Captions/rank accuracy", rank_captions_accuracy, epoch)
-                    # sumwriter.add_scalar(f"Testing Imagery/cosine distance", imagery_loss, epoch)
 
-                    # check for the bests
                     # best decoder
                     key = f'best_test'
                     if key not in best_net_states:
@@ -525,26 +497,10 @@ if __name__ == "__main__":
                             best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
                             best_distance_matrices = distance_matrices
 
-                            torch.save(best_net_states[key]['net'],f"{checkpoint_dir}/net_{key}")
+                            torch.save(best_net_states[key]['net'], f"{checkpoint_dir}/net_{key}")
 
                             with open(os.path.join(distance_dir, "distance_matrix.p"), 'wb') as handle:
                                 pickle.dump(best_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                    # key = f'best_test_images'
-                    # if key not in best_net_states:
-                    #     best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':rank_images_accuracy}
-                    # else:
-                    #     v = best_net_states[key]['value']
-                    #     if rank_images_accuracy >= v:
-                    #         best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':rank_images_accuracy}
-
-                    # key = f'best_test_captions'
-                    # if key not in best_net_states:
-                    #     best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':rank_captions_accuracy}
-                    # else:
-                    #     v = best_net_states[key]['value']
-                    #     if rank_captions_accuracy >= v:
-                    #         best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':rank_captions_accuracy}
 
                     # # best imagery decoder (based on cosine loss)
                     # key = f'best_imagery'

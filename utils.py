@@ -10,6 +10,20 @@ IMAGE_STIMULI_IDS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_Correcte
 
 PCA_NUM_COMPONENTS = 768
 
+MODEL_FEATURES_FILES = {
+    "RESNET152_AVGPOOL_PCA768": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop_pca_768.p"),
+    "RESNET152_AVGPOOL": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop.p"),
+    "GPT2XL_AVG_PCA768": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco_pca_768.p"),
+    "GPT2XL_AVG": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco.p"),
+    "VITL16_ENCODER": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop.p"), 
+    "VITL16_ENCODER_PCA768": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop_pca_768.p"),
+    "CLIP_L": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop.p"),
+    "CLIP_V": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop.p"),
+    "CLIP_L_PCA768": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
+    "CLIP_V_PCA768": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
+    "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
+}
+
 
 IMAGES_IMAGERY_CONDITION = [
     [406591, f'images/train2017/000000406591.jpg',
