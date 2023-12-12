@@ -8,7 +8,6 @@ COCO_2017_TRAIN_IMAGES_DIR = os.path.expanduser("~/data/coco/images/train_2017")
 
 IMAGE_STIMULI_IDS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
 
-BOLD_DATA_SIZE = 162649
 PCA_NUM_COMPONENTS = 768
 
 

@@ -20,7 +20,7 @@ import gc
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
-from utils import FEATURES_DIR, IMAGERY_SCENES, BOLD_DATA_SIZE, PCA_NUM_COMPONENTS
+from utils import FEATURES_DIR, IMAGERY_SCENES, PCA_NUM_COMPONENTS
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -72,7 +72,7 @@ class COCOBOLDDataset(Dataset):
     data_modes = ['train', 'test', 'imagery']
 
     def __init__(self, bold_root_dir, subject, latent_vectors, mode='train', cache=True,
-                 transform=None, label_transform=None, latent_transform=None, blank_correction=True):
+                 bold_transform=None, label_transform=None, latent_transform=None, blank_correction=True):
         """
         Args:
             bold_root_dir (str): BOLD root directory (parent of subjects' directories).
@@ -80,7 +80,7 @@ class COCOBOLDDataset(Dataset):
             latent_vectors (dict): Dictionary of latent vectors for each stimulus. Keys are coco stim. ids.
             mode (str): 'train', 'test', or 'imagery'. You can append _images or _captions to make it unimodal
             cache (boolean): if `True`, data will be kept in the memory to optimize running time.
-            transform (callable, optional): Optional transformation to be applied
+            bold_transform (callable, optional): Optional transformation to be applied
                 on a sample.
             label_transform (callable, optional): Optional transformation to be applied
                 on a sample label (stimulus id).
@@ -92,7 +92,7 @@ class COCOBOLDDataset(Dataset):
         self.subject = subject
         self.imagery_scenes = IMAGERY_SCENES[subject]
         self.mode = mode
-        self.transform = transform
+        self.transform = bold_transform
         self.label_transform = label_transform
         self.latent_transform = latent_transform
         self.cache = cache
@@ -233,7 +233,8 @@ def save_mean_std_for_a_subject(fmri_data_dir, subject, latent_vectors_file, out
         print(f"Calculating Mean and STD of Model Latent Variables for {m} Samples")
 
     dataset = COCOBOLDDataset(fmri_data_dir, subject, latent_vectors, m)
-    bold_data = np.empty((len(dataset), BOLD_DATA_SIZE))
+    bold_data_size = dataset.get_brain_vector(0).shape[0]
+    bold_data = np.empty((len(dataset), bold_data_size))
     model_data = np.empty((len(dataset), PCA_NUM_COMPONENTS))
 
     os.makedirs(output_dir, exist_ok=True)
@@ -409,12 +410,12 @@ if __name__ == "__main__":
             # preloading datasets for faster execution
             print("preloading bold train dataset")
             train_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TRAINING_MODE}',
-                                            transform=bold_transform, latent_transform=latent_transform)
+                                            bold_transform=bold_transform, latent_transform=latent_transform)
             train_dataset.preload()
 
             print("preloading bold test dataset")
             test_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TESTING_MODE}',
-                                           transform=bold_transform, latent_transform=latent_transform)
+                                           bold_transform=bold_transform, latent_transform=latent_transform)
             test_dataset.preload()
 
             # imagery_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
@@ -488,7 +489,7 @@ if __name__ == "__main__":
                     # test_predictions, test_loss, test_acc = evaluate_decoder(net, test_loader, loss_fn, True, device=DEVICE)
                     # test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, ['cosine', 'euclidean'], device=DEVICE)
                     # epoch_distance_matrices[epoch] = distance_matrices
-                    test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, [],
+                    test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, ['cosine', 'euclidean'],
                                                                                       device=device)
                     # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
 
@@ -545,10 +546,9 @@ if __name__ == "__main__":
                                f"{checkpoint_dir}/net_{key}_{best_net_states[key]['epoch']}")
 
                 # #saving distance matrices
-                # distance_dir = f'{SAVE_DIR}/distance_matrix/{hp_str}'
-                # if not os.path.exists(distance_dir):
-                #     os.makedirs(distance_dir)
-                # with open(os.path.join(distance_dir, "distance_matrices.p"), 'wb') as handle:
-                #     pickle.dump(epoch_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                distance_dir = f'{results_dir}/distance_matrix/{hp_str}'
+                os.makedirs(distance_dir, exist_ok=True)
+                with open(os.path.join(distance_dir, "distance_matrices.p"), 'wb') as handle:
+                    pickle.dump(epoch_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                 sumwriter.close()
