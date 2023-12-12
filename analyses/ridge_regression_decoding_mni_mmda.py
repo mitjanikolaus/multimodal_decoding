@@ -527,7 +527,7 @@ if __name__ == "__main__":
 
                             torch.save(best_net_states[key]['net'],f"{checkpoint_dir}/net_{key}")
 
-                            with open(os.path.join(distance_dir, "distance_matrices.p"), 'wb') as handle:
+                            with open(os.path.join(distance_dir, "distance_matrix.p"), 'wb') as handle:
                                 pickle.dump(best_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                     # key = f'best_test_images'
