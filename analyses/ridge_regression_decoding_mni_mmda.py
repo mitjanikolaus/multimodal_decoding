@@ -353,8 +353,8 @@ model_names_latent_files = {
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
 MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768']  # RESNET152_AVGPOOL_PCA768
 # MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
-DECODER_TRAINING_MODE = ['train', 'train_captions', 'train_images'][2]
-DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][2]
+DECODER_TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
+DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
