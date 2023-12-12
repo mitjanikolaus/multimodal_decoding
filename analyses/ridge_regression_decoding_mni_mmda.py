@@ -339,20 +339,19 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
         return predictions, cum_loss, dist_matrices
 
 
-# subjects = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
-SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
+SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 model_names_latent_files = {
-    # "RESNET152_AVGPOOL_PCA768" :os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop_pca_768.p"),
-    # "RESNET152_AVGPOOL"        :os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop.p"),
-    # "GPT2XL_AVG_PCA768"        :os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco_pca_768.p"),
-    # "GPT2XL_AVG"               :os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco.p"),
-    # "VITL16_ENCODER"           :os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop.p"),
-    # "VITL16_ENCODER_PCA768"    :os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop_pca_768.p"),
+    "RESNET152_AVGPOOL_PCA768": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop_pca_768.p"),
+    "RESNET152_AVGPOOL": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop.p"),
+    "GPT2XL_AVG_PCA768": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco_pca_768.p"),
+    "GPT2XL_AVG": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco.p"),
+    "VITL16_ENCODER": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop.p"),
+    "VITL16_ENCODER_PCA768": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop_pca_768.p"),
     "CLIP_L": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop.p"),
     "CLIP_V": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop.p"),
     "CLIP_L_PCA768": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
     "CLIP_V_PCA768": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
-    # "BERT_LARGE"               :os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
+    "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
 }
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
 MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768']  # RESNET152_AVGPOOL_PCA768
@@ -360,10 +359,15 @@ MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768']  # RESNET15
 DECODER_TRAINING_MODE = ['train', 'train_captions', 'train_images'][2]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][2]
 
-BASE_DIR_STD_MEAN = os.path.expanduser("~/data/multimodal_decoding/glm/")
+GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
 if __name__ == "__main__":
+    os.makedirs(GLM_OUT_DIR, exist_ok=True)
+
     for subject in SUBJECTS:
         for model_name in MODEL_NAMES:
             print(subject)
@@ -371,7 +375,7 @@ if __name__ == "__main__":
             two_stage_glm_dir = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
             bold_std_mean_name = f'bold_multimodal_mean_std'
             model_std_mean_name = f'{model_name}_mean_std'
-            std_mean_dir = os.path.join(BASE_DIR_STD_MEAN, subject)
+            std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 
             # saving dataset mean and std for the normalization
             save_mean_std_for_a_subject(
@@ -423,9 +427,7 @@ if __name__ == "__main__":
             # imagery_dataset.preload()
 
             # results dir
-            SAVE_DIR = f'../regression_results_mni_mmda4_{DECODER_TRAINING_MODE}/{subject}/{model_name}'
-            if not os.path.exists(SAVE_DIR):
-                os.makedirs(SAVE_DIR)
+            save_dir = os.path.join(GLM_OUT_DIR, f'regression_results_mni_mmda4_{DECODER_TRAINING_MODE}/{subject}/{model_name}')
 
             BATCH_SIZE = len(train_dataset) // 8
             train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True)
@@ -441,7 +443,6 @@ if __name__ == "__main__":
                 BATCH_SIZE = BATCH_SIZE * 2
             print('batch size:', BATCH_SIZE)
             SAVE_INT = 50  # and the best
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
             HPs = [
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='SGD', lr=0.010, wd=0.00, dropout=False, loss='MSE'),
@@ -468,8 +469,8 @@ if __name__ == "__main__":
                 if torch.cuda.is_available():
                     net = net.cuda()
 
-                sumwriter = SummaryWriter(f'{SAVE_DIR}/tensorboard/{hp_str}', filename_suffix=f'')
-                checkpoint_dir = f'{SAVE_DIR}/networks/{hp_str}'
+                sumwriter = SummaryWriter(f'{save_dir}/tensorboard/{hp_str}', filename_suffix=f'')
+                checkpoint_dir = f'{save_dir}/networks/{hp_str}'
                 if not os.path.exists(checkpoint_dir):
                     os.makedirs(checkpoint_dir)
 
