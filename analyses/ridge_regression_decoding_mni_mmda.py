@@ -366,6 +366,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 if __name__ == "__main__":
+    print("device: ", device)
     os.makedirs(GLM_OUT_DIR, exist_ok=True)
 
     for subject in SUBJECTS:
