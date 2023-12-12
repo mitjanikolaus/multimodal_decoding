@@ -290,11 +290,8 @@ class HyperParameters():
         yield self.loss
 
 
-def train_decoder(net, train_loader, optimizer, loss_fn, device):
-    r"""
-    trains decoder for one epoch and returns the loss value
-    """
-    net.train()
+def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
+    model.train()
     cum_loss = 0
     for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
@@ -304,7 +301,7 @@ def train_decoder(net, train_loader, optimizer, loss_fn, device):
         optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = net(inputs.to(device))
+        outputs = model(inputs.to(device))
         loss = loss_fn(outputs, latents.to(device))
         cum_loss += loss.item()
         loss.backward()
@@ -415,10 +412,6 @@ if __name__ == "__main__":
                                             transform=bold_transform, latent_transform=latent_transform)
             train_dataset.preload()
 
-            # test_images_dataset  = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'test_images',  transform=bold_transform, latent_transform=latent_transform)
-            # test_images_dataset.preload()
-            # test_captions_dataset  = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'test_captions',  transform=bold_transform, latent_transform=latent_transform)
-            # test_captions_dataset.preload()
             print("preloading bold test dataset")
             test_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TESTING_MODE}',
                                            transform=bold_transform, latent_transform=latent_transform)
@@ -427,22 +420,21 @@ if __name__ == "__main__":
             # imagery_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
             # imagery_dataset.preload()
 
-            # results dir
-            save_dir = os.path.join(GLM_OUT_DIR, f'regression_results_mni_mmda4_{DECODER_TRAINING_MODE}/{subject}/{model_name}')
+            results_dir = os.path.join(GLM_OUT_DIR, f'regression_results_mni_mmda4_{DECODER_TRAINING_MODE}/{subject}/{model_name}')
 
-            BATCH_SIZE = len(train_dataset) // 8
-            train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True)
+            batch_size = len(train_dataset) // 8
+            train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
             # test_images_loader = DataLoader(test_images_dataset, batch_size=len(test_images_dataset), num_workers=0, shuffle=False)
             # test_captions_loader = DataLoader(test_captions_dataset, batch_size=len(test_captions_dataset), num_workers=0, shuffle=False)
             # imagery_loader = DataLoader(imagery_dataset, batch_size=len(imagery_dataset), num_workers=0, shuffle=False)
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
             # training setting
-            MAXEPOCH = 400
+            max_epochs = 400
             if DECODER_TRAINING_MODE != 'train':
-                MAXEPOCH = MAXEPOCH * 2
-                BATCH_SIZE = BATCH_SIZE * 2
-            print('batch size:', BATCH_SIZE)
+                max_epochs = max_epochs * 2
+                batch_size = batch_size * 2
+            print('batch size:', batch_size)
             SAVE_INT = 50  # and the best
             HPs = [
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.00, dropout=False, loss='MSE'),
@@ -470,10 +462,9 @@ if __name__ == "__main__":
                 if torch.cuda.is_available():
                     net = net.cuda()
 
-                sumwriter = SummaryWriter(f'{save_dir}/tensorboard/{hp_str}', filename_suffix=f'')
-                checkpoint_dir = f'{save_dir}/networks/{hp_str}'
-                if not os.path.exists(checkpoint_dir):
-                    os.makedirs(checkpoint_dir)
+                sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
+                checkpoint_dir = f'{results_dir}/networks/{hp_str}'
+                os.makedirs(checkpoint_dir, exist_ok=True)
 
                 best_net_states = {}
                 gc.collect()
@@ -484,11 +475,13 @@ if __name__ == "__main__":
                     optimizer = optim.SGD(net.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
                 elif optim_type == 'ADAM':
                     optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
+                else:
+                    raise RuntimeError("Unknown optimizer: ", optim_type)
 
                 epoch_distance_matrices = {}
-                for epoch in trange(MAXEPOCH, desc=f'training decoder'):
+                for epoch in trange(max_epochs, desc=f'training decoder'):
 
-                    train_loss = train_decoder(net, train_loader, optimizer, loss_fn, device=device)
+                    train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
                     # test_images_predictions, testing_images_loss, rank_images_accuracy = evaluate_decoder(net, test_images_loader, loss_fn, True, device=DEVICE)
                     # test_captions_predictions, testing_captions_loss, rank_captions_accuracy = evaluate_decoder(net, test_captions_loader, loss_fn, True, device=DEVICE)
