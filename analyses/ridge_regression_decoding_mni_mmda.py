@@ -459,6 +459,9 @@ if __name__ == "__main__":
                 hp_str = hp.get_hp_string()
                 print(hp_str)
 
+                distance_dir = f'{results_dir}/distance_matrix/{hp_str}'
+                os.makedirs(distance_dir, exist_ok=True)
+
                 net = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
                 if torch.cuda.is_available():
                     net = net.cuda()
@@ -479,7 +482,7 @@ if __name__ == "__main__":
                 else:
                     raise RuntimeError("Unknown optimizer: ", optim_type)
 
-                epoch_distance_matrices = {}
+                best_distance_matrices = None
                 for epoch in trange(max_epochs, desc=f'training decoder'):
 
                     train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
@@ -488,9 +491,9 @@ if __name__ == "__main__":
                     # test_captions_predictions, testing_captions_loss, rank_captions_accuracy = evaluate_decoder(net, test_captions_loader, loss_fn, True, device=DEVICE)
                     # test_predictions, test_loss, test_acc = evaluate_decoder(net, test_loader, loss_fn, True, device=DEVICE)
                     # test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, ['cosine', 'euclidean'], device=DEVICE)
-                    # epoch_distance_matrices[epoch] = distance_matrices
                     test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn, ['cosine', 'euclidean'],
                                                                                       device=device)
+
                     # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
 
                     # test_loss = (testing_images_loss+testing_captions_loss)/2
@@ -512,9 +515,16 @@ if __name__ == "__main__":
                     if key not in best_net_states:
                         best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
                     else:
-                        v = best_net_states[key]['value']
-                        if test_loss <= v:
+                        best_test_loss = best_net_states[key]['value']
+                        if test_loss <= best_test_loss:
                             best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
+                            best_distance_matrices = distance_matrices
+
+                            torch.save(best_net_states[key]['net'],f"{checkpoint_dir}/net_{key}")
+
+                            with open(os.path.join(distance_dir, "distance_matrices.p"), 'wb') as handle:
+                                pickle.dump(best_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
                     # key = f'best_test_images'
                     # if key not in best_net_states:
                     #     best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':rank_images_accuracy}
@@ -539,16 +549,5 @@ if __name__ == "__main__":
                     #     v = best_net_states[key]['value']
                     #     if imagery_loss <= v:
                     #         best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':imagery_loss}
-
-                # saving best networks
-                for key in best_net_states:
-                    torch.save(best_net_states[key]['net'],
-                               f"{checkpoint_dir}/net_{key}_{best_net_states[key]['epoch']}")
-
-                # #saving distance matrices
-                distance_dir = f'{results_dir}/distance_matrix/{hp_str}'
-                os.makedirs(distance_dir, exist_ok=True)
-                with open(os.path.join(distance_dir, "distance_matrices.p"), 'wb') as handle:
-                    pickle.dump(epoch_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                 sumwriter.close()
