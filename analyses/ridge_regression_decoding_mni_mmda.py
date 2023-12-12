@@ -337,7 +337,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
         return predictions, cum_loss, dist_matrices
 
 
-SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
+SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']   # TODO 'sub-03'
 model_names_latent_files = {
     "RESNET152_AVGPOOL_PCA768": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop_pca_768.p"),
     "RESNET152_AVGPOOL": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop.p"),
@@ -352,7 +352,8 @@ model_names_latent_files = {
     "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
 }
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
-MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768']  # RESNET152_AVGPOOL_PCA768
+MODEL_NAMES = ['RESNET152_AVGPOOL']
+# MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768']  # RESNET152_AVGPOOL_PCA768
 # MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
 DECODER_TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
@@ -440,12 +441,12 @@ if __name__ == "__main__":
             HPs = [
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='SGD', lr=0.010, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.050, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.050, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.100, wd=0.00, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.01, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.050, wd=0.01, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.050, wd=0.01, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.100, wd=0.01, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.10, dropout=False, loss='MSE'),
