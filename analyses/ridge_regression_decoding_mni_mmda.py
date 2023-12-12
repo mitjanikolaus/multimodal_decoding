@@ -493,7 +493,7 @@ if __name__ == "__main__":
                         best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
                     else:
                         best_test_loss = best_net_states[key]['value']
-                        if test_loss <= best_test_loss:
+                        if test_loss < best_test_loss:
                             best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
                             best_distance_matrices = distance_matrices
 
