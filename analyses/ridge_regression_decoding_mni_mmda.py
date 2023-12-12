@@ -388,7 +388,7 @@ if __name__ == "__main__":
             ])
 
             # latent transform
-            with open(os.path.join(std_mean_dir, f'bold_multimodal_mean_std__{TRAINING_MODE}.p'), 'rb') as handle:
+            with open(os.path.join(std_mean_dir, f'bold_multimodal_mean_std_{TRAINING_MODE}.p'), 'rb') as handle:
                 model_mean_std = pickle.load(handle)
             latent_transform = Compose([
                 Normalize(model_mean_std['mean'], model_mean_std['std']),
