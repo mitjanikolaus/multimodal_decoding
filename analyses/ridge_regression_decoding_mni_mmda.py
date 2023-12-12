@@ -233,12 +233,13 @@ def save_mean_std_for_a_subject(fmri_data_dir, subject, latent_vectors_file, out
         print(f"Calculating Mean and STD of Model Latent Variables for {m} Samples")
 
     dataset = COCOBOLDDataset(fmri_data_dir, subject, latent_vectors, m)
-    bold_data_size = dataset.get_brain_vector(0).shape[0]
-    bold_data = np.empty((len(dataset), bold_data_size))
-    model_data = np.empty((len(dataset), PCA_NUM_COMPONENTS))
+
 
     os.makedirs(output_dir, exist_ok=True)
     if bold_std_mean_name is not None:
+        bold_data_size = dataset.get_brain_vector(0).shape[0]
+        bold_data = np.empty((len(dataset), bold_data_size))
+
         for idx in tqdm(range(len(dataset))):
             bd = dataset.get_brain_vector(idx)
             bold_data[idx] = bd
@@ -249,6 +250,9 @@ def save_mean_std_for_a_subject(fmri_data_dir, subject, latent_vectors_file, out
         pickle.dump(mean_std, open(os.path.join(output_dir, file_name), 'wb'), pickle.HIGHEST_PROTOCOL)
 
     if model_std_mean_name is not None:
+        model_data_size = dataset.get_latent_vector(0).shape[0]
+        model_data = np.empty((len(dataset), model_data_size))
+
         for idx in tqdm(range(len(dataset))):
             md = dataset.get_latent_vector(idx)
             model_data[idx] = md
