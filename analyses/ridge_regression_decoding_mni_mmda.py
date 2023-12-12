@@ -92,7 +92,7 @@ class COCOBOLDDataset(Dataset):
         self.subject = subject
         self.imagery_scenes = IMAGERY_SCENES[subject]
         self.mode = mode
-        self.transform = bold_transform
+        self.bold_transform = bold_transform
         self.label_transform = label_transform
         self.latent_transform = latent_transform
         self.cache = cache
@@ -166,8 +166,8 @@ class COCOBOLDDataset(Dataset):
 
         if self.mode == 'imagery' and self.blank is not None and self.blank_correction:
             sample = sample - self.blank
-        if self.transform is not None:
-            sample = self.transform(sample)
+        if self.bold_transform is not None:
+            sample = self.bold_transform(sample)
         return sample
 
     def get_stim_id(self, idx):
@@ -388,7 +388,7 @@ if __name__ == "__main__":
             ])
 
             # latent transform
-            with open(os.path.join(std_mean_dir, f'bold_multimodal_mean_std_{TRAINING_MODE}.p'), 'rb') as handle:
+            with open(os.path.join(std_mean_dir, f'{model_name}_mean_std_{TRAINING_MODE}.p'), 'rb') as handle:
                 model_mean_std = pickle.load(handle)
             latent_transform = Compose([
                 Normalize(model_mean_std['mean'], model_mean_std['std']),
