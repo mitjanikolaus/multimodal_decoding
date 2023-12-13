@@ -27,7 +27,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 VAL_SPLIT_SIZE = 0.1
-PATIENCE = 25
+PATIENCE = 10
 
 
 def fetch_coco_image(sid, coco_images_dir):
