@@ -347,7 +347,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
 SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
-MODEL_NAMES = ['CLIP_V']
+MODEL_NAMES = ['RESNET152_AVGPOOL']
 # MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
 # MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
 TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
@@ -421,7 +421,7 @@ if __name__ == "__main__":
             # imagery_dataset.preload()
 
             results_dir = os.path.join(GLM_OUT_DIR,
-                                       f'regression_results_mni_mmda4_{TRAINING_MODE}/{subject}/{model_name}')
+                                       f'regression_results_mni_mmda_val_set_{TRAINING_MODE}/{subject}/{model_name}')
 
             batch_size = len(train_dataset) // 8
             train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
