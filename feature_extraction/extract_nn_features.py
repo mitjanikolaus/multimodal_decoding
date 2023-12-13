@@ -64,7 +64,6 @@ else:
 
 print("device: ", device)
 
-CROP_SIZE = 224
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
@@ -285,7 +284,7 @@ class ImageClassificationPreprocessing(nn.Module):
             self,
             *,
             crop_size: int,
-            resize_size: int = 256,
+            resize_size: int,
             mean: Tuple[float, ...] = IMAGENET_MEAN,
             std: Tuple[float, ...] = IMAGENET_STD,
             interpolation: InterpolationMode = InterpolationMode.BICUBIC,
@@ -325,12 +324,13 @@ class ImageClassificationPreprocessing(nn.Module):
         )
 
 
-def extract_visual_features(model, path_out):
+def extract_visual_features(model, path_out, resize_size, crop_size, interpolation):
     if os.path.isfile(path_out):
         print(f"Skipping feature extraction for {model.__class__.__name__} as output file {path_out} already exists.")
         return
     print(f"Extracting features with {model.__class__.__name__}..")
-    preprocessing = ImageClassificationPreprocessing(crop_size=CROP_SIZE, resize_size=CROP_SIZE)
+    preprocessing = ImageClassificationPreprocessing(crop_size=crop_size, resize_size=resize_size,
+                                                     interpolation=interpolation)
     ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'image', transform=preprocessing)
     dloader = DataLoader(ds, shuffle=False, num_workers=0, batch_size=BATCH_SIZE)
     vf = get_visual_features(model, dloader)
@@ -359,18 +359,18 @@ if __name__ == "__main__":
     ##########
     # ViT-L-16
     ##########
-    model = vit_l_16(weights=ViT_L_16_Weights.DEFAULT)
+    model = vit_l_16(weights=ViT_L_16_Weights.IMAGENET1K_V1)
     model_name = "vit_l_16"
     path_out = f"{FEATURES_DIR}/vit/{model_name}_encoder_selected_coco_crop.p"
-    extract_visual_features(model, path_out)
+    extract_visual_features(model, path_out, resize_size=242, crop_size=224, interpolation=InterpolationMode.BILINEAR)
 
     ##########
     # ResNet152
     ##########
-    model = resnet152(weights=ResNet152_Weights.DEFAULT)
+    model = resnet152(weights=ResNet152_Weights.IMAGENET1K_V1)
     model_name = "resnet152"
     path_out = f"{FEATURES_DIR}/resnet/{model_name}_avgpool_selected_coco_crop.p"
-    extract_visual_features(model, path_out)
+    extract_visual_features(model, path_out, resize_size=256, crop_size=224, interpolation=InterpolationMode.BILINEAR)
 
     #########
     # BERT LARGE
@@ -385,7 +385,6 @@ if __name__ == "__main__":
     model_name = 'gpt2-xl'
     path_out = f"{FEATURES_DIR}/gpt/gpt2_xl_avg_selected_coco.p"
     extract_linguistic_features(model_name, path_out)
-
 
 # ds = COCOSelected(COCO_2017_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'caption')
 # data = np.load(IMAGE_STIMULI_IDS_PATH, allow_pickle=True)
