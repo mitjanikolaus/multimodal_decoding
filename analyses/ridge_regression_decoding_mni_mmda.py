@@ -26,7 +26,8 @@ from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-VAL_SPLIT_SIZE = 0.2
+VAL_SPLIT_SIZE = 0.1
+PATIENCE = 25
 
 
 def fetch_coco_image(sid, coco_images_dir):
@@ -334,14 +335,14 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
             test_loss = loss_fn(outputs, test_latents.to(device))
             cum_loss += test_loss.item()
             predictions.append(outputs.cpu().numpy())
-        cum_loss /= len(test_loader)
-        predictions = np.concatenate(predictions, axis=0)
+    cum_loss /= len(test_loader)
+    predictions = np.concatenate(predictions, axis=0)
 
-        dist_matrices = {'classes': test_ids,
-                         'types': test_types}  # order of classes, order of types (image, caption, imagery)
-        for metric in distance_metrics:
-            dist_matrices[metric] = get_distance_matrix(predictions, test_latents, metric)
-        return predictions, cum_loss, dist_matrices
+    dist_matrices = {'classes': test_ids,
+                     'types': test_types}  # order of classes, order of types (image, caption, imagery)
+    for metric in distance_metrics:
+        dist_matrices[metric] = get_distance_matrix(predictions, test_latents, metric)
+    return predictions, cum_loss, dist_matrices
 
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
@@ -356,7 +357,6 @@ DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
-PATIENCE = 5
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -423,7 +423,7 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR,
                                        f'regression_results_mni_mmda_val_set_{TRAINING_MODE}/{subject}/{model_name}')
 
-            batch_size = len(train_dataset) // 8
+            batch_size = len(train_val_dataset) // 8
             train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
             # test_images_loader = DataLoader(test_images_dataset, batch_size=len(test_images_dataset), num_workers=0, shuffle=False)
             # test_captions_loader = DataLoader(test_captions_dataset, batch_size=len(test_captions_dataset), num_workers=0, shuffle=False)
