@@ -265,7 +265,6 @@ def calc_mean_std_per_subject(fmri_data_dir, subject, latent_vectors_file, outpu
                     'std': model_data.std(axis=0).astype('float32')}
         file_name = f'{model_std_mean_name}_{m}.p'
         pickle.dump(mean_std, open(os.path.join(output_dir, file_name), 'wb'), pickle.HIGHEST_PROTOCOL)
-    print("done.")
 
 
 class CosineDistance(nn.CosineSimilarity):
@@ -423,7 +422,7 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR,
                                        f'regression_results_mni_mmda_val_set_{TRAINING_MODE}/{subject}/{model_name}')
 
-            batch_size = len(train_val_dataset) // 8
+            batch_size = len(train_val_dataset) // 4
             train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
             # test_images_loader = DataLoader(test_images_dataset, batch_size=len(test_images_dataset), num_workers=0, shuffle=False)
             # test_captions_loader = DataLoader(test_captions_dataset, batch_size=len(test_captions_dataset), num_workers=0, shuffle=False)
