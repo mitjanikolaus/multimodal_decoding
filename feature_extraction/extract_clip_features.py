@@ -68,7 +68,7 @@ def extract_visual_features():
                 with torch.no_grad():
                     feats_batch = model.encode_image(images.to(device)).cpu().numpy()
                     for id, feats, name in zip(ids, feats_batch, names):
-                        all_feats[id] = {"visual_features": feats, "image_name": name}
+                        all_feats[id.item()] = {"visual_feature": feats, "image_name": name}
 
         path_out = os.path.join(FEATURES_DIR, "clip", "clip_v_VITL14336px_selected_coco_dataset_crop.p")
 
