@@ -9,7 +9,8 @@ import nibabel as nib
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset, DataLoader, Subset
 import os
 from glob import glob
 import pickle
@@ -24,6 +25,8 @@ from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+VAL_SPLIT_SIZE = 0.2
 
 
 def fetch_coco_image(sid, coco_images_dir):
@@ -353,6 +356,7 @@ DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
+PATIENCE = 5
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -361,8 +365,9 @@ if __name__ == "__main__":
     os.makedirs(GLM_OUT_DIR, exist_ok=True)
 
     for subject in SUBJECTS:
+        print(subject)
         for model_name in MODEL_NAMES:
-            print(subject)
+            print(model_name)
             latent_vectors_file = MODEL_FEATURES_FILES[model_name]
             two_stage_glm_dir = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
@@ -397,9 +402,15 @@ if __name__ == "__main__":
 
             # preloading datasets for faster execution
             print("preloading bold train dataset")
-            train_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{TRAINING_MODE}',
-                                            bold_transform=bold_transform, latent_transform=latent_transform)
-            train_dataset.preload()
+            train_val_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{TRAINING_MODE}',
+                                                bold_transform=bold_transform, latent_transform=latent_transform)
+            train_val_dataset.preload()
+
+            idx = list(range(len(train_val_dataset)))
+            train_idx, val_idx = train_test_split(idx, test_size=VAL_SPLIT_SIZE, random_state=1)
+            train_dataset = Subset(train_val_dataset, train_idx)
+            val_dataset = Subset(train_val_dataset, val_idx)
+            print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
             print("preloading bold test dataset")
             test_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TESTING_MODE}',
@@ -417,6 +428,8 @@ if __name__ == "__main__":
             # test_images_loader = DataLoader(test_images_dataset, batch_size=len(test_images_dataset), num_workers=0, shuffle=False)
             # test_captions_loader = DataLoader(test_captions_dataset, batch_size=len(test_captions_dataset), num_workers=0, shuffle=False)
             # imagery_loader = DataLoader(imagery_dataset, batch_size=len(imagery_dataset), num_workers=0, shuffle=False)
+            val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
+
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
             # training setting
@@ -425,7 +438,6 @@ if __name__ == "__main__":
                 max_epochs = max_epochs * 2
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
-            SAVE_INT = 50  # and the best
             HPs = [
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='SGD', lr=0.010, wd=0.00, dropout=False, loss='MSE'),
@@ -451,7 +463,7 @@ if __name__ == "__main__":
                 distance_dir = f'{results_dir}/distance_matrix/{hp_str}'
                 os.makedirs(distance_dir, exist_ok=True)
 
-                net = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
+                net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout)
                 if torch.cuda.is_available():
                     net = net.cuda()
 
@@ -471,11 +483,14 @@ if __name__ == "__main__":
                 else:
                     raise RuntimeError("Unknown optimizer: ", optim_type)
 
-                best_distance_matrices = None
+                epochs_no_improved_loss = 0
                 for epoch in trange(max_epochs, desc=f'training decoder'):
 
                     train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
+                    val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
+                                                                    distance_metrics=[],
+                                                                    device=device)
                     test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn,
                                                                                       distance_metrics=DISTANCE_METRICS,
                                                                                       device=device)
@@ -485,22 +500,29 @@ if __name__ == "__main__":
                     # test_loss = (testing_images_loss+testing_captions_loss)/2
 
                     sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
+                    sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
                     sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
 
                     # best decoder
-                    key = f'best_test'
+                    key = f'best_val'
                     if key not in best_net_states:
-                        best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
+                        best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
                     else:
-                        best_test_loss = best_net_states[key]['value']
-                        if test_loss < best_test_loss:
-                            best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': test_loss}
-                            best_distance_matrices = distance_matrices
+                        best_val_loss = best_net_states[key]['value']
+                        if val_loss < best_val_loss:
+                            epochs_no_improved_loss = 0
+                            best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
 
                             torch.save(best_net_states[key]['net'], f"{checkpoint_dir}/net_{key}")
 
                             with open(os.path.join(distance_dir, "distance_matrix.p"), 'wb') as handle:
-                                pickle.dump(best_distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        else:
+                            epochs_no_improved_loss += 1
+
+                    if epochs_no_improved_loss >= PATIENCE:
+                        print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
+                        break
 
                     # # best imagery decoder (based on cosine loss)
                     # key = f'best_imagery'
