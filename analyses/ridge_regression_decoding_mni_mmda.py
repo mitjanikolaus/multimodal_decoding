@@ -3,6 +3,7 @@
 # inputs can be of any modality
 # outputs are uni-modal
 ############################################
+import time
 
 import numpy as np
 import nibabel as nib
@@ -484,6 +485,7 @@ if __name__ == "__main__":
                     raise RuntimeError("Unknown optimizer: ", optim_type)
 
                 epochs_no_improved_loss = 0
+                start = time.time()
                 for epoch in trange(max_epochs, desc=f'training decoder'):
 
                     train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
@@ -533,4 +535,6 @@ if __name__ == "__main__":
                     #     if imagery_loss <= v:
                     #         best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':imagery_loss}
 
+                end = time.time()
+                print(f"Elapsed time: {end - start}s")
                 sumwriter.close()
