@@ -522,7 +522,7 @@ if __name__ == "__main__":
                                 # print(f"New best val loss for hp setting {hp_str}: {val_loss}")
                                 best_hp_setting_val_loss = val_loss
                                 best_hp_setting = hp
-                                best_hp_setting_num_epochs = epoch
+                                best_hp_setting_num_epochs = epoch + 1
                         else:
                             epochs_no_improved_loss += 1
 
