@@ -1,5 +1,9 @@
 import os
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
 FEATURES_DIR = os.path.join(DATA_DIR, "feats_unimodal")
 os.makedirs(FEATURES_DIR, exist_ok=True)
