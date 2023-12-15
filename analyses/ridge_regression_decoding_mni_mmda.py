@@ -440,20 +440,17 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
-                # HyperParameters(optimizer='SGD', lr=0.005, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.010, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.050, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.100, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='SGD', lr=0.005, wd=0.01, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.050, wd=0.01, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.100, wd=0.01, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.01, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.1, wd=0.01, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='SGD', lr=0.005, wd=0.10, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.010, wd=0.10, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.050, wd=0.10, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.100, wd=0.10, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.1, wd=0.1, dropout=False, loss='MSE'),
             ]
 
             best_hp_setting = None
