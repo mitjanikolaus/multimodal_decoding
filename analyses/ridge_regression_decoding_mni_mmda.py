@@ -531,7 +531,6 @@ if __name__ == "__main__":
 
                     if epochs_no_improved_loss >= PATIENCE:
                         print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
-                        break
 
                     # # best imagery decoder (based on cosine loss)
                     # key = f'best_imagery'
@@ -543,7 +542,7 @@ if __name__ == "__main__":
                     #         best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':imagery_loss}
 
                 end = time.time()
-                print(f"Elapsed time: {end - start}s")
+                print(f"Elapsed time: {int(end - start)}s")
                 sumwriter.close()
 
             # Re-train on full train set with best HP setting:
