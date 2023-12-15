@@ -3,6 +3,7 @@
 # inputs can be of any modality
 # outputs are uni-modal
 ############################################
+import math
 import time
 
 import numpy as np
@@ -22,7 +23,7 @@ import gc
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
-from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES
+from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -346,6 +347,8 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
     return predictions, cum_loss, dist_matrices
 
 
+MAX_EPOCHS = 400
+
 SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
@@ -356,7 +359,6 @@ TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
-FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -433,10 +435,8 @@ if __name__ == "__main__":
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
-            # training setting
-            max_epochs = 400
             if TRAINING_MODE != 'train':
-                max_epochs = max_epochs * 2
+                MAX_EPOCHS = MAX_EPOCHS * 2
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
@@ -446,7 +446,7 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='SGD', lr=0.100, wd=0.00, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='SGD', lr=0.005, wd=0.01, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='SGD', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.050, wd=0.01, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.100, wd=0.01, dropout=False, loss='MSE'),
 
@@ -456,17 +456,18 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='SGD', lr=0.100, wd=0.10, dropout=False, loss='MSE'),
             ]
 
+            best_hp_setting = None
+            best_hp_setting_val_loss = math.inf
+            best_hp_setting_num_epochs = None
             for hp in HPs:
                 optim_type, lr, wd, dropout, loss_type = hp
                 hp_str = hp.get_hp_string()
                 print(hp_str)
 
-                distance_dir = f'{results_dir}/distance_matrix/{hp_str}'
-                os.makedirs(distance_dir, exist_ok=True)
+                distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
+                os.makedirs(distance_matrix_dir, exist_ok=True)
 
-                net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout)
-                if torch.cuda.is_available():
-                    net = net.cuda()
+                net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(device)
 
                 sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
                 checkpoint_dir = f'{results_dir}/networks/{hp_str}'
@@ -486,7 +487,7 @@ if __name__ == "__main__":
 
                 epochs_no_improved_loss = 0
                 start = time.time()
-                for epoch in trange(max_epochs, desc=f'training decoder'):
+                for epoch in trange(MAX_EPOCHS, desc=f'training decoder'):
 
                     train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
@@ -517,8 +518,14 @@ if __name__ == "__main__":
 
                             torch.save(best_net_states[key]['net'], f"{checkpoint_dir}/net_{key}")
 
-                            with open(os.path.join(distance_dir, "distance_matrix.p"), 'wb') as handle:
+                            with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
                                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                            if val_loss < best_hp_setting_val_loss:
+                                # print(f"New best val loss for hp setting {hp_str}: {val_loss}")
+                                best_hp_setting_val_loss = val_loss
+                                best_hp_setting = hp
+                                best_hp_setting_num_epochs = epoch
                         else:
                             epochs_no_improved_loss += 1
 
@@ -538,3 +545,47 @@ if __name__ == "__main__":
                 end = time.time()
                 print(f"Elapsed time: {end - start}s")
                 sumwriter.close()
+
+            # Re-train on full train set with best HP setting:
+            optim_type, lr, wd, dropout, loss_type = best_hp_setting
+            print(f"Retraining for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ", best_hp_setting.get_hp_string())
+            hp_str = best_hp_setting.get_hp_string() + "_full_train"
+            net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
+                device)
+            full_train_loader = DataLoader(train_val_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
+            loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
+
+            if optim_type == 'SGD':
+                optimizer = optim.SGD(net.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
+            elif optim_type == 'ADAM':
+                optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
+            else:
+                raise RuntimeError("Unknown optimizer: ", optim_type)
+            sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
+            checkpoint_dir = f'{results_dir}/networks/{hp_str}'
+            os.makedirs(checkpoint_dir, exist_ok=True)
+            distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
+            os.makedirs(distance_matrix_dir, exist_ok=True)
+            best_net_states = {}
+
+            for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
+                train_loss = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
+
+                val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
+                                                                distance_metrics=[],
+                                                                device=device)
+
+                test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn,
+                                                                                  distance_metrics=DISTANCE_METRICS,
+                                                                                  device=device)
+
+                sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
+                sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
+                sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
+
+            key = f'best_val'
+            torch.save(net.state_dict(), f"{checkpoint_dir}/net_{key}")
+
+            with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
+                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+

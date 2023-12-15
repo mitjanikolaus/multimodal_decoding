@@ -7,6 +7,9 @@ os.makedirs(FEATURES_DIR, exist_ok=True)
 COCO_2017_TRAIN_IMAGES_DIR = os.path.expanduser("~/data/coco/images/train_2017")
 
 IMAGE_STIMULI_IDS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
+FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
+
+SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 PCA_NUM_COMPONENTS = 768
 
