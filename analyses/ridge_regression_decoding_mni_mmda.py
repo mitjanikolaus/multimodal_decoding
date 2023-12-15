@@ -27,8 +27,8 @@ from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-VAL_SPLIT_SIZE = 0.1
-PATIENCE = 10
+VAL_SPLIT_SIZE = 0.2
+PATIENCE = 5
 
 
 def fetch_coco_image(sid, coco_images_dir):
