@@ -74,6 +74,6 @@ if __name__ == "__main__":
     results = pd.DataFrame.from_records(results)
     sns.barplot(data=results, x="subject", y="value", hue="metric")
     plt.ylabel("Error rate")
-    plt.savefig(os.path.join(RESULTS_DIR, "even_file_analysis.png"), dpi=300)
+    plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
     plt.show()
 
