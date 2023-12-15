@@ -338,7 +338,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
             predictions.append(outputs.cpu().numpy())
     cum_loss /= len(test_loader)
     predictions = np.concatenate(predictions, axis=0)
-    predictions = (predictions-predictions.mean(axis=0))/predictions.std(axis=0)
+    predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
     dist_matrices = {'classes': test_ids,
                      'types': test_types}  # order of classes, order of types (image, caption, imagery)
@@ -440,12 +440,12 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
 
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.01, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.1, wd=0.01, dropout=False, loss='MSE'),
 
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
@@ -462,9 +462,13 @@ if __name__ == "__main__":
                 print(hp_str)
 
                 distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
-                os.makedirs(distance_matrix_dir, exist_ok=True)
+                loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
 
-                net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(device)
+                os.makedirs(distance_matrix_dir, exist_ok=True)
+                os.makedirs(loss_results_dir, exist_ok=True)
+
+                net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
+                    device)
 
                 sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
                 checkpoint_dir = f'{results_dir}/networks/{hp_str}'
@@ -518,6 +522,10 @@ if __name__ == "__main__":
                             with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
                                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+                            with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
+                                pickle.dump({"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                                            handle, protocol=pickle.HIGHEST_PROTOCOL)
+
                             if val_loss < best_hp_setting_val_loss:
                                 # print(f"New best val loss for hp setting {hp_str}: {val_loss}")
                                 best_hp_setting_val_loss = val_loss
@@ -536,7 +544,8 @@ if __name__ == "__main__":
 
             # Re-train on full train set with best HP setting:
             optim_type, lr, wd, dropout, loss_type = best_hp_setting
-            print(f"Retraining for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ", best_hp_setting.get_hp_string())
+            print(f"Retraining for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
+                  best_hp_setting.get_hp_string())
             hp_str = best_hp_setting.get_hp_string() + "_full_train"
             net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
                 device)
@@ -553,6 +562,8 @@ if __name__ == "__main__":
             checkpoint_dir = f'{results_dir}/networks/{hp_str}'
             os.makedirs(checkpoint_dir, exist_ok=True)
             distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
+            os.makedirs(distance_matrix_dir, exist_ok=True)
+            loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
             os.makedirs(distance_matrix_dir, exist_ok=True)
             best_net_states = {}
 
@@ -577,3 +588,6 @@ if __name__ == "__main__":
             with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+            with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
+                pickle.dump({"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                            handle, protocol=pickle.HIGHEST_PROTOCOL)
