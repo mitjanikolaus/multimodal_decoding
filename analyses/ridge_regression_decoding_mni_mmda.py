@@ -528,15 +528,7 @@ if __name__ == "__main__":
 
                     if epochs_no_improved_loss >= PATIENCE:
                         print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
-
-                    # # best imagery decoder (based on cosine loss)
-                    # key = f'best_imagery'
-                    # if key not in best_net_states:
-                    #     best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':imagery_loss}
-                    # else:
-                    #     v = best_net_states[key]['value']
-                    #     if imagery_loss <= v:
-                    #         best_net_states[key] = {'net':net.state_dict(), 'epoch':epoch, 'value':imagery_loss}
+                        break
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
