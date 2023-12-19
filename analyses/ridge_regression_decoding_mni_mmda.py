@@ -564,7 +564,7 @@ if __name__ == "__main__":
             distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
             os.makedirs(distance_matrix_dir, exist_ok=True)
             loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
-            os.makedirs(distance_matrix_dir, exist_ok=True)
+            os.makedirs(loss_results_dir, exist_ok=True)
             best_net_states = {}
 
             for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
