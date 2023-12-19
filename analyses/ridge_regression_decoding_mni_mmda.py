@@ -75,8 +75,6 @@ class COCOBOLDDataset(Dataset):
     Dataset for loading SEMREPS BOLD signals
     """
 
-    data_modes = ['train', 'test', 'imagery']
-
     def __init__(self, bold_root_dir, subject, latent_vectors, mode='train', cache=True,
                  bold_transform=None, label_transform=None, latent_transform=None, blank_correction=True):
         """
@@ -440,17 +438,21 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
 
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.01, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.1, wd=0.01, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.01, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.1, wd=0.01, dropout=False, loss='MSE'),
 
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.1, wd=0.1, dropout=False, loss='MSE'),
+
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
             ]
 
             best_hp_setting = None
