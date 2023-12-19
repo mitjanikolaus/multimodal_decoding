@@ -544,7 +544,7 @@ if __name__ == "__main__":
 
             # Re-train on full train set with best HP setting:
             optim_type, lr, wd, dropout, loss_type = best_hp_setting
-            print(f"Retraining for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
+            print(f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
                   best_hp_setting.get_hp_string())
             hp_str = best_hp_setting.get_hp_string() + "_full_train"
             net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
