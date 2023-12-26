@@ -11,7 +11,7 @@ import nibabel as nib
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from torch.utils.data import Dataset, DataLoader, Subset
 import os
 from glob import glob
@@ -28,7 +28,7 @@ from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-VAL_SPLIT_SIZE = 0.2
+NUM_CV_SPLITS = 5
 PATIENCE = 5
 
 
@@ -408,10 +408,9 @@ if __name__ == "__main__":
             train_val_dataset.preload()
 
             idx = list(range(len(train_val_dataset)))
-            train_idx, val_idx = train_test_split(idx, test_size=VAL_SPLIT_SIZE, random_state=1)
-            train_dataset = Subset(train_val_dataset, train_idx)
-            val_dataset = Subset(train_val_dataset, val_idx)
-            print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
+            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=False, random_state=1)
+
+            # print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
             print("preloading bold test dataset")
             test_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TESTING_MODE}',
@@ -422,14 +421,9 @@ if __name__ == "__main__":
             # imagery_dataset.preload()
 
             results_dir = os.path.join(GLM_OUT_DIR,
-                                       f'regression_results_mni_mmda_val_set_{TRAINING_MODE}/{subject}/{model_name}')
+                                       f'regression_results_mni_mmda_cv_{TRAINING_MODE}/{subject}/{model_name}')
 
             batch_size = len(train_val_dataset) // 5
-            train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
-            # test_images_loader = DataLoader(test_images_dataset, batch_size=len(test_images_dataset), num_workers=0, shuffle=False)
-            # test_captions_loader = DataLoader(test_captions_dataset, batch_size=len(test_captions_dataset), num_workers=0, shuffle=False)
-            # imagery_loader = DataLoader(imagery_dataset, batch_size=len(imagery_dataset), num_workers=0, shuffle=False)
-            val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
@@ -440,19 +434,15 @@ if __name__ == "__main__":
             HPs = [
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.01, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.010, wd=0.01, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.1, wd=0.01, dropout=False, loss='MSE'),
-
-                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
             ]
 
             best_hp_setting = None
@@ -463,91 +453,112 @@ if __name__ == "__main__":
                 hp_str = hp.get_hp_string()
                 print(hp_str)
 
-                distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
-                loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
 
-                os.makedirs(distance_matrix_dir, exist_ok=True)
-                os.makedirs(loss_results_dir, exist_ok=True)
-
-                net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
-                    device)
-
-                sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
-                checkpoint_dir = f'{results_dir}/networks/{hp_str}'
-                os.makedirs(checkpoint_dir, exist_ok=True)
-
-                best_net_states = {}
-                gc.collect()
                 loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
                 imagery_loss_fn = CosineDistance()
 
-                if optim_type == 'SGD':
-                    optimizer = optim.SGD(net.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
-                elif optim_type == 'ADAM':
-                    optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
-                else:
-                    raise RuntimeError("Unknown optimizer: ", optim_type)
+                val_losses = []
 
-                epochs_no_improved_loss = 0
                 start = time.time()
-                for epoch in trange(MAX_EPOCHS, desc=f'training decoder'):
 
-                    train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
+                for fold, (train_idx, val_idx) in enumerate(kf.split(idx)):
+                    gc.collect()
+                    loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
+                    run_str = hp_str + f"fold_{fold}"
 
-                    val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
-                                                                    distance_metrics=[],
-                                                                    device=device)
-                    test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn,
-                                                                                      distance_metrics=DISTANCE_METRICS,
-                                                                                      device=device)
+                    distance_matrix_dir = f'{results_dir}/distance_matrix/{run_str}'
+                    loss_results_dir = f'{results_dir}/loss_results/{run_str}'
+                    checkpoint_dir = f'{results_dir}/networks/{run_str}'
 
-                    # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
+                    os.makedirs(distance_matrix_dir, exist_ok=True)
+                    os.makedirs(loss_results_dir, exist_ok=True)
+                    os.makedirs(checkpoint_dir, exist_ok=True)
 
-                    # test_loss = (testing_images_loss+testing_captions_loss)/2
+                    train_dataset = Subset(train_val_dataset, train_idx)
+                    val_dataset = Subset(train_val_dataset, val_idx)
+                    train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
+                    val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
 
-                    sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
-                    sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
-                    sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
+                    net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size,
+                                    dropout=dropout).to(device)
 
-                    # best decoder
-                    key = f'best_val'
-                    if key not in best_net_states:
-                        best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
+                    sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
+
+                    if optim_type == 'SGD':
+                        optimizer = optim.SGD(net.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
+                    elif optim_type == 'ADAM':
+                        optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
                     else:
-                        best_val_loss = best_net_states[key]['value']
-                        if val_loss < best_val_loss:
-                            epochs_no_improved_loss = 0
+                        raise RuntimeError("Unknown optimizer: ", optim_type)
+
+                    best_net_states = {}
+                    epochs_no_improved_loss = 0
+                    for epoch in trange(MAX_EPOCHS, desc=f'training decoder'):
+
+                        train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
+
+                        val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
+                                                                        distance_metrics=[],
+                                                                        device=device)
+
+                        # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
+
+                        # test_loss = (testing_images_loss+testing_captions_loss)/2
+
+                        sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
+                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
+                        # sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
+
+                        # best decoder
+                        key = f'best_val'
+                        if key not in best_net_states:
                             best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
-
-                            torch.save(best_net_states[key]['net'], f"{checkpoint_dir}/net_{key}")
-
-                            with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
-                                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                            with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
-                                pickle.dump({"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
-                                            handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                            if val_loss < best_hp_setting_val_loss:
-                                # print(f"New best val loss for hp setting {hp_str}: {val_loss}")
-                                best_hp_setting_val_loss = val_loss
-                                best_hp_setting = hp
-                                best_hp_setting_num_epochs = epoch + 1
                         else:
-                            epochs_no_improved_loss += 1
+                            best_val_loss = best_net_states[key]['value']
+                            if val_loss < best_val_loss:
+                                epochs_no_improved_loss = 0
+                                best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
 
-                    if epochs_no_improved_loss >= PATIENCE:
-                        print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
-                        break
+                                torch.save(best_net_states[key]['net'], f"{checkpoint_dir}/net_{key}")
+
+                                _, test_loss, distance_matrices = evaluate_decoder(net, test_loader,
+                                                                                   loss_fn,
+                                                                                   distance_metrics=DISTANCE_METRICS,
+                                                                                   device=device)
+
+                                with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
+                                    pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                                with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
+                                    pickle.dump(
+                                        {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                                        handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                                val_losses.append(val_loss)
+
+                                if len(val_losses) == NUM_CV_SPLITS and np.mean(val_losses) < best_hp_setting_val_loss:
+                                    print("new best hp setting val loss: ", np.mean(val_losses))
+                                    best_hp_setting_val_loss = np.mean(val_losses)
+                                    best_hp_setting = hp
+                                    best_hp_setting_num_epochs = epoch + 1
+                            else:
+                                epochs_no_improved_loss += 1
+
+                        if epochs_no_improved_loss >= PATIENCE:
+                            print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
+                            break
+
+                        sumwriter.close()
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
-                sumwriter.close()
+
 
             # Re-train on full train set with best HP setting:
             optim_type, lr, wd, dropout, loss_type = best_hp_setting
-            print(f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
-                  best_hp_setting.get_hp_string())
+            print(
+                f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
+                best_hp_setting.get_hp_string())
             hp_str = best_hp_setting.get_hp_string() + "_full_train"
             net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
                 device)
@@ -572,16 +583,16 @@ if __name__ == "__main__":
             for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
                 train_loss = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
 
-                val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
-                                                                distance_metrics=[],
-                                                                device=device)
+                # val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
+                #                                                 distance_metrics=[],
+                #                                                 device=device)
 
                 test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn,
                                                                                   distance_metrics=DISTANCE_METRICS,
                                                                                   device=device)
 
                 sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
-                sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
+                # sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
                 sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
 
             key = f'best_val'
@@ -591,5 +602,5 @@ if __name__ == "__main__":
                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
-                pickle.dump({"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
                             handle, protocol=pickle.HIGHEST_PROTOCOL)
