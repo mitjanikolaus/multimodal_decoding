@@ -493,6 +493,8 @@ if __name__ == "__main__":
 
                     best_net_states = {}
                     epochs_no_improved_loss = 0
+                    best_val_loss = math.inf
+                    best_val_loss_epoch = 0
                     for epoch in trange(MAX_EPOCHS, desc=f'training decoder'):
 
                         train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
@@ -510,39 +512,31 @@ if __name__ == "__main__":
                         # sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
 
                         # best decoder
-                        key = f'best_val'
-                        if key not in best_net_states:
-                            best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
+                        # if key not in best_net_states:
+                        #     best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
+                        if val_loss < best_val_loss:
+                            best_val_loss = val_loss
+                            best_val_loss_epoch = epoch
+                            epochs_no_improved_loss = 0
+                            best_net_states = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
+
+                            torch.save(best_net_states['net'], f"{checkpoint_dir}/net_best_val")
+
+                            _, test_loss, distance_matrices = evaluate_decoder(net, test_loader,
+                                                                               loss_fn,
+                                                                               distance_metrics=DISTANCE_METRICS,
+                                                                               device=device)
+
+                            with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
+                                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                            with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
+                                pickle.dump(
+                                    {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
+
                         else:
-                            best_val_loss = best_net_states[key]['value']
-                            if val_loss < best_val_loss:
-                                epochs_no_improved_loss = 0
-                                best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
-
-                                torch.save(best_net_states[key]['net'], f"{checkpoint_dir}/net_{key}")
-
-                                _, test_loss, distance_matrices = evaluate_decoder(net, test_loader,
-                                                                                   loss_fn,
-                                                                                   distance_metrics=DISTANCE_METRICS,
-                                                                                   device=device)
-
-                                with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
-                                    pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                                with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
-                                    pickle.dump(
-                                        {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
-                                        handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                                val_losses.append(val_loss)
-
-                                if len(val_losses) == NUM_CV_SPLITS and np.mean(val_losses) < best_hp_setting_val_loss:
-                                    print("new best hp setting val loss: ", np.mean(val_losses))
-                                    best_hp_setting_val_loss = np.mean(val_losses)
-                                    best_hp_setting = hp
-                                    best_hp_setting_num_epochs = epoch + 1
-                            else:
-                                epochs_no_improved_loss += 1
+                            epochs_no_improved_loss += 1
 
                         if epochs_no_improved_loss >= PATIENCE:
                             print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
@@ -550,9 +544,15 @@ if __name__ == "__main__":
 
                         sumwriter.close()
 
+                    val_losses.append(best_val_loss)
+                    if len(val_losses) == NUM_CV_SPLITS and np.mean(val_losses) < best_hp_setting_val_loss:
+                        print("new best hp setting val loss: ", np.mean(val_losses))
+                        best_hp_setting_val_loss = np.mean(val_losses)
+                        best_hp_setting = hp
+                        best_hp_setting_num_epochs = best_val_loss_epoch
+
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
-
 
             # Re-train on full train set with best HP setting:
             optim_type, lr, wd, dropout, loss_type = best_hp_setting
@@ -580,7 +580,7 @@ if __name__ == "__main__":
             os.makedirs(loss_results_dir, exist_ok=True)
             best_net_states = {}
 
-            for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
+            for epoch in trange(best_hp_setting_num_epochs+1, desc=f'training decoder on full train set'):
                 train_loss = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
 
                 # val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
