@@ -432,6 +432,7 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
+                HyperParameters(optimizer='ADAM', lr=1e-4, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
@@ -461,9 +462,6 @@ if __name__ == "__main__":
                 start = time.time()
 
                 for fold, (train_idx, val_idx) in enumerate(kf.split(idx)):
-                    if fold == 0:
-                        print("skipping fold 0")
-                        continue
                     gc.collect()
                     loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
                     run_str = hp_str + f"fold_{fold}"
