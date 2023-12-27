@@ -28,7 +28,7 @@ from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-NUM_CV_SPLITS = 4
+NUM_CV_SPLITS = 5
 PATIENCE = 5
 
 
@@ -479,7 +479,7 @@ if __name__ == "__main__":
                         batch_size = batch_size * 2
                     print('batch size:', batch_size)
 
-                    train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
+                    train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True, drop_last=True)
                     val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
 
                     net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size,
@@ -567,7 +567,7 @@ if __name__ == "__main__":
             hp_str = best_hp_setting.get_hp_string() + "_full_train"
             net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
                 device)
-            full_train_loader = DataLoader(train_val_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
+            full_train_loader = DataLoader(train_val_dataset, batch_size=batch_size, num_workers=0, shuffle=True, drop_last=True)
             loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
 
             if optim_type == 'SGD':
