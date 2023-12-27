@@ -453,7 +453,6 @@ if __name__ == "__main__":
                 hp_str = hp.get_hp_string()
                 print(hp_str)
 
-
                 loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
                 imagery_loss_fn = CosineDistance()
 
@@ -462,6 +461,9 @@ if __name__ == "__main__":
                 start = time.time()
 
                 for fold, (train_idx, val_idx) in enumerate(kf.split(idx)):
+                    if fold == 0:
+                        print("skipping fold 0")
+                        continue
                     gc.collect()
                     loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
                     run_str = hp_str + f"fold_{fold}"
