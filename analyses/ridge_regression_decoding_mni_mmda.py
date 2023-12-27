@@ -336,7 +336,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
             predictions.append(outputs.cpu().numpy())
     cum_loss /= len(test_loader)
     predictions = np.concatenate(predictions, axis=0)
-    predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
+    # predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
     dist_matrices = {'classes': test_ids,
                      'types': test_types}  # order of classes, order of types (image, caption, imagery)
