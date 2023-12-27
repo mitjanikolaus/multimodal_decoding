@@ -601,6 +601,13 @@ if __name__ == "__main__":
             with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+            with open(os.path.join(f'{results_dir}/distance_matrix/best_hp/', "distance_matrix.p"), 'wb') as handle:
+                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
+                pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
+                            handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+            with open(os.path.join(f'{results_dir}/loss_results/best_hp/', "loss_results.p"), 'wb') as handle:
                 pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
                             handle, protocol=pickle.HIGHEST_PROTOCOL)
