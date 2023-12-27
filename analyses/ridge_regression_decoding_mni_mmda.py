@@ -432,7 +432,7 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
-                HyperParameters(optimizer='ADAM', lr=1e-4, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
