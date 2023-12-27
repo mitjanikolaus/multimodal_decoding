@@ -596,7 +596,7 @@ if __name__ == "__main__":
             os.makedirs(loss_results_dir, exist_ok=True)
             best_net_states = {}
 
-            for epoch in trange(best_hp_setting_num_epochs+1, desc=f'training decoder on full train set'):
+            for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
                 train_loss = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
 
                 # val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
