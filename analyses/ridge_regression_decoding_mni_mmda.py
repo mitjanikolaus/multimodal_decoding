@@ -300,7 +300,7 @@ class HyperParameters():
 
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     model.train()
-    cum_loss = 0
+    cum_loss = []
     for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, latents, ids, types = data
@@ -311,10 +311,10 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
         # forward + backward + optimize
         outputs = model(inputs.to(device))
         loss = loss_fn(outputs, latents.to(device))
-        cum_loss += loss.item()
+        cum_loss.append(loss.item())
         loss.backward()
         optimizer.step()
-    # cum_loss /= len(train_loader)
+    cum_loss = np.mean(cum_loss)
     return cum_loss
 
 
@@ -325,16 +325,16 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
     `distance_metrics` is a list of string containing distance metric names
     """
     net.eval()
-    cum_loss = 0
+    cum_loss = []
     predictions = []
     with torch.no_grad():
         for data in test_loader:
             test_inputs, test_latents, test_ids, test_types = data
             outputs = net(test_inputs.to(device))
             test_loss = loss_fn(outputs, test_latents.to(device))
-            cum_loss += test_loss.item()
+            cum_loss.append(test_loss.item())
             predictions.append(outputs.cpu().numpy())
-    # cum_loss /= len(test_loader)
+    cum_loss = np.mean(cum_loss)
     predictions = np.concatenate(predictions, axis=0)
     # predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
