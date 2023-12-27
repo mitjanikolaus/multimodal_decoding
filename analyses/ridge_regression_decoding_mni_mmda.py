@@ -610,8 +610,8 @@ if __name__ == "__main__":
                 pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
                             handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-            best_dir = os.path.join(f'{results_dir}/loss_results/best_hp/', "loss_results.p")
+            best_dir =f'{results_dir}/loss_results/best_hp/'
             os.makedirs(best_dir, exist_ok=True)
-            with open(best_dir, 'wb') as handle:
+            with open(os.path.join(best_dir, "loss_results.p"), 'wb') as handle:
                 pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
                             handle, protocol=pickle.HIGHEST_PROTOCOL)
