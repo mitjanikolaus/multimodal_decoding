@@ -26,7 +26,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
@@ -410,7 +410,7 @@ if __name__ == "__main__":
             train_val_dataset.preload()
 
             idx = list(range(len(train_val_dataset)))
-            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=False)#, random_state=1)
+            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
 
             print("preloading bold test dataset")
@@ -422,7 +422,7 @@ if __name__ == "__main__":
             # imagery_dataset.preload()
 
             results_dir = os.path.join(GLM_OUT_DIR,
-                                       f'regression_results_mni_mmda_cv_{TRAINING_MODE}/{subject}/{model_name}')
+                                       f'regression_results_mni_mmda_cv_shuffle_{TRAINING_MODE}/{subject}/{model_name}')
 
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
