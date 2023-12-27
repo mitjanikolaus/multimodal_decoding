@@ -452,6 +452,7 @@ if __name__ == "__main__":
                 imagery_loss_fn = CosineDistance()
 
                 val_losses = []
+                num_epochs = []
 
                 start = time.time()
 
@@ -547,11 +548,13 @@ if __name__ == "__main__":
                         sumwriter.close()
 
                     val_losses.append(best_val_loss)
+                    num_epochs.append(best_val_loss_epoch)
+                    print("mean val loss: ", np.mean(val_losses))
                     if len(val_losses) == NUM_CV_SPLITS and np.mean(val_losses) < best_hp_setting_val_loss:
-                        print("new best hp setting val loss: ", np.mean(val_losses))
                         best_hp_setting_val_loss = np.mean(val_losses)
                         best_hp_setting = hp
-                        best_hp_setting_num_epochs = best_val_loss_epoch
+                        best_hp_setting_num_epochs = int(np.mean(num_epochs)) + 1
+                        print(f"new best hp setting val loss: {np.mean(val_losses)} | num epochs: {best_hp_setting_num_epochs}")
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
