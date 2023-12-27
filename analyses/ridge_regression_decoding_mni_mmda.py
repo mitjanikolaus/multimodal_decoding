@@ -408,7 +408,7 @@ if __name__ == "__main__":
             train_val_dataset.preload()
 
             idx = list(range(len(train_val_dataset)))
-            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=False)
+            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=7)
 
             # print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
