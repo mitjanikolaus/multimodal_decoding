@@ -472,7 +472,7 @@ if __name__ == "__main__":
                     val_dataset = Subset(train_val_dataset, val_idx)
                     print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
-                    batch_size = len(train_dataset) // 4
+                    batch_size = len(val_dataset)
                     if TRAINING_MODE != 'train':
                         MAX_EPOCHS = MAX_EPOCHS * 2
                         batch_size = batch_size * 2
