@@ -314,7 +314,7 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
         cum_loss += loss.item()
         loss.backward()
         optimizer.step()
-    cum_loss /= len(train_loader)
+    # cum_loss /= len(train_loader)
     return cum_loss
 
 
@@ -334,7 +334,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
             test_loss = loss_fn(outputs, test_latents.to(device))
             cum_loss += test_loss.item()
             predictions.append(outputs.cpu().numpy())
-    cum_loss /= len(test_loader)
+    # cum_loss /= len(test_loader)
     predictions = np.concatenate(predictions, axis=0)
     # predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
