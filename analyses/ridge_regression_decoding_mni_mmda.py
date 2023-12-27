@@ -410,7 +410,6 @@ if __name__ == "__main__":
             idx = list(range(len(train_val_dataset)))
             kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
-            # print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
             print("preloading bold test dataset")
             test_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TESTING_MODE}',
@@ -432,7 +431,7 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
-                HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='SGD', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
@@ -476,6 +475,8 @@ if __name__ == "__main__":
 
                     train_dataset = Subset(train_val_dataset, train_idx)
                     val_dataset = Subset(train_val_dataset, val_idx)
+                    print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
+
                     train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
                     val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
 
