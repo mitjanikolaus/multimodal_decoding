@@ -408,7 +408,7 @@ if __name__ == "__main__":
             train_val_dataset.preload()
 
             idx = list(range(len(train_val_dataset)))
-            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=7)
+            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
             # print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
@@ -432,7 +432,7 @@ if __name__ == "__main__":
                 batch_size = batch_size * 2
             print('batch size:', batch_size)
             HPs = [
-                HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
