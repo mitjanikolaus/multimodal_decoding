@@ -318,7 +318,7 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     return cum_loss
 
 
-def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
+def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_normalize=False):
     r"""
     evaluates decoder on test bold signals
     returns the predicted vectors and loss values
@@ -336,7 +336,9 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device):
             predictions.append(outputs.cpu().numpy())
     cum_loss = np.mean(cum_loss)
     predictions = np.concatenate(predictions, axis=0)
-    # predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
+
+    if re_normalize:
+        predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
     dist_matrices = {'classes': test_ids,
                      'types': test_types}  # order of classes, order of types (image, caption, imagery)
@@ -533,6 +535,15 @@ if __name__ == "__main__":
                             with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
                                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+                            _, _, distance_matrices_normalized = evaluate_decoder(net, test_loader,
+                                                                               loss_fn,
+                                                                               distance_metrics=DISTANCE_METRICS,
+                                                                               device=device,
+                                                                               re_normalize=True)
+
+                            with open(os.path.join(distance_matrix_dir, "distance_matrix_normalized.p"), 'wb') as handle:
+                                pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
                             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                                 pickle.dump(
                                     {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
@@ -596,6 +607,12 @@ if __name__ == "__main__":
                                                                                   distance_metrics=DISTANCE_METRICS,
                                                                                   device=device)
 
+                _, _, distance_matrices_normalized = evaluate_decoder(net, test_loader,
+                                                                      loss_fn,
+                                                                      distance_metrics=DISTANCE_METRICS,
+                                                                      device=device,
+                                                                      re_normalize=True)
+
                 sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
                 # sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
                 sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
@@ -606,10 +623,15 @@ if __name__ == "__main__":
             with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+            with open(os.path.join(distance_matrix_dir, "distance_matrix_normalized.p"), 'wb') as handle:
+                pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
             best_dir = f'{results_dir}/distance_matrix/best_hp/'
             os.makedirs(best_dir, exist_ok=True)
             with open(os.path.join(best_dir, "distance_matrix.p"), 'wb') as handle:
                 pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(os.path.join(best_dir, "distance_matrix_normalized.p"), 'wb') as handle:
+                pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                 pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
