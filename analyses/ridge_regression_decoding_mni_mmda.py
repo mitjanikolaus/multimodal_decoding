@@ -422,14 +422,9 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR,
                                        f'regression_results_mni_mmda_cv_shuffle_{TRAINING_MODE}/{subject}/{model_name}')
 
-            batch_size = len(train_val_dataset) // 5
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
-            if TRAINING_MODE != 'train':
-                MAX_EPOCHS = MAX_EPOCHS * 2
-                batch_size = batch_size * 2
-            print('batch size:', batch_size)
             HPs = [
                 HyperParameters(optimizer='SGD', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
@@ -476,6 +471,12 @@ if __name__ == "__main__":
                     train_dataset = Subset(train_val_dataset, train_idx)
                     val_dataset = Subset(train_val_dataset, val_idx)
                     print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
+
+                    batch_size = len(train_dataset) // 4
+                    if TRAINING_MODE != 'train':
+                        MAX_EPOCHS = MAX_EPOCHS * 2
+                        batch_size = batch_size * 2
+                    print('batch size:', batch_size)
 
                     train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True)
                     val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
