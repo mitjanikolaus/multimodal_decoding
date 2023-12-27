@@ -426,7 +426,7 @@ if __name__ == "__main__":
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
             HPs = [
-                HyperParameters(optimizer='SGD', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
