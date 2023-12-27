@@ -422,7 +422,7 @@ if __name__ == "__main__":
             # imagery_dataset.preload()
 
             results_dir = os.path.join(GLM_OUT_DIR,
-                                       f'regression_results_mni_mmda_cv_shuffle_{TRAINING_MODE}/{subject}/{model_name}')
+                                       f'regression_results_mni_mmda_cv_{TRAINING_MODE}/{subject}/{model_name}')
 
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
