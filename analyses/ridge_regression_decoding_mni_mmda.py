@@ -11,7 +11,7 @@ import nibabel as nib
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import KFold
 from torch.utils.data import Dataset, DataLoader, Subset
 import os
 from glob import glob
@@ -301,9 +301,11 @@ class HyperParameters():
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     model.train()
     cum_loss = []
+    num_samples = 0
     for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, latents, ids, types = data
+        num_samples += inputs.shape[0]
 
         # zero the parameter gradients
         optimizer.zero_grad()
@@ -315,7 +317,7 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
         loss.backward()
         optimizer.step()
     cum_loss = np.mean(cum_loss)
-    return cum_loss
+    return cum_loss, num_samples
 
 
 def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_normalize=False):
@@ -348,6 +350,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 
 
 MAX_EPOCHS = 400
+BATCH_SIZE = 2000
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 
@@ -444,7 +447,7 @@ if __name__ == "__main__":
 
             best_hp_setting = None
             best_hp_setting_val_loss = math.inf
-            best_hp_setting_num_epochs = None
+            best_hp_setting_num_samples = None
             for hp in HPs:
                 optim_type, lr, wd, dropout, loss_type = hp
                 hp_str = hp.get_hp_string()
@@ -453,8 +456,8 @@ if __name__ == "__main__":
                 loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
                 imagery_loss_fn = CosineDistance()
 
-                val_losses = []
-                num_epochs = []
+                val_losses_for_folds = []
+                num_samples_for_folds = []
 
                 start = time.time()
 
@@ -475,14 +478,8 @@ if __name__ == "__main__":
                     val_dataset = Subset(train_val_dataset, val_idx)
                     print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
-                    batch_size = len(val_dataset)
-                    if TRAINING_MODE != 'train':
-                        MAX_EPOCHS = MAX_EPOCHS * 2
-                        batch_size = batch_size * 2
-                    print('batch size:', batch_size)
-
-                    train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, shuffle=True, drop_last=True)
-                    val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0, shuffle=False)
+                    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True, drop_last=True)
+                    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
 
                     net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size,
                                     dropout=dropout).to(device)
@@ -499,29 +496,29 @@ if __name__ == "__main__":
                     best_net_states = {}
                     epochs_no_improved_loss = 0
                     best_val_loss = math.inf
-                    best_val_loss_epoch = 0
+                    best_val_loss_num_samples = 0
+                    num_samples_train_run = 0
                     for epoch in trange(MAX_EPOCHS, desc=f'training decoder'):
 
-                        train_loss = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
+                        train_loss, num_epoch_samples = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
                         val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
                                                                         distance_metrics=[],
                                                                         device=device)
-
+                        num_samples_train_run += num_epoch_samples
                         # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
 
                         # test_loss = (testing_images_loss+testing_captions_loss)/2
 
-                        sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
-                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
-                        # sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
+                        sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
+                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, num_samples_train_run)
 
                         # best decoder
                         # if key not in best_net_states:
                         #     best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
                         if val_loss < best_val_loss:
                             best_val_loss = val_loss
-                            best_val_loss_epoch = epoch
+                            best_val_loss_num_samples = num_samples_train_run
                             epochs_no_improved_loss = 0
                             best_net_states = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
 
@@ -558,27 +555,30 @@ if __name__ == "__main__":
 
                         sumwriter.close()
 
-                    val_losses.append(best_val_loss)
-                    num_epochs.append(best_val_loss_epoch)
-                    print("mean val loss: ", np.mean(val_losses))
-                    if len(val_losses) == NUM_CV_SPLITS and np.mean(val_losses) < best_hp_setting_val_loss:
-                        best_hp_setting_val_loss = np.mean(val_losses)
+                    val_losses_for_folds.append(best_val_loss)
+                    num_samples_for_folds.append(best_val_loss_num_samples)
+                    print("mean val loss: ", np.mean(val_losses_for_folds))
+                    if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(val_losses_for_folds) < best_hp_setting_val_loss:
+                        best_hp_setting_val_loss = np.mean(val_losses_for_folds)
                         best_hp_setting = hp
-                        best_hp_setting_num_epochs = int(np.mean(num_epochs)) + 1
-                        print(f"new best hp setting val loss: {np.mean(val_losses)} | num epochs: {best_hp_setting_num_epochs}")
+                        best_hp_setting_num_samples = int(np.mean(num_samples_for_folds))
+                        print(f"new best hp setting val loss: {np.mean(val_losses_for_folds)} | num samples: {best_hp_setting_num_samples}")
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
 
             # Re-train on full train set with best HP setting:
             optim_type, lr, wd, dropout, loss_type = best_hp_setting
+
+            num_samples_per_epoch = (len(train_val_dataset) // BATCH_SIZE) * BATCH_SIZE
+            best_hp_setting_num_epochs = (best_hp_setting_num_samples // num_samples_per_epoch) + 1
             print(
                 f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
                 best_hp_setting.get_hp_string())
             hp_str = best_hp_setting.get_hp_string() + "_full_train"
             net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
                 device)
-            full_train_loader = DataLoader(train_val_dataset, batch_size=batch_size, num_workers=0, shuffle=True, drop_last=True)
+            full_train_loader = DataLoader(train_val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True, drop_last=True)
             loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
 
             if optim_type == 'SGD':
@@ -596,8 +596,9 @@ if __name__ == "__main__":
             os.makedirs(loss_results_dir, exist_ok=True)
             best_net_states = {}
 
+            num_samples_train_run = 0
             for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
-                train_loss = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
+                train_loss, num_epoch_samples = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
 
                 # val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
                 #                                                 distance_metrics=[],
@@ -613,9 +614,15 @@ if __name__ == "__main__":
                                                                       device=device,
                                                                       re_normalize=True)
 
-                sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, epoch)
+                num_samples_train_run += num_epoch_samples
+
+                sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
                 # sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
-                sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, epoch)
+                sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, num_samples_train_run)
+
+                if num_samples_train_run >= best_hp_setting_num_samples:
+                    print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
+                    break
 
             key = f'best_val'
             torch.save(net.state_dict(), f"{checkpoint_dir}/net_{key}")
