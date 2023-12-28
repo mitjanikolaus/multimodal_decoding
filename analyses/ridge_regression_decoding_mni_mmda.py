@@ -26,7 +26,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
@@ -431,9 +431,9 @@ if __name__ == "__main__":
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
             HPs = [
-                HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
@@ -441,7 +441,7 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
             ]
 
