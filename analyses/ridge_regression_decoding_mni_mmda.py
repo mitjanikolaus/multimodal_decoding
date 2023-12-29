@@ -26,7 +26,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
@@ -400,9 +400,13 @@ if __name__ == "__main__":
             HPs = [
                 # HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+
+                HyperParameters(optimizer='SGD', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
