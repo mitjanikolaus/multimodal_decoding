@@ -350,7 +350,8 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 MAX_EPOCHS = 400
 BATCH_SIZE = 2000
 
-SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
+# SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
+SUBJECTS = ['sub-01', 'sub-02']
 
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
 MODEL_NAMES = ['RESNET152_AVGPOOL']
