@@ -12,13 +12,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.model_selection import KFold
-from torch.utils.data import Dataset, DataLoader, Subset
+from torch.utils.data import Dataset, DataLoader
 import os
 from glob import glob
 import pickle
 from torchvision.transforms import Compose
 from decoding_utils import get_distance_matrix, to_tensor
-from tqdm import trange, tqdm
+from tqdm import trange
 import gc
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
