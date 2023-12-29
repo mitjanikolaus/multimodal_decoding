@@ -213,7 +213,7 @@ class COCOBOLDDataset(Dataset):
 
     def preload(self):
         print("preloading")
-        for idx in tqdm(trange(len(self.fmri_betas_addresses))):
+        for idx in trange(len(self.fmri_betas_addresses)):
             if self.fmri_betas[idx] is None:
                 sample = nib.load(self.fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
                 sample = sample[self.brain_mask]
