@@ -165,48 +165,45 @@ class COCOBOLDDataset(Dataset):
         self.fmri_betas_transform = fmri_betas_transform
         self.nn_latent_transform = nn_latent_transform
 
-        if fmri_betas_transform is None or nn_latent_transform is None:
-            self.init_transformations()
+        if self.fmri_betas_transform is None:
+            self.init_fmri_betas_transform()
 
-    def init_transformations(self):
-        calc_bold_std_mean = True
-        calc_nn_latent_std_mean = True
+        if self.nn_latent_transform is None:
+            self.init_nn_latent_transform()
+
+    def init_nn_latent_transform(self):
         model_std_mean_name = f'{self.model_name}_mean_std_{self.mode}_fold_{self.fold}.p'
+        model_std_mean_path = os.path.join(self.mean_std_dir, model_std_mean_name)
+        if self.overwrite_transformations_mean_std or (not os.path.exists(model_std_mean_path)):
+            print(f"Calculating Mean and STD of Model Latent Variables for {self.mode} samples (fold: {self.fold})")
+            os.makedirs(self.mean_std_dir, exist_ok=True)
+
+            mean_std = {'mean': self.nn_latent_vectors.mean(axis=0).astype('float32'),
+                        'std': self.nn_latent_vectors.std(axis=0).astype('float32')}
+            pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
+        self.nn_latent_transform = Compose([
+            Normalize(model_mean_std['mean'], model_mean_std['std']),
+            to_tensor
+        ])
+
+    def init_fmri_betas_transform(self):
         bold_std_mean_name = f'bold_multimodal_mean_std_{self.mode}_fold_{self.fold}.p'
+        bold_std_mean_path = os.path.join(self.mean_std_dir, bold_std_mean_name)
 
-        if not self.overwrite_transformations_mean_std:
-            if os.path.exists(os.path.join(self.mean_std_dir, bold_std_mean_name)):
-                calc_bold_std_mean = False
-            if self.model_name is not None and os.path.exists(os.path.join(self.mean_std_dir, model_std_mean_name)):
-                calc_nn_latent_std_mean = False
-
-        os.makedirs(self.mean_std_dir, exist_ok=True)
-        if calc_bold_std_mean:
+        if self.overwrite_transformations_mean_std or (not os.path.exists(bold_std_mean_path)):
             print(f"Calculating Mean and STD of BOLD Signals for {self.mode} samples (fold: {self.fold})")
+            os.makedirs(self.mean_std_dir, exist_ok=True)
             self.preload()
 
             mean_std = {'mean': self.fmri_betas.mean(axis=0).astype('float32'),
                         'std': self.fmri_betas.std(axis=0).astype('float32')}
-            pickle.dump(mean_std, open(os.path.join(self.mean_std_dir, bold_std_mean_name), 'wb'), pickle.HIGHEST_PROTOCOL)
+            pickle.dump(mean_std, open(bold_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
-        with open(os.path.join(self.mean_std_dir, bold_std_mean_name), 'rb') as handle:
-            bold_mean_std = pickle.load(handle)
+        bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
         self.fmri_betas_transform = Compose([
             Normalize(bold_mean_std['mean'], bold_mean_std['std']),
-            to_tensor
-        ])
-
-        if calc_nn_latent_std_mean:
-            print(f"Calculating Mean and STD of Model Latent Variables for {self.mode} samples (fold: {self.fold})")
-
-            mean_std = {'mean': self.nn_latent_vectors.mean(axis=0).astype('float32'),
-                        'std': self.nn_latent_vectors.std(axis=0).astype('float32')}
-            pickle.dump(mean_std, open(os.path.join(self.mean_std_dir, model_std_mean_name), 'wb'), pickle.HIGHEST_PROTOCOL)
-
-        with open(os.path.join(self.mean_std_dir, model_std_mean_name), 'rb') as handle:
-            model_mean_std = pickle.load(handle)
-        self.nn_latent_transform = Compose([
-            Normalize(model_mean_std['mean'], model_mean_std['std']),
             to_tensor
         ])
 
@@ -396,7 +393,6 @@ if __name__ == "__main__":
             print(model_name)
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 
-            print("preloading bold train dataset")
             train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, TRAINING_MODE)
             preloaded_betas = train_val_dataset.preload()
 
