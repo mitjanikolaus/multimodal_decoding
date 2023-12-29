@@ -26,10 +26,12 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
+
+TRAINING_MODES = ['train', 'train_captions', 'train_images']
 
 
 def fetch_coco_image(sid, coco_images_dir):
@@ -75,34 +77,34 @@ class COCOBOLDDataset(Dataset):
     Dataset for loading SEMREPS BOLD signals
     """
 
-    def __init__(self, bold_root_dir, subject, latent_vectors, mode='train', cache=True,
-                 bold_transform=None, label_transform=None, latent_transform=None, blank_correction=True):
+    def __init__(self, bold_root_dir, subject, model_name, mean_std_dir, mode=TRAINING_MODES[0],
+                 blank_correction=True, subset=None, fold=None, preloaded_betas=None, overwrite_transformations_mean_std=False,
+                 fmri_betas_transform=None, nn_latent_transform=None):
         """
         Args:
             bold_root_dir (str): BOLD root directory (parent of subjects' directories).
             subject (str): Subject ID.
-            latent_vectors (dict): Dictionary of latent vectors for each stimulus. Keys are coco stim. ids.
+            model_name (str): model name
             mode (str): 'train', 'test', or 'imagery'. You can append _images or _captions to make it unimodal
             cache (boolean): if `True`, data will be kept in the memory to optimize running time.
-            bold_transform (callable, optional): Optional transformation to be applied
-                on a sample.
-            label_transform (callable, optional): Optional transformation to be applied
-                on a sample label (stimulus id).
-            latent_transform (callable, optional): optional transformation to be applied
-                on latent vectors.
             blank_correction (boolean): If `True`, the blank image will be subtracted from the imagery patterns (if exists)
         """
         self.root_dir = os.path.join(bold_root_dir, subject)
         self.subject = subject
         self.imagery_scenes = IMAGERY_SCENES[subject]
         self.mode = mode
-        self.bold_transform = bold_transform
-        self.label_transform = label_transform
-        self.latent_transform = latent_transform
-        self.cache = cache
         self.blank = None
         self.blank_correction = blank_correction
         self.feature_key = ""
+        self.mean_std_dir = mean_std_dir
+        self.subset = subset
+        self.overwrite_transformations_mean_std = overwrite_transformations_mean_std
+        self.model_name = model_name
+        self.fold = fold
+
+        latent_vectors_file = MODEL_FEATURES_FILES[model_name]
+
+        latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
         for _, vec in latent_vectors.items():
             for key in vec:
                 if 'feature' in key:
@@ -113,12 +115,12 @@ class COCOBOLDDataset(Dataset):
         if self.feature_key == "":
             raise Exception('no feature found!')
 
-        self.addresses = list(sorted(glob(os.path.join(self.root_dir, f'betas_{self.mode}*', '*.nii'))))
+        self.fmri_betas_addresses = np.array((sorted(glob(os.path.join(self.root_dir, f'betas_{self.mode}*', '*.nii')))))
         self.stim_ids = []
         self.stim_types = []
-        self.latent_vectors = []
+        self.nn_latent_vectors = []
 
-        for addr in self.addresses:
+        for addr in self.fmri_betas_addresses:
             file_name = os.path.basename(addr)
             if 'I' in file_name:  # Image
                 stim_id = int(file_name[file_name.find('I') + 1:-4])
@@ -131,47 +133,112 @@ class COCOBOLDDataset(Dataset):
                 stim_id = self.imagery_scenes[stim_id - 1][1]
                 self.stim_types.append('imagery')
             self.stim_ids.append(stim_id)
-            self.latent_vectors.append(latent_vectors[stim_id][self.feature_key])
+            self.nn_latent_vectors.append(latent_vectors[stim_id][self.feature_key])
 
-        self.latent_vectors = np.array(self.latent_vectors)
-        self.data = [None for _ in range(len(self.addresses))]
+        self.nn_latent_vectors = np.array(self.nn_latent_vectors)
+        self.stim_ids = np.array(self.stim_ids)
+        self.stim_types = np.array(self.stim_types)
+
+        if preloaded_betas is not None:
+            assert len(preloaded_betas) == len(self.fmri_betas_addresses), f"Preloaded betas shape does not match!"
+            self.fmri_betas = preloaded_betas
+        else:
+            self.fmri_betas = np.array([None for _ in range(len(self.fmri_betas_addresses))])
 
         brain_mask_address = os.path.join(self.root_dir, f'unstructured', 'mask.nii')
         self.brain_mask = nib.load(brain_mask_address).get_fdata().reshape(-1)
         self.brain_mask = np.logical_and(np.logical_not(np.isnan(self.brain_mask)), self.brain_mask != 0)
         self.bold_dim_size = self.brain_mask.sum()
-        self.latent_dim_size = self.latent_vectors[0].shape[0]
+        self.latent_dim_size = self.nn_latent_vectors[0].shape[0]
 
         beta_blank_address = os.path.join(self.root_dir, f'betas_blank', 'beta_blank.nii')
         if os.path.exists(beta_blank_address):
             self.blank = nib.load(beta_blank_address).get_fdata().astype('float32').reshape(-1)
             self.blank = self.blank[self.brain_mask]
 
+        if self.subset is not None:
+            self.fmri_betas_addresses = self.fmri_betas_addresses[subset]
+            self.fmri_betas = self.fmri_betas[subset]
+            self.nn_latent_vectors = self.nn_latent_vectors[subset]
+            self.stim_ids = self.stim_ids[subset]
+            self.stim_types = self.stim_types[subset]
+
+        self.fmri_betas_transform = fmri_betas_transform
+        self.nn_latent_transform = nn_latent_transform
+
+        if fmri_betas_transform is None or nn_latent_transform is None:
+            self.init_transformations()
+
+    def init_transformations(self):
+        calc_bold_std_mean = True
+        calc_nn_latent_std_mean = True
+        model_std_mean_name = f'{self.model_name}_mean_std_{self.mode}_fold_{self.fold}.p'
+        bold_std_mean_name = f'bold_multimodal_mean_std_{self.mode}_fold_{self.fold}.p'
+
+        if not self.overwrite_transformations_mean_std:
+            if os.path.exists(os.path.join(self.mean_std_dir, bold_std_mean_name)):
+                calc_bold_std_mean = False
+            if self.model_name is not None and os.path.exists(os.path.join(self.mean_std_dir, model_std_mean_name)):
+                calc_nn_latent_std_mean = False
+
+        os.makedirs(self.mean_std_dir, exist_ok=True)
+        if calc_bold_std_mean:
+            print(f"Calculating Mean and STD of BOLD Signals for {self.mode} samples (fold: {self.fold})")
+            self.preload()
+
+            mean_std = {'mean': self.fmri_betas.mean(axis=0).astype('float32'),
+                        'std': self.fmri_betas.std(axis=0).astype('float32')}
+            pickle.dump(mean_std, open(os.path.join(self.mean_std_dir, bold_std_mean_name), 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        with open(os.path.join(self.mean_std_dir, bold_std_mean_name), 'rb') as handle:
+            bold_mean_std = pickle.load(handle)
+        self.fmri_betas_transform = Compose([
+            Normalize(bold_mean_std['mean'], bold_mean_std['std']),
+            to_tensor
+        ])
+
+        if calc_nn_latent_std_mean:
+            print(f"Calculating Mean and STD of Model Latent Variables for {self.mode} samples (fold: {self.fold})")
+
+            mean_std = {'mean': self.nn_latent_vectors.mean(axis=0).astype('float32'),
+                        'std': self.nn_latent_vectors.std(axis=0).astype('float32')}
+            pickle.dump(mean_std, open(os.path.join(self.mean_std_dir, model_std_mean_name), 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        with open(os.path.join(self.mean_std_dir, model_std_mean_name), 'rb') as handle:
+            model_mean_std = pickle.load(handle)
+        self.nn_latent_transform = Compose([
+            Normalize(model_mean_std['mean'], model_mean_std['std']),
+            to_tensor
+        ])
+
     def preload(self):
-        for idx in trange(len(self.addresses)):
-            sample = nib.load(self.addresses[idx]).get_fdata().astype('float32').reshape(-1)
-            sample = sample[self.brain_mask]
-            self.data[idx] = sample.copy()
+        print("preloading")
+        for idx in tqdm(trange(len(self.fmri_betas_addresses))):
+            if self.fmri_betas[idx] is None:
+                sample = nib.load(self.fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
+                sample = sample[self.brain_mask]
+                self.fmri_betas[idx] = sample.copy()
+        return self.fmri_betas
 
     def get_latent_vector(self, idx):
-        latent = self.latent_vectors[idx]
-        if self.latent_transform is not None:
-            latent = self.latent_transform(latent)
+        latent = self.nn_latent_vectors[idx]
+        if self.nn_latent_transform is not None:
+            latent = self.nn_latent_transform(latent)
         return latent
 
     def get_brain_vector(self, idx):
-        if self.cache and self.data[idx] is not None:
-            sample = self.data[idx]
+        if self.cache and self.fmri_betas[idx] is not None:
+            sample = self.fmri_betas[idx]
         else:
-            sample = nib.load(self.addresses[idx]).get_fdata().astype('float32').reshape(-1)
+            sample = nib.load(self.fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
             sample = sample[self.brain_mask]
             if self.cache:
-                self.data[idx] = sample.copy()
+                self.fmri_betas[idx] = sample.copy()
 
         if self.mode == 'imagery' and self.blank is not None and self.blank_correction:
             sample = sample - self.blank
-        if self.bold_transform is not None:
-            sample = self.bold_transform(sample)
+        if self.fmri_betas_transform is not None:
+            sample = self.fmri_betas_transform(sample)
         return sample
 
     def get_stim_id(self, idx):
@@ -184,7 +251,7 @@ class COCOBOLDDataset(Dataset):
         return self.stim_types[idx]
 
     def __len__(self):
-        return len(self.addresses)
+        return len(self.fmri_betas_addresses)
 
     def __getitem__(self, idx):
         sample = self.get_brain_vector(idx)
@@ -220,51 +287,6 @@ def calc_mean_std_per_subject(fmri_data_dir, subject, latent_vectors_file, outpu
         `model_std_mean_name` (str): name of the pickle file containing model mean and std. If `None`, model mean and std won't be computed.
         `overwrite` (boolean): if `True`, the mean and std will be recomputed and replaced by the old ones.
     """
-    with open(latent_vectors_file, 'rb') as handle:
-        latent_vectors = pickle.load(handle)
-
-    calc_bold_std_mean = True
-    model_std_mean_name = f'{model_name}_mean_std'
-
-    m = training_mode
-    if not overwrite:
-        if os.path.exists(os.path.join(output_dir, f'bold_multimodal_mean_std_{m}.p')):
-            calc_bold_std_mean = False
-        if model_name is not None and os.path.exists(os.path.join(output_dir, f'{model_std_mean_name}_{m}.p')):
-            model_std_mean_name = None
-
-    dataset = COCOBOLDDataset(fmri_data_dir, subject, latent_vectors, m)
-
-    os.makedirs(output_dir, exist_ok=True)
-    if calc_bold_std_mean:
-        print(f"Calculating Mean and STD of BOLD Signals for {m} Samples")
-
-        bold_data_size = dataset.get_brain_vector(0).shape[0]
-        bold_data = np.empty((len(dataset), bold_data_size))
-
-        for idx in tqdm(range(len(dataset))):
-            bd = dataset.get_brain_vector(idx)
-            bold_data[idx] = bd
-
-        mean_std = {'mean': bold_data.mean(axis=0).astype('float32'),
-                    'std': bold_data.std(axis=0).astype('float32')}
-        file_name = f'bold_multimodal_mean_std_{m}.p'
-        pickle.dump(mean_std, open(os.path.join(output_dir, file_name), 'wb'), pickle.HIGHEST_PROTOCOL)
-
-    if model_std_mean_name is not None:
-        print(f"Calculating Mean and STD of Model Latent Variables for {m} Samples")
-
-        model_data_size = dataset.get_latent_vector(0).shape[0]
-        model_data = np.empty((len(dataset), model_data_size))
-
-        for idx in tqdm(range(len(dataset))):
-            md = dataset.get_latent_vector(idx)
-            model_data[idx] = md
-
-        mean_std = {'mean': model_data.mean(axis=0).astype('float32'),
-                    'std': model_data.std(axis=0).astype('float32')}
-        file_name = f'{model_std_mean_name}_{m}.p'
-        pickle.dump(mean_std, open(os.path.join(output_dir, file_name), 'wb'), pickle.HIGHEST_PROTOCOL)
 
 
 class CosineDistance(nn.CosineSimilarity):
@@ -358,8 +380,10 @@ SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 MODEL_NAMES = ['RESNET152_AVGPOOL']
 # MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
 # MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
-TRAINING_MODE = ['train', 'train_captions', 'train_images'][0]
+TRAINING_MODE = TRAINING_MODES[0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
+
+TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
@@ -374,54 +398,22 @@ if __name__ == "__main__":
         print(subject)
         for model_name in MODEL_NAMES:
             print(model_name)
-            latent_vectors_file = MODEL_FEATURES_FILES[model_name]
-            two_stage_glm_dir = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 
-            # calculating dataset mean and std for the normalization
-            calc_mean_std_per_subject(
-                fmri_data_dir=two_stage_glm_dir,
-                subject=subject,
-                latent_vectors_file=latent_vectors_file,
-                output_dir=std_mean_dir,
-                training_mode=TRAINING_MODE,
-                model_name=model_name
-            )
-
-            latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
-
-            # bold transform
-            with open(os.path.join(std_mean_dir, f'bold_multimodal_mean_std_{TRAINING_MODE}.p'), 'rb') as handle:
-                bold_mean_std = pickle.load(handle)
-            bold_transform = Compose([
-                Normalize(bold_mean_std['mean'], bold_mean_std['std']),
-                to_tensor
-            ])
-
-            # latent transform
-            with open(os.path.join(std_mean_dir, f'{model_name}_mean_std_{TRAINING_MODE}.p'), 'rb') as handle:
-                model_mean_std = pickle.load(handle)
-            latent_transform = Compose([
-                Normalize(model_mean_std['mean'], model_mean_std['std']),
-                to_tensor
-            ])
-
-            # preloading datasets for faster execution
             print("preloading bold train dataset")
-            train_val_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{TRAINING_MODE}',
-                                                bold_transform=bold_transform, latent_transform=latent_transform)
-            train_val_dataset.preload()
+            train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, TRAINING_MODE)
+            preloaded_betas = train_val_dataset.preload()
 
             idx = list(range(len(train_val_dataset)))
             kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
-
             print("preloading bold test dataset")
-            test_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'{DECODER_TESTING_MODE}',
-                                           bold_transform=bold_transform, latent_transform=latent_transform)
+            test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, DECODER_TESTING_MODE,
+                                           fmri_betas_transform=train_val_dataset.fmri_betas_transform,
+                                           nn_latent_transform=train_val_dataset.nn_latent_transform)
             test_dataset.preload()
 
-            # imagery_dataset = COCOBOLDDataset(two_stage_glm_dir, subject, latent_vectors, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
+            # imagery_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, latent_vectors_file, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
             # imagery_dataset.preload()
 
             results_dir = os.path.join(GLM_OUT_DIR,
@@ -432,9 +424,9 @@ if __name__ == "__main__":
 
             HPs = [
                 # HyperParameters(optimizer='ADAM', lr=1e-5, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
@@ -477,8 +469,14 @@ if __name__ == "__main__":
                     os.makedirs(loss_results_dir, exist_ok=True)
                     os.makedirs(checkpoint_dir, exist_ok=True)
 
-                    train_dataset = Subset(train_val_dataset, train_idx)
-                    val_dataset = Subset(train_val_dataset, val_idx)
+                    train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                                                    TRAINING_MODE, subset=train_idx, fold=fold, preloaded_betas=preloaded_betas)
+
+                    val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                                                  TRAINING_MODE, subset=val_idx, fold=fold, preloaded_betas=preloaded_betas,
+                                                  fmri_betas_transform=train_dataset.fmri_betas_transform,
+                                                  nn_latent_transform=train_dataset.nn_latent_transform
+                                                  )
                     print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
                     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True, drop_last=True)
