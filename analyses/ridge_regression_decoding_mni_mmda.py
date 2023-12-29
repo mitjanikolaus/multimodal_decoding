@@ -477,7 +477,7 @@ if __name__ == "__main__":
                     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True, drop_last=True)
                     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
 
-                    net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size,
+                    net = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size,
                                     dropout=dropout).to(device)
 
                     sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
@@ -618,30 +618,30 @@ if __name__ == "__main__":
 
                 if num_samples_train_run >= best_hp_setting_num_samples:
                     print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
+
+                    torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
+
+                    with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
+                        pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    with open(os.path.join(distance_matrix_dir, "distance_matrix_normalized.p"), 'wb') as handle:
+                        pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    best_dir = f'{results_dir}/distance_matrix/best_hp/'
+                    os.makedirs(best_dir, exist_ok=True)
+                    with open(os.path.join(best_dir, "distance_matrix.p"), 'wb') as handle:
+                        pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(os.path.join(best_dir, "distance_matrix_normalized.p"), 'wb') as handle:
+                        pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
+                        pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
+                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    best_dir = f'{results_dir}/loss_results/best_hp/'
+                    os.makedirs(best_dir, exist_ok=True)
+                    with open(os.path.join(best_dir, "loss_results.p"), 'wb') as handle:
+                        pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
+                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
+
                     break
-
-            key = f'best_val'
-            torch.save(net.state_dict(), f"{checkpoint_dir}/net_{key}")
-
-            with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
-                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-            with open(os.path.join(distance_matrix_dir, "distance_matrix_normalized.p"), 'wb') as handle:
-                pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-            best_dir = f'{results_dir}/distance_matrix/best_hp/'
-            os.makedirs(best_dir, exist_ok=True)
-            with open(os.path.join(best_dir, "distance_matrix.p"), 'wb') as handle:
-                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
-            with open(os.path.join(best_dir, "distance_matrix_normalized.p"), 'wb') as handle:
-                pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-            with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
-                pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
-                            handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-            best_dir =f'{results_dir}/loss_results/best_hp/'
-            os.makedirs(best_dir, exist_ok=True)
-            with open(os.path.join(best_dir, "loss_results.p"), 'wb') as handle:
-                pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
-                            handle, protocol=pickle.HIGHEST_PROTOCOL)
