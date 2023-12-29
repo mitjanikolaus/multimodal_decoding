@@ -172,6 +172,7 @@ class COCOBOLDDataset(Dataset):
             self.init_nn_latent_transform()
 
     def init_nn_latent_transform(self):
+        print("init nn latent transformation")
         model_std_mean_name = f'{self.model_name}_mean_std_{self.mode}_fold_{self.fold}.p'
         model_std_mean_path = os.path.join(self.mean_std_dir, model_std_mean_name)
         if self.overwrite_transformations_mean_std or (not os.path.exists(model_std_mean_path)):
@@ -189,6 +190,7 @@ class COCOBOLDDataset(Dataset):
         ])
 
     def init_fmri_betas_transform(self):
+        print("init fmri betas transformation")
         bold_std_mean_name = f'bold_multimodal_mean_std_{self.mode}_fold_{self.fold}.p'
         bold_std_mean_path = os.path.join(self.mean_std_dir, bold_std_mean_name)
 
