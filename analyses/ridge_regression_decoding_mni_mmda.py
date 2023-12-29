@@ -494,7 +494,7 @@ if __name__ == "__main__":
                     best_val_loss = math.inf
                     best_val_loss_num_samples = 0
                     num_samples_train_run = 0
-                    for epoch in trange(MAX_EPOCHS, desc=f'training decoder'):
+                    for epoch in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
 
                         train_loss, num_epoch_samples = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
@@ -553,7 +553,7 @@ if __name__ == "__main__":
 
                     val_losses_for_folds.append(best_val_loss)
                     num_samples_for_folds.append(best_val_loss_num_samples)
-                    print("mean val loss: ", np.mean(val_losses_for_folds))
+                    print("best val loss: ", best_val_loss)
                     if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(val_losses_for_folds) < best_hp_setting_val_loss:
                         best_hp_setting_val_loss = np.mean(val_losses_for_folds)
                         best_hp_setting = hp
