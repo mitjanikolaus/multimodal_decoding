@@ -241,8 +241,6 @@ class COCOBOLDDataset(Dataset):
 
     def get_stim_id(self, idx):
         sid = self.stim_ids[idx]
-        if self.label_transform is not None:
-            sid = self.label_transform(sid)
         return sid
 
     def get_stim_type(self, idx):
