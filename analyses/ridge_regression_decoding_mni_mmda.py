@@ -86,7 +86,6 @@ class COCOBOLDDataset(Dataset):
             subject (str): Subject ID.
             model_name (str): model name
             mode (str): 'train', 'test', or 'imagery'. You can append _images or _captions to make it unimodal
-            cache (boolean): if `True`, data will be kept in the memory to optimize running time.
             blank_correction (boolean): If `True`, the blank image will be subtracted from the imagery patterns (if exists)
         """
         self.root_dir = os.path.join(bold_root_dir, subject)
@@ -227,13 +226,12 @@ class COCOBOLDDataset(Dataset):
         return latent
 
     def get_brain_vector(self, idx):
-        if self.cache and self.fmri_betas[idx] is not None:
+        if self.fmri_betas[idx] is not None:
             sample = self.fmri_betas[idx]
         else:
             sample = nib.load(self.fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
             sample = sample[self.brain_mask]
-            if self.cache:
-                self.fmri_betas[idx] = sample.copy()
+            self.fmri_betas[idx] = sample.copy()
 
         if self.mode == 'imagery' and self.blank is not None and self.blank_correction:
             sample = sample - self.blank
