@@ -266,24 +266,6 @@ class Normalize():
         return ((x - self.mean) / self.std).astype(np.float32).squeeze()
 
 
-def calc_mean_std_per_subject(fmri_data_dir, subject, latent_vectors_file, output_dir, training_mode,
-                              model_name=None, overwrite=False):
-    r"""
-    Saves mean and std of training BOLD and/or latent vectors for a subject as dictionary (pickle) files.
-    The resulting dictionary has two keys: (1): `"mean"` and (2): `"std"`, each linked to a numpy array representing
-    the corresponding values.
-
-    Args:
-        `fmri_data_dir` (str): address to the BOLD root directory
-        `subject` (str): Subject ID
-        `latent_vectors_file` (str): address to the dictionaty containing latent vectors
-        `output_dir` (str): address to the output directory
-        `training_mode` (str): `"multimodal"`/`"captiononly"`/`"imageonly"`
-        `model_std_mean_name` (str): name of the pickle file containing model mean and std. If `None`, model mean and std won't be computed.
-        `overwrite` (boolean): if `True`, the mean and std will be recomputed and replaced by the old ones.
-    """
-
-
 class CosineDistance(nn.CosineSimilarity):
     def __init__(self, dim: int = 1, eps: float = 1e-8) -> None:
         super().__init__(dim, eps)
@@ -320,7 +302,6 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     cum_loss = []
     num_samples = 0
     for i, data in enumerate(train_loader, 0):
-        # get the inputs; data is a list of [inputs, labels]
         inputs, latents, ids, types = data
         num_samples += inputs.shape[0]
 
@@ -412,7 +393,6 @@ if __name__ == "__main__":
 
             results_dir = os.path.join(GLM_OUT_DIR,
                                        f'regression_results_mni_mmda_cv_shuffle_{TRAINING_MODE}/{subject}/{model_name}')
-
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
