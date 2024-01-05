@@ -555,7 +555,7 @@ if __name__ == "__main__":
                         sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, num_samples_train_run)
                         sumwriter.add_scalar(f"RSA", results['rsa'], num_samples_train_run)
                         for metric in DISTANCE_METRICS:
-                            sumwriter.add_scalar(f"pairwise_acc_{metric}", results[f"acc_{metric}"], num_samples_train_run)
+                            sumwriter.add_scalar(f"pairwise_acc_{metric}_modality_agnostic", results[f"acc_{metric}"][0], num_samples_train_run)
 
                         # best decoder
                         if val_loss < best_val_loss:
