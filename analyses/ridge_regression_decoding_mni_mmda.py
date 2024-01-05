@@ -11,6 +11,7 @@ import nibabel as nib
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from scipy.stats import spearmanr
 from sklearn.model_selection import KFold
 from torch.utils.data import Dataset, DataLoader
 import os
@@ -318,6 +319,54 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     return cum_loss, num_samples
 
 
+def pairwise_accuracy(dist_mat):
+    # dist_mat      # d(i,j) -> distance of the prediction of i to the original of j
+    # first 70 -> captions
+    # second 70 -> images
+    # since the AI model is the same, original of caption is the same as the original of the image
+
+    diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
+    comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
+    corrects = comp_mat.sum()  # counting the trues (everything is counted two times because of the same ground-truth)
+
+    n = diag.shape[0]
+    score_agnostic = corrects / (
+                n * n - (2 * n))  # -2*n is there to remove the diagonal two times (as it is repeated two times)
+
+    ######
+    dist_captions = dist_mat[:70, :70]
+    diag = dist_captions.diagonal().reshape(-1, 1)
+    comp_mat = diag < dist_captions
+    corrects = comp_mat.sum()
+
+    n = diag.shape[0]
+    score_captions = corrects / (n * n - n)
+    ######
+    dist_images = dist_mat[70:, 70:]
+    diag = dist_images.diagonal().reshape(-1, 1)
+    comp_mat = diag < dist_images
+    corrects = comp_mat.sum()
+
+    n = diag.shape[0]
+    score_images = corrects / (n * n - n)
+
+    return score_agnostic, score_captions, score_images
+
+
+def create_dissimilarity_matrix(sample_embeds):
+    sim_mat = spearmanr(sample_embeds, axis=1)[0]
+    dissim_mat = np.ones(sim_mat.shape) - sim_mat
+    matrix = dissim_mat[np.triu_indices(sample_embeds.shape[0], 1)].reshape(-1)
+    return matrix
+
+
+def calc_rsa(latent_1, latent_2):
+    matrix_1 = create_dissimilarity_matrix(latent_1)
+    matrix_2 = create_dissimilarity_matrix(latent_2)
+    corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
+    return corr
+
+
 def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_normalize=False):
     r"""
     evaluates decoder on test bold signals
@@ -340,11 +389,24 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     if re_normalize:
         predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
-    dist_matrices = {'classes': test_ids,
-                     'types': test_types}  # order of classes, order of types (image, caption, imagery)
+    results = {'classes': test_ids,
+               'types': test_types,
+               'predictions': predictions,
+               'latents': test_latents}
+
     for metric in distance_metrics:
-        dist_matrices[metric] = get_distance_matrix(predictions, test_latents, metric)
-    return predictions, cum_loss, dist_matrices
+        # Calculate distance matrices maximally on 100 samples to save compute
+        dist_mat = get_distance_matrix(predictions[:100], test_latents[:100], metric)
+        results[f"distance_matrix_{metric}"] = dist_mat
+
+        acc = pairwise_accuracy(dist_mat)
+        results[f"acc_{metric}"] = acc
+
+    # Perform RSA maximally on 100 samples to save compute
+    rsa = calc_rsa(predictions[:100], test_latents[:100])
+    results['rsa'] = rsa
+
+    return cum_loss, results
 
 
 MAX_EPOCHS = 400
@@ -404,12 +466,12 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
 
-                HyperParameters(optimizer='SGD', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
@@ -441,11 +503,11 @@ if __name__ == "__main__":
                     loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
                     run_str = hp_str + f"fold_{fold}"
 
-                    distance_matrix_dir = f'{results_dir}/distance_matrix/{run_str}'
+                    results_file_dir = f'{results_dir}/{run_str}'
                     loss_results_dir = f'{results_dir}/loss_results/{run_str}'
                     checkpoint_dir = f'{results_dir}/networks/{run_str}'
 
-                    os.makedirs(distance_matrix_dir, exist_ok=True)
+                    os.makedirs(results_file_dir, exist_ok=True)
                     os.makedirs(loss_results_dir, exist_ok=True)
                     os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -483,20 +545,19 @@ if __name__ == "__main__":
 
                         train_loss, num_epoch_samples = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
-                        val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
-                                                                        distance_metrics=[],
-                                                                        device=device)
+                        val_loss, results = evaluate_decoder(net, val_loader, loss_fn,
+                                                                        distance_metrics=DISTANCE_METRICS,
+                                                                        device=device,
+                                                                        re_normalize=True)
                         num_samples_train_run += num_epoch_samples
-                        # imagery_predictions, imagery_loss = evaluate_decoder(net, imagery_loader, imagery_loss_fn, False, device=DEVICE)
-
-                        # test_loss = (testing_images_loss+testing_captions_loss)/2
 
                         sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
                         sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, num_samples_train_run)
+                        sumwriter.add_scalar(f"RSA", results['rsa'], num_samples_train_run)
+                        for metric in DISTANCE_METRICS:
+                            sumwriter.add_scalar(f"pairwise_acc_{metric}", results[f"acc_{metric}"], num_samples_train_run)
 
                         # best decoder
-                        # if key not in best_net_states:
-                        #     best_net_states[key] = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
                         if val_loss < best_val_loss:
                             best_val_loss = val_loss
                             best_val_loss_num_samples = num_samples_train_run
@@ -505,22 +566,20 @@ if __name__ == "__main__":
 
                             torch.save(best_net_states['net'], f"{checkpoint_dir}/net_best_val")
 
-                            _, test_loss, distance_matrices = evaluate_decoder(net, test_loader,
-                                                                               loss_fn,
+                            test_loss, results = evaluate_decoder(net, test_loader, loss_fn,
                                                                                distance_metrics=DISTANCE_METRICS,
                                                                                device=device)
 
-                            with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
-                                pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                            with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
+                                pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-                            _, _, distance_matrices_normalized = evaluate_decoder(net, test_loader,
-                                                                               loss_fn,
+                            _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
                                                                                distance_metrics=DISTANCE_METRICS,
                                                                                device=device,
                                                                                re_normalize=True)
 
-                            with open(os.path.join(distance_matrix_dir, "distance_matrix_normalized.p"), 'wb') as handle:
-                                pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                            with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
+                                pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                                 pickle.dump(
@@ -571,8 +630,8 @@ if __name__ == "__main__":
             sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
             checkpoint_dir = f'{results_dir}/networks/{hp_str}'
             os.makedirs(checkpoint_dir, exist_ok=True)
-            distance_matrix_dir = f'{results_dir}/distance_matrix/{hp_str}'
-            os.makedirs(distance_matrix_dir, exist_ok=True)
+            results_file_dir = f'{results_dir}/{hp_str}'
+            os.makedirs(results_file_dir, exist_ok=True)
             loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
             os.makedirs(loss_results_dir, exist_ok=True)
             best_net_states = {}
@@ -581,19 +640,16 @@ if __name__ == "__main__":
             for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
                 train_loss, num_epoch_samples = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
 
-                # val_predictions, val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
+                # val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
                 #                                                 distance_metrics=[],
                 #                                                 device=device)
 
-                test_predictions, test_loss, distance_matrices = evaluate_decoder(net, test_loader, loss_fn,
-                                                                                  distance_metrics=DISTANCE_METRICS,
+                test_loss, results = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
                                                                                   device=device)
 
-                _, _, distance_matrices_normalized = evaluate_decoder(net, test_loader,
-                                                                      loss_fn,
-                                                                      distance_metrics=DISTANCE_METRICS,
-                                                                      device=device,
-                                                                      re_normalize=True)
+                _, results_normalized = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
+                                                                                          device=device,
+                                                                                          re_normalize=True)
 
                 num_samples_train_run += num_epoch_samples
 
@@ -606,18 +662,18 @@ if __name__ == "__main__":
 
                     torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
 
-                    with open(os.path.join(distance_matrix_dir, "distance_matrix.p"), 'wb') as handle:
-                        pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
+                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-                    with open(os.path.join(distance_matrix_dir, "distance_matrix_normalized.p"), 'wb') as handle:
-                        pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
+                        pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-                    best_dir = f'{results_dir}/distance_matrix/best_hp/'
+                    best_dir = f'{results_dir}/best_hp/'
                     os.makedirs(best_dir, exist_ok=True)
-                    with open(os.path.join(best_dir, "distance_matrix.p"), 'wb') as handle:
-                        pickle.dump(distance_matrices, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                    with open(os.path.join(best_dir, "distance_matrix_normalized.p"), 'wb') as handle:
-                        pickle.dump(distance_matrices_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(os.path.join(best_dir, "results.p"), 'wb') as handle:
+                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    with open(os.path.join(best_dir, "results_normalized.p"), 'wb') as handle:
+                        pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                     with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                         pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
