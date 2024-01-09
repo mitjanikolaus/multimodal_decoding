@@ -412,7 +412,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 MAX_EPOCHS = 400
 BATCH_SIZE = 2000
 
-MAX_SAMPLES_EVAL_METRICS = 140
+MAX_SAMPLES_EVAL_METRICS = 500
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 SUBJECTS = ['sub-01', 'sub-02']
