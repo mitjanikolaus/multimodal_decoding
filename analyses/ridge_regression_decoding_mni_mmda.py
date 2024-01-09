@@ -667,7 +667,7 @@ if __name__ == "__main__":
 
                 sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
                 # sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
-                sumwriter.add_scalar(f"Testing/{loss_type} loss", test_loss, num_samples_train_run)
+                sumwriter.add_scalar(f"Test/{loss_type} loss", test_loss, num_samples_train_run)
 
                 if num_samples_train_run >= best_hp_setting_num_samples:
                     print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
