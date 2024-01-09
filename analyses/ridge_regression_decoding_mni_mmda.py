@@ -320,11 +320,11 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     return cum_loss, num_samples
 
 
-def pairwise_accuracy(predictions, latents, metric, test_ids):
+def pairwise_accuracy(predictions, latents, metric, stimulus_ids):
     # dist_mat      # d(i,j) -> distance of the prediction of i to the original of j
     dist_mat = get_distance_matrix(predictions, latents, metric)
 
-    not_same_id = cdist(test_ids.reshape(-1, 1), test_ids.reshape(-1, 1)) != 0
+    not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
 
     diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
     comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
@@ -378,11 +378,12 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
                'latents': test_latents}
 
     # take equally sized subsets of samples for captions and images
+    stimulus_types = np.array(stimulus_types)
+
     stimulus_ids_caption = stimulus_ids[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     stimulus_ids_image = stimulus_ids[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
 
-    stimulus_types = np.array(stimulus_types)
     predictions_caption = predictions[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     predictions_image = predictions[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_predictions = np.concatenate((predictions_caption, predictions_image))
