@@ -411,7 +411,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 MAX_EPOCHS = 400
 BATCH_SIZE = 2000
 
-MAX_SAMPLES_EVAL_METRICS = 2000
+MAX_SAMPLES_EVAL_METRICS = 1000
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 SUBJECTS = ['sub-01', 'sub-02']
@@ -537,11 +537,13 @@ if __name__ == "__main__":
                     else:
                         raise RuntimeError("Unknown optimizer: ", optim_type)
 
-                    best_net_states = {}
                     epochs_no_improved_loss = 0
                     best_val_loss = math.inf
                     best_val_loss_num_samples = 0
-                    best_val_pairwise_acc = 0
+
+                    best_val_acc = 0
+                    epochs_no_improved_acc = 0
+
                     num_samples_train_run = 0
                     for epoch in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
 
@@ -574,17 +576,8 @@ if __name__ == "__main__":
                             best_val_loss = val_loss
                             best_val_loss_num_samples = num_samples_train_run
                             epochs_no_improved_loss = 0
-                            best_net_states = {'net': net.state_dict(), 'epoch': epoch, 'value': val_loss}
 
-                            torch.save(best_net_states['net'], f"{checkpoint_dir}/net_best_val")
-
-                            test_loss, results = evaluate_decoder(net, test_loader, loss_fn,
-                                                                  distance_metrics=DISTANCE_METRICS,
-                                                                  device=device,
-                                                                  calc_modality_specific_accs=True)
-
-                            with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
-                                pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                            torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
 
                             _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
                                                                      distance_metrics=DISTANCE_METRICS,
@@ -603,8 +596,28 @@ if __name__ == "__main__":
                         else:
                             epochs_no_improved_loss += 1
 
-                        if epochs_no_improved_loss >= PATIENCE:
-                            print(f"Loss did not improve for {epochs_no_improved_loss} epochs. Terminating training.")
+                        if results[f"acc_cosine"] > best_val_acc:
+                            best_val_acc = results[f"acc_cosine"]
+                            epochs_no_improved_acc = 0
+
+                            torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_acc")
+
+                            _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
+                                                                     distance_metrics=DISTANCE_METRICS,
+                                                                     device=device,
+                                                                     re_normalize=True,
+                                                                     calc_modality_specific_accs=True)
+
+                            with open(os.path.join(results_file_dir, "results_best_acc_normalized.p"), 'wb') as handle:
+                                pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                            with open(os.path.join(loss_results_dir, "loss_results_best_acc.p"), 'wb') as handle:
+                                pickle.dump(
+                                    {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                        if epochs_no_improved_loss >= PATIENCE and epochs_no_improved_acc >= PATIENCE:
+                            print(f"Loss and acc did not improve for {PATIENCE} epochs. Terminating training.")
                             break
 
                         sumwriter.close()
@@ -648,7 +661,6 @@ if __name__ == "__main__":
             os.makedirs(results_file_dir, exist_ok=True)
             loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
             os.makedirs(loss_results_dir, exist_ok=True)
-            best_net_states = {}
 
             num_samples_train_run = 0
             for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
