@@ -394,16 +394,26 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
                'predictions': predictions,
                'latents': test_latents}
 
+    # take equally sized subsets of samples for captions and images
+    test_types = np.array(test_types)
+    predictions_caption = predictions[test_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    predictions_image = predictions[test_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    val_predictions = np.concatenate((predictions_caption, predictions_image))
+
+    latents_caption = test_latents[test_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    latents_image = test_latents[test_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    val_latents = np.concatenate((latents_caption, latents_image))
+
     for metric in distance_metrics:
         # Calculate distance matrices maximally on 140 samples to save compute
-        dist_mat = get_distance_matrix(predictions[:MAX_SAMPLES_EVAL_METRICS], test_latents[:MAX_SAMPLES_EVAL_METRICS], metric)
+        dist_mat = get_distance_matrix(val_predictions, val_latents, metric)
         results[f"distance_matrix_{metric}"] = dist_mat
 
         acc = pairwise_accuracy(dist_mat)
         results[f"acc_{metric}"] = acc
 
     # Perform RSA maximally on 140 samples to save compute
-    rsa = calc_rsa(predictions[:MAX_SAMPLES_EVAL_METRICS], test_latents[:MAX_SAMPLES_EVAL_METRICS])
+    rsa = calc_rsa(val_predictions, val_latents)
     results['rsa'] = rsa
 
     return cum_loss, results
@@ -412,7 +422,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 MAX_EPOCHS = 400
 BATCH_SIZE = 2000
 
-MAX_SAMPLES_EVAL_METRICS = 500
+MAX_SAMPLES_EVAL_METRICS = 70
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 SUBJECTS = ['sub-01', 'sub-02']
@@ -542,6 +552,7 @@ if __name__ == "__main__":
                     epochs_no_improved_loss = 0
                     best_val_loss = math.inf
                     best_val_loss_num_samples = 0
+                    best_val_pairwise_acc = 0
                     num_samples_train_run = 0
                     for epoch in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
 
