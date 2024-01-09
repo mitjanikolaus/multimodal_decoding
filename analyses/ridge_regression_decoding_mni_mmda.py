@@ -350,7 +350,7 @@ def calc_rsa(latent_1, latent_2):
     return corr
 
 
-def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_normalize=False):
+def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_normalize=False, calc_modality_specific_accs=False):
     r"""
     evaluates decoder on test bold signals
     returns the predicted vectors and loss values
@@ -361,9 +361,9 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     predictions = []
     with torch.no_grad():
         for data in test_loader:
-            test_inputs, test_latents, stimulus_ids, stimulus_types = data
-            outputs = net(test_inputs.to(device))
-            test_loss = loss_fn(outputs, test_latents.to(device))
+            inputs, latents, stimulus_ids, stimulus_types = data
+            outputs = net(inputs.to(device))
+            test_loss = loss_fn(outputs, latents.to(device))
             cum_loss.append(test_loss.item())
             predictions.append(outputs.cpu().numpy())
     cum_loss = np.mean(cum_loss)
@@ -375,7 +375,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     results = {'classes': stimulus_ids,
                'types': stimulus_types,
                'predictions': predictions,
-               'latents': test_latents}
+               'latents': latents}
 
     # take equally sized subsets of samples for captions and images
     stimulus_types = np.array(stimulus_types)
@@ -388,18 +388,19 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     predictions_image = predictions[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_predictions = np.concatenate((predictions_caption, predictions_image))
 
-    latents_caption = test_latents[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    latents_image = test_latents[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    latents_caption = latents[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    latents_image = latents[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_latents = np.concatenate((latents_caption, latents_image))
 
     for metric in distance_metrics:
         acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
-        acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
-        acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
-
         results[f"acc_{metric}"] = acc
-        results[f"acc_{metric}_captions"] = acc_captions
-        results[f"acc_{metric}_images"] = acc_images
+
+        if calc_modality_specific_accs:
+            acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
+            acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
+            results[f"acc_{metric}_captions"] = acc_captions
+            results[f"acc_{metric}_images"] = acc_images
 
     rsa = calc_rsa(val_predictions, val_latents)
     results['rsa'] = rsa
@@ -410,7 +411,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 MAX_EPOCHS = 400
 BATCH_SIZE = 2000
 
-MAX_SAMPLES_EVAL_METRICS = 70
+MAX_SAMPLES_EVAL_METRICS = 2000
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 SUBJECTS = ['sub-01', 'sub-02']
@@ -578,16 +579,18 @@ if __name__ == "__main__":
                             torch.save(best_net_states['net'], f"{checkpoint_dir}/net_best_val")
 
                             test_loss, results = evaluate_decoder(net, test_loader, loss_fn,
-                                                                               distance_metrics=DISTANCE_METRICS,
-                                                                               device=device)
+                                                                  distance_metrics=DISTANCE_METRICS,
+                                                                  device=device,
+                                                                  calc_modality_specific_accs=True)
 
                             with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
                                 pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                             _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
-                                                                               distance_metrics=DISTANCE_METRICS,
-                                                                               device=device,
-                                                                               re_normalize=True)
+                                                                     distance_metrics=DISTANCE_METRICS,
+                                                                     device=device,
+                                                                     re_normalize=True,
+                                                                     calc_modality_specific_accs=True)
 
                             with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
                                 pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -655,23 +658,22 @@ if __name__ == "__main__":
                 #                                                 distance_metrics=[],
                 #                                                 device=device)
 
-                test_loss, results = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
-                                                                                  device=device)
-
-                _, results_normalized = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
-                                                                                          device=device,
-                                                                                          re_normalize=True)
-
                 num_samples_train_run += num_epoch_samples
 
                 sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
-                # sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, epoch)
-                sumwriter.add_scalar(f"Test/{loss_type} loss", test_loss, num_samples_train_run)
 
                 if num_samples_train_run >= best_hp_setting_num_samples:
                     print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
 
                     torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
+
+                    test_loss, results = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
+                                                          device=device, calc_modality_specific_accs=True)
+
+                    _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
+                                                             distance_metrics=DISTANCE_METRICS,
+                                                             device=device,
+                                                             re_normalize=True, calc_modality_specific_accs=True)
 
                     with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
                         pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
