@@ -395,15 +395,15 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
                'latents': test_latents}
 
     for metric in distance_metrics:
-        # Calculate distance matrices maximally on 100 samples to save compute
-        dist_mat = get_distance_matrix(predictions[:100], test_latents[:100], metric)
+        # Calculate distance matrices maximally on 140 samples to save compute
+        dist_mat = get_distance_matrix(predictions[:MAX_SAMPLES_EVAL_METRICS], test_latents[:MAX_SAMPLES_EVAL_METRICS], metric)
         results[f"distance_matrix_{metric}"] = dist_mat
 
         acc = pairwise_accuracy(dist_mat)
         results[f"acc_{metric}"] = acc
 
-    # Perform RSA maximally on 100 samples to save compute
-    rsa = calc_rsa(predictions[:100], test_latents[:100])
+    # Perform RSA maximally on 140 samples to save compute
+    rsa = calc_rsa(predictions[:MAX_SAMPLES_EVAL_METRICS], test_latents[:MAX_SAMPLES_EVAL_METRICS])
     results['rsa'] = rsa
 
     return cum_loss, results
@@ -411,6 +411,8 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
 
 MAX_EPOCHS = 400
 BATCH_SIZE = 2000
+
+MAX_SAMPLES_EVAL_METRICS = 140
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
 SUBJECTS = ['sub-01', 'sub-02']
@@ -445,10 +447,10 @@ if __name__ == "__main__":
             idx = list(range(len(train_val_dataset)))
             kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
-            print("preloading bold test dataset")
             test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, DECODER_TESTING_MODE,
                                            fmri_betas_transform=train_val_dataset.fmri_betas_transform,
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
+            print("preloading bold test dataset of size {len(test_dataset)}")
             test_dataset.preload()
 
             # imagery_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, latent_vectors_file, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
@@ -556,6 +558,16 @@ if __name__ == "__main__":
                         sumwriter.add_scalar(f"RSA", results['rsa'], num_samples_train_run)
                         for metric in DISTANCE_METRICS:
                             sumwriter.add_scalar(f"pairwise_acc_{metric}_modality_agnostic", results[f"acc_{metric}"][0], num_samples_train_run)
+
+                        test_loss, test_results_normalized = evaluate_decoder(net, test_loader, loss_fn,
+                                                                 distance_metrics=DISTANCE_METRICS,
+                                                                 device=device,
+                                                                 re_normalize=True)
+                        sumwriter.add_scalar(f"Test/{loss_type} loss", test_loss, num_samples_train_run)
+                        sumwriter.add_scalar(f"test_RSA", test_results_normalized['rsa'], num_samples_train_run)
+                        for metric in DISTANCE_METRICS:
+                            sumwriter.add_scalar(f"test_pairwise_acc_{metric}_modality_agnostic",
+                                                 test_results_normalized[f"acc_{metric}"][0], num_samples_train_run)
 
                         # best decoder
                         if val_loss < best_val_loss:
