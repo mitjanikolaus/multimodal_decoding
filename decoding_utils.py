@@ -303,50 +303,6 @@ def decode(y, w, invcov=None):
     return x
 
 
-def pairwise_decoding_score(predictions, originals, metric='cosine'):
-    dist_mat = cdist(predictions, originals, metric=metric)     # d(i,j) -> distance of the prediction of i to the original of j
-    diag     = dist_mat.diagonal()[np.newaxis, :]               # all congruent distances
-    comp_mat = diag < dist_mat                                  # we are interested in i,j where d(i,i) < d(i,j)
-    corrects = comp_mat.sum()                                   # counting the trues
-    
-    n = diag.shape[1]
-    score = corrects / (n*n-n)
-    return score
-
-
-def pairwise_decoding_score_duo(predictions, originals, metric='cosine'):
-    dist_mat = cdist(predictions, originals, metric=metric)     # d(i,j) -> distance of the prediction of i to the original of j
-    diag     = dist_mat.diagonal()                              # all congruent distances
-
-    n = diag.shape[0]
-    corrects = 0
-    for i in range(n):
-        for j in range(i+1, n):
-            if (dist_mat[i,i] + dist_mat[j,j]) < (dist_mat[i,j] + dist_mat[j,i]):
-                corrects += 1
-    
-    score = corrects / (n*(n-1)/2)
-    return score
-
-
-def pairwise_decoding_score_duo_classes(predictions, originals, classes, metric='cosine'):
-    dist_mat = cdist(predictions, originals, metric=metric)     # d(i,j) -> distance of the prediction of i to the original of j
-    diag     = dist_mat.diagonal()                              # all congruent distances
-
-    n = diag.shape[0]
-    corrects = 0
-    count = 0
-    for i in range(n):
-        for j in range(i+1, n):
-            if classes[i] != classes[j]:
-                if (dist_mat[i,i] + dist_mat[j,j]) < (dist_mat[i,j] + dist_mat[j,i]):
-                    corrects += 1
-                count += 1
-    
-    score = corrects / count
-    return score
-
-
 def decoding_rank_score(predictions, originals, metric='cosine'):
     dist_mat = cdist(predictions, originals, metric=metric)              # d(i,j) -> distance of the prediction of i to the original of j
     ranks    = 1 - ((rankdata(dist_mat,axis=1)-1)/(dist_mat.shape[1]-1)) 

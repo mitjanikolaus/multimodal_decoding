@@ -11,6 +11,7 @@ import nibabel as nib
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
 from sklearn.model_selection import KFold
 from torch.utils.data import Dataset, DataLoader
@@ -319,38 +320,20 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
     return cum_loss, num_samples
 
 
-def pairwise_accuracy(dist_mat):
+def pairwise_accuracy(predictions, latents, metric, test_ids):
     # dist_mat      # d(i,j) -> distance of the prediction of i to the original of j
-    # first 70 -> captions
-    # second 70 -> images
-    # since the AI model is the same, original of caption is the same as the original of the image
+    dist_mat = get_distance_matrix(predictions, latents, metric)
+
+    not_same_id = cdist(test_ids.reshape(-1, 1), test_ids.reshape(-1, 1)) != 0
 
     diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
     comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
-    corrects = comp_mat.sum()  # counting the trues (everything is counted two times because of the same ground-truth)
 
-    n = diag.shape[0]
-    score_agnostic = corrects / (
-                n * n - (2 * n))  # -2*n is there to remove the diagonal two times (as it is repeated two times)
+    # Take only cases where the stimulus ids are not the same (do not compare cases where caption id == image id)
+    comp_mat = comp_mat[not_same_id]
+    score = comp_mat.mean()
 
-    ######
-    dist_captions = dist_mat[:70, :70]
-    diag = dist_captions.diagonal().reshape(-1, 1)
-    comp_mat = diag < dist_captions
-    corrects = comp_mat.sum()
-
-    n = diag.shape[0]
-    score_captions = corrects / (n * n - n)
-    ######
-    dist_images = dist_mat[70:, 70:]
-    diag = dist_images.diagonal().reshape(-1, 1)
-    comp_mat = diag < dist_images
-    corrects = comp_mat.sum()
-
-    n = diag.shape[0]
-    score_images = corrects / (n * n - n)
-
-    return score_agnostic, score_captions, score_images
+    return score
 
 
 def create_dissimilarity_matrix(sample_embeds):
@@ -378,7 +361,7 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     predictions = []
     with torch.no_grad():
         for data in test_loader:
-            test_inputs, test_latents, test_ids, test_types = data
+            test_inputs, test_latents, stimulus_ids, stimulus_types = data
             outputs = net(test_inputs.to(device))
             test_loss = loss_fn(outputs, test_latents.to(device))
             cum_loss.append(test_loss.item())
@@ -389,30 +372,34 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     if re_normalize:
         predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
-    results = {'classes': test_ids,
-               'types': test_types,
+    results = {'classes': stimulus_ids,
+               'types': stimulus_types,
                'predictions': predictions,
                'latents': test_latents}
 
     # take equally sized subsets of samples for captions and images
-    test_types = np.array(test_types)
-    predictions_caption = predictions[test_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    predictions_image = predictions[test_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    stimulus_ids_caption = stimulus_ids[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    stimulus_ids_image = stimulus_ids[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
+
+    stimulus_types = np.array(stimulus_types)
+    predictions_caption = predictions[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    predictions_image = predictions[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_predictions = np.concatenate((predictions_caption, predictions_image))
 
-    latents_caption = test_latents[test_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    latents_image = test_latents[test_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    latents_caption = test_latents[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    latents_image = test_latents[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_latents = np.concatenate((latents_caption, latents_image))
 
     for metric in distance_metrics:
-        # Calculate distance matrices maximally on 140 samples to save compute
-        dist_mat = get_distance_matrix(val_predictions, val_latents, metric)
-        results[f"distance_matrix_{metric}"] = dist_mat
+        acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
+        acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
+        acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
 
-        acc = pairwise_accuracy(dist_mat)
         results[f"acc_{metric}"] = acc
+        results[f"acc_{metric}_captions"] = acc_captions
+        results[f"acc_{metric}_images"] = acc_images
 
-    # Perform RSA maximally on 140 samples to save compute
     rsa = calc_rsa(val_predictions, val_latents)
     results['rsa'] = rsa
 
