@@ -616,7 +616,7 @@ if __name__ == "__main__":
                                     {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
                                     handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-                        if epochs_no_improved_loss >= PATIENCE and epochs_no_improved_acc >= PATIENCE:
+                        if (epochs_no_improved_loss >= PATIENCE) and (epochs_no_improved_acc >= PATIENCE):
                             print(f"Loss and acc did not improve for {PATIENCE} epochs. Terminating training.")
                             break
 
