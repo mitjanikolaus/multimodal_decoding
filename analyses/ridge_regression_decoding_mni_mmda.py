@@ -450,7 +450,7 @@ if __name__ == "__main__":
             test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, DECODER_TESTING_MODE,
                                            fmri_betas_transform=train_val_dataset.fmri_betas_transform,
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
-            print("preloading bold test dataset of size {len(test_dataset)}")
+            print(f"preloading bold test dataset of size {len(test_dataset)}")
             test_dataset.preload()
 
             # imagery_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, latent_vectors_file, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
