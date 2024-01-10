@@ -581,10 +581,11 @@ if __name__ == "__main__":
                     model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
                     val_results = evaluate_decoder(model, val_loader, loss_fn, calc_eval_metrics=True)
-                    pickle.dump(val_results, open(os.path.join(results_file_dir, "val_results.p"), 'wb'))
 
                     test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
-                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results.p"), 'wb'))
+
+                    results = {**test_results, **{'val_'+key: val for key, val in val_results.items()}}
+                    pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
                     val_losses_for_folds.append(val_results['loss'])
                     num_samples_for_folds.append(best_val_loss_num_samples)
@@ -639,10 +640,10 @@ if __name__ == "__main__":
 
                     test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
 
-                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
                     best_dir = f'{results_dir}/best_hp/'
                     os.makedirs(best_dir, exist_ok=True)
-                    pickle.dump(test_results, open(os.path.join(best_dir, "test_results.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(best_dir, "results.p"), 'wb'))
 
                     break
