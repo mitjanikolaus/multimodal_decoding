@@ -581,7 +581,7 @@ if __name__ == "__main__":
                     model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
                     val_results = evaluate_decoder(model, val_loader, loss_fn, calc_eval_metrics=True)
-                    pickle.dump(val_results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+                    pickle.dump(val_results, open(os.path.join(results_file_dir, "val_results.p"), 'wb'))
 
                     test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
                     pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results.p"), 'wb'))
