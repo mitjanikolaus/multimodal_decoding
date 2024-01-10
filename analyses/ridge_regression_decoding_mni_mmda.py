@@ -483,13 +483,13 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.001, wd=0, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
 
                 HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
 
@@ -556,14 +556,14 @@ if __name__ == "__main__":
 
                         train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
 
-                        results = evaluate_decoder(model, val_loader, loss_fn)
+                        val_results = evaluate_decoder(model, val_loader, loss_fn)
                         num_samples_train_run += num_epoch_samples
 
                         sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
-                        sumwriter.add_scalar(f"Val/{loss_type} loss", results['val_loss'], num_samples_train_run)
+                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_results['val_loss'], num_samples_train_run)
 
-                        if results['val_loss'] < best_val_loss:
-                            best_val_loss = results['val_loss']
+                        if val_results['val_loss'] < best_val_loss:
+                            best_val_loss = val_results['val_loss']
                             best_val_loss_num_samples = num_samples_train_run
                             epochs_no_improved_loss = 0
 
@@ -582,16 +582,16 @@ if __name__ == "__main__":
                     model = model.to(device)
                     model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
-                    results = evaluate_decoder(model, val_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
-                    pickle.dump(results, open(os.path.join(results_file_dir, "results_normalized.p"), 'wb'))
+                    val_results = evaluate_decoder(model, val_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
+                    pickle.dump(val_results, open(os.path.join(results_file_dir, "results_normalized.p"), 'wb'))
 
                     test_results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True,
                                                     calc_eval_metrics=True)
-                    pickle.dump(results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
 
-                    val_losses_for_folds.append(results['val_loss'])
+                    val_losses_for_folds.append(val_results['val_loss'])
                     num_samples_for_folds.append(best_val_loss_num_samples)
-                    print(f"best val loss: {results['val_loss']:.4f}")
+                    print(f"best val loss: {val_results['val_loss']:.4f}")
                     if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(
                             val_losses_for_folds) < best_hp_setting_val_loss:
                         best_hp_setting_val_loss = np.mean(val_losses_for_folds)
@@ -640,12 +640,12 @@ if __name__ == "__main__":
 
                     torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
 
-                    results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
+                    test_results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
 
-                    pickle.dump(results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
 
                     best_dir = f'{results_dir}/best_hp/'
                     os.makedirs(best_dir, exist_ok=True)
-                    pickle.dump(results, open(os.path.join(best_dir, "results_normalized.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(best_dir, "test_results_normalized.p"), 'wb'))
 
                     break
