@@ -583,6 +583,7 @@ if __name__ == "__main__":
 
                     # Final eval
                     model = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
+                    model = model.to(device)
                     model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
                     results = evaluate_decoder(model, val_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
