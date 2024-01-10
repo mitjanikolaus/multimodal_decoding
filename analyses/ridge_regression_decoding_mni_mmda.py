@@ -373,7 +373,7 @@ def evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=False):
                'types': stimulus_types,
                'predictions': predictions,
                'latents': latents,
-               'val_loss': cum_loss}
+               'loss': cum_loss}
 
     if calc_eval_metrics:
         # take equally sized subsets of samples for captions and images
@@ -558,10 +558,10 @@ if __name__ == "__main__":
                         num_samples_train_run += num_epoch_samples
 
                         sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
-                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_results['val_loss'], num_samples_train_run)
+                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_results['loss'], num_samples_train_run)
 
-                        if val_results['val_loss'] < best_val_loss:
-                            best_val_loss = val_results['val_loss']
+                        if val_results['loss'] < best_val_loss:
+                            best_val_loss = val_results['loss']
                             best_val_loss_num_samples = num_samples_train_run
                             epochs_no_improved_loss = 0
 
@@ -586,9 +586,9 @@ if __name__ == "__main__":
                     test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
                     pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results.p"), 'wb'))
 
-                    val_losses_for_folds.append(val_results['val_loss'])
+                    val_losses_for_folds.append(val_results['loss'])
                     num_samples_for_folds.append(best_val_loss_num_samples)
-                    print(f"best val loss: {val_results['val_loss']:.4f}")
+                    print(f"best val loss: {val_results['loss']:.4f}")
                     if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(
                             val_losses_for_folds) < best_hp_setting_val_loss:
                         best_hp_setting_val_loss = np.mean(val_losses_for_folds)
