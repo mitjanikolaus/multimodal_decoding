@@ -561,15 +561,15 @@ if __name__ == "__main__":
                         for metric in DISTANCE_METRICS:
                             sumwriter.add_scalar(f"Val/pairwise_acc_{metric}", results[f"acc_{metric}"], num_samples_train_run)
 
-                        test_loss, test_results_normalized = evaluate_decoder(net, test_loader, loss_fn,
-                                                                 distance_metrics=DISTANCE_METRICS,
-                                                                 device=device,
-                                                                 re_normalize=True)
-                        sumwriter.add_scalar(f"Test/{loss_type} loss", test_loss, num_samples_train_run)
-                        sumwriter.add_scalar(f"Test/RSA", test_results_normalized['rsa'], num_samples_train_run)
-                        for metric in DISTANCE_METRICS:
-                            sumwriter.add_scalar(f"Test/pairwise_acc_{metric}",
-                                                 test_results_normalized[f"acc_{metric}"], num_samples_train_run)
+                        # test_loss, test_results_normalized = evaluate_decoder(net, test_loader, loss_fn,
+                        #                                          distance_metrics=DISTANCE_METRICS,
+                        #                                          device=device,
+                        #                                          re_normalize=True)
+                        # sumwriter.add_scalar(f"Test/{loss_type} loss", test_loss, num_samples_train_run)
+                        # sumwriter.add_scalar(f"Test/RSA", test_results_normalized['rsa'], num_samples_train_run)
+                        # for metric in DISTANCE_METRICS:
+                        #     sumwriter.add_scalar(f"Test/pairwise_acc_{metric}",
+                        #                          test_results_normalized[f"acc_{metric}"], num_samples_train_run)
 
                         # best decoder
                         if val_loss < best_val_loss:
@@ -590,7 +590,7 @@ if __name__ == "__main__":
 
                             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                                 pickle.dump(
-                                    {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                                    {"train_loss": train_loss, "val_loss": val_loss}, #"test_loss": test_loss
                                     handle, protocol=pickle.HIGHEST_PROTOCOL)
                         else:
                             epochs_no_improved_loss += 1
@@ -612,7 +612,7 @@ if __name__ == "__main__":
 
                             with open(os.path.join(loss_results_dir, "loss_results_best_acc.p"), 'wb') as handle:
                                 pickle.dump(
-                                    {"train_loss": train_loss, "val_loss": val_loss, "test_loss": test_loss},
+                                    {"train_loss": train_loss, "val_loss": val_loss}, #, "test_loss": test_loss
                                     handle, protocol=pickle.HIGHEST_PROTOCOL)
                         else:
                             epochs_no_improved_acc += 1
