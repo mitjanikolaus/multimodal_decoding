@@ -480,15 +480,15 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
 
-                HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
-                HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
