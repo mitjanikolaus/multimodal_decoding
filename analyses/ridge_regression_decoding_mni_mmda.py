@@ -80,7 +80,8 @@ class COCOBOLDDataset(Dataset):
     """
 
     def __init__(self, bold_root_dir, subject, model_name, mean_std_dir, mode=TRAINING_MODES[0],
-                 blank_correction=True, subset=None, fold=None, preloaded_betas=None, overwrite_transformations_mean_std=False,
+                 blank_correction=True, subset=None, fold=None, preloaded_betas=None,
+                 overwrite_transformations_mean_std=False,
                  fmri_betas_transform=None, nn_latent_transform=None):
         """
         Args:
@@ -116,7 +117,8 @@ class COCOBOLDDataset(Dataset):
         if self.feature_key == "":
             raise Exception('no feature found!')
 
-        self.fmri_betas_addresses = np.array((sorted(glob(os.path.join(self.root_dir, f'betas_{self.mode}*', '*.nii')))))
+        self.fmri_betas_addresses = np.array(
+            (sorted(glob(os.path.join(self.root_dir, f'betas_{self.mode}*', '*.nii')))))
         self.stim_ids = []
         self.stim_types = []
         self.nn_latent_vectors = []
@@ -299,7 +301,7 @@ class HyperParameters():
         yield self.loss
 
 
-def train_decoder_epoch(model, train_loader, optimizer, loss_fn, device):
+def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
     model.train()
     cum_loss = []
     num_samples = 0
@@ -350,7 +352,7 @@ def calc_rsa(latent_1, latent_2):
     return corr
 
 
-def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_normalize=False, calc_modality_specific_accs=False):
+def evaluate_decoder(net, test_loader, loss_fn, re_normalize=False, calc_eval_metrics=False):
     r"""
     evaluates decoder on test bold signals
     returns the predicted vectors and loss values
@@ -375,37 +377,38 @@ def evaluate_decoder(net, test_loader, loss_fn, distance_metrics, device, re_nor
     results = {'classes': stimulus_ids,
                'types': stimulus_types,
                'predictions': predictions,
-               'latents': latents}
+               'latents': latents,
+               'val_loss': cum_loss}
 
-    # take equally sized subsets of samples for captions and images
-    stimulus_types = np.array(stimulus_types)
+    if calc_eval_metrics:
+        # take equally sized subsets of samples for captions and images
+        stimulus_types = np.array(stimulus_types)
 
-    stimulus_ids_caption = stimulus_ids[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    stimulus_ids_image = stimulus_ids[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
+        stimulus_ids_caption = stimulus_ids[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+        stimulus_ids_image = stimulus_ids[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+        val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
 
-    predictions_caption = predictions[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    predictions_image = predictions[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    val_predictions = np.concatenate((predictions_caption, predictions_image))
+        predictions_caption = predictions[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+        predictions_image = predictions[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+        val_predictions = np.concatenate((predictions_caption, predictions_image))
 
-    latents_caption = latents[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    latents_image = latents[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    val_latents = np.concatenate((latents_caption, latents_image))
+        latents_caption = latents[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+        latents_image = latents[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+        val_latents = np.concatenate((latents_caption, latents_image))
 
-    for metric in distance_metrics:
-        acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
-        results[f"acc_{metric}"] = acc
+        for metric in DISTANCE_METRICS:
+            acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
+            results[f"acc_{metric}"] = acc
 
-        if calc_modality_specific_accs:
             acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
             acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
             results[f"acc_{metric}_captions"] = acc_captions
             results[f"acc_{metric}_images"] = acc_images
 
-    rsa = calc_rsa(val_predictions, val_latents)
-    results['rsa'] = rsa
+        rsa = calc_rsa(val_predictions, val_latents)
+        results['rsa'] = rsa
 
-    return cum_loss, results
+    return results
 
 
 MAX_EPOCHS = 400
@@ -430,6 +433,17 @@ DISTANCE_METRICS = ['cosine', 'euclidean']
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+
+def create_optimizer(optim_type):
+    if optim_type == 'SGD':
+        optimizer = optim.SGD(model.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
+    elif optim_type == 'ADAM':
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+    else:
+        raise RuntimeError("Unknown optimizer: ", optim_type)
+    return optimizer
+
+
 if __name__ == "__main__":
     print("device: ", device)
     os.makedirs(GLM_OUT_DIR, exist_ok=True)
@@ -440,13 +454,15 @@ if __name__ == "__main__":
             print(model_name)
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 
-            train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, TRAINING_MODE)
+            train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                                                TRAINING_MODE)
             preloaded_betas = train_val_dataset.preload()
 
             idx = list(range(len(train_val_dataset)))
             kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
-            test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir, DECODER_TESTING_MODE,
+            test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                                           DECODER_TESTING_MODE,
                                            fmri_betas_transform=train_val_dataset.fmri_betas_transform,
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
             print(f"preloading bold test dataset of size {len(test_dataset)}")
@@ -506,121 +522,83 @@ if __name__ == "__main__":
                     run_str = hp_str + f"fold_{fold}"
 
                     results_file_dir = f'{results_dir}/{run_str}'
-                    loss_results_dir = f'{results_dir}/loss_results/{run_str}'
                     checkpoint_dir = f'{results_dir}/networks/{run_str}'
 
                     os.makedirs(results_file_dir, exist_ok=True)
-                    os.makedirs(loss_results_dir, exist_ok=True)
                     os.makedirs(checkpoint_dir, exist_ok=True)
 
                     train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                                    TRAINING_MODE, subset=train_idx, fold=fold, preloaded_betas=preloaded_betas)
+                                                    TRAINING_MODE, subset=train_idx, fold=fold,
+                                                    preloaded_betas=preloaded_betas)
 
                     val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                                  TRAINING_MODE, subset=val_idx, fold=fold, preloaded_betas=preloaded_betas,
+                                                  TRAINING_MODE, subset=val_idx, fold=fold,
+                                                  preloaded_betas=preloaded_betas,
                                                   fmri_betas_transform=train_dataset.fmri_betas_transform,
                                                   nn_latent_transform=train_dataset.nn_latent_transform
                                                   )
                     print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
 
-                    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True, drop_last=True)
+                    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
+                                              drop_last=True)
                     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
 
-                    net = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size,
-                                    dropout=dropout).to(device)
+                    model = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
+                    model = model.to(device)
 
                     sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
 
-                    if optim_type == 'SGD':
-                        optimizer = optim.SGD(net.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
-                    elif optim_type == 'ADAM':
-                        optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
-                    else:
-                        raise RuntimeError("Unknown optimizer: ", optim_type)
+                    optimizer = create_optimizer(optim_type)
 
                     epochs_no_improved_loss = 0
                     best_val_loss = math.inf
                     best_val_loss_num_samples = 0
 
-                    best_val_acc = 0
-                    epochs_no_improved_acc = 0
-
                     num_samples_train_run = 0
                     for epoch in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
 
-                        train_loss, num_epoch_samples = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
+                        train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
 
-                        val_loss, results = evaluate_decoder(net, val_loader, loss_fn,
-                                                             distance_metrics=DISTANCE_METRICS,
-                                                             device=device,
-                                                             re_normalize=True,
-                                                             calc_modality_specific_accs=True)
+                        results = evaluate_decoder(model, val_loader, loss_fn)
                         num_samples_train_run += num_epoch_samples
 
                         sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
-                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_loss, num_samples_train_run)
-                        sumwriter.add_scalar(f"Val/RSA", results['rsa'], num_samples_train_run)
-                        for metric in DISTANCE_METRICS:
-                            sumwriter.add_scalar(f"Val/pairwise_acc_{metric}", results[f"acc_{metric}"], num_samples_train_run)
+                        sumwriter.add_scalar(f"Val/{loss_type} loss", results['val_loss'], num_samples_train_run)
 
-                        # test_loss, test_results_normalized = evaluate_decoder(net, test_loader, loss_fn,
-                        #                                          distance_metrics=DISTANCE_METRICS,
-                        #                                          device=device,
-                        #                                          re_normalize=True)
-                        # sumwriter.add_scalar(f"Test/{loss_type} loss", test_loss, num_samples_train_run)
-                        # sumwriter.add_scalar(f"Test/RSA", test_results_normalized['rsa'], num_samples_train_run)
-                        # for metric in DISTANCE_METRICS:
-                        #     sumwriter.add_scalar(f"Test/pairwise_acc_{metric}",
-                        #                          test_results_normalized[f"acc_{metric}"], num_samples_train_run)
-
-                        # best decoder
-                        if val_loss < best_val_loss:
-                            best_val_loss = val_loss
+                        if results['val_loss'] < best_val_loss:
+                            best_val_loss = results['val_loss']
                             best_val_loss_num_samples = num_samples_train_run
                             epochs_no_improved_loss = 0
 
-                            torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
-
-                            with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
-                                pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                            with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
-                                pickle.dump(
-                                    {"train_loss": train_loss, "val_loss": val_loss}, #"test_loss": test_loss
-                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
+                            torch.save(model.state_dict(), f"{checkpoint_dir}/net_best_val.pt")
                         else:
                             epochs_no_improved_loss += 1
 
-                        if results[f"acc_cosine"] > best_val_acc:
-                            best_val_acc = results[f"acc_cosine"]
-                            epochs_no_improved_acc = 0
-
-                            torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_acc")
-
-                            with open(os.path.join(results_file_dir, "results_best_acc_normalized.p"), 'wb') as handle:
-                                pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                            with open(os.path.join(loss_results_dir, "loss_results_best_acc.p"), 'wb') as handle:
-                                pickle.dump(
-                                    {"train_loss": train_loss, "val_loss": val_loss}, #, "test_loss": test_loss
-                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
-                        else:
-                            epochs_no_improved_acc += 1
-
-                        if (epochs_no_improved_loss >= PATIENCE) and (epochs_no_improved_acc >= PATIENCE):
-                            print(f"Loss and acc did not improve for {PATIENCE} epochs. Terminating training.")
+                        if epochs_no_improved_loss >= PATIENCE:
+                            print(f"Loss did not improve for {PATIENCE} epochs. Terminating training.")
                             break
 
                         sumwriter.close()
 
-                    val_losses_for_folds.append(best_val_loss)
+                    # Final eval
+                    model = torch.load(f"{checkpoint_dir}/net_best_val.pt")
+                    results = evaluate_decoder(model, val_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
+                    pickle.dump(results, open(os.path.join(results_file_dir, "results_normalized.p"), 'wb'))
+
+                    test_results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True,
+                                                    calc_eval_metrics=True)
+                    pickle.dump(results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
+
+                    val_losses_for_folds.append(results['val_loss'])
                     num_samples_for_folds.append(best_val_loss_num_samples)
-                    print("best val loss: ", best_val_loss)
-                    if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(val_losses_for_folds) < best_hp_setting_val_loss:
+                    print(f"best val loss: {results['val_loss']} (check: {best_val_loss}")
+                    if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(
+                            val_losses_for_folds) < best_hp_setting_val_loss:
                         best_hp_setting_val_loss = np.mean(val_losses_for_folds)
                         best_hp_setting = hp
                         best_hp_setting_num_samples = int(np.mean(num_samples_for_folds))
-                        print(f"new best hp setting val loss: {np.mean(val_losses_for_folds)} | num samples: {best_hp_setting_num_samples}")
+                        print(
+                            f"new best hp setting val loss: {np.mean(val_losses_for_folds)} | num samples: {best_hp_setting_num_samples}")
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
@@ -634,32 +612,24 @@ if __name__ == "__main__":
                 f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
                 best_hp_setting.get_hp_string())
             hp_str = best_hp_setting.get_hp_string() + "_full_train"
-            net = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout).to(
-                device)
-            full_train_loader = DataLoader(train_val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True, drop_last=True)
+            model = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout)
+            model = model.to(device)
+
+            full_train_loader = DataLoader(train_val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
+                                           drop_last=True)
             loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
 
-            if optim_type == 'SGD':
-                optimizer = optim.SGD(net.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
-            elif optim_type == 'ADAM':
-                optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
-            else:
-                raise RuntimeError("Unknown optimizer: ", optim_type)
+            optimizer = create_optimizer(optim_type)
+
             sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
             checkpoint_dir = f'{results_dir}/networks/{hp_str}'
             os.makedirs(checkpoint_dir, exist_ok=True)
             results_file_dir = f'{results_dir}/{hp_str}'
             os.makedirs(results_file_dir, exist_ok=True)
-            loss_results_dir = f'{results_dir}/loss_results/{hp_str}'
-            os.makedirs(loss_results_dir, exist_ok=True)
 
             num_samples_train_run = 0
             for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
-                train_loss, num_epoch_samples = train_decoder_epoch(net, full_train_loader, optimizer, loss_fn, device=device)
-
-                # val_loss, _ = evaluate_decoder(net, val_loader, loss_fn,
-                #                                                 distance_metrics=[],
-                #                                                 device=device)
+                train_loss, num_epoch_samples = train_decoder_epoch(model, full_train_loader, optimizer, loss_fn)
 
                 num_samples_train_run += num_epoch_samples
 
@@ -668,37 +638,14 @@ if __name__ == "__main__":
                 if num_samples_train_run >= best_hp_setting_num_samples:
                     print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
 
-                    torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
+                    torch.save(model.state_dict(), f"{checkpoint_dir}/net_best_val")
 
-                    test_loss, test_results = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
-                                                               device=device, calc_modality_specific_accs=True)
+                    results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
 
-                    _, results = evaluate_decoder(net, test_loader, loss_fn,
-                                                  distance_metrics=DISTANCE_METRICS,
-                                                  device=device,
-                                                  re_normalize=True, calc_modality_specific_accs=True)
-
-                    with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
-                        pickle.dump(test_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                    with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
-                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
 
                     best_dir = f'{results_dir}/best_hp/'
                     os.makedirs(best_dir, exist_ok=True)
-                    with open(os.path.join(best_dir, "results.p"), 'wb') as handle:
-                        pickle.dump(test_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                    with open(os.path.join(best_dir, "results_normalized.p"), 'wb') as handle:
-                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                    with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
-                        pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
-                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                    best_dir = f'{results_dir}/loss_results/best_hp/'
-                    os.makedirs(best_dir, exist_ok=True)
-                    with open(os.path.join(best_dir, "loss_results.p"), 'wb') as handle:
-                        pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
-                                    handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(results, open(os.path.join(best_dir, "results_normalized.p"), 'wb'))
 
                     break
