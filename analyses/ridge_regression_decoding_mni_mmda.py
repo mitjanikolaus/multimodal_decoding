@@ -111,7 +111,6 @@ class COCOBOLDDataset(Dataset):
             for key in vec:
                 if 'feature' in key:
                     self.feature_key = key
-                    print(key)
                     break
             break
         if self.feature_key == "":
@@ -176,7 +175,6 @@ class COCOBOLDDataset(Dataset):
             self.init_nn_latent_transform()
 
     def init_nn_latent_transform(self):
-        print("init nn latent transformation")
         model_std_mean_name = f'{self.model_name}_mean_std_{self.mode}_fold_{self.fold}.p'
         model_std_mean_path = os.path.join(self.mean_std_dir, model_std_mean_name)
         if self.overwrite_transformations_mean_std or (not os.path.exists(model_std_mean_path)):
@@ -194,7 +192,6 @@ class COCOBOLDDataset(Dataset):
         ])
 
     def init_fmri_betas_transform(self):
-        print("init fmri betas transformation")
         bold_std_mean_name = f'bold_multimodal_mean_std_{self.mode}_fold_{self.fold}.p'
         bold_std_mean_path = os.path.join(self.mean_std_dir, bold_std_mean_name)
 
@@ -465,7 +462,6 @@ if __name__ == "__main__":
                                            DECODER_TESTING_MODE,
                                            fmri_betas_transform=train_val_dataset.fmri_betas_transform,
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
-            print(f"preloading bold test dataset of size {len(test_dataset)}")
             test_dataset.preload()
 
             # imagery_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, latent_vectors_file, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
@@ -595,14 +591,14 @@ if __name__ == "__main__":
 
                     val_losses_for_folds.append(results['val_loss'])
                     num_samples_for_folds.append(best_val_loss_num_samples)
-                    print(f"best val loss: {results['val_loss']} (check: {best_val_loss}")
+                    print(f"best val loss: {results['val_loss']:.4f}")
                     if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(
                             val_losses_for_folds) < best_hp_setting_val_loss:
                         best_hp_setting_val_loss = np.mean(val_losses_for_folds)
                         best_hp_setting = hp
                         best_hp_setting_num_samples = int(np.mean(num_samples_for_folds))
                         print(
-                            f"new best hp setting val loss: {np.mean(val_losses_for_folds)} | num samples: {best_hp_setting_num_samples}")
+                            f"new best hp setting val loss: {np.mean(val_losses_for_folds):.4f} | num samples: {best_hp_setting_num_samples}")
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
