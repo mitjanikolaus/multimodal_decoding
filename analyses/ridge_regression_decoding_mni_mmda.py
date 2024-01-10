@@ -352,19 +352,19 @@ def calc_rsa(latent_1, latent_2):
     return corr
 
 
-def evaluate_decoder(net, test_loader, loss_fn, re_normalize=False, calc_eval_metrics=False):
+def evaluate_decoder(model, test_loader, loss_fn, re_normalize=False, calc_eval_metrics=False):
     r"""
     evaluates decoder on test bold signals
     returns the predicted vectors and loss values
     `distance_metrics` is a list of string containing distance metric names
     """
-    net.eval()
+    model.eval()
     cum_loss = []
     predictions = []
     with torch.no_grad():
         for data in test_loader:
             inputs, latents, stimulus_ids, stimulus_types = data
-            outputs = net(inputs.to(device))
+            outputs = model(inputs.to(device))
             test_loss = loss_fn(outputs, latents.to(device))
             cum_loss.append(test_loss.item())
             predictions.append(outputs.cpu().numpy())
@@ -571,7 +571,7 @@ if __name__ == "__main__":
                             best_val_loss_num_samples = num_samples_train_run
                             epochs_no_improved_loss = 0
 
-                            torch.save(model.state_dict(), f"{checkpoint_dir}/net_best_val.pt")
+                            torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
                         else:
                             epochs_no_improved_loss += 1
 
@@ -582,7 +582,9 @@ if __name__ == "__main__":
                         sumwriter.close()
 
                     # Final eval
-                    model = torch.load(f"{checkpoint_dir}/net_best_val.pt")
+                    model = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
+                    model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt"))
+
                     results = evaluate_decoder(model, val_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
                     pickle.dump(results, open(os.path.join(results_file_dir, "results_normalized.p"), 'wb'))
 
@@ -639,7 +641,7 @@ if __name__ == "__main__":
                 if num_samples_train_run >= best_hp_setting_num_samples:
                     print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
 
-                    torch.save(model.state_dict(), f"{checkpoint_dir}/net_best_val")
+                    torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
 
                     results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
 
