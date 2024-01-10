@@ -28,7 +28,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
@@ -320,7 +320,8 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
 
 
 def pairwise_accuracy(predictions, latents, metric, stimulus_ids):
-    # dist_mat      # d(i,j) -> distance of the prediction of i to the original of j
+    predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
+
     dist_mat = get_distance_matrix(predictions, latents, metric)
 
     not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
@@ -349,7 +350,7 @@ def calc_rsa(latent_1, latent_2):
     return corr
 
 
-def evaluate_decoder(model, test_loader, loss_fn, re_normalize=False, calc_eval_metrics=False):
+def evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=False):
     r"""
     evaluates decoder on test bold signals
     returns the predicted vectors and loss values
@@ -367,9 +368,6 @@ def evaluate_decoder(model, test_loader, loss_fn, re_normalize=False, calc_eval_
             predictions.append(outputs.cpu().numpy())
     cum_loss = np.mean(cum_loss)
     predictions = np.concatenate(predictions, axis=0)
-
-    if re_normalize:
-        predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
 
     results = {'classes': stimulus_ids,
                'types': stimulus_types,
@@ -582,12 +580,11 @@ if __name__ == "__main__":
                     model = model.to(device)
                     model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
-                    val_results = evaluate_decoder(model, val_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
-                    pickle.dump(val_results, open(os.path.join(results_file_dir, "results_normalized.p"), 'wb'))
+                    val_results = evaluate_decoder(model, val_loader, loss_fn, calc_eval_metrics=True)
+                    pickle.dump(val_results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
-                    test_results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True,
-                                                    calc_eval_metrics=True)
-                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
+                    test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
+                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results.p"), 'wb'))
 
                     val_losses_for_folds.append(val_results['val_loss'])
                     num_samples_for_folds.append(best_val_loss_num_samples)
@@ -640,12 +637,12 @@ if __name__ == "__main__":
 
                     torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
 
-                    test_results = evaluate_decoder(model, test_loader, loss_fn, re_normalize=True, calc_eval_metrics=True)
+                    test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
 
-                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results_normalized.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(results_file_dir, "test_results.p"), 'wb'))
 
                     best_dir = f'{results_dir}/best_hp/'
                     os.makedirs(best_dir, exist_ok=True)
-                    pickle.dump(test_results, open(os.path.join(best_dir, "test_results_normalized.p"), 'wb'))
+                    pickle.dump(test_results, open(os.path.join(best_dir, "test_results.p"), 'wb'))
 
                     break
