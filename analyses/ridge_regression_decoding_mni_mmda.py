@@ -550,9 +550,10 @@ if __name__ == "__main__":
                         train_loss, num_epoch_samples = train_decoder_epoch(net, train_loader, optimizer, loss_fn, device=device)
 
                         val_loss, results = evaluate_decoder(net, val_loader, loss_fn,
-                                                                        distance_metrics=DISTANCE_METRICS,
-                                                                        device=device,
-                                                                        re_normalize=True)
+                                                             distance_metrics=DISTANCE_METRICS,
+                                                             device=device,
+                                                             re_normalize=True,
+                                                             calc_modality_specific_accs=True)
                         num_samples_train_run += num_epoch_samples
 
                         sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
@@ -579,14 +580,8 @@ if __name__ == "__main__":
 
                             torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
 
-                            _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
-                                                                     distance_metrics=DISTANCE_METRICS,
-                                                                     device=device,
-                                                                     re_normalize=True,
-                                                                     calc_modality_specific_accs=True)
-
                             with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
-                                pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                                pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                             with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                                 pickle.dump(
@@ -601,14 +596,8 @@ if __name__ == "__main__":
 
                             torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_acc")
 
-                            _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
-                                                                     distance_metrics=DISTANCE_METRICS,
-                                                                     device=device,
-                                                                     re_normalize=True,
-                                                                     calc_modality_specific_accs=True)
-
                             with open(os.path.join(results_file_dir, "results_best_acc_normalized.p"), 'wb') as handle:
-                                pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                                pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                             with open(os.path.join(loss_results_dir, "loss_results_best_acc.p"), 'wb') as handle:
                                 pickle.dump(
@@ -680,26 +669,26 @@ if __name__ == "__main__":
 
                     torch.save(net.state_dict(), f"{checkpoint_dir}/net_best_val")
 
-                    test_loss, results = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
-                                                          device=device, calc_modality_specific_accs=True)
+                    test_loss, test_results = evaluate_decoder(net, test_loader, loss_fn, distance_metrics=DISTANCE_METRICS,
+                                                               device=device, calc_modality_specific_accs=True)
 
-                    _, results_normalized = evaluate_decoder(net, test_loader, loss_fn,
-                                                             distance_metrics=DISTANCE_METRICS,
-                                                             device=device,
-                                                             re_normalize=True, calc_modality_specific_accs=True)
+                    _, results = evaluate_decoder(net, test_loader, loss_fn,
+                                                  distance_metrics=DISTANCE_METRICS,
+                                                  device=device,
+                                                  re_normalize=True, calc_modality_specific_accs=True)
 
                     with open(os.path.join(results_file_dir, "results.p"), 'wb') as handle:
-                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        pickle.dump(test_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                     with open(os.path.join(results_file_dir, "results_normalized.p"), 'wb') as handle:
-                        pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                     best_dir = f'{results_dir}/best_hp/'
                     os.makedirs(best_dir, exist_ok=True)
                     with open(os.path.join(best_dir, "results.p"), 'wb') as handle:
-                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        pickle.dump(test_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
                     with open(os.path.join(best_dir, "results_normalized.p"), 'wb') as handle:
-                        pickle.dump(results_normalized, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                     with open(os.path.join(loss_results_dir, "loss_results.p"), 'wb') as handle:
                         pickle.dump({"train_loss": train_loss, "test_loss": test_loss},
