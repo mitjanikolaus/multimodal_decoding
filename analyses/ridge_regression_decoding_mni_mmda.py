@@ -303,23 +303,23 @@ class CosineDistance(nn.CosineSimilarity):
 
 class HyperParameters:
 
-    def __init__(self, optimizer='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None):
-        self.optimizer = optimizer
+    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None):
+        self.optim_type = optim_type
         self.lr = lr
         self.wd = wd
         self.dropout = dropout
-        self.loss = loss
+        self.loss_type = loss
         self.alpha = alpha
 
     def to_string(self):
         if self.alpha is not None:
             return f'alpha={self.alpha}'
         else:
-            return (f"[optim:{self.optimizer}]"
+            return (f"[optim:{self.optim_type}]"
                     f"[lr:{str(self.lr).replace('.', '-')}]"
                     f"[wd:{str(self.wd).replace('.', '-')}]"
                     f"[drop:{self.dropout}]"
-                    f"[loss:{self.loss}]")
+                    f"[loss:{self.loss_type}]")
 
 
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
@@ -441,8 +441,6 @@ def create_optimizer(hp, model):
 
 
 def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test_loader=None, max_samples=None):
-    # optim_type, lr, wd, dropout, loss_type = hp
-
     results_file_dir = f'{results_dir}/{run_str}'
     checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
@@ -520,6 +518,9 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
             HPs = [
+                HyperParameters(alpha=1),
+                HyperParameters(alpha=10),
+                HyperParameters(alpha=100),
 
                 # HyperParameters(optimizer='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
@@ -530,15 +531,15 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=0, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
 
                 # HyperParameters(optimizer='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
