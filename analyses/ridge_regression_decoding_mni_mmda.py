@@ -581,9 +581,9 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
             HPs = [
-                HyperParameters(alpha=1),
-                HyperParameters(alpha=10),
-                HyperParameters(alpha=100),
+                HyperParameters(alpha=1000),
+                # HyperParameters(alpha=10),
+                # HyperParameters(alpha=100),
 
                 # HyperParameters(optimizer='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
