@@ -422,15 +422,15 @@ def evaluate_decoder(model, test_loader, loss_fn, return_preds=False):
     stimulus_types = []
     with torch.no_grad():
         for data in test_loader:
-            inputs, latents, ids, types = data
-            outputs = model(inputs.to(device))
-            test_loss = loss_fn(outputs, latents.to(device))
+            inputs, targets, ids, types = data
+            preds = model(inputs.to(device))
+            test_loss = loss_fn(preds, targets.to(device))
             loss.append(test_loss.item())
             if return_preds:
-                predictions.append(outputs.cpu().numpy())
+                predictions.append(preds.cpu().numpy())
                 stimulus_ids.append(ids.cpu().numpy())
                 stimulus_types.append(types)
-                latents.append(latents.cpu().numpy())
+                latents.append(targets.cpu().numpy())
     loss = np.mean(loss)
     results = {"loss": loss}
 
