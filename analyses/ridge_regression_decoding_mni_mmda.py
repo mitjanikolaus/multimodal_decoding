@@ -208,8 +208,8 @@ class COCOBOLDDataset(Dataset):
             print(f"Calculating Mean and STD of Model Latent Variables for {self.mode} samples (fold: {self.fold})")
             os.makedirs(self.mean_std_dir, exist_ok=True)
 
-            mean_std = {'mean': self.nn_latent_vectors.mean(axis=0).astype('float32'),
-                        'std': self.nn_latent_vectors.std(axis=0).astype('float32')}
+            mean_std = {'mean': self.nn_latent_vectors.mean(axis=0),
+                        'std': self.nn_latent_vectors.std(axis=0)}
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
@@ -227,8 +227,8 @@ class COCOBOLDDataset(Dataset):
             os.makedirs(self.mean_std_dir, exist_ok=True)
             self.preload()
 
-            mean_std = {'mean': self.fmri_betas.mean(axis=0).astype('float32'),
-                        'std': self.fmri_betas.std(axis=0).astype('float32')}
+            mean_std = {'mean': self.fmri_betas.mean(axis=0),
+                        'std': self.fmri_betas.std(axis=0)}
             pickle.dump(mean_std, open(bold_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
@@ -303,25 +303,27 @@ class CosineDistance(nn.CosineSimilarity):
 
 
 class HyperParameters:
-
-    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None):
+    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None, full_train=False):
         self.optim_type = optim_type
         self.lr = lr
         self.wd = wd
         self.dropout = dropout
         self.loss_type = loss
         self.alpha = alpha
+        self.full_train = full_train
 
     def to_string(self):
         if self.alpha is not None:
-            return f'alpha={self.alpha}'
+            descr = f'alpha={self.alpha}'
         else:
-            return (f"[optim:{self.optim_type}]"
+            descr = (f"[optim:{self.optim_type}]"
                     f"[lr:{str(self.lr).replace('.', '-')}]"
                     f"[wd:{str(self.wd).replace('.', '-')}]"
                     f"[drop:{self.dropout}]"
                     f"[loss:{self.loss_type}]")
-
+        if self.full_train:
+            descr += "_full_train"
+        return descr
 
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
     model.train()
@@ -345,7 +347,8 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
 
 
 def pairwise_accuracy(predictions, latents, metric, stimulus_ids):
-    predictions = (predictions - predictions.mean(axis=0)) / predictions.std(axis=0)
+    std = predictions.std(axis=0) + 1e-8    # For numerical stability
+    predictions = (predictions - predictions.mean(axis=0)) / std
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
 
