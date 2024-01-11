@@ -44,10 +44,10 @@ MAX_SAMPLES_EVAL_METRICS = 1000
 SUBJECTS = ['sub-01', 'sub-02', 'sub-04']
 
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
-MODEL_NAMES = ['RESNET152_AVGPOOL', 'CLIP_V', 'CLIP_L']
-# MODEL_NAMES = ['CLIP_L']
-# MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
-# MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
+# MODEL_NAMES = ['RESNET152_AVGPOOL', 'CLIP_V', 'CLIP_L']
+MODEL_NAMES = ['CLIP_L', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER']
+# MODEL_NAMES = ['CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
+
 TRAINING_MODE = TRAINING_MODES[0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 
@@ -354,7 +354,7 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
 
 
 def pairwise_accuracy(predictions, latents, metric, stimulus_ids):
-    std = predictions.std(axis=0) + 1e-8    # For numerical stability
+    std = predictions.std(axis=0) + 1e-8  # For numerical stability
     predictions = (predictions - predictions.mean(axis=0)) / std
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
@@ -578,6 +578,26 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     return results
 
 
+def retrain_full_train(train_dataset, test_loader, hp_setting, num_samples, results_dir, suffix="_full_train"):
+    num_samples_per_epoch = (len(train_dataset) // BATCH_SIZE) * BATCH_SIZE
+    best_hp_setting_num_epochs = (num_samples // num_samples_per_epoch) + 1
+    print(
+        f"Retraining for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
+        hp_setting.to_string())
+
+    full_train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
+                                   drop_last=True)
+    run_str = hp_setting.to_string() + suffix
+
+    results = train_and_test(hp_setting, run_str, results_dir, full_train_loader, val_loader=None,
+                             test_loader=test_loader,
+                             max_samples=num_samples)
+
+    best_dir = f'{results_dir}/best_hp/'
+    os.makedirs(best_dir, exist_ok=True)
+    pickle.dump(results, open(os.path.join(best_dir, "results.p"), 'wb'))
+
+
 if __name__ == "__main__":
     print("device: ", device)
     os.makedirs(GLM_OUT_DIR, exist_ok=True)
@@ -606,11 +626,18 @@ if __name__ == "__main__":
             best_hp_setting = None
             best_hp_setting_val_loss = math.inf
             best_hp_setting_num_samples = None
+
+            best_hp_setting_acc_cosine = None
+            best_hp_setting_acc_cosine_value = 0
+            best_hp_setting_acc_cosine_num_samples = None
+
             for hp in HPs:
                 print(hp.to_string())
 
                 val_losses_for_folds = []
                 num_samples_for_folds = []
+
+                accs_cosine_for_folds = []
 
                 start = time.time()
 
@@ -637,6 +664,9 @@ if __name__ == "__main__":
                     num_samples_for_folds.append(results["best_val_loss_num_samples"])
                     print(f"best val loss: {results['val_loss']:.4f}")
 
+                    accs_cosine_for_folds.append(results['val_acc_cosine'])
+                    print(f"best val acc cosine: {results['val_acc_cosine']:.4f}")
+
                 if np.mean(val_losses_for_folds) < best_hp_setting_val_loss:
                     best_hp_setting_val_loss = np.mean(val_losses_for_folds)
                     best_hp_setting = hp
@@ -645,24 +675,20 @@ if __name__ == "__main__":
                         f"new best hp setting val loss: {np.mean(val_losses_for_folds):.4f} | "
                         f"num samples: {best_hp_setting_num_samples}")
 
+                if np.mean(accs_cosine_for_folds) < best_hp_setting_acc_cosine_value:
+                    best_hp_setting_acc_cosine_value = np.mean(accs_cosine_for_folds)
+                    best_hp_setting_acc_cosine = hp
+                    best_hp_setting_acc_cosine_num_samples = int(np.mean(num_samples_for_folds))
+                    print(
+                        f"new best hp setting acc cosine: {np.mean(accs_cosine_for_folds):.4f} | "
+                        f"num samples: {best_hp_setting_acc_cosine_num_samples}")
+
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
 
-            # Re-train on full train set with best HP setting:
-            num_samples_per_epoch = (len(train_val_dataset) // BATCH_SIZE) * BATCH_SIZE
-            best_hp_setting_num_epochs = (best_hp_setting_num_samples // num_samples_per_epoch) + 1
-            print(
-                f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
-                best_hp_setting.to_string())
+            # Re-train on full train set with best HP settings:
+            retrain_full_train(train_val_dataset, test_loader, best_hp_setting, best_hp_setting_num_samples,
+                               results_dir)
 
-            full_train_loader = DataLoader(train_val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
-                                           drop_last=True)
-            run_str = best_hp_setting.to_string() + "_full_train"
-
-            results = train_and_test(best_hp_setting, run_str, results_dir, full_train_loader, val_loader=None,
-                                     test_loader=test_loader,
-                                     max_samples=best_hp_setting_num_samples)
-
-            best_dir = f'{results_dir}/best_hp/'
-            os.makedirs(best_dir, exist_ok=True)
-            pickle.dump(results, open(os.path.join(best_dir, "results.p"), 'wb'))
+            retrain_full_train(train_val_dataset, test_loader, best_hp_setting_acc_cosine,
+                               best_hp_setting_acc_cosine_num_samples, results_dir, suffix="_full_train_best_val_acc")
