@@ -28,7 +28,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
