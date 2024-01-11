@@ -675,7 +675,7 @@ if __name__ == "__main__":
                         f"new best hp setting val loss: {np.mean(val_losses_for_folds):.4f} | "
                         f"num samples: {best_hp_setting_num_samples}")
 
-                if np.mean(accs_cosine_for_folds) < best_hp_setting_acc_cosine_value:
+                if np.mean(accs_cosine_for_folds) > best_hp_setting_acc_cosine_value:
                     best_hp_setting_acc_cosine_value = np.mean(accs_cosine_for_folds)
                     best_hp_setting_acc_cosine = hp
                     best_hp_setting_acc_cosine_num_samples = int(np.mean(num_samples_for_folds))
