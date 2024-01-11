@@ -58,7 +58,7 @@ DISTANCE_METRICS = ['cosine', 'euclidean']
 
 REGRESSION_MODEL_SKLEARN = "sklean"
 REGRESSION_MODEL_PYTORCH = "pytorch"
-REGRESSION_MODEL = REGRESSION_MODEL_SKLEARN
+REGRESSION_MODEL = REGRESSION_MODEL_PYTORCH
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
