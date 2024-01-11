@@ -287,7 +287,7 @@ class HyperParameters():
         self.dropout = dropout
         self.loss = loss
 
-    def get_hp_string(self):
+    def to_string(self):
         return f"[optim:{self.optimizer}][lr:{str(self.lr).replace('.', '-')}][wd:{str(self.wd).replace('.', '-')}][drop:{self.dropout}][loss:{self.loss}]"
 
     def __iter__(self):
@@ -429,7 +429,7 @@ DISTANCE_METRICS = ['cosine', 'euclidean']
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-def create_optimizer(optim_type):
+def create_optimizer(optim_type, model, lr, wd):
     if optim_type == 'SGD':
         optimizer = optim.SGD(model.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
     elif optim_type == 'ADAM':
@@ -437,6 +437,76 @@ def create_optimizer(optim_type):
     else:
         raise RuntimeError("Unknown optimizer: ", optim_type)
     return optimizer
+
+
+def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test_loader=None, max_samples=None):
+    optim_type, lr, wd, dropout, loss_type = hp
+
+    results_file_dir = f'{results_dir}/{run_str}'
+    checkpoint_dir = f'{results_dir}/networks/{run_str}'
+    os.makedirs(results_file_dir, exist_ok=True)
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=dropout)
+    model = model.to(device)
+
+    loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
+    optimizer = create_optimizer(optim_type, model, lr, wd)
+
+    sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
+    epochs_no_improved_loss = 0
+    best_val_loss = math.inf
+    best_val_loss_num_samples = 0
+    num_samples_train_run = 0
+    for _ in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
+
+        train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
+        num_samples_train_run += num_epoch_samples
+        sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
+
+        if val_loader is not None:
+            val_results = evaluate_decoder(model, val_loader, loss_fn)
+            sumwriter.add_scalar(f"Val/{loss_type} loss", val_results['loss'], num_samples_train_run)
+            if val_results['loss'] < best_val_loss:
+                best_val_loss = val_results['loss']
+                best_val_loss_num_samples = num_samples_train_run
+                epochs_no_improved_loss = 0
+
+                torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
+            else:
+                epochs_no_improved_loss += 1
+
+            if epochs_no_improved_loss >= PATIENCE:
+                print(f"Loss did not improve for {PATIENCE} epochs. Terminating training.")
+                break
+
+        elif max_samples is not None:
+            if num_samples_train_run >= max_samples:
+                print(f"reached {max_samples} samples. Terminating full train.")
+
+                torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
+                break
+        else:
+            raise RuntimeError("Need to specify either a val loader or max_samples for train loop!")
+
+    sumwriter.close()
+    # Final eval
+    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=dropout)
+    model = model.to(device)
+    model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
+
+    results = {"best_val_loss_num_samples": best_val_loss_num_samples}
+
+    if val_loader is not None:
+        val_results = evaluate_decoder(model, val_loader, loss_fn, calc_eval_metrics=True)
+        results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
+    if test_loader is not None:
+        test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
+        results = {**results, **test_results}
+
+    pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+
+    return results
 
 
 if __name__ == "__main__":
@@ -461,9 +531,6 @@ if __name__ == "__main__":
                                            fmri_betas_transform=train_val_dataset.fmri_betas_transform,
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
             test_dataset.preload()
-
-            # imagery_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, latent_vectors_file, f'imagery',  transform=bold_transform, latent_transform=latent_transform)
-            # imagery_dataset.preload()
 
             results_dir = os.path.join(GLM_OUT_DIR,
                                        f'regression_results_mni_mmda_cv_shuffle_{TRAINING_MODE}/{subject}/{model_name}')
@@ -499,12 +566,7 @@ if __name__ == "__main__":
             best_hp_setting_val_loss = math.inf
             best_hp_setting_num_samples = None
             for hp in HPs:
-                optim_type, lr, wd, dropout, loss_type = hp
-                hp_str = hp.get_hp_string()
-                print(hp_str)
-
-                loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
-                imagery_loss_fn = CosineDistance()
+                print(hp.to_string())
 
                 val_losses_for_folds = []
                 num_samples_for_folds = []
@@ -512,20 +574,9 @@ if __name__ == "__main__":
                 start = time.time()
 
                 for fold, (train_idx, val_idx) in enumerate(kf.split(idx)):
-                    gc.collect()
-                    loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
-                    run_str = hp_str + f"fold_{fold}"
-
-                    results_file_dir = f'{results_dir}/{run_str}'
-                    checkpoint_dir = f'{results_dir}/networks/{run_str}'
-
-                    os.makedirs(results_file_dir, exist_ok=True)
-                    os.makedirs(checkpoint_dir, exist_ok=True)
-
                     train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                     TRAINING_MODE, subset=train_idx, fold=fold,
                                                     preloaded_betas=preloaded_betas)
-
                     val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                   TRAINING_MODE, subset=val_idx, fold=fold,
                                                   preloaded_betas=preloaded_betas,
@@ -533,117 +584,44 @@ if __name__ == "__main__":
                                                   nn_latent_transform=train_dataset.nn_latent_transform
                                                   )
                     print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
-
                     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
                                               drop_last=True)
                     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
 
-                    model = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
-                    model = model.to(device)
+                    run_str = hp.to_string() + f"fold_{fold}"
 
-                    sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
+                    results = train_and_test(hp, run_str, results_dir, train_loader, val_loader, test_loader)
 
-                    optimizer = create_optimizer(optim_type)
+                    val_losses_for_folds.append(results['val_loss'])
+                    num_samples_for_folds.append(results["best_val_loss_num_samples"])
+                    print(f"best val loss: {results['val_loss']:.4f}")
 
-                    epochs_no_improved_loss = 0
-                    best_val_loss = math.inf
-                    best_val_loss_num_samples = 0
-
-                    num_samples_train_run = 0
-                    for epoch in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
-
-                        train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
-
-                        val_results = evaluate_decoder(model, val_loader, loss_fn)
-                        num_samples_train_run += num_epoch_samples
-
-                        sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
-                        sumwriter.add_scalar(f"Val/{loss_type} loss", val_results['loss'], num_samples_train_run)
-
-                        if val_results['loss'] < best_val_loss:
-                            best_val_loss = val_results['loss']
-                            best_val_loss_num_samples = num_samples_train_run
-                            epochs_no_improved_loss = 0
-
-                            torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
-                        else:
-                            epochs_no_improved_loss += 1
-
-                        if epochs_no_improved_loss >= PATIENCE:
-                            print(f"Loss did not improve for {PATIENCE} epochs. Terminating training.")
-                            break
-
-                        sumwriter.close()
-
-                    # Final eval
-                    model = LinearNet(train_dataset.bold_dim_size, train_dataset.latent_dim_size, dropout=dropout)
-                    model = model.to(device)
-                    model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
-
-                    val_results = evaluate_decoder(model, val_loader, loss_fn, calc_eval_metrics=True)
-
-                    test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
-
-                    results = {**test_results, **{'val_'+key: val for key, val in val_results.items()}}
-                    pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
-
-                    val_losses_for_folds.append(val_results['loss'])
-                    num_samples_for_folds.append(best_val_loss_num_samples)
-                    print(f"best val loss: {val_results['loss']:.4f}")
-                    if len(val_losses_for_folds) == NUM_CV_SPLITS and np.mean(
-                            val_losses_for_folds) < best_hp_setting_val_loss:
-                        best_hp_setting_val_loss = np.mean(val_losses_for_folds)
-                        best_hp_setting = hp
-                        best_hp_setting_num_samples = int(np.mean(num_samples_for_folds))
-                        print(
-                            f"new best hp setting val loss: {np.mean(val_losses_for_folds):.4f} | num samples: {best_hp_setting_num_samples}")
+                if np.mean(val_losses_for_folds) < best_hp_setting_val_loss:
+                    best_hp_setting_val_loss = np.mean(val_losses_for_folds)
+                    best_hp_setting = hp
+                    best_hp_setting_num_samples = int(np.mean(num_samples_for_folds))
+                    print(
+                        f"new best hp setting val loss: {np.mean(val_losses_for_folds):.4f} | "
+                        f"num samples: {best_hp_setting_num_samples}")
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
 
             # Re-train on full train set with best HP setting:
-            optim_type, lr, wd, dropout, loss_type = best_hp_setting
-
             num_samples_per_epoch = (len(train_val_dataset) // BATCH_SIZE) * BATCH_SIZE
             best_hp_setting_num_epochs = (best_hp_setting_num_samples // num_samples_per_epoch) + 1
             print(
                 f"Retraining {model_name} for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
-                best_hp_setting.get_hp_string())
-            hp_str = best_hp_setting.get_hp_string() + "_full_train"
-            model = LinearNet(train_val_dataset.bold_dim_size, train_val_dataset.latent_dim_size, dropout=dropout)
-            model = model.to(device)
+                best_hp_setting.to_string())
 
             full_train_loader = DataLoader(train_val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
                                            drop_last=True)
-            loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
+            run_str = best_hp_setting.to_string() + "_full_train"
 
-            optimizer = create_optimizer(optim_type)
+            results = train_and_test(best_hp_setting, run_str, results_dir, full_train_loader, val_loader=None,
+                                     test_loader=test_loader,
+                                     max_samples=best_hp_setting_num_samples)
 
-            sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{hp_str}', filename_suffix=f'')
-            checkpoint_dir = f'{results_dir}/networks/{hp_str}'
-            os.makedirs(checkpoint_dir, exist_ok=True)
-            results_file_dir = f'{results_dir}/{hp_str}'
-            os.makedirs(results_file_dir, exist_ok=True)
-
-            num_samples_train_run = 0
-            for epoch in trange(best_hp_setting_num_epochs, desc=f'training decoder on full train set'):
-                train_loss, num_epoch_samples = train_decoder_epoch(model, full_train_loader, optimizer, loss_fn)
-
-                num_samples_train_run += num_epoch_samples
-
-                sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
-
-                if num_samples_train_run >= best_hp_setting_num_samples:
-                    print(f"reached {best_hp_setting_num_samples} samples. Terminating full train.")
-
-                    torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
-
-                    test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
-
-                    pickle.dump(test_results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
-
-                    best_dir = f'{results_dir}/best_hp/'
-                    os.makedirs(best_dir, exist_ok=True)
-                    pickle.dump(test_results, open(os.path.join(best_dir, "results.p"), 'wb'))
-
-                    break
+            best_dir = f'{results_dir}/best_hp/'
+            os.makedirs(best_dir, exist_ok=True)
+            pickle.dump(results, open(os.path.join(best_dir, "results.p"), 'wb'))
