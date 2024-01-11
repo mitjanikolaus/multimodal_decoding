@@ -535,7 +535,7 @@ if __name__ == "__main__":
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
             test_dataset.preload()
 
-            results_dir = os.path.join(GLM_OUT_DIR, '{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
+            results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
