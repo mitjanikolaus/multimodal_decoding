@@ -58,7 +58,7 @@ DISTANCE_METRICS = ['cosine', 'euclidean']
 
 REGRESSION_MODEL_SKLEARN = "sklearn"
 REGRESSION_MODEL_PYTORCH = "pytorch"
-REGRESSION_MODEL = REGRESSION_MODEL_PYTORCH
+REGRESSION_MODEL = REGRESSION_MODEL_SKLEARN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -582,9 +582,9 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
             HPs = [
-                # HyperParameters(alpha=1000),
-                # HyperParameters(alpha=10),
-                # HyperParameters(alpha=100),
+                HyperParameters(alpha=1000),
+                HyperParameters(alpha=10),
+                HyperParameters(alpha=100),
 
                 # HyperParameters(optim_type='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
@@ -595,15 +595,15 @@ if __name__ == "__main__":
                 # HyperParameters(optim_type='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
-                HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
 
                 # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                HyperParameters(optim_type='ADAMW', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
                 # HyperParameters(optim_type='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                HyperParameters(optim_type='ADAMW', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAMW', lr=0.001, wd=1, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
 
                 # HyperParameters(optim_type='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
