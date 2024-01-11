@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.optim as optim
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold
 from torch.utils.data import Dataset, DataLoader
 import os
@@ -21,7 +22,6 @@ import pickle
 from torchvision.transforms import Compose
 from decoding_utils import get_distance_matrix, to_tensor
 from tqdm import trange
-import gc
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
@@ -56,8 +56,9 @@ TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/"
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
 
-# REGRESSION_MODEL = "sklearn"
-REGRESSION_MODEL = "pytorch"
+REGRESSION_MODEL_SKLEARN = "sklean"
+REGRESSION_MODEL_PYTORCH = "pytorch"
+REGRESSION_MODEL = REGRESSION_MODEL_SKLEARN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -374,58 +375,73 @@ def calc_rsa(latent_1, latent_2):
     return corr
 
 
-def evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=False):
+def calculate_eval_metrics(results):
+    # take equally sized subsets of samples for captions and images
+    stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
+
+    predictions_caption = results["predicitions"][results["stimulus_types"] == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    predictions_image = results["predicitions"][results["stimulus_types"] != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    val_predictions = np.concatenate((predictions_caption, predictions_image))
+
+    latents_caption = results["latents"][results["stimulus_types"] == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    latents_image = results["latents"][results["stimulus_types"] != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    val_latents = np.concatenate((latents_caption, latents_image))
+
+    for metric in DISTANCE_METRICS:
+        acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
+        results[f"acc_{metric}"] = acc
+
+        acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
+        acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
+        results[f"acc_{metric}_captions"] = acc_captions
+        results[f"acc_{metric}_images"] = acc_images
+
+    rsa = calc_rsa(val_predictions, val_latents)
+    results['rsa'] = rsa
+
+    return results
+
+
+def evaluate_decoder(model, test_loader, loss_fn, return_preds=False):
     r"""
     evaluates decoder on test bold signals
     returns the predicted vectors and loss values
     `distance_metrics` is a list of string containing distance metric names
     """
     model.eval()
-    cum_loss = []
+    loss = []
     predictions = []
+    latents = []
+
+    stimulus_ids = []
+    stimulus_types = []
     with torch.no_grad():
         for data in test_loader:
-            inputs, latents, stimulus_ids, stimulus_types = data
+            inputs, latents, ids, types = data
             outputs = model(inputs.to(device))
             test_loss = loss_fn(outputs, latents.to(device))
-            cum_loss.append(test_loss.item())
-            predictions.append(outputs.cpu().numpy())
-    cum_loss = np.mean(cum_loss)
-    predictions = np.concatenate(predictions, axis=0)
+            loss.append(test_loss.item())
+            if return_preds:
+                predictions.append(outputs.cpu().numpy())
+                stimulus_ids.append(ids.cpu().numpy())
+                stimulus_types.append(types.cpu().numpy())
+                latents.append(latents.cpu().numpy())
+    loss = np.mean(loss)
+    results = {"loss": loss}
 
-    results = {'classes': stimulus_ids,
-               'types': stimulus_types,
-               'predictions': predictions,
-               'latents': latents,
-               'loss': cum_loss}
+    if return_preds:
+        predictions = np.concatenate(predictions, axis=0)
+        stimulus_ids = np.concatenate(stimulus_ids, axis=0)
+        stimulus_types = np.concatenate(stimulus_types, axis=0)
+        latents = np.concatenate(latents, axis=0)
 
-    if calc_eval_metrics:
-        # take equally sized subsets of samples for captions and images
-        stimulus_types = np.array(stimulus_types)
-
-        stimulus_ids_caption = stimulus_ids[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-        stimulus_ids_image = stimulus_ids[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-        val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
-
-        predictions_caption = predictions[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-        predictions_image = predictions[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-        val_predictions = np.concatenate((predictions_caption, predictions_image))
-
-        latents_caption = latents[stimulus_types == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-        latents_image = latents[stimulus_types != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-        val_latents = np.concatenate((latents_caption, latents_image))
-
-        for metric in DISTANCE_METRICS:
-            acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
-            results[f"acc_{metric}"] = acc
-
-            acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
-            acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
-            results[f"acc_{metric}_captions"] = acc_captions
-            results[f"acc_{metric}_images"] = acc_images
-
-        rsa = calc_rsa(val_predictions, val_latents)
-        results['rsa'] = rsa
+        results.update({'stimulus_ids': stimulus_ids,
+                        'stimulus_types': stimulus_types,
+                        'predictions': predictions,
+                        'latents': latents,
+                        'loss': loss})
 
     return results
 
@@ -446,61 +462,105 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     os.makedirs(results_file_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
-    model = model.to(device)
-
     loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
-    optimizer = create_optimizer(hp, model)
 
-    sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
-    epochs_no_improved_loss = 0
-    best_val_loss = math.inf
-    best_val_loss_num_samples = 0
-    num_samples_train_run = 0
-    for _ in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
-        train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
-        num_samples_train_run += num_epoch_samples
-        sumwriter.add_scalar(f"Training/{hp.loss_type} loss", train_loss, num_samples_train_run)
+    if REGRESSION_MODEL == REGRESSION_MODEL_PYTORCH:
+        model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
+        model = model.to(device)
+        optimizer = create_optimizer(hp, model)
+
+        sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
+        epochs_no_improved_loss = 0
+        best_val_loss = math.inf
+        best_val_loss_num_samples = 0
+        num_samples_train_run = 0
+        for _ in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
+            train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
+            num_samples_train_run += num_epoch_samples
+            sumwriter.add_scalar(f"Training/{hp.loss_type} loss", train_loss, num_samples_train_run)
+
+            if val_loader is not None:
+                val_results = evaluate_decoder(model, val_loader, loss_fn)
+                sumwriter.add_scalar(f"Val/{hp.loss_type} loss", val_results['loss'], num_samples_train_run)
+                if val_results['loss'] < best_val_loss:
+                    best_val_loss = val_results['loss']
+                    best_val_loss_num_samples = num_samples_train_run
+                    epochs_no_improved_loss = 0
+
+                    torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
+                else:
+                    epochs_no_improved_loss += 1
+
+                if epochs_no_improved_loss >= PATIENCE:
+                    print(f"Loss did not improve for {PATIENCE} epochs. Terminating training.")
+                    break
+
+            elif max_samples is not None:
+                if num_samples_train_run >= max_samples:
+                    print(f"reached {max_samples} samples. Terminating full train.")
+
+                    torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
+                    break
+            else:
+                raise RuntimeError("Need to specify either a val loader or max_samples for train loop!")
+
+        sumwriter.close()
+
+        # Final eval
+        model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
+        model = model.to(device)
+        model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
+
+        results = {"best_val_loss_num_samples": best_val_loss_num_samples}
 
         if val_loader is not None:
-            val_results = evaluate_decoder(model, val_loader, loss_fn)
-            sumwriter.add_scalar(f"Val/{hp.loss_type} loss", val_results['loss'], num_samples_train_run)
-            if val_results['loss'] < best_val_loss:
-                best_val_loss = val_results['loss']
-                best_val_loss_num_samples = num_samples_train_run
-                epochs_no_improved_loss = 0
+            val_results = evaluate_decoder(model, val_loader, loss_fn, return_preds=True)
+            val_results = calculate_eval_metrics(val_results)
+            results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
+        if test_loader is not None:
+            test_results = evaluate_decoder(model, test_loader, loss_fn, return_preds=True)
+            test_results = calculate_eval_metrics(test_results)
+            results = {**results, **test_results}
 
-                torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
-            else:
-                epochs_no_improved_loss += 1
+    elif REGRESSION_MODEL == REGRESSION_MODEL_SKLEARN:
+        train_data = np.array([d for d, _, _, _ in train_loader.dataset])
+        train_data_latents = np.array([l for _, l, _, _ in train_loader.dataset])
 
-            if epochs_no_improved_loss >= PATIENCE:
-                print(f"Loss did not improve for {PATIENCE} epochs. Terminating training.")
-                break
+        model = Ridge(alpha=hp.alpha)
+        model.fit(train_data, train_data_latents)
 
-        elif max_samples is not None:
-            if num_samples_train_run >= max_samples:
-                print(f"reached {max_samples} samples. Terminating full train.")
+        results = {}
+        if val_loader is not None:
+            val_data = np.array([d for d, _, _, _ in val_loader.dataset])
+            val_data_latents = np.array([l for _, l, _, _ in val_loader.dataset])
+            val_stimulus_ids = np.array([id for _, _, id, _ in val_loader.dataset])
+            val_stimulus_types = np.array([t for _, _, _, t in val_loader.dataset])
 
-                torch.save(model.state_dict(), f"{checkpoint_dir}/model_best_val.pt")
-                break
-        else:
-            raise RuntimeError("Need to specify either a val loader or max_samples for train loop!")
+            val_predicted_latents = model.predict(val_data)
+            val_loss = loss_fn(torch.tensor(val_predicted_latents), torch.tensor(val_data_latents))
+            val_results = {"loss": val_loss,
+                           "stimulus_ids": val_stimulus_ids,
+                           "stimulus_types": val_stimulus_types,
+                           "predictions": val_predicted_latents,
+                           "latents": val_data_latents}
+            val_results = calculate_eval_metrics(val_results)
+            results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
 
-    sumwriter.close()
-    # Final eval
-    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
-    model = model.to(device)
-    model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
+        if test_loader is not None:
+            test_data = np.array([d for d, _, _, _ in test_loader.dataset])
+            test_data_latents = np.array([l for _, l, _, _ in test_loader.dataset])
+            test_stimulus_ids = np.array([id for _, _, id, _ in test_loader.dataset])
+            test_stimulus_types = np.array([t for _, _, _, t in test_loader.dataset])
+            test_predicted_latents = model.predict(test_data)
 
-    results = {"best_val_loss_num_samples": best_val_loss_num_samples}
-
-    if val_loader is not None:
-        val_results = evaluate_decoder(model, val_loader, loss_fn, calc_eval_metrics=True)
-        results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
-    if test_loader is not None:
-        test_results = evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=True)
-        results = {**results, **test_results}
+            test_results = {"stimulus_ids": test_stimulus_ids,
+                            "stimulus_types": test_stimulus_types,
+                            "predictions": test_predicted_latents,
+                            "latents": test_data_latents}
+            test_results = calculate_eval_metrics(test_results)
+            results = {**results, **test_results}
+    else:
+        raise RuntimeError("Unknown regression model: ", REGRESSION_MODEL)
 
     pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
