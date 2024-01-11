@@ -381,8 +381,8 @@ def calculate_eval_metrics(results):
     stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
 
-    predictions_caption = results["predicitions"][results["stimulus_types"] == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
-    predictions_image = results["predicitions"][results["stimulus_types"] != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    predictions_caption = results["predictions"][results["stimulus_types"] == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
+    predictions_image = results["predictions"][results["stimulus_types"] != 'caption'][:MAX_SAMPLES_EVAL_METRICS]
     val_predictions = np.concatenate((predictions_caption, predictions_image))
 
     latents_caption = results["latents"][results["stimulus_types"] == 'caption'][:MAX_SAMPLES_EVAL_METRICS]
