@@ -164,7 +164,7 @@ class COCOBOLDDataset(Dataset):
             self.stim_ids.append(stim_id)
             self.nn_latent_vectors.append(latent_vectors[stim_id][self.feature_key])
 
-        self.nn_latent_vectors = np.array(self.nn_latent_vectors)
+        self.nn_latent_vectors = np.array(self.nn_latent_vectors, dtype=np.float32)
         self.stim_ids = np.array(self.stim_ids)
         self.stim_types = np.array(self.stim_types)
 
