@@ -56,7 +56,7 @@ TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/"
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
 
-REGRESSION_MODEL_SKLEARN = "sklean"
+REGRESSION_MODEL_SKLEARN = "sklearn"
 REGRESSION_MODEL_PYTORCH = "pytorch"
 REGRESSION_MODEL = REGRESSION_MODEL_PYTORCH
 
@@ -541,7 +541,7 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
             val_stimulus_types = np.array([t for _, _, _, t in val_loader.dataset])
 
             val_predicted_latents = model.predict(val_data)
-            val_loss = loss_fn(torch.tensor(val_predicted_latents), torch.tensor(val_data_latents))
+            val_loss = loss_fn(torch.tensor(val_predicted_latents), torch.tensor(val_data_latents)).item()
             val_results = {"loss": val_loss,
                            "stimulus_ids": val_stimulus_ids,
                            "stimulus_types": val_stimulus_types,
