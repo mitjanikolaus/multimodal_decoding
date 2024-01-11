@@ -454,6 +454,8 @@ def create_optimizer(hp, model):
         optimizer = optim.SGD(model.parameters(), momentum=0.9, lr=hp.lr, weight_decay=hp.wd)
     elif hp.optim_type == 'ADAM':
         optimizer = optim.Adam(model.parameters(), lr=hp.lr, weight_decay=hp.wd)
+    elif hp.optim_type == 'ADAMW':
+        optimizer = optim.AdamW(model.parameters(), lr=hp.lr, weight_decay=hp.wd)
     else:
         raise RuntimeError("Unknown optimizer: ", hp.optim_type)
     return optimizer
@@ -464,7 +466,6 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
-
     loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
 
     if REGRESSION_MODEL == REGRESSION_MODEL_PYTORCH:
@@ -581,32 +582,32 @@ if __name__ == "__main__":
             results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
             HPs = [
-                HyperParameters(alpha=1000),
+                # HyperParameters(alpha=1000),
                 # HyperParameters(alpha=10),
                 # HyperParameters(alpha=100),
 
-                # HyperParameters(optimizer='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='SGD', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
+                HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
+                HyperParameters(optim_type='ADAMW', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
+                HyperParameters(optim_type='ADAMW', lr=0.001, wd=1, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
 
-                # HyperParameters(optimizer='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
-                # HyperParameters(optimizer='ADAM', lr=0.001, wd=10, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
+                # HyperParameters(optim_type='ADAM', lr=0.001, wd=10, dropout=False, loss='MSE'),
             ]
 
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
