@@ -529,7 +529,7 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
         model = Ridge(alpha=hp.alpha)
         model.fit(train_data, train_data_latents)
 
-        results = {}
+        results = {"best_val_loss_num_samples": 0}
         if val_loader is not None:
             val_data = np.array([d for d, _, _, _ in val_loader.dataset])
             val_data_latents = np.array([l for _, l, _, _ in val_loader.dataset])
