@@ -28,7 +28,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 NUM_CV_SPLITS = 5
 PATIENCE = 5
@@ -58,7 +58,7 @@ DISTANCE_METRICS = ['cosine', 'euclidean']
 
 REGRESSION_MODEL_SKLEARN = "sklearn"
 REGRESSION_MODEL_PYTORCH = "pytorch"
-REGRESSION_MODEL = REGRESSION_MODEL_SKLEARN
+REGRESSION_MODEL = REGRESSION_MODEL_PYTORCH
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -583,22 +583,13 @@ if __name__ == "__main__":
 
             HPs = [
                 # HyperParameters(alpha=1),
-                # HyperParameters(alpha=10),
-                # HyperParameters(alpha=100),
-                # HyperParameters(alpha=1000),
-                # HyperParameters(alpha=10000),
-                # HyperParameters(alpha=100000),
-                HyperParameters(alpha=1000000),
-                HyperParameters(alpha=10000000),
-
-                # HyperParameters(optim_type='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='SGD', lr=0.001, wd=0.00, dropout=False, loss='MSE'),
-
-                # HyperParameters(optim_type='SGD', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='SGD', lr=0.01, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='SGD', lr=0.01, wd=10, dropout=False, loss='MSE'),
+                # HyperParameters(alpha=1e1),
+                # HyperParameters(alpha=1e2),
+                # HyperParameters(alpha=1e3),
+                # HyperParameters(alpha=1e4),
+                # HyperParameters(alpha=1e5),
+                # HyperParameters(alpha=1e6),
+                # HyperParameters(alpha=1e7),
 
                 # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
@@ -613,6 +604,11 @@ if __name__ == "__main__":
 
                 # HyperParameters(optim_type='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
                 # HyperParameters(optim_type='ADAM', lr=0.001, wd=10, dropout=False, loss='MSE'),
+                HyperParameters(optim_type='ADAMW', lr=0.001, wd=10, dropout=False, loss='MSE'),
+                HyperParameters(optim_type='ADAMW', lr=0.001, wd=1000, dropout=False, loss='MSE'),
+
+                HyperParameters(optim_type='ADAMW', lr=0.0001, wd=10, dropout=False, loss='MSE'),
+                HyperParameters(optim_type='ADAMW', lr=0.0001, wd=1000, dropout=False, loss='MSE'),
             ]
 
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
