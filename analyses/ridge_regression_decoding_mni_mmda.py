@@ -35,6 +35,32 @@ PATIENCE = 5
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 
+MAX_EPOCHS = 400
+BATCH_SIZE = 2000
+
+MAX_SAMPLES_EVAL_METRICS = 1000
+
+# SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
+SUBJECTS = ['sub-01', 'sub-02']
+
+# model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
+# MODEL_NAMES = ['RESNET152_AVGPOOL']
+MODEL_NAMES = ['CLIP_L']
+# MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
+# MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
+TRAINING_MODE = TRAINING_MODES[0]
+DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
+
+TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
+
+GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
+DISTANCE_METRICS = ['cosine', 'euclidean']
+
+# REGRESSION_MODEL = "sklearn"
+REGRESSION_MODEL = "pytorch"
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 def fetch_coco_image(sid, coco_images_dir):
     r"""
@@ -275,27 +301,25 @@ class CosineDistance(nn.CosineSimilarity):
         return (1 - nn.functional.cosine_similarity(x1, x2, self.dim, self.eps)).mean()
 
 
-class HyperParameters():
-    r"""
-    A helper class to pack and represent training hyperparameters.
-    """
+class HyperParameters:
 
-    def __init__(self, optimizer='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE') -> None:
+    def __init__(self, optimizer='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None):
         self.optimizer = optimizer
         self.lr = lr
         self.wd = wd
         self.dropout = dropout
         self.loss = loss
+        self.alpha = alpha
 
     def to_string(self):
-        return f"[optim:{self.optimizer}][lr:{str(self.lr).replace('.', '-')}][wd:{str(self.wd).replace('.', '-')}][drop:{self.dropout}][loss:{self.loss}]"
-
-    def __iter__(self):
-        yield self.optimizer
-        yield self.lr
-        yield self.wd
-        yield self.dropout
-        yield self.loss
+        if self.alpha is not None:
+            return f'alpha={self.alpha}'
+        else:
+            return (f"[optim:{self.optimizer}]"
+                    f"[lr:{str(self.lr).replace('.', '-')}]"
+                    f"[wd:{str(self.wd).replace('.', '-')}]"
+                    f"[drop:{self.dropout}]"
+                    f"[loss:{self.loss}]")
 
 
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
@@ -406,56 +430,29 @@ def evaluate_decoder(model, test_loader, loss_fn, calc_eval_metrics=False):
     return results
 
 
-MAX_EPOCHS = 400
-BATCH_SIZE = 2000
-
-MAX_SAMPLES_EVAL_METRICS = 1000
-
-# SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']  # TODO 'sub-03'
-SUBJECTS = ['sub-01', 'sub-02']
-
-# model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
-# MODEL_NAMES = ['RESNET152_AVGPOOL']
-MODEL_NAMES = ['CLIP_L']
-# MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
-# MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
-TRAINING_MODE = TRAINING_MODES[0]
-DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
-
-TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
-
-GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
-DISTANCE_METRICS = ['cosine', 'euclidean']
-
-# REGRESSION_MODEL = "sklearn"
-REGRESSION_MODEL = "pytorch"
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-
-def create_optimizer(optim_type, model, lr, wd):
-    if optim_type == 'SGD':
-        optimizer = optim.SGD(model.parameters(), momentum=0.9, lr=lr, weight_decay=wd)
-    elif optim_type == 'ADAM':
-        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+def create_optimizer(hp, model):
+    if hp.optim_type == 'SGD':
+        optimizer = optim.SGD(model.parameters(), momentum=0.9, lr=hp.lr, weight_decay=hp.wd)
+    elif hp.optim_type == 'ADAM':
+        optimizer = optim.Adam(model.parameters(), lr=hp.lr, weight_decay=hp.wd)
     else:
-        raise RuntimeError("Unknown optimizer: ", optim_type)
+        raise RuntimeError("Unknown optimizer: ", hp.optim_type)
     return optimizer
 
 
 def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test_loader=None, max_samples=None):
-    optim_type, lr, wd, dropout, loss_type = hp
+    # optim_type, lr, wd, dropout, loss_type = hp
 
     results_file_dir = f'{results_dir}/{run_str}'
     checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=dropout)
+    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
     model = model.to(device)
 
-    loss_fn = nn.MSELoss() if loss_type == 'MSE' else CosineDistance()
-    optimizer = create_optimizer(optim_type, model, lr, wd)
+    loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
+    optimizer = create_optimizer(hp, model)
 
     sumwriter = SummaryWriter(f'{results_dir}/tensorboard/{run_str}', filename_suffix=f'')
     epochs_no_improved_loss = 0
@@ -465,11 +462,11 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     for _ in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
         train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
         num_samples_train_run += num_epoch_samples
-        sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
+        sumwriter.add_scalar(f"Training/{hp.loss_type} loss", train_loss, num_samples_train_run)
 
         if val_loader is not None:
             val_results = evaluate_decoder(model, val_loader, loss_fn)
-            sumwriter.add_scalar(f"Val/{loss_type} loss", val_results['loss'], num_samples_train_run)
+            sumwriter.add_scalar(f"Val/{hp.loss_type} loss", val_results['loss'], num_samples_train_run)
             if val_results['loss'] < best_val_loss:
                 best_val_loss = val_results['loss']
                 best_val_loss_num_samples = num_samples_train_run
@@ -494,7 +491,7 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
 
     sumwriter.close()
     # Final eval
-    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=dropout)
+    model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
     model = model.to(device)
     model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
@@ -520,26 +517,10 @@ if __name__ == "__main__":
         print(subject)
         for model_name in MODEL_NAMES:
             print(model_name)
-            std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
-
-            train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                                TRAINING_MODE)
-            preloaded_betas = train_val_dataset.preload()
-
-            idx = list(range(len(train_val_dataset)))
-            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
-
-            test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                           DECODER_TESTING_MODE,
-                                           fmri_betas_transform=train_val_dataset.fmri_betas_transform,
-                                           nn_latent_transform=train_val_dataset.nn_latent_transform)
-            test_dataset.preload()
-
             results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
-            test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
-
             HPs = [
+
                 # HyperParameters(optimizer='SGD', lr=0.0001, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.1, wd=0.00, dropout=False, loss='MSE'),
                 # HyperParameters(optimizer='SGD', lr=0.01, wd=0.00, dropout=False, loss='MSE'),
@@ -564,6 +545,21 @@ if __name__ == "__main__":
                 # HyperParameters(optimizer='ADAM', lr=0.001, wd=10, dropout=False, loss='MSE'),
             ]
 
+            std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
+
+            train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                                                TRAINING_MODE)
+            preloaded_betas = train_val_dataset.preload()
+
+            kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
+
+            test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                                           DECODER_TESTING_MODE,
+                                           fmri_betas_transform=train_val_dataset.fmri_betas_transform,
+                                           nn_latent_transform=train_val_dataset.nn_latent_transform)
+            test_dataset.preload()
+            test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
+
             best_hp_setting = None
             best_hp_setting_val_loss = math.inf
             best_hp_setting_num_samples = None
@@ -575,7 +571,7 @@ if __name__ == "__main__":
 
                 start = time.time()
 
-                for fold, (train_idx, val_idx) in enumerate(kf.split(idx)):
+                for fold, (train_idx, val_idx) in enumerate(kf.split(list(range(len(train_val_dataset))))):
                     train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                     TRAINING_MODE, subset=train_idx, fold=fold,
                                                     preloaded_betas=preloaded_betas)
