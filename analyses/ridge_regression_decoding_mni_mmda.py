@@ -427,6 +427,9 @@ TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/"
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine', 'euclidean']
 
+# REGRESSION_MODEL = "sklearn"
+REGRESSION_MODEL = "pytorch"
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -460,7 +463,6 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     best_val_loss_num_samples = 0
     num_samples_train_run = 0
     for _ in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
-
         train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
         num_samples_train_run += num_epoch_samples
         sumwriter.add_scalar(f"Training/{loss_type} loss", train_loss, num_samples_train_run)
@@ -533,8 +535,7 @@ if __name__ == "__main__":
                                            nn_latent_transform=train_val_dataset.nn_latent_transform)
             test_dataset.preload()
 
-            results_dir = os.path.join(GLM_OUT_DIR,
-                                       f'regression_results_mni_mmda_cv_shuffle_{TRAINING_MODE}/{subject}/{model_name}')
+            results_dir = os.path.join(GLM_OUT_DIR, '{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
 
             test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
