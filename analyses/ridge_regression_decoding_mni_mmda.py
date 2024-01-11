@@ -429,7 +429,7 @@ def evaluate_decoder(model, test_loader, loss_fn, return_preds=False):
             if return_preds:
                 predictions.append(outputs.cpu().numpy())
                 stimulus_ids.append(ids.cpu().numpy())
-                stimulus_types.append(types.cpu().numpy())
+                stimulus_types.append(types)
                 latents.append(latents.cpu().numpy())
     loss = np.mean(loss)
     results = {"loss": loss}
