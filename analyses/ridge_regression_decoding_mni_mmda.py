@@ -20,7 +20,7 @@ import os
 from glob import glob
 import pickle
 from torchvision.transforms import Compose
-from decoding_utils import get_distance_matrix, to_tensor
+from decoding_utils import get_distance_matrix, to_tensor, HyperParameters
 from tqdm import trange
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
@@ -41,11 +41,11 @@ BATCH_SIZE = 2000
 MAX_SAMPLES_EVAL_METRICS = 1000
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
-SUBJECTS = ['sub-01', 'sub-02']
+SUBJECTS = ['sub-01', 'sub-02', 'sub-04']
 
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
-# MODEL_NAMES = ['RESNET152_AVGPOOL']
-MODEL_NAMES = ['CLIP_L']
+MODEL_NAMES = ['RESNET152_AVGPOOL', 'CLIP_V', 'CLIP_L']
+# MODEL_NAMES = ['CLIP_L']
 # MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL']  # RESNET152_AVGPOOL_PCA768
 # MODEL_NAMES = ['BERT_LARGE', 'CLIP_L', 'CLIP_V', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'GPT2XL_AVG']
 TRAINING_MODE = TRAINING_MODES[0]
@@ -58,7 +58,37 @@ DISTANCE_METRICS = ['cosine', 'euclidean']
 
 REGRESSION_MODEL_SKLEARN = "sklearn"
 REGRESSION_MODEL_PYTORCH = "pytorch"
-REGRESSION_MODEL = REGRESSION_MODEL_PYTORCH
+REGRESSION_MODEL = REGRESSION_MODEL_SKLEARN
+
+HPs = [
+    HyperParameters(alpha=1),
+    # HyperParameters(alpha=1e1),
+    # HyperParameters(alpha=1e2),
+    HyperParameters(alpha=1e3),
+    # HyperParameters(alpha=1e4),
+    HyperParameters(alpha=1e5),
+    # HyperParameters(alpha=1e6),
+    HyperParameters(alpha=1e7),
+
+    # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
+
+    # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
+
+    # HyperParameters(optim_type='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAMW', lr=0.001, wd=1, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
+
+    # HyperParameters(optim_type='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAM', lr=0.001, wd=10, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAMW', lr=0.001, wd=10, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAMW', lr=0.001, wd=1000, dropout=False, loss='MSE'),
+    #
+    # HyperParameters(optim_type='ADAMW', lr=0.0001, wd=10, dropout=False, loss='MSE'),
+    # HyperParameters(optim_type='ADAMW', lr=0.0001, wd=1000, dropout=False, loss='MSE'),
+]
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -301,29 +331,6 @@ class CosineDistance(nn.CosineSimilarity):
     def forward(self, x1, x2):
         return (1 - nn.functional.cosine_similarity(x1, x2, self.dim, self.eps)).mean()
 
-
-class HyperParameters:
-    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None, full_train=False):
-        self.optim_type = optim_type
-        self.lr = lr
-        self.wd = wd
-        self.dropout = dropout
-        self.loss_type = loss
-        self.alpha = alpha
-        self.full_train = full_train
-
-    def to_string(self):
-        if self.alpha is not None:
-            descr = f'alpha={self.alpha}'
-        else:
-            descr = (f"[optim:{self.optim_type}]"
-                    f"[lr:{str(self.lr).replace('.', '-')}]"
-                    f"[wd:{str(self.wd).replace('.', '-')}]"
-                    f"[drop:{self.dropout}]"
-                    f"[loss:{self.loss_type}]")
-        if self.full_train:
-            descr += "_full_train"
-        return descr
 
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
     model.train()
@@ -580,36 +587,6 @@ if __name__ == "__main__":
         for model_name in MODEL_NAMES:
             print(model_name)
             results_dir = os.path.join(GLM_OUT_DIR, f'{TRAINING_MODE}/{REGRESSION_MODEL}/{subject}/{model_name}')
-
-            HPs = [
-                # HyperParameters(alpha=1),
-                # HyperParameters(alpha=1e1),
-                # HyperParameters(alpha=1e2),
-                # HyperParameters(alpha=1e3),
-                # HyperParameters(alpha=1e4),
-                # HyperParameters(alpha=1e5),
-                # HyperParameters(alpha=1e6),
-                # HyperParameters(alpha=1e7),
-
-                # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
-
-                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0.1, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='ADAM', lr=0.01, wd=0.1, dropout=False, loss='MSE'),
-
-                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='ADAMW', lr=0.001, wd=1, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='ADAM', lr=0.01, wd=1, dropout=False, loss='MSE'),
-
-                # HyperParameters(optim_type='ADAM', lr=0.0001, wd=10, dropout=False, loss='MSE'),
-                # HyperParameters(optim_type='ADAM', lr=0.001, wd=10, dropout=False, loss='MSE'),
-                HyperParameters(optim_type='ADAMW', lr=0.001, wd=10, dropout=False, loss='MSE'),
-                HyperParameters(optim_type='ADAMW', lr=0.001, wd=1000, dropout=False, loss='MSE'),
-
-                HyperParameters(optim_type='ADAMW', lr=0.0001, wd=10, dropout=False, loss='MSE'),
-                HyperParameters(optim_type='ADAMW', lr=0.0001, wd=1000, dropout=False, loss='MSE'),
-            ]
 
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 

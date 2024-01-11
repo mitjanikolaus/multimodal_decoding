@@ -16,6 +16,30 @@ from scipy.stats import rankdata
 import pandas as pd
 
 
+class HyperParameters:
+    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None, full_train=False):
+        self.optim_type = optim_type
+        self.lr = lr
+        self.wd = wd
+        self.dropout = dropout
+        self.loss_type = loss
+        self.alpha = alpha
+        self.full_train = full_train
+
+    def to_string(self):
+        if self.alpha is not None:
+            descr = f'alpha={self.alpha}'
+        else:
+            descr = (f"[optim:{self.optim_type}]"
+                    f"[lr:{str(self.lr).replace('.', '-')}]"
+                    f"[wd:{str(self.wd).replace('.', '-')}]"
+                    f"[drop:{self.dropout}]"
+                    f"[loss:{self.loss_type}]")
+        if self.full_train:
+            descr += "_full_train"
+        return descr
+
+
 class DecodingContainer():
     def __init__(self):
         self.results = {}
