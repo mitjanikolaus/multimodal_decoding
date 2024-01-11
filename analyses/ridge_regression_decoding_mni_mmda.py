@@ -474,7 +474,7 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
         best_val_loss = math.inf
         best_val_loss_num_samples = 0
         num_samples_train_run = 0
-        for _ in trange(MAX_EPOCHS, desc=f'training decoder for fold {fold}'):
+        for _ in trange(MAX_EPOCHS, desc=f'training decoder'):
             train_loss, num_epoch_samples = train_decoder_epoch(model, train_loader, optimizer, loss_fn)
             num_samples_train_run += num_epoch_samples
             sumwriter.add_scalar(f"Training/{hp.loss_type} loss", train_loss, num_samples_train_run)
@@ -642,7 +642,7 @@ if __name__ == "__main__":
                                                   fmri_betas_transform=train_dataset.fmri_betas_transform,
                                                   nn_latent_transform=train_dataset.nn_latent_transform
                                                   )
-                    print(f"Train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
+                    print(f"Fold {fold} | train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
                     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
                                               drop_last=True)
                     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
