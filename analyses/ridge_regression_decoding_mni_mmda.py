@@ -11,7 +11,7 @@ import nibabel as nib
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cdist, cosine
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold
@@ -335,6 +335,10 @@ class CosineDistance(nn.CosineSimilarity):
         return (1 - nn.functional.cosine_similarity(x1, x2, self.dim, self.eps)).mean()
 
 
+def calc_cosine_distances(predictions, targets):
+    return np.mean([cosine(pred, target) for pred, target in zip(predictions, targets)])
+
+
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
     model.train()
     cum_loss = []
@@ -476,9 +480,10 @@ def train_and_test(hp, run_str, results_dir, train_ds, val_ds=None, test_ds=None
     checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
-    loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
 
     if REGRESSION_MODEL == REGRESSION_MODEL_PYTORCH:
+        loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
+
         train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
                                        drop_last=True)
         if val_ds is not None:
@@ -544,6 +549,8 @@ def train_and_test(hp, run_str, results_dir, train_ds, val_ds=None, test_ds=None
             results = {**results, **test_results}
 
     elif REGRESSION_MODEL == REGRESSION_MODEL_SKLEARN:
+        loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else calc_cosine_distances
+
         train_data = [d for d in train_ds]
         train_data_inputs = np.array([i for i, _, _, _ in train_data])
         train_data_latents = np.array([l for _, l, _, _ in train_data])
@@ -558,7 +565,7 @@ def train_and_test(hp, run_str, results_dir, train_ds, val_ds=None, test_ds=None
             val_data_latents = np.array([l for _, l, _, _ in val_data])
 
             val_predicted_latents = model.predict(val_data_inputs)
-            val_loss = loss_fn(torch.tensor(val_predicted_latents), torch.tensor(val_data_latents)).item()
+            val_loss = loss_fn(val_predicted_latents, val_data_latents)
             val_results = {"loss": val_loss,
                            "stimulus_ids": val_ds.stim_ids,
                            "stimulus_types": val_ds.stim_types,
