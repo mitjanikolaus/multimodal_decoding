@@ -141,7 +141,7 @@ class COCOBOLDDataset(Dataset):
     def __init__(self, bold_root_dir, subject, model_name, mean_std_dir, mode=TRAINING_MODES[0],
                  blank_correction=True, subset=None, fold=None, preloaded_betas=None,
                  overwrite_transformations_mean_std=False,
-                 fmri_betas_transform=None, nn_latent_transform=None):
+                 fmri_betas_transform=None, nn_latent_transform=None, transform_to_tensor=False):
         """
         Args:
             bold_root_dir (str): BOLD root directory (parent of subjects' directories).
@@ -162,6 +162,7 @@ class COCOBOLDDataset(Dataset):
         self.overwrite_transformations_mean_std = overwrite_transformations_mean_std
         self.model_name = model_name
         self.fold = fold
+        self.transform_to_tensor = transform_to_tensor
 
         latent_vectors_file = MODEL_FEATURES_FILES[model_name]
 
@@ -245,10 +246,10 @@ class COCOBOLDDataset(Dataset):
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
-        self.nn_latent_transform = Compose([
-            Normalize(model_mean_std['mean'], model_mean_std['std']),
-            to_tensor
-        ])
+        compose_ops = [Normalize(model_mean_std['mean'], model_mean_std['std'])]
+        if self.transform_to_tensor:
+            compose_ops.append(to_tensor)
+        self.nn_latent_transform = Compose(compose_ops)
 
     def init_fmri_betas_transform(self):
         bold_std_mean_name = f'bold_multimodal_mean_std_{self.mode}_fold_{self.fold}.p'
@@ -264,10 +265,10 @@ class COCOBOLDDataset(Dataset):
             pickle.dump(mean_std, open(bold_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
-        self.fmri_betas_transform = Compose([
-            Normalize(bold_mean_std['mean'], bold_mean_std['std']),
-            to_tensor
-        ])
+        compose_ops = [Normalize(bold_mean_std['mean'], bold_mean_std['std'])]
+        if self.transform_to_tensor:
+            compose_ops.append(to_tensor)
+        self.fmri_betas_transform = Compose(compose_ops)
 
     def preload(self):
         print("preloading")
@@ -470,7 +471,7 @@ def create_optimizer(hp, model):
     return optimizer
 
 
-def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test_loader=None, max_samples=None):
+def train_and_test(hp, run_str, results_dir, train_ds, val_ds=None, test_ds=None, max_samples=None):
     results_file_dir = f'{results_dir}/{run_str}'
     checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
@@ -478,7 +479,14 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
 
     if REGRESSION_MODEL == REGRESSION_MODEL_PYTORCH:
-        model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
+        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
+                                       drop_last=True)
+        if val_ds is not None:
+            val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
+        if test_ds is not None:
+            test_loader = DataLoader(test_ds, batch_size=len(test_dataset), num_workers=0, shuffle=False)
+
+        model = LinearNet(train_ds.bold_dim_size, train_ds.latent_dim_size, dropout=hp.dropout)
         model = model.to(device)
         optimizer = create_optimizer(hp, model)
 
@@ -492,7 +500,7 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
             num_samples_train_run += num_epoch_samples
             sumwriter.add_scalar(f"Training/{hp.loss_type} loss", train_loss, num_samples_train_run)
 
-            if val_loader is not None:
+            if val_ds is not None:
                 val_results = evaluate_decoder(model, val_loader, loss_fn)
                 sumwriter.add_scalar(f"Val/{hp.loss_type} loss", val_results['loss'], num_samples_train_run)
                 if val_results['loss'] < best_val_loss:
@@ -520,54 +528,53 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
         sumwriter.close()
 
         # Final eval
-        model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
+        model = LinearNet(train_ds.bold_dim_size, train_ds.latent_dim_size, dropout=hp.dropout)
         model = model.to(device)
         model.load_state_dict(torch.load(f"{checkpoint_dir}/model_best_val.pt", map_location=device))
 
         results = {"best_val_loss_num_samples": best_val_loss_num_samples}
 
-        if val_loader is not None:
+        if val_ds is not None:
             val_results = evaluate_decoder(model, val_loader, loss_fn, return_preds=True)
             val_results = calculate_eval_metrics(val_results)
             results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
-        if test_loader is not None:
+        if test_ds is not None:
             test_results = evaluate_decoder(model, test_loader, loss_fn, return_preds=True)
             test_results = calculate_eval_metrics(test_results)
             results = {**results, **test_results}
 
     elif REGRESSION_MODEL == REGRESSION_MODEL_SKLEARN:
-        train_data = np.array([d for d, _, _, _ in train_loader.dataset])
-        train_data_latents = np.array([l for _, l, _, _ in train_loader.dataset])
+        train_data = [d for d in train_ds]
+        train_data_inputs = np.array([i for i, _, _, _ in train_data])
+        train_data_latents = np.array([l for _, l, _, _ in train_data])
 
         model = Ridge(alpha=hp.alpha)
-        model.fit(train_data, train_data_latents)
+        model.fit(train_data_inputs, train_data_latents)
 
         results = {"best_val_loss_num_samples": 0}
-        if val_loader is not None:
-            val_data = np.array([d for d, _, _, _ in val_loader.dataset])
-            val_data_latents = np.array([l for _, l, _, _ in val_loader.dataset])
-            val_stimulus_ids = np.array([id for _, _, id, _ in val_loader.dataset])
-            val_stimulus_types = np.array([t for _, _, _, t in val_loader.dataset])
+        if val_ds is not None:
+            val_data = [d for d in val_ds]
+            val_data_inputs = np.array([i for i, _, _, _ in val_data])
+            val_data_latents = np.array([l for _, l, _, _ in val_data])
 
-            val_predicted_latents = model.predict(val_data)
+            val_predicted_latents = model.predict(val_data_inputs)
             val_loss = loss_fn(torch.tensor(val_predicted_latents), torch.tensor(val_data_latents)).item()
             val_results = {"loss": val_loss,
-                           "stimulus_ids": val_stimulus_ids,
-                           "stimulus_types": val_stimulus_types,
+                           "stimulus_ids": val_ds.stim_ids,
+                           "stimulus_types": val_ds.stim_types,
                            "predictions": val_predicted_latents,
                            "latents": val_data_latents}
             val_results = calculate_eval_metrics(val_results)
             results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
 
-        if test_loader is not None:
-            test_data = np.array([d for d, _, _, _ in test_loader.dataset])
-            test_data_latents = np.array([l for _, l, _, _ in test_loader.dataset])
-            test_stimulus_ids = np.array([id for _, _, id, _ in test_loader.dataset])
-            test_stimulus_types = np.array([t for _, _, _, t in test_loader.dataset])
-            test_predicted_latents = model.predict(test_data)
+        if test_ds is not None:
+            test_data = [d for d in val_ds]
+            test_data_inputs = np.array([i for i, _, _, _ in test_data])
+            test_data_latents = np.array([l for _, l, _, _ in test_data])
+            test_predicted_latents = model.predict(test_data_inputs)
 
-            test_results = {"stimulus_ids": test_stimulus_ids,
-                            "stimulus_types": test_stimulus_types,
+            test_results = {"stimulus_ids": test_ds.stim_ids,
+                            "stimulus_types": test_ds.stim_types,
                             "predictions": test_predicted_latents,
                             "latents": test_data_latents}
             test_results = calculate_eval_metrics(test_results)
@@ -580,19 +587,18 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     return results
 
 
-def retrain_full_train(train_dataset, test_loader, hp_setting, num_samples, results_dir, suffix="_full_train"):
+def retrain_full_train(train_dataset, test_dataset, hp_setting, num_samples, results_dir, suffix="_full_train"):
     num_samples_per_epoch = (len(train_dataset) // BATCH_SIZE) * BATCH_SIZE
     best_hp_setting_num_epochs = (num_samples // num_samples_per_epoch) + 1
     print(
         f"Retraining for {best_hp_setting_num_epochs} epochs on full train set with hp setting: ",
         hp_setting.to_string())
 
-    full_train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
-                                   drop_last=True)
+
     run_str = hp_setting.to_string() + suffix
 
-    results = train_and_test(hp_setting, run_str, results_dir, full_train_loader, val_loader=None,
-                             test_loader=test_loader,
+    results = train_and_test(hp_setting, run_str, results_dir, train_dataset, val_ds=None,
+                             test_ds=test_dataset,
                              max_samples=num_samples)
 
     best_dir = f'{results_dir}/best_hp/'
@@ -612,8 +618,9 @@ if __name__ == "__main__":
 
             std_mean_dir = os.path.join(GLM_OUT_DIR, subject)
 
+            transform_to_tensor = True if REGRESSION_MODEL == REGRESSION_MODEL_PYTORCH else False
             train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                                TRAINING_MODE)
+                                                TRAINING_MODE, transform_to_tensor=transform_to_tensor)
             preloaded_betas = train_val_dataset.preload()
 
             kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
@@ -621,9 +628,9 @@ if __name__ == "__main__":
             test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                            DECODER_TESTING_MODE,
                                            fmri_betas_transform=train_val_dataset.fmri_betas_transform,
-                                           nn_latent_transform=train_val_dataset.nn_latent_transform)
+                                           nn_latent_transform=train_val_dataset.nn_latent_transform,
+                                           transform_to_tensor=transform_to_tensor)
             test_dataset.preload()
-            test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), num_workers=0, shuffle=False)
 
             best_hp_setting = None
             best_hp_setting_val_loss = math.inf
@@ -646,21 +653,20 @@ if __name__ == "__main__":
                 for fold, (train_idx, val_idx) in enumerate(kf.split(list(range(len(train_val_dataset))))):
                     train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                     TRAINING_MODE, subset=train_idx, fold=fold,
-                                                    preloaded_betas=preloaded_betas)
+                                                    preloaded_betas=preloaded_betas,
+                                                    transform_to_tensor=transform_to_tensor)
                     val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                   TRAINING_MODE, subset=val_idx, fold=fold,
                                                   preloaded_betas=preloaded_betas,
                                                   fmri_betas_transform=train_dataset.fmri_betas_transform,
-                                                  nn_latent_transform=train_dataset.nn_latent_transform
+                                                  nn_latent_transform=train_dataset.nn_latent_transform,
+                                                  transform_to_tensor=transform_to_tensor
                                                   )
                     print(f"Fold {fold} | train set size: {len(train_dataset)} | val set size: {len(val_dataset)}")
-                    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True,
-                                              drop_last=True)
-                    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False)
 
                     run_str = hp.to_string() + f"fold_{fold}"
 
-                    results = train_and_test(hp, run_str, results_dir, train_loader, val_loader, test_loader)
+                    results = train_and_test(hp, run_str, results_dir, train_dataset, val_dataset, test_dataset)
 
                     val_losses_for_folds.append(results['val_loss'])
                     num_samples_for_folds.append(results["best_val_loss_num_samples"])
@@ -689,8 +695,8 @@ if __name__ == "__main__":
                 print(f"Elapsed time: {int(end - start)}s")
 
             # Re-train on full train set with best HP settings:
-            retrain_full_train(train_val_dataset, test_loader, best_hp_setting, best_hp_setting_num_samples,
+            retrain_full_train(train_val_dataset, test_dataset, best_hp_setting, best_hp_setting_num_samples,
                                results_dir)
 
-            retrain_full_train(train_val_dataset, test_loader, best_hp_setting_acc_cosine,
+            retrain_full_train(train_val_dataset, test_dataset, best_hp_setting_acc_cosine,
                                best_hp_setting_acc_cosine_num_samples, results_dir, suffix="_full_train_best_val_acc")
