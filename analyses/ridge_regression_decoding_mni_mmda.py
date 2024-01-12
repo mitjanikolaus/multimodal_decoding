@@ -326,14 +326,6 @@ class Normalize():
         return ((x - self.mean) / self.std).astype(np.float32).squeeze()
 
 
-class CosineDistance(nn.CosineSimilarity):
-    def __init__(self, dim: int = 1, eps: float = 1e-8) -> None:
-        super().__init__(dim, eps)
-
-    def forward(self, x1, x2):
-        return (1 - nn.functional.cosine_similarity(x1, x2, self.dim, self.eps)).mean()
-
-
 def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
     model.train()
     cum_loss = []
@@ -475,7 +467,7 @@ def train_and_test(hp, run_str, results_dir, train_loader, val_loader=None, test
     checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
-    loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else CosineDistance()
+    loss_fn = nn.MSELoss() if hp.loss_type == 'MSE' else nn.CosineEmbeddingLoss()
 
     if REGRESSION_MODEL == REGRESSION_MODEL_PYTORCH:
         model = LinearNet(train_loader.dataset.bold_dim_size, train_loader.dataset.latent_dim_size, dropout=hp.dropout)
