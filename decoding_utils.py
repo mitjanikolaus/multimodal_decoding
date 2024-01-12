@@ -28,7 +28,8 @@ class HyperParameters:
 
     def to_string(self):
         if self.alpha is not None:
-            descr = f'alpha={float(self.alpha)}'
+            descr = (f'[alpha:{float(self.alpha)}]'
+                     f'[loss:{float(self.loss_type)}]')
         else:
             descr = (f"[optim:{self.optim_type}]"
                     f"[lr:{str(self.lr).replace('.', '-')}]"
