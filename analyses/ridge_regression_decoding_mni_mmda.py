@@ -568,7 +568,7 @@ def train_and_test(hp, run_str, results_dir, train_ds, val_ds=None, test_ds=None
             results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
 
         if test_ds is not None:
-            test_data = [d for d in val_ds]
+            test_data = [d for d in test_ds]
             test_data_inputs = np.array([i for i, _, _, _ in test_data])
             test_data_latents = np.array([l for _, l, _, _ in test_data])
             test_predicted_latents = model.predict(test_data_inputs)
