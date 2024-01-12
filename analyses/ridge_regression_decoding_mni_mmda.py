@@ -55,7 +55,7 @@ DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
-DISTANCE_METRICS = ['cosine', 'euclidean']
+DISTANCE_METRICS = ['cosine']
 
 REGRESSION_MODEL_SKLEARN = "sklearn"
 REGRESSION_MODEL_PYTORCH = "pytorch"
