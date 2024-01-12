@@ -17,7 +17,7 @@ import pandas as pd
 
 
 class HyperParameters:
-    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='MSE', alpha=None, full_train=False):
+    def __init__(self, optim_type='SGD', lr=0.01, wd=0.01, dropout=False, loss='cosine_distance', alpha=None, full_train=False):
         self.optim_type = optim_type
         self.lr = lr
         self.wd = wd
