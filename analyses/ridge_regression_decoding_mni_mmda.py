@@ -40,14 +40,14 @@ BATCH_SIZE = 2000
 
 MAX_SAMPLES_EVAL_METRICS = 1000
 
-SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
+# SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04']
-# SUBJECTS = ['sub-01', 'sub-02']
+SUBJECTS = ['sub-01', 'sub-02']
 # SUBJECTS = ['sub-05', 'sub-07']
 # SUBJECTS = ['sub-03']
 
-# MODEL_NAMES = ['CLIP_L']
-MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER', 'RESNET152_AVGPOOL']
+MODEL_NAMES = ['CLIP_L']
+# MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER', 'RESNET152_AVGPOOL']
 # MODEL_NAMES = ['CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL_PCA768']  # RESNET152_AVGPOOL_PCA768
 
 TRAINING_MODE = TRAINING_MODES[0]
@@ -56,7 +56,7 @@ DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
 TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
-DISTANCE_METRICS = ['cosine']
+DISTANCE_METRICS = ['csls_cosine']
 
 REGRESSION_MODEL_SKLEARN = "sklearn"
 REGRESSION_MODEL_PYTORCH = "pytorch"
@@ -360,11 +360,36 @@ def train_decoder_epoch(model, train_loader, optimizer, loss_fn):
     return cum_loss, num_samples
 
 
-def pairwise_accuracy(predictions, latents, metric, stimulus_ids):
+def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
+    def get_nn_avg_dist(lat1, lat2, knn=10, metric="cosine"):
+        distances = cdist(lat2, lat1, metric=metric)
+
+        best_distances_idx = np.argsort(distances, axis=1)[:, -knn:]
+        best_distances = distances[best_distances_idx]
+
+        all_distances = best_distances.mean(axis=1)
+
+        return all_distances
+
+    average_dist_preds = get_nn_avg_dist(predictions, latents, knn, metric)
+    average_dist_lats = get_nn_avg_dist(latents, predictions, knn, metric)
+
+    scores = cdist(predictions, latents, metric=metric)
+
+    dist_mat = 2 * scores - average_dist_preds - average_dist_lats
+
+    return dist_mat
+
+
+def pairwise_accuracy(predictions, latents, stimulus_ids, metric="cosine"):
     std = predictions.std(axis=0) + 1e-8  # For numerical stability
     predictions = (predictions - predictions.mean(axis=0)) / std
 
-    dist_mat = get_distance_matrix(predictions, latents, metric)
+    if "csls_" in metric:
+        metric = metric.replace("csls_", "")
+        dist_mat = get_distance_matrix_csls(predictions, latents, metric=metric)
+    else:
+        dist_mat = get_distance_matrix(predictions, latents, metric)
 
     not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
 
@@ -407,11 +432,11 @@ def calculate_eval_metrics(results):
     val_latents = np.concatenate((latents_caption, latents_image))
 
     for metric in DISTANCE_METRICS:
-        acc = pairwise_accuracy(val_predictions, val_latents, metric, val_ids)
+        acc = pairwise_accuracy(val_predictions, val_latents, val_ids, metric)
         results[f"acc_{metric}"] = acc
 
-        acc_captions = pairwise_accuracy(predictions_caption, latents_caption, metric, stimulus_ids_caption)
-        acc_images = pairwise_accuracy(predictions_image, latents_image, metric, stimulus_ids_image)
+        acc_captions = pairwise_accuracy(predictions_caption, latents_caption, stimulus_ids_caption, metric)
+        acc_images = pairwise_accuracy(predictions_image, latents_image, stimulus_ids_image, metric)
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
 
