@@ -42,16 +42,12 @@ MAX_SAMPLES_EVAL_METRICS = 1000
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04']
-SUBJECTS = ['sub-01', 'sub-02', 'sub-04']
-
+# SUBJECTS = ['sub-01', 'sub-02', 'sub-04']
+SUBJECTS = ['sub-05', 'sub-07']
 # SUBJECTS = ['sub-03']
 
-# model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
-# MODEL_NAMES = ['RESNET152_AVGPOOL', 'CLIP_V', 'CLIP_L']
-# MODEL_NAMES = ['RESNET152_AVGPOOL', 'CLIP_V']
-# MODEL_NAMES = ['CLIP_L', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER']
-
-MODEL_NAMES = ['CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL_PCA768']  # RESNET152_AVGPOOL_PCA768
+MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER', 'RESNET152_AVGPOOL']
+# MODEL_NAMES = ['CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL_PCA768']  # RESNET152_AVGPOOL_PCA768
 
 TRAINING_MODE = TRAINING_MODES[0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
@@ -66,7 +62,7 @@ REGRESSION_MODEL_PYTORCH = "pytorch"
 REGRESSION_MODEL = REGRESSION_MODEL_SKLEARN
 
 HPs = [
-    HyperParameters(alpha=1),
+    # HyperParameters(alpha=1),
     # HyperParameters(alpha=1e1),
     # HyperParameters(alpha=1e2),
     HyperParameters(alpha=1e3),
