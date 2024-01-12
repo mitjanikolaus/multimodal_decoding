@@ -41,7 +41,8 @@ BATCH_SIZE = 2000
 MAX_SAMPLES_EVAL_METRICS = 1000
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
-SUBJECTS = ['sub-01', 'sub-02', 'sub-04']
+# SUBJECTS = ['sub-01', 'sub-02', 'sub-04']
+SUBJECTS = ['sub-03']
 
 # model_names = ['GPT2XL_AVG', 'VITL16_ENCODER','RESNET152_AVGPOOL', 'GPT2XL_AVG_PCA768', 'VITL16_ENCODER_PCA768']
 # MODEL_NAMES = ['RESNET152_AVGPOOL', 'CLIP_V', 'CLIP_L']
