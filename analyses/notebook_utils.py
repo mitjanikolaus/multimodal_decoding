@@ -14,9 +14,9 @@ from tqdm import tqdm
 def load_results_data(training_mode, regression_models, distance_metrics, subjects):
     results_root_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm/{training_mode}')
     
-    metrics = ['val_loss', 'val_acc_cosine', 'val_rsa', 'rsa']
+    metrics = ['val_loss', 'val_rsa', 'rsa', 'predictions', 'latents', 'stimulus_ids']
     for dist_metric in distance_metrics:
-        metrics.extend([f'acc_{dist_metric}', f'acc_{dist_metric}_captions', f'acc_{dist_metric}_images'])         
+        metrics.extend([f'acc_{dist_metric}', f'acc_{dist_metric}_captions', f'acc_{dist_metric}_images', f'val_acc_{dist_metric}'])         
     
     all_dfs = []
     
