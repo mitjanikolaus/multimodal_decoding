@@ -256,29 +256,6 @@ def apply_pca(n_components, data_pickle_file):
         pickle.dump(transformed_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def combine_visual_and_lingual_features_in_one_file(visual_pickle_file, lingual_pickle_file, output_pickle_file):
-    r"""
-    Combines linguistic and visual pickle files into a single file.
-    """
-    with open(visual_pickle_file, 'rb') as f:
-        data_v = pickle.load(f)
-
-    with open(lingual_pickle_file, 'rb') as ff:
-        data_l = pickle.load(ff)
-
-    print('number of samples:', len(data_v), len(data_l))
-    # gathering all the stim ids
-    stim_ids = list(data_v.keys())
-    combined_data = {}
-    for sid in stim_ids:
-        visual = data_v[sid]
-        lingual = data_l[sid]
-        combined_data[sid] = {**visual, **lingual}
-
-    with open(output_pickle_file, 'wb') as handle:
-        pickle.dump(combined_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
 class ImageClassificationPreprocessing(nn.Module):
     def __init__(
             self,
