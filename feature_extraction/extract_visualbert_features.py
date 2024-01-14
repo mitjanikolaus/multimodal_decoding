@@ -42,7 +42,7 @@ def load_config_and_model_weights(cfg_path):
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
 
     # Comment the next line if you're using 'cuda'
-    cfg['MODEL']['DEVICE'] = 'cpu'
+    cfg['MODEL']['DEVICE'] = device
 
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(cfg_path)
 
