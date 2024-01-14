@@ -198,9 +198,10 @@ def extract_visualbert_features():
         visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
         visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
 
-        outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                                   visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
-                                   visual_token_type_ids=visual_token_type_ids)
+        with torch.no_grad():
+            outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+                                       visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
+                                       visual_token_type_ids=visual_token_type_ids)
 
         # average last hidden states over all words:
         last_hidden_states = outputs.last_hidden_state.mean(dim=1)  # TODO correct way?
@@ -226,39 +227,40 @@ def extract_image_features():
 
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
-        imgs = [plt.imread(path) for path in img_paths]
+        with torch.no_grad():
+            imgs = [plt.imread(path) for path in img_paths]
 
-        imgs = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in imgs]
+            imgs = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in imgs]
 
-        images, batched_inputs = prepare_image_inputs(maskrcnn_model, cfg, imgs)
+            images, batched_inputs = prepare_image_inputs(maskrcnn_model, cfg, imgs)
 
-        features = get_features(maskrcnn_model, images)
+            features = get_features(maskrcnn_model, images)
 
-        proposals = get_proposals(maskrcnn_model, images, features)
+            proposals = get_proposals(maskrcnn_model, images, features)
 
-        box_features, features_list = get_box_features(maskrcnn_model, features, proposals)
+            box_features, features_list = get_box_features(maskrcnn_model, features, proposals)
 
-        pred_class_logits, pred_proposal_deltas = get_prediction_logits(maskrcnn_model, features_list, proposals)
+            pred_class_logits, pred_proposal_deltas = get_prediction_logits(maskrcnn_model, features_list, proposals)
 
-        boxes, scores, image_shapes = get_box_scores(cfg, pred_class_logits, pred_proposal_deltas, proposals)
+            boxes, scores, image_shapes = get_box_scores(cfg, pred_class_logits, pred_proposal_deltas, proposals)
 
-        output_boxes = [get_output_boxes(boxes[i], batched_inputs[i], proposals[i].image_size) for i in
-                        range(len(proposals))]
+            output_boxes = [get_output_boxes(boxes[i], batched_inputs[i], proposals[i].image_size) for i in
+                            range(len(proposals))]
 
-        temp = [select_boxes(cfg, output_boxes[i], scores[i]) for i in range(len(scores))]
-        keep_boxes, max_conf = [], []
-        for keep_box, mx_conf in temp:
-            keep_boxes.append(keep_box)
-            max_conf.append(mx_conf)
+            temp = [select_boxes(cfg, output_boxes[i], scores[i]) for i in range(len(scores))]
+            keep_boxes, max_conf = [], []
+            for keep_box, mx_conf in temp:
+                keep_boxes.append(keep_box)
+                max_conf.append(mx_conf)
 
-        keep_boxes = [filter_boxes(keep_box, mx_conf, MIN_BOXES, MAX_BOXES) for keep_box, mx_conf in
-                      zip(keep_boxes, max_conf)]
+            keep_boxes = [filter_boxes(keep_box, mx_conf, MIN_BOXES, MAX_BOXES) for keep_box, mx_conf in
+                          zip(keep_boxes, max_conf)]
 
-        visual_embeds = [get_visual_embeds(box_feature, keep_box) for box_feature, keep_box in
-                         zip(box_features, keep_boxes)]
+            visual_embeds = [get_visual_embeds(box_feature, keep_box) for box_feature, keep_box in
+                             zip(box_features, keep_boxes)]
 
-        for id, feats in zip(ids, visual_embeds):
-            all_feats[id] = feats
+            for id, feats in zip(ids, visual_embeds):
+                all_feats[id] = feats
 
     os.makedirs(os.path.dirname(MASKRCNN_FEATS_PATH), exist_ok=True)
     pickle.dump(all_feats, open(MASKRCNN_FEATS_PATH, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
