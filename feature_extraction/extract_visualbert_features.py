@@ -11,14 +11,14 @@ from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.structures.image_list import ImageList
 from detectron2.data import transforms as T
 from detectron2.modeling.box_regression import Box2BoxTransform
-from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputs
+from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers
 from detectron2.structures.boxes import Boxes
-from detectron2.layers import nms
+from detectron2.layers import nms, ShapeSpec
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from tqdm import tqdm
 
-from transformers import BertTokenizer, VisualBertForPreTraining, VisualBertModel
+from transformers import BertTokenizer, VisualBertModel
 
 from feature_extraction.extract_nn_features import COCOSelected
 from utils import FEATURES_DIR, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, STIMULI_IDS_PATH, MODEL_FEATURES_FILES
@@ -28,7 +28,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 64
+BATCH_SIZE = 100
 
 MIN_BOXES = 10
 MAX_BOXES = 100
@@ -118,22 +118,36 @@ def get_prediction_logits(model, features_list, proposals):
 
 
 def get_box_scores(cfg, pred_class_logits, pred_proposal_deltas, proposals):
-    box2box_transform = Box2BoxTransform(weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)
-    smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
+    out_layers = FastRCNNOutputLayers(**FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=1024)))
 
-    outputs = FastRCNNOutputs(
-        box2box_transform,
-        pred_class_logits,
-        pred_proposal_deltas,
-        proposals,
-        smooth_l1_beta,
-    )
+    boxes = out_layers.predict_boxes((pred_class_logits, pred_proposal_deltas), proposals)
+    scores = out_layers.predict_probs((pred_class_logits, pred_proposal_deltas), proposals)
 
-    boxes = outputs.predict_boxes()
-    scores = outputs.predict_probs()
-    image_shapes = outputs.image_shapes
+    image_shapes = [x.image_size for x in proposals]
 
     return boxes, scores, image_shapes
+
+    # box2box_transform = Box2BoxTransform(weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)
+    # smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
+    #
+    # output_layers = FastRCNNOutputLayers(FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=1024)))
+    # output_layers = FastRCNNOutputLayers(
+    #     box2box_transform,
+    #     pred_class_logits,
+    #     pred_proposal_deltas,
+    #     proposals,
+    #     smooth_l1_beta,
+    # )
+    #
+    # # predictions = output_layers(x)
+    #
+    # boxes = outputs.predict_boxes(predictions, proposals)
+    # scores = outputs.predict_probs(predictions, proposals)
+    # image_shapes = outputs.image_shapes
+    #
+    # image_shapes = [x.image_size for x in proposals]
+    #
+    # return boxes, scores, image_shapes
 
 
 def get_output_boxes(boxes, batched_inputs, image_size):
