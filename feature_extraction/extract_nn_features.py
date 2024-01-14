@@ -68,27 +68,29 @@ IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
 def load_and_save_relevant_coco_ids():
-    all_ids = []
-    for mode in ["train", "test", "imagery"]:
-        for subject in SUBJECTS:
-            fmri_root_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
-            imagery_scenes = IMAGERY_SCENES[subject]
+    if not os.path.isfile(STIMULI_IDS_PATH):
+        print("Extracting stimulus ids (coco ids)")
+        all_ids = []
+        for mode in ["train", "test", "imagery"]:
+            for subject in SUBJECTS:
+                fmri_root_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+                imagery_scenes = IMAGERY_SCENES[subject]
 
-            fmri_betas_addresses = sorted(glob(os.path.join(fmri_root_dir, f'betas_{mode}*', '*.nii')))
+                fmri_betas_addresses = sorted(glob(os.path.join(fmri_root_dir, f'betas_{mode}*', '*.nii')))
 
-            for addr in tqdm(fmri_betas_addresses):
-                file_name = os.path.basename(addr)
-                if 'I' in file_name:  # Image
-                    stim_id = int(file_name[file_name.find('I') + 1:-4])
-                elif 'C' in file_name:  # Caption
-                    stim_id = int(file_name[file_name.find('C') + 1:-4])
-                else:  # imagery
-                    id = int(file_name[file_name.find('.nii') - 1:-4])
-                    stim_id = imagery_scenes[id - 1][1]
-                all_ids.append(stim_id)
+                for addr in tqdm(fmri_betas_addresses):
+                    file_name = os.path.basename(addr)
+                    if 'I' in file_name:  # Image
+                        stim_id = int(file_name[file_name.find('I') + 1:-4])
+                    elif 'C' in file_name:  # Caption
+                        stim_id = int(file_name[file_name.find('C') + 1:-4])
+                    else:  # imagery
+                        id = int(file_name[file_name.find('.nii') - 1:-4])
+                        stim_id = imagery_scenes[id - 1][1]
+                    all_ids.append(stim_id)
 
-    all_ids = sorted(list(set(all_ids)))
-    pickle.dump(all_ids, open(STIMULI_IDS_PATH, "wb"))
+        all_ids = sorted(list(set(all_ids)))
+        pickle.dump(all_ids, open(STIMULI_IDS_PATH, "wb"))
 
 
 def find_coco_image(sid, coco_images_dir):
@@ -368,7 +370,7 @@ if __name__ == "__main__":
     from torchvision.models import resnet152, vit_l_16, ViT_L_16_Weights, ResNet152_Weights, VisionTransformer
 
     os.makedirs(FEATURES_DIR, exist_ok=True)
-    # load_and_save_relevant_coco_ids()
+    load_and_save_relevant_coco_ids()
 
     ##########
     # ViT-L-16
