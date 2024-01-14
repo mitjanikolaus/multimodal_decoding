@@ -25,7 +25,7 @@ from tqdm import trange
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
-from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, FMRI_DATA_DIR
+from utils import IMAGERY_SCENES, MODEL_FEATURES_FILES, TWO_STAGE_GLM_DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
@@ -46,14 +46,12 @@ SUBJECTS = ['sub-01', 'sub-02']
 # SUBJECTS = ['sub-05', 'sub-07']
 # SUBJECTS = ['sub-03']
 
-MODEL_NAMES = ['CLIP_L']
+MODEL_NAMES = ['VisualBERT']
 # MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER', 'RESNET152_AVGPOOL']
 # MODEL_NAMES = ['CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL_PCA768']  # RESNET152_AVGPOOL_PCA768
 
 TRAINING_MODE = TRAINING_MODES[0]
 DECODER_TESTING_MODE = ['test', 'test_captions', 'test_images'][0]
-
-TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']

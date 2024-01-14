@@ -39,7 +39,6 @@ from torch.utils.data import DataLoader, Dataset
 from glob import glob
 from os.path import join
 from PIL import Image
-from torchvision.models import resnet152, vit_l_16, ViT_L_16_Weights, ResNet152_Weights, VisionTransformer
 import pickle
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
@@ -48,8 +47,8 @@ from torchvision.transforms import functional as F, InterpolationMode
 from typing import Tuple
 from torch import nn, Tensor
 
-from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, \
-    IMAGES_TEST, PCA_NUM_COMPONENTS
+from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, \
+    IMAGES_TEST, PCA_NUM_COMPONENTS, SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR
 
 NUM_WORKERS = 8
 
@@ -68,6 +67,30 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
+def load_and_save_relevant_coco_ids():
+    all_ids = []
+    for mode in ["train", "test", "imagery"]:
+        for subject in SUBJECTS:
+            fmri_root_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+            imagery_scenes = IMAGERY_SCENES[subject]
+
+            fmri_betas_addresses = sorted(glob(os.path.join(fmri_root_dir, f'betas_{mode}*', '*.nii')))
+
+            for addr in tqdm(fmri_betas_addresses):
+                file_name = os.path.basename(addr)
+                if 'I' in file_name:  # Image
+                    stim_id = int(file_name[file_name.find('I') + 1:-4])
+                elif 'C' in file_name:  # Caption
+                    stim_id = int(file_name[file_name.find('C') + 1:-4])
+                else:  # imagery
+                    id = int(file_name[file_name.find('.nii') - 1:-4])
+                    stim_id = imagery_scenes[id - 1][1]
+                all_ids.append(stim_id)
+
+    all_ids = sorted(list(set(all_ids)))
+    pickle.dump(all_ids, open(STIMULI_IDS_PATH, "wb"))
+
+
 def find_coco_image(sid, coco_images_dir):
     r"""
     Helper function to find coco image address based on the id.
@@ -83,7 +106,7 @@ class COCOSelected(Dataset):
     The preselected data are given in a separate file (`selection_file`).
     """
 
-    def __init__(self, coco_root, selection_file, mode='image', transform=None):
+    def __init__(self, coco_root, captions_path, stimuli_ids_path, mode='image', transform=None):
         r"""
         Args:
             `coco_root` (str): address to the coco2017 root folder (= the parent directory of `images` folder)
@@ -92,30 +115,39 @@ class COCOSelected(Dataset):
             `transform` (callable): data transformation. Default: None
         """
         super().__init__()
-        self.data = []
-        self.data.extend(IMAGES_IMAGERY_CONDITION)
-        self.data.extend(np.load(selection_file, allow_pickle=True))
+        data = np.load(captions_path, allow_pickle=True)
+        data.extend(IMAGES_IMAGERY_CONDITION)
+        self.stimuli_ids = pickle.load(open(stimuli_ids_path, "rb"))
+        self.img_paths = {id: path for id, path, _ in data if id in self.stimuli_ids}
+        self.captions = {id: caption for id, _, caption in data if id in self.stimuli_ids}
         self.root = coco_root
         self.mode = mode
         self.transform = transform
 
     def __len__(self):
-        return len(self.data)
+        return len(self.stimuli_ids)
 
     def __getitem__(self, index):
+        id = self.stimuli_ids[index]
         if self.mode == 'image':
-            img_add = join(self.root, self.data[index][1])
-            img = Image.open(img_add).convert('RGB')
+            img_path = join(self.root, self.img_paths[id])
+            img = Image.open(img_path).convert('RGB')
             if self.transform is not None:
                 img = self.transform(img)
-            return img, self.data[index][0], self.data[index][1]
+            return img, id, img_path
 
         elif self.mode == 'caption':
-            cap = self.data[index][2]
+            cap = self.captions[id]
             if self.transform is not None:
                 cap = self.transform(cap)
-            return cap, self.data[index][0]
+            return cap, id
 
+        elif self.mode == 'both':
+            img_path = join(self.root, self.img_paths[id])
+            cap = self.captions[id]
+            if self.transform is not None:
+                cap = self.transform(cap)
+            return id, cap, img_path
 
 def get_visual_features(model, dataloader):
     r"""
@@ -308,7 +340,7 @@ def extract_visual_features(model, path_out, resize_size, crop_size, interpolati
     print(f"Extracting features with {model.__class__.__name__}..")
     preprocessing = ImageClassificationPreprocessing(crop_size=crop_size, resize_size=resize_size,
                                                      interpolation=interpolation)
-    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'image', transform=preprocessing)
+    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'image', transform=preprocessing)
     dloader = DataLoader(ds, shuffle=False, num_workers=0, batch_size=BATCH_SIZE)
     vf = get_visual_features(model, dloader)
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
@@ -323,7 +355,7 @@ def extract_linguistic_features(model_name, path_out):
         return
     print(f"Extracting features with {model.__class__.__name__}..")
 
-    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'caption')
+    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'caption')
     dloader = DataLoader(ds, shuffle=False, num_workers=NUM_WORKERS, batch_size=BATCH_SIZE)
     cf = get_lingual_features_transformers(model_name, dloader)
 
@@ -333,6 +365,11 @@ def extract_linguistic_features(model_name, path_out):
 
 
 if __name__ == "__main__":
+    from torchvision.models import resnet152, vit_l_16, ViT_L_16_Weights, ResNet152_Weights, VisionTransformer
+
+    os.makedirs(FEATURES_DIR, exist_ok=True)
+    # load_and_save_relevant_coco_ids()
+
     ##########
     # ViT-L-16
     ##########
@@ -363,7 +400,7 @@ if __name__ == "__main__":
     path_out = f"{FEATURES_DIR}/gpt/gpt2_xl_avg_selected_coco.p"
     extract_linguistic_features(model_name, path_out)
 
-# ds = COCOSelected(COCO_2017_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'caption')
+# ds = COCOSelected(COCO_2017_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, STIMULI_IDS_PATH, 'caption')
 # data = np.load(IMAGE_STIMULI_IDS_PATH, allow_pickle=True)
 # print(data[0])
 # for subject in IMAGERY_SCENES:

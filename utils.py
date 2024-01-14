@@ -2,16 +2,17 @@ import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
-os.makedirs(RESULTS_DIR, exist_ok=True)
 
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
 FEATURES_DIR = os.path.join(DATA_DIR, "feats_unimodal")
-os.makedirs(FEATURES_DIR, exist_ok=True)
 
 COCO_2017_TRAIN_IMAGES_DIR = os.path.expanduser("~/data/coco/images/train_2017")
 
-IMAGE_STIMULI_IDS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
+STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
+CAPTIONS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
 FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
+
+TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
@@ -29,6 +30,7 @@ MODEL_FEATURES_FILES = {
     "CLIP_L_PCA768": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
     "CLIP_V_PCA768": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
     "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
+    "VisualBERT": os.path.join(FEATURES_DIR, "visualbert/visualbert_vl_avg.p"),
 }
 
 

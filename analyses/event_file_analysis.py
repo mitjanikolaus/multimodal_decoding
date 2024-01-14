@@ -64,6 +64,8 @@ def get_oneback_errors(subj):
 
 
 if __name__ == "__main__":
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+
     results = []
     for subj in SUBJECTS:
         fp, fn = subject_performance(subj)

@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 from feature_extraction.extract_nn_features import COCOSelected, apply_pca
 
-from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, IMAGE_STIMULI_IDS_PATH, COCO_2017_TRAIN_IMAGES_DIR, \
-    PCA_NUM_COMPONENTS
+from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, \
+    PCA_NUM_COMPONENTS, STIMULI_IDS_PATH
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -37,28 +37,13 @@ def modify_preprocess(preprocess):
     return transforms.Compose(transforms_crop)
 
 
-def load_images(folder_address, extension="jpg"):
-    f"""
-    loads all images as PIL
-    """
-    
-    adds   = glob(opj(folder_address, f"*{extension}"))
-    names  = [os.path.basename(f) for f in adds]
-    images = []
-    for idx, f in enumerate(adds):
-        if idx % 100 == 0:
-            print(f"{idx + 1}/{len(adds)}", end='\r')
-        images.append(Image.open(f))
-    return images, names
-
-
 def extract_visual_features():
     for clip_model in CLIP_MODELS:
         print("Extracting visual features with ", clip_model)
         model, preprocess = clip.load(clip_model, device=device, jit=False)
         preprocess_crop = modify_preprocess(preprocess)
 
-        ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, IMAGE_STIMULI_IDS_PATH, 'image', transform=preprocess_crop)
+        ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'image', transform=preprocess_crop)
         dataloader = DataLoader(ds, shuffle=False, num_workers=0, batch_size=BATCH_SIZE)
 
         all_feats = dict()
@@ -84,7 +69,7 @@ def extract_language_features():
     for clip_model in CLIP_MODELS:
         print("Extracting language features with ", clip_model)
 
-        images_stimuli = np.load(IMAGE_STIMULI_IDS_PATH, allow_pickle=True)
+        images_stimuli = np.load(CAPTIONS_PATH, allow_pickle=True)
 
         for data in [IMAGES_IMAGERY_CONDITION, images_stimuli]:
             captions = [c[2] for c in data]
@@ -124,6 +109,8 @@ def extract_language_features():
 
 
 if __name__ == "__main__":
+    os.makedirs(FEATURES_DIR, exist_ok=True)
+
     extract_visual_features()
     extract_language_features()
 
