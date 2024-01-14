@@ -98,7 +98,7 @@ def get_proposals(model, images, features):
     return proposals
 
 
-def get_box_features(model, features, proposals):
+def get_box_features(model, features, proposals, batch_size):
     features_list = [features[f] for f in ['p2', 'p3', 'p4', 'p5']]
     box_features = model.roi_heads.box_pooler(features_list, [x.proposal_boxes for x in proposals])
     box_features = model.roi_heads.box_head.flatten(box_features)
@@ -106,7 +106,7 @@ def get_box_features(model, features, proposals):
     box_features = model.roi_heads.box_head.fc_relu1(box_features)
     box_features = model.roi_heads.box_head.fc2(box_features)
 
-    box_features = box_features.reshape(BATCH_SIZE, 1000, 1024)  # depends on your config and batch size
+    box_features = box_features.reshape(batch_size, 1000, 1024)  # depends on your config and batch size
     return box_features, features_list
 
 
@@ -228,6 +228,7 @@ def extract_image_features():
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
         with torch.no_grad():
+            batch_size = len(ids)
             imgs = [plt.imread(path) for path in img_paths]
 
             imgs = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in imgs]
@@ -238,7 +239,7 @@ def extract_image_features():
 
             proposals = get_proposals(maskrcnn_model, images, features)
 
-            box_features, features_list = get_box_features(maskrcnn_model, features, proposals)
+            box_features, features_list = get_box_features(maskrcnn_model, features, proposals, batch_size)
 
             pred_class_logits, pred_proposal_deltas = get_prediction_logits(maskrcnn_model, features_list, proposals)
 
