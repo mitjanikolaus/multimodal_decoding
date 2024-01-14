@@ -59,6 +59,7 @@ def get_model(cfg):
 
     # eval mode
     model.eval()
+    model = model.to(device)
     return model
 
 
@@ -77,8 +78,8 @@ def prepare_image_inputs(model, cfg, img_list):
 
     # Normalizing the image
     num_channels = len(cfg.MODEL.PIXEL_MEAN)
-    pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(num_channels, 1, 1)
-    pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).view(num_channels, 1, 1)
+    pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN, device=device).view(num_channels, 1, 1)
+    pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD, device=device).view(num_channels, 1, 1)
     normalizer = lambda x: (x - pixel_mean) / pixel_std
     images = [normalizer(x["image"]) for x in batched_inputs]
 
@@ -193,6 +194,7 @@ MASKRCNN_FEATS_PATH = "data/maskrcnn_feats.p"
 
 def extract_visualbert_features():
     visualbert_model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')
+    visualbert_model = visualbert_model.to(device)
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
     ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
@@ -203,9 +205,9 @@ def extract_visualbert_features():
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
         tokens = tokenizer(captions, padding='max_length', max_length=50)
-        input_ids = torch.tensor(tokens["input_ids"])
-        attention_mask = torch.tensor(tokens["attention_mask"])
-        token_type_ids = torch.tensor(tokens["token_type_ids"])
+        input_ids = torch.tensor(tokens["input_ids"], device=device)
+        attention_mask = torch.tensor(tokens["attention_mask"], device=device)
+        token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)
 
         visual_embeds = [maskrcnn_feats[id] for id in ids]
         visual_embeds = torch.stack(visual_embeds)
