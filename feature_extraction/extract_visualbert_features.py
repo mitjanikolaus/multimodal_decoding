@@ -27,9 +27,8 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(device)
 
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 MIN_BOXES = 10
 MAX_BOXES = 100
@@ -175,6 +174,45 @@ def get_visual_embeds(box_features, keep_boxes):
     return box_features[keep_boxes.copy()]
 
 
+MASKRCNN_FEATS_PATH = "data/maskrcnn_feats.p"
+
+
+def extract_visualbert_features():
+    visualbert_model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
+    dloader = DataLoader(ds, shuffle=False, batch_size=BATCH_SIZE)
+
+    maskrcnn_feats = pickle.load(open(MASKRCNN_FEATS_PATH, "rb"))
+
+    all_feats = dict()
+    for ids, captions, img_paths in tqdm(dloader):
+        tokens = tokenizer(captions, padding='max_length', max_length=50)
+        input_ids = torch.tensor(tokens["input_ids"])
+        attention_mask = torch.tensor(tokens["attention_mask"])
+        token_type_ids = torch.tensor(tokens["token_type_ids"])
+
+        visual_embeds = [maskrcnn_feats[id] for id in ids]
+        visual_embeds = torch.stack(visual_embeds)
+        visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
+        visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
+
+        outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+                                   visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
+                                   visual_token_type_ids=visual_token_type_ids)
+
+        # average last hidden states over all words:
+        last_hidden_states = outputs.last_hidden_state.mean(dim=1)  # TODO correct way?
+
+        for id, feats, path in zip(ids, last_hidden_states, img_paths):
+            all_feats[id.item()] = {"multimodal_feature": feats, "image_path": path}
+
+    path_out = MODEL_FEATURES_FILES["VisualBERT"]
+    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+
 def extract_image_features():
     """Extract image features that will be fed into VisualBERT."""
     ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
@@ -186,56 +224,11 @@ def extract_image_features():
 
     maskrcnn_model = get_model(cfg)
 
-    visualbert_model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')  # TODO other model?
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
-        # with open('data/v2_OpenEnded_mscoco_val2014_questions.json') as f:
-        #     q = json.load(f)
-        #
-        # with open('data/v2_mscoco_val2014_annotations.json') as f:
-        #     a = json.load(f)
-        #
-        # idx = 1500
-        #
-        # question_info = q["questions"][idx]
-        # image_id = question_info['image_id']
-        # question1 = question_info['question']
-        # question_id = question_info['question_id']
-        #
-        # question_info = q["questions"][idx]
-        # image_id = question_info['image_id']
-        # question1 = question_info['question']
-        # question_id = question_info['question_id']
         imgs = [plt.imread(path) for path in img_paths]
 
-        # Detectron expects BGR images
         imgs = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in imgs]
-
-        # plt.imshow(imgs[0])
-        # img1 = plt.imread(f'data/val2014/COCO_val2014_{image_id:012d}.jpg')
-
-        # Detectron expects BGR images
-        # img_bgr1 = cv2.cvtColor(img1, cv2.COLOR_RGB2BGR)
-
-        # print(img1.shape)
-        #
-        # idx = 2000
-
-        # question_info = q["questions"][idx]
-        # image_id = question_info['image_id']
-        # question2 = question_info['question']
-        # question_id = question_info['question_id']
-        # answer_info = a['annotations'][idx]
-        # answer_word2 = answer_info['multiple_choice_answer']
-        #
-        # img2 = plt.imread(f'data/val2014/COCO_val2014_{image_id:012d}.jpg')
-        #
-        # # Detectron expects BGR images
-        # img_bgr2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
-        # plt.imshow(img2)
-        # plt.show()
 
         images, batched_inputs = prepare_image_inputs(maskrcnn_model, cfg, imgs)
 
@@ -264,33 +257,14 @@ def extract_image_features():
         visual_embeds = [get_visual_embeds(box_feature, keep_box) for box_feature, keep_box in
                          zip(box_features, keep_boxes)]
 
-        # captions = [question1, question2]
-        tokens = tokenizer(captions, padding='max_length', max_length=50)
-        input_ids = torch.tensor(tokens["input_ids"])
-        attention_mask = torch.tensor(tokens["attention_mask"])
-        token_type_ids = torch.tensor(tokens["token_type_ids"])
-        visual_embeds = torch.stack(visual_embeds)
-        visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
-        visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
+        for id, feats in zip(ids, visual_embeds):
+            all_feats[id] = feats
 
-        # model = VisualBertForPreTraining.from_pretrained(
-        #     'uclanlp/visualbert-nlvr2-coco-pre')  # TODO other model?
-
-        outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                                   visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
-                                   visual_token_type_ids=visual_token_type_ids)
-
-        # average last hidden states over all words:
-        last_hidden_states = outputs.last_hidden_state.mean(dim=1)  # TODO correct way?
-
-        for id, feats, path in zip(ids, last_hidden_states, img_paths):
-            all_feats[id.item()] = {"multimodal_feature": feats, "image_path": path}
-
-    path_out = MODEL_FEATURES_FILES["VisualBERT"]
-    os.makedirs(os.path.dirname(path_out), exist_ok=True)
-    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+    os.makedirs(os.path.dirname(MASKRCNN_FEATS_PATH), exist_ok=True)
+    pickle.dump(all_feats, open(MASKRCNN_FEATS_PATH, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
     os.makedirs(FEATURES_DIR, exist_ok=True)
     extract_image_features()
+    extract_visualbert_features()
