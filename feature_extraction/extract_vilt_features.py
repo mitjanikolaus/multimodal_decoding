@@ -17,7 +17,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 100
+BATCH_SIZE = 2
 
 
 def extract_features():

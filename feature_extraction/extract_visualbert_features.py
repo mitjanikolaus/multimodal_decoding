@@ -188,10 +188,10 @@ def extract_visualbert_features():
         attention_mask = torch.tensor(tokens["attention_mask"], device=device)
         token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)
 
-        visual_embeds = [maskrcnn_feats[id.item()] for id in ids]
+        visual_embeds = [torch.tensor(maskrcnn_feats[id.item()], device=device) for id in ids]
         visual_embeds = torch.stack(visual_embeds)
-        visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
-        visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
+        visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long, device=device)
+        visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long, device=device)
 
         with torch.no_grad():
             outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask,
