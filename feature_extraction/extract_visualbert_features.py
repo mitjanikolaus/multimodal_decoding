@@ -71,7 +71,7 @@ def prepare_image_inputs(model, cfg, img_list):
     img_list = [transform_gen.get_transform(img).apply_image(img) for img in img_list]
 
     # Convert to C,H,W format
-    convert_to_tensor = lambda x: torch.Tensor(x.astype("float32").transpose(2, 0, 1)).to(device)
+    convert_to_tensor = lambda x: torch.tensor(x.astype("float32").transpose(2, 0, 1)).to(device)
 
     batched_inputs = [{"image": convert_to_tensor(img), "height": img.shape[0], "width": img.shape[1]} for img in
                       img_list]
