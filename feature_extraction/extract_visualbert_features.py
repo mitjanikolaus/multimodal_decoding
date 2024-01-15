@@ -119,7 +119,7 @@ def get_prediction_logits(model, features_list, proposals):
 
 
 def get_box_scores(cfg, pred_class_logits, pred_proposal_deltas, proposals):
-    out_layers = FastRCNNOutputLayers(**FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=1024)))
+    out_layers = FastRCNNOutputLayers(**FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=1024))) #TODO input shape??!
 
     boxes = out_layers.predict_boxes((pred_class_logits, pred_proposal_deltas), proposals)
     scores = out_layers.predict_probs((pred_class_logits, pred_proposal_deltas), proposals)
