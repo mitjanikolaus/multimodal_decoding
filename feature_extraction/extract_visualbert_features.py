@@ -124,6 +124,7 @@ def get_prediction_logits(model, features_list, proposals):
     pred_class_logits, pred_proposal_deltas = model.roi_heads.box_predictor(cls_features)
     return pred_class_logits, pred_proposal_deltas
 
+
 def get_box_scores(output_layers, pred_class_logits, pred_proposal_deltas, proposals):
     boxes = output_layers.predict_boxes((pred_class_logits, pred_proposal_deltas), proposals)
     scores = output_layers.predict_probs((pred_class_logits, pred_proposal_deltas), proposals)
@@ -193,7 +194,8 @@ def extract_visualbert_features():
         visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
 
         with torch.no_grad():
-            outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+            outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask,
+                                       token_type_ids=token_type_ids,
                                        visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
                                        visual_token_type_ids=visual_token_type_ids)
 
@@ -218,7 +220,8 @@ def extract_image_features():
     cfg = load_config_and_model_weights(cfg_path)
 
     maskrcnn_model = get_model(cfg)
-    output_layers = FastRCNNOutputLayers(**FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=BOX_FEATURES_DIM)))
+    output_layers = FastRCNNOutputLayers(
+        **FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=BOX_FEATURES_DIM)))
 
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
