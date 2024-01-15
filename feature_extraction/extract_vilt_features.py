@@ -13,7 +13,7 @@ from transformers import ViltProcessor
 from PIL import Image
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
