@@ -36,7 +36,10 @@ def extract_features():
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
         inputs = processor(images, captions, return_tensors="pt", padding=True)
-        outputs = model(**inputs)
+        inputs = inputs.to(device)
+        with torch.no_grad():
+            outputs = model(**inputs)
+
         last_hidden_states = outputs.last_hidden_state
 
         text_input_size = inputs.data["input_ids"].shape[1]
@@ -51,8 +54,8 @@ def extract_features():
 
         for id, feats_avg, path, text_embedding, img_embedding in zip(ids, general_embeddings, img_paths, text_embeddings, img_embeddings):
             concatenated = torch.cat((text_embedding, img_embedding))
-            all_feats[id.item()] = {"multimodal_feature": concatenated, "image_path": path}
-            all_feats_avg[id.item()] = {"multimodal_feature": feats_avg, "image_path": path}
+            all_feats[id.item()] = {"multimodal_feature": concatenated.cpu().numpy(), "image_path": path}
+            all_feats_avg[id.item()] = {"multimodal_feature": feats_avg.cpu().numpy(), "image_path": path}
 
     path_out = MODEL_FEATURES_FILES["VILT"]
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
