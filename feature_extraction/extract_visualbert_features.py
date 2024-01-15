@@ -277,7 +277,7 @@ def extract_image_features():
                              zip(box_features, keep_boxes)]
 
             for id, feats in zip(ids, visual_embeds):
-                all_feats[id] = feats
+                all_feats[id] = feats.cpu().numpy()
 
     os.makedirs(os.path.dirname(MASKRCNN_FEATS_PATH), exist_ok=True)
     pickle.dump(all_feats, open(MASKRCNN_FEATS_PATH, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
