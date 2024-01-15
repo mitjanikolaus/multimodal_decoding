@@ -4,5 +4,5 @@
 
 ```
 pip install opencv-python pyyaml==5.1
-pip install 'git+https://github.com/facebookresearch/detectron2.git@v0.5'
+pip install 'git+https://github.com/facebookresearch/detectron2.git'
 ```
