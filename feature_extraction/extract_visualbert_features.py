@@ -179,9 +179,9 @@ def select_boxes(cfg, output_boxes, scores):
 
 def filter_boxes(keep_boxes, max_conf, min_boxes, max_boxes):
     if len(keep_boxes) < min_boxes:
-        keep_boxes = np.argsort(max_conf).numpy()[::-1][:min_boxes]
+        keep_boxes = np.argsort(max_conf.cpu()).numpy()[::-1][:min_boxes]
     elif len(keep_boxes) > max_boxes:
-        keep_boxes = np.argsort(max_conf).numpy()[::-1][:max_boxes]
+        keep_boxes = np.argsort(max_conf.cpu()).numpy()[::-1][:max_boxes]
     return keep_boxes
 
 
@@ -266,7 +266,7 @@ def extract_image_features():
 
             temp = [select_boxes(cfg, output_boxes[i], scores[i]) for i in range(len(scores))]
             keep_boxes, max_conf = [], []
-            for keep_box, mx_conf in temp:
+            for keep_box, mx_conf in temp: #TODO refactor!
                 keep_boxes.append(keep_box)
                 max_conf.append(mx_conf)
 
