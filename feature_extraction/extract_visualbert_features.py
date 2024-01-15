@@ -107,6 +107,7 @@ def get_box_features(model, features, proposals, batch_size):
     box_features = model.roi_heads.box_head.fc_relu1(box_features)
     box_features = model.roi_heads.box_head.fc2(box_features)
 
+    print(box_features.shape)
     box_features = box_features.reshape(batch_size, -1, 1024)  # depends on your config and batch size
     return box_features, features_list
 
