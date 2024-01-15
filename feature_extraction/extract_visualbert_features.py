@@ -188,7 +188,7 @@ def extract_visualbert_features():
         attention_mask = torch.tensor(tokens["attention_mask"], device=device)
         token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)
 
-        visual_embeds = [maskrcnn_feats[id] for id in ids]
+        visual_embeds = [maskrcnn_feats[id.item()] for id in ids]
         visual_embeds = torch.stack(visual_embeds)
         visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
         visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long)
@@ -256,7 +256,7 @@ def extract_image_features():
                              zip(box_features, keep_boxes)]
 
             for id, feats in zip(ids, visual_embeds):
-                all_feats[id] = feats.cpu().numpy()
+                all_feats[id.item()] = feats.cpu().numpy()
 
     os.makedirs(os.path.dirname(MASKRCNN_FEATS_PATH), exist_ok=True)
     pickle.dump(all_feats, open(MASKRCNN_FEATS_PATH, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
