@@ -167,12 +167,12 @@ def select_boxes(cfg, output_boxes, scores):
     test_nms_thresh = cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST
     cls_prob = scores.detach()
     cls_boxes = output_boxes.tensor.detach().reshape(1000, 80, 4)
-    max_conf = torch.zeros((cls_boxes.shape[0]))
+    max_conf = torch.zeros((cls_boxes.shape[0]), device=device)
     for cls_ind in range(0, cls_prob.shape[1] - 1):
         cls_scores = cls_prob[:, cls_ind + 1]
         det_boxes = cls_boxes[:, cls_ind, :]
         keep = nms(det_boxes, cls_scores, test_nms_thresh).cpu().numpy()
-        max_conf[keep] = torch.where(cls_scores[keep] > max_conf[keep], cls_scores[keep].detach().cpu(), max_conf[keep])
+        max_conf[keep] = torch.where(cls_scores[keep] > max_conf[keep], cls_scores[keep], max_conf[keep])
     keep_boxes = torch.where(max_conf >= test_score_thresh)[0]
     return keep_boxes, max_conf
 
