@@ -115,7 +115,7 @@ def get_box_features(model, features, proposals):
         box_features_per_sample.append(box_features[:num_proposals])
         box_features = box_features[num_proposals:]
 
-    return box_features, features_list
+    return box_features_per_sample, features_list
 
 
 def get_prediction_logits(model, features_list, proposals):
