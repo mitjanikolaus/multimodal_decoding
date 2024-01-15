@@ -116,7 +116,6 @@ def get_box_features(model, features, proposals):
         box_features_per_sample.append(box_features[:num_proposals])
         box_features = box_features[num_proposals:]
 
-    # box_features = box_features.reshape(batch_size, -1, BOX_FEATURES_DIM)  # depends on your config and batch size
     return box_features, features_list
 
 
@@ -247,7 +246,6 @@ def extract_image_features():
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
         with torch.no_grad():
-            batch_size = len(ids)
             imgs = [plt.imread(path) for path in img_paths]
 
             imgs = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in imgs]
