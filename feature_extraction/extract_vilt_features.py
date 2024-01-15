@@ -1,0 +1,68 @@
+import os
+import pickle
+
+import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from transformers import ViltModel
+
+from feature_extraction.extract_nn_features import COCOSelected
+from utils import FEATURES_DIR, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, STIMULI_IDS_PATH, MODEL_FEATURES_FILES
+from transformers import ViltProcessor
+from PIL import Image
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+BATCH_SIZE = 100
+
+
+def extract_features():
+    processor = ViltProcessor.from_pretrained("dandelin/vilt-b32-mlm")
+    model = ViltModel.from_pretrained("dandelin/vilt-b32-mlm")
+    model.to(device)
+    model.eval()
+
+    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
+    dloader = DataLoader(ds, shuffle=False, batch_size=BATCH_SIZE)
+
+    all_feats = dict()
+    all_feats_avg = dict()
+    for ids, captions, img_paths in tqdm(dloader):
+        images = [Image.open(path) for path in img_paths]
+        images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
+
+        inputs = processor(images, captions, return_tensors="pt", padding=True)
+        outputs = model(**inputs)
+        last_hidden_states = outputs.last_hidden_state
+
+        text_input_size = inputs.data["input_ids"].shape[1]
+
+        text_embeddings = last_hidden_states[:, :text_input_size]
+        img_embeddings = last_hidden_states[:, text_input_size:]
+
+        text_embeddings = text_embeddings.mean(dim=1)   #TODO ignore padding tokens?
+        img_embeddings = img_embeddings.mean(dim=1)
+
+        general_embeddings = last_hidden_states.mean(dim=1)
+
+        for id, feats_avg, path, text_embedding, img_embedding in zip(ids, general_embeddings, img_paths, text_embeddings, img_embeddings):
+            concatenated = torch.cat((text_embedding, img_embedding))
+            all_feats[id.item()] = {"multimodal_feature": concatenated, "image_path": path}
+            all_feats_avg[id.item()] = {"multimodal_feature": feats_avg, "image_path": path}
+
+    path_out = MODEL_FEATURES_FILES["VILT"]
+    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+    path_out = MODEL_FEATURES_FILES["VILT_AVG"]
+    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+    pickle.dump(all_feats_avg, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+
+if __name__ == "__main__":
+    os.makedirs(FEATURES_DIR, exist_ok=True)
+    extract_features()

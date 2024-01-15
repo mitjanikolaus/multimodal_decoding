@@ -31,6 +31,8 @@ MODEL_FEATURES_FILES = {
     "CLIP_V_PCA768": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
     "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
     "VisualBERT": os.path.join(FEATURES_DIR, "visualbert/visualbert_vl_avg.p"),
+    "VILT": os.path.join(FEATURES_DIR, "vilt/vilt_vl_concatenated.p"),
+    "VILT_AVG": os.path.join(FEATURES_DIR, "vilt/vilt_vl_averaged.p"),
 }
 
 
