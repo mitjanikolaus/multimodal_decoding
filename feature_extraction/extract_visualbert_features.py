@@ -130,28 +130,6 @@ def get_box_scores(output_layers, pred_class_logits, pred_proposal_deltas, propo
 
     return boxes, scores
 
-    # box2box_transform = Box2BoxTransform(weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)
-    # smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
-    #
-    # output_layers = FastRCNNOutputLayers(FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=1024)))
-    # output_layers = FastRCNNOutputLayers(
-    #     box2box_transform,
-    #     pred_class_logits,
-    #     pred_proposal_deltas,
-    #     proposals,
-    #     smooth_l1_beta,
-    # )
-    #
-    # # predictions = output_layers(x)
-    #
-    # boxes = outputs.predict_boxes(predictions, proposals)
-    # scores = outputs.predict_probs(predictions, proposals)
-    # image_shapes = outputs.image_shapes
-    #
-    # image_shapes = [x.image_size for x in proposals]
-    #
-    # return boxes, scores, image_shapes
-
 
 def get_output_boxes(boxes, batched_inputs, image_size):
     proposal_boxes = boxes.reshape(-1, 4).clone()
