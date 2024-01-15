@@ -203,7 +203,7 @@ def extract_visualbert_features():
         last_hidden_states = outputs.last_hidden_state.mean(dim=1)  # TODO correct way?
 
         for id, feats, path in zip(ids, last_hidden_states, img_paths):
-            all_feats[id.item()] = {"multimodal_feature": feats, "image_path": path}
+            all_feats[id.item()] = {"multimodal_feature": feats.cpu().numpy(), "image_path": path}
 
     path_out = MODEL_FEATURES_FILES["VisualBERT"]
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
