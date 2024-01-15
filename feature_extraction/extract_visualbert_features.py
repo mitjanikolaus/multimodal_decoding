@@ -28,7 +28,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 
 MIN_BOXES = 10
 MAX_BOXES = 100
