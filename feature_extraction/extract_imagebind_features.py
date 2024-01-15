@@ -17,7 +17,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 2
+BATCH_SIZE = 10
 
 
 def extract_features():
@@ -40,10 +40,10 @@ def extract_features():
         with torch.no_grad():
             embeddings = model(inputs)
 
-        print(
-            "Vision x Text: ",
-            torch.softmax(embeddings[ModalityType.VISION] @ embeddings[ModalityType.TEXT].T, dim=-1),
-        )
+        # print(
+        #     "Vision x Text: ",
+        #     torch.softmax(embeddings[ModalityType.VISION] @ embeddings[ModalityType.TEXT].T, dim=-1),
+        # )
 
         for id, feats_img, feats_text, path in zip(ids, embeddings[ModalityType.VISION], embeddings[ModalityType.TEXT], img_paths):
             feats_concatenated = torch.cat((feats_img, feats_text))
