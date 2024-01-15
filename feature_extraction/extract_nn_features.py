@@ -102,55 +102,6 @@ def find_coco_image(sid, coco_images_dir):
     return image_add[0]
 
 
-class COCOSelected(Dataset):
-    r"""
-    Pytorch dataset that loads the preselected data from the COCO dataset.
-    The preselected data are given in a separate file (`selection_file`).
-    """
-
-    def __init__(self, coco_root, captions_path, stimuli_ids_path, mode='image', transform=None):
-        r"""
-        Args:
-            `coco_root` (str): address to the coco2017 root folder (= the parent directory of `images` folder)
-            `selection_file` (pickle): address to file containing information about the preselected coco entries
-            `mode` (str): can be `caption` or `image` to load captions or images, respectively. Default: `image`
-            `transform` (callable): data transformation. Default: None
-        """
-        super().__init__()
-        data = np.load(captions_path, allow_pickle=True)
-        data.extend(IMAGES_IMAGERY_CONDITION)
-        self.stimuli_ids = pickle.load(open(stimuli_ids_path, "rb"))
-        self.img_paths = {id: path for id, path, _ in data if id in self.stimuli_ids}
-        self.captions = {id: caption for id, _, caption in data if id in self.stimuli_ids}
-        self.root = coco_root
-        self.mode = mode
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.stimuli_ids)
-
-    def __getitem__(self, index):
-        id = self.stimuli_ids[index]
-        if self.mode == 'image':
-            img_path = join(self.root, self.img_paths[id])
-            img = Image.open(img_path).convert('RGB')
-            if self.transform is not None:
-                img = self.transform(img)
-            return img, id, img_path
-
-        elif self.mode == 'caption':
-            cap = self.captions[id]
-            if self.transform is not None:
-                cap = self.transform(cap)
-            return cap, id
-
-        elif self.mode == 'both':
-            img_path = join(self.root, self.img_paths[id])
-            cap = self.captions[id]
-            if self.transform is not None:
-                cap = self.transform(cap)
-            return id, cap, img_path
-
 def get_visual_features(model, dataloader):
     r"""
     Helper function to get feature from Pytorch compatible vision models.
