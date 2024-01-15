@@ -33,6 +33,8 @@ BATCH_SIZE = 5
 MIN_BOXES = 10
 MAX_BOXES = 100
 
+BOX_FEATURES_DIM = 1024
+
 
 def load_config_and_model_weights(cfg_path):
     cfg = get_cfg()
@@ -99,7 +101,7 @@ def get_proposals(model, images, features):
     return proposals
 
 
-def get_box_features(model, features, proposals, batch_size):
+def get_box_features(model, features, proposals):
     features_list = [features[f] for f in ['p2', 'p3', 'p4', 'p5']]
     box_features = model.roi_heads.box_pooler(features_list, [x.proposal_boxes for x in proposals])
     box_features = model.roi_heads.box_head.flatten(box_features)
@@ -108,7 +110,13 @@ def get_box_features(model, features, proposals, batch_size):
     box_features = model.roi_heads.box_head.fc2(box_features)
 
     print(box_features.shape)
-    box_features = box_features.reshape(batch_size, -1, 1024)  # depends on your config and batch size
+    box_features_per_sample = []
+    for proposal in proposals:
+        num_proposals = len(proposal.proposal_boxes)
+        box_features_per_sample.append(box_features[:num_proposals])
+        box_features = box_features[num_proposals:]
+
+    # box_features = box_features.reshape(batch_size, -1, BOX_FEATURES_DIM)  # depends on your config and batch size
     return box_features, features_list
 
 
@@ -118,16 +126,11 @@ def get_prediction_logits(model, features_list, proposals):
     pred_class_logits, pred_proposal_deltas = model.roi_heads.box_predictor(cls_features)
     return pred_class_logits, pred_proposal_deltas
 
+def get_box_scores(output_layers, pred_class_logits, pred_proposal_deltas, proposals):
+    boxes = output_layers.predict_boxes((pred_class_logits, pred_proposal_deltas), proposals)
+    scores = output_layers.predict_probs((pred_class_logits, pred_proposal_deltas), proposals)
 
-def get_box_scores(cfg, pred_class_logits, pred_proposal_deltas, proposals):
-    out_layers = FastRCNNOutputLayers(**FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=1024))) #TODO input shape??!
-
-    boxes = out_layers.predict_boxes((pred_class_logits, pred_proposal_deltas), proposals)
-    scores = out_layers.predict_probs((pred_class_logits, pred_proposal_deltas), proposals)
-
-    image_shapes = [x.image_size for x in proposals]
-
-    return boxes, scores, image_shapes
+    return boxes, scores
 
     # box2box_transform = Box2BoxTransform(weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)
     # smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
@@ -163,19 +166,17 @@ def get_output_boxes(boxes, batched_inputs, image_size):
     return output_boxes
 
 
-def select_boxes(cfg, output_boxes, scores):
-    test_score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST
+def calc_max_confs(cfg, output_boxes, scores):
     test_nms_thresh = cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST
     cls_prob = scores.detach()
-    cls_boxes = output_boxes.tensor.detach().reshape(1000, 80, 4)
+    cls_boxes = output_boxes.tensor.detach().reshape(-1, 80, 4)
     max_conf = torch.zeros((cls_boxes.shape[0]), device=device)
     for cls_ind in range(0, cls_prob.shape[1] - 1):
         cls_scores = cls_prob[:, cls_ind + 1]
         det_boxes = cls_boxes[:, cls_ind, :]
         keep = nms(det_boxes, cls_scores, test_nms_thresh).cpu().numpy()
         max_conf[keep] = torch.where(cls_scores[keep] > max_conf[keep], cls_scores[keep], max_conf[keep])
-    keep_boxes = torch.where(max_conf >= test_score_thresh)[0]
-    return keep_boxes, max_conf
+    return max_conf
 
 
 def filter_boxes(keep_boxes, max_conf, min_boxes, max_boxes):
@@ -241,6 +242,7 @@ def extract_image_features():
     cfg = load_config_and_model_weights(cfg_path)
 
     maskrcnn_model = get_model(cfg)
+    output_layers = FastRCNNOutputLayers(**FastRCNNOutputLayers.from_config(cfg=cfg, input_shape=ShapeSpec(channels=BOX_FEATURES_DIM)))
 
     all_feats = dict()
     for ids, captions, img_paths in tqdm(dloader):
@@ -256,23 +258,21 @@ def extract_image_features():
 
             proposals = get_proposals(maskrcnn_model, images, features)
 
-            box_features, features_list = get_box_features(maskrcnn_model, features, proposals, batch_size)
+            box_features, features_list = get_box_features(maskrcnn_model, features, proposals)
 
             pred_class_logits, pred_proposal_deltas = get_prediction_logits(maskrcnn_model, features_list, proposals)
 
-            boxes, scores, image_shapes = get_box_scores(cfg, pred_class_logits, pred_proposal_deltas, proposals)
+            boxes, scores = get_box_scores(output_layers, pred_class_logits, pred_proposal_deltas, proposals)
 
             output_boxes = [get_output_boxes(boxes[i], batched_inputs[i], proposals[i].image_size) for i in
                             range(len(proposals))]
 
-            temp = [select_boxes(cfg, output_boxes[i], scores[i]) for i in range(len(scores))]
-            keep_boxes, max_conf = [], []
-            for keep_box, mx_conf in temp: #TODO refactor!
-                keep_boxes.append(keep_box)
-                max_conf.append(mx_conf)
+            max_confs = [calc_max_confs(cfg, output_boxes[i], scores[i]) for i in range(len(scores))]
+
+            keep_boxes = [torch.where(max_conf >= cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST)[0] for max_conf in max_confs]
 
             keep_boxes = [filter_boxes(keep_box, mx_conf, MIN_BOXES, MAX_BOXES) for keep_box, mx_conf in
-                          zip(keep_boxes, max_conf)]
+                          zip(keep_boxes, max_confs)]
 
             visual_embeds = [get_visual_embeds(box_feature, keep_box) for box_feature, keep_box in
                              zip(box_features, keep_boxes)]
