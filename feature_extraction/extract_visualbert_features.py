@@ -78,8 +78,8 @@ def prepare_image_inputs(model, cfg, img_list):
 
     # Normalizing the image
     num_channels = len(cfg.MODEL.PIXEL_MEAN)
-    pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN, device=device).view(num_channels, 1, 1)
-    pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD, device=device).view(num_channels, 1, 1)
+    pixel_mean = torch.tensor(cfg.MODEL.PIXEL_MEAN, device=device).view(num_channels, 1, 1)
+    pixel_std = torch.tensor(cfg.MODEL.PIXEL_STD, device=device).view(num_channels, 1, 1)
     normalizer = lambda x: (x - pixel_mean) / pixel_std
     images = [normalizer(x["image"]) for x in batched_inputs]
 
