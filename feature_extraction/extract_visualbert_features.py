@@ -109,7 +109,6 @@ def get_box_features(model, features, proposals):
     box_features = model.roi_heads.box_head.fc_relu1(box_features)
     box_features = model.roi_heads.box_head.fc2(box_features)
 
-    print(box_features.shape)
     box_features_per_sample = []
     for proposal in proposals:
         num_proposals = len(proposal.proposal_boxes)
