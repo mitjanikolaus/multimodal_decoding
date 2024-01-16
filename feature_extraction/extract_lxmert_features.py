@@ -80,7 +80,7 @@ class LXMERTFeatureExtractor(FeatureExtractor):
 
         visual_attention_mask = torch.ones(visual_feats.shape[:-1], dtype=torch.float)
 
-        inputs = self.prepocessor(captions, return_tensors="pt")
+        inputs = self.preprocessor(captions, return_tensors="pt")
         inputs['visual_attention_mask'] = visual_attention_mask
         inputs['visual_feats'] = visual_feats
         inputs['visual_pos'] = visual_pos

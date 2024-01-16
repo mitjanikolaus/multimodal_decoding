@@ -227,7 +227,7 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         self.maskrcnn_feats = pickle.load(open(MASKRCNN_FEATS_PATH, "rb"))
 
     def extract_features_from_batch(self, ids, captions, img_paths):
-        tokens = self.prepocessor(captions, padding='max_length', max_length=50)
+        tokens = self.preprocessor(captions, padding='max_length', max_length=50)
         input_ids = torch.tensor(tokens["input_ids"], device=device)
         attention_mask = torch.tensor(tokens["attention_mask"], device=device)
         token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)

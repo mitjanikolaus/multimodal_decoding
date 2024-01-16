@@ -16,7 +16,7 @@ class COCOSelected(Dataset):
     The preselected data are given in a separate file (`selection_file`).
     """
 
-    def __init__(self, coco_root, captions_path, stimuli_ids_path, mode='image', transform=None):
+    def __init__(self, coco_root, captions_path, stimuli_ids_path, mode='image'):
         r"""
         Args:
             `coco_root` (str): address to the coco2017 root folder (= the parent directory of `images` folder)
@@ -32,7 +32,6 @@ class COCOSelected(Dataset):
         self.captions = {id: caption for id, _, caption in data if id in self.stimuli_ids}
         self.root = coco_root
         self.mode = mode
-        self.transform = transform
 
     def __len__(self):
         return len(self.stimuli_ids)
@@ -42,21 +41,15 @@ class COCOSelected(Dataset):
         if self.mode == 'image':
             img_path = os.path.join(self.root, self.img_paths[id])
             img = Image.open(img_path).convert('RGB')
-            if self.transform is not None:
-                img = self.transform(img)
             return img, id, img_path
 
         elif self.mode == 'caption':
             cap = self.captions[id]
-            if self.transform is not None:
-                cap = self.transform(cap)
             return cap, id
 
         elif self.mode == 'both':
             img_path = os.path.join(self.root, self.img_paths[id])
             cap = self.captions[id]
-            if self.transform is not None:
-                cap = self.transform(cap)
             return id, cap, img_path
 
 
@@ -70,7 +63,7 @@ class FeatureExtractor:
         self.model = model.to(device)
         self.model.eval()
 
-        self.prepocessor = prepocessor
+        self.preprocessor = prepocessor
 
         self.model_name = model_name
 
