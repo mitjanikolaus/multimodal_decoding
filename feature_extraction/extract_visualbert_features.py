@@ -20,7 +20,7 @@ from tqdm import tqdm
 from transformers import BertTokenizer, VisualBertModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor, COCOSelected
-from utils import FEATURES_DIR, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, STIMULI_IDS_PATH
+from utils import CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, STIMULI_IDS_PATH
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -34,6 +34,7 @@ MAX_BOXES = 100
 
 BOX_FEATURES_DIM = 1024
 MASKRCNN_FEATS_PATH = "data/maskrcnn_feats.p"
+
 
 def load_config_and_model_weights(cfg_path):
     cfg = get_cfg()
@@ -249,7 +250,6 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    os.makedirs(FEATURES_DIR, exist_ok=True)
     # extract_image_features()
 
     visualbert_model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')

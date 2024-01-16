@@ -27,8 +27,8 @@ class ViLTFeatureExtractor(FeatureExtractor):
         all_feats = dict()
         all_feats_avg = dict()
         for ids, captions, img_paths in tqdm(self.dloader):
-            text_embeddings, img_embeddings, general_embeddings = self.extract_features_from_batch()
-            for id, feats_avg, path, text_embedding, img_embedding in zip(ids, general_embeddings, img_paths,
+            text_embeddings, img_embeddings, embeddings = self.extract_features_from_batch(ids, captions, img_paths)
+            for id, feats_avg, path, text_embedding, img_embedding in zip(ids, embeddings, img_paths,
                                                                           text_embeddings, img_embeddings):
                 concatenated = torch.cat((text_embedding, img_embedding))
                 all_feats[id.item()] = {"multimodal_feature": concatenated.cpu().numpy(), "image_path": path}
