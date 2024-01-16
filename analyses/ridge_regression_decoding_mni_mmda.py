@@ -42,11 +42,12 @@ MAX_SAMPLES_EVAL_METRICS = 1000
 
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 # SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04']
-SUBJECTS = ['sub-01', 'sub-02']
+# SUBJECTS = ['sub-01', 'sub-02']
+SUBJECTS = ['sub-01']
 # SUBJECTS = ['sub-05', 'sub-07']
 # SUBJECTS = ['sub-03']
 
-MODEL_NAMES = ['ImageBind', 'ImageBind_AVG']
+MODEL_NAMES = ['VisualBERT']#'ImageBind', 'ImageBind_AVG']
 # MODEL_NAMES = ['CLIP_L', 'CLIP_V', 'BERT_LARGE', 'GPT2XL_AVG', 'VITL16_ENCODER', 'RESNET152_AVGPOOL', 'VisualBERT', 'VILT', 'VILT_AVG']
 # MODEL_NAMES = ['CLIP_L_PCA768', 'CLIP_V_PCA768', 'RESNET152_AVGPOOL_PCA768']  # RESNET152_AVGPOOL_PCA768
 
@@ -64,11 +65,11 @@ HPs = [
     # HyperParameters(alpha=1),
     # HyperParameters(alpha=1e1),
     # HyperParameters(alpha=1e2),
-    HyperParameters(alpha=1e3),
+    # HyperParameters(alpha=1e3),
     # HyperParameters(alpha=1e4),
     HyperParameters(alpha=1e5),
     # HyperParameters(alpha=1e6),
-    HyperParameters(alpha=1e7),
+    # HyperParameters(alpha=1e7),
 
     # HyperParameters(optim_type='ADAMW', lr=0.001, wd=0, dropout=False, loss='MSE'),
     # HyperParameters(optim_type='ADAM', lr=0.0001, wd=0, dropout=False, loss='MSE'),
