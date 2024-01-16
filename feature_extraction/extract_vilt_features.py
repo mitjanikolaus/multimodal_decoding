@@ -47,7 +47,7 @@ class ViLTFeatureExtractor(FeatureExtractor):
         inputs = processor(images, captions, return_tensors="pt", padding=True)
         inputs = inputs.to(device)
         with torch.no_grad():
-            outputs = model(**inputs)
+            outputs = self.model(**inputs)
 
         last_hidden_states = outputs.last_hidden_state
 

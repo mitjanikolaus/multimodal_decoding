@@ -238,7 +238,7 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long, device=device)
 
         with torch.no_grad():
-            outputs = visualbert_model(input_ids=input_ids, attention_mask=attention_mask,
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask,
                                        token_type_ids=token_type_ids,
                                        visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
                                        visual_token_type_ids=visual_token_type_ids)
@@ -252,8 +252,8 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
 if __name__ == "__main__":
     # extract_image_features()
 
-    visualbert_model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')
+    model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-    extractor = VisualBERTFeatureExtractor(visualbert_model, tokenizer, "VisualBERT", BATCH_SIZE, device)
+    extractor = VisualBERTFeatureExtractor(model, tokenizer, "VisualBERT", BATCH_SIZE, device)
     extractor.extract_features()

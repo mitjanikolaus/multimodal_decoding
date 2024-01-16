@@ -66,7 +66,7 @@ class FeatureExtractor:
         print(f"Feature extraction on {device}")
 
         self.model = model.to(device)
-        model.eval()
+        self.model.eval()
 
         self.prepocessor = prepocessor
 
