@@ -8,6 +8,7 @@ from tqdm import tqdm
 from transformers import ViltModel
 
 from feature_extraction.extract_nn_features import COCOSelected
+from feature_extraction.feat_extraction_utils import FeatureExtractor
 from utils import FEATURES_DIR, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, STIMULI_IDS_PATH, MODEL_FEATURES_FILES
 from transformers import ViltProcessor
 from PIL import Image
@@ -20,18 +21,28 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 2
 
 
-def extract_features():
-    processor = ViltProcessor.from_pretrained("dandelin/vilt-b32-mlm")
-    model = ViltModel.from_pretrained("dandelin/vilt-b32-mlm")
-    model.to(device)
-    model.eval()
+class ViLTFeatureExtractor(FeatureExtractor):
 
-    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
-    dloader = DataLoader(ds, shuffle=False, batch_size=BATCH_SIZE)
+    def extract_features(self):
+        all_feats = dict()
+        all_feats_avg = dict()
+        for ids, captions, img_paths in tqdm(self.dloader):
+            text_embeddings, img_embeddings, general_embeddings = self.extract_features_from_batch()
+            for id, feats_avg, path, text_embedding, img_embedding in zip(ids, general_embeddings, img_paths,
+                                                                          text_embeddings, img_embeddings):
+                concatenated = torch.cat((text_embedding, img_embedding))
+                all_feats[id.item()] = {"multimodal_feature": concatenated.cpu().numpy(), "image_path": path}
+                all_feats_avg[id.item()] = {"multimodal_feature": feats_avg.cpu().numpy(), "image_path": path}
 
-    all_feats = dict()
-    all_feats_avg = dict()
-    for ids, captions, img_paths in tqdm(dloader):
+        path_out = MODEL_FEATURES_FILES["VILT"]
+        os.makedirs(os.path.dirname(path_out), exist_ok=True)
+        pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+        path_out = MODEL_FEATURES_FILES["VILT_AVG"]
+        os.makedirs(os.path.dirname(path_out), exist_ok=True)
+        pickle.dump(all_feats_avg, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+    def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(path) for path in img_paths]
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
@@ -52,20 +63,13 @@ def extract_features():
 
         general_embeddings = last_hidden_states.mean(dim=1)
 
-        for id, feats_avg, path, text_embedding, img_embedding in zip(ids, general_embeddings, img_paths, text_embeddings, img_embeddings):
-            concatenated = torch.cat((text_embedding, img_embedding))
-            all_feats[id.item()] = {"multimodal_feature": concatenated.cpu().numpy(), "image_path": path}
-            all_feats_avg[id.item()] = {"multimodal_feature": feats_avg.cpu().numpy(), "image_path": path}
-
-    path_out = MODEL_FEATURES_FILES["VILT"]
-    os.makedirs(os.path.dirname(path_out), exist_ok=True)
-    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
-
-    path_out = MODEL_FEATURES_FILES["VILT_AVG"]
-    os.makedirs(os.path.dirname(path_out), exist_ok=True)
-    pickle.dump(all_feats_avg, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        return text_embeddings, img_embeddings, general_embeddings
 
 
 if __name__ == "__main__":
-    os.makedirs(FEATURES_DIR, exist_ok=True)
-    extract_features()
+    processor = ViltProcessor.from_pretrained("dandelin/vilt-b32-mlm")
+    model = ViltModel.from_pretrained("dandelin/vilt-b32-mlm")
+
+    extractor = ViLTFeatureExtractor(model, processor, "VILT", BATCH_SIZE, device)
+    extractor.extract_features()
+

@@ -4,14 +4,11 @@ import clip
 import torchvision.transforms as transforms
 import numpy as np
 from torch.utils.data import DataLoader
-from glob import glob
-from os.path import join as opj
-from PIL import Image
 import pickle
 from tqdm import tqdm
 
-from feature_extraction.extract_nn_features import COCOSelected, apply_pca
-
+from feature_extraction.extract_nn_features import apply_pca
+from feature_extraction.feat_extraction_utils import COCOSelected
 from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, \
     PCA_NUM_COMPONENTS, STIMULI_IDS_PATH
 

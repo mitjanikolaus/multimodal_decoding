@@ -47,6 +47,7 @@ from torchvision.transforms import functional as F, InterpolationMode
 from typing import Tuple
 from torch import nn, Tensor
 
+from feature_extraction.feat_extraction_utils import COCOSelected
 from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, \
     IMAGES_TEST, PCA_NUM_COMPONENTS, SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR
 
