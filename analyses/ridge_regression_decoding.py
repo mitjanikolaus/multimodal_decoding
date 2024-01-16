@@ -151,7 +151,7 @@ class COCOBOLDDataset(Dataset):
             self.init_nn_latent_transform()
 
     def init_nn_latent_transform(self):
-        model_std_mean_name = f'{self.model_name}_mean_std_{self.mode}_fold_{self.fold}.p'
+        model_std_mean_name = f'{self.model_name}_{self.features}_mean_std_{self.mode}_fold_{self.fold}.p'
         model_std_mean_path = os.path.join(self.mean_std_dir, model_std_mean_name)
         if self.overwrite_transformations_mean_std or (not os.path.exists(model_std_mean_path)):
             print(f"Calculating Mean and STD of Model Latent Variables for {self.mode} samples (fold: {self.fold})")
@@ -341,11 +341,9 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
     return run_str
 
 
-def train_and_test(alpha, results_dir, run_str, train_ds, val_ds=None, test_ds=None):
+def train_and_test(alpha, results_dir, run_str, args, model_name, subject, train_ds, fold=None, val_ds=None, test_ds=None, best_val_loss=False, best_val_acc=False):
     results_file_dir = f'{results_dir}/{run_str}'
-    checkpoint_dir = f'{results_dir}/networks/{run_str}'
     os.makedirs(results_file_dir, exist_ok=True)
-    os.makedirs(checkpoint_dir, exist_ok=True)
 
     train_data = [d for d in train_ds]
     train_data_inputs = np.array([i for i, _, _, _ in train_data])
@@ -354,7 +352,17 @@ def train_and_test(alpha, results_dir, run_str, train_ds, val_ds=None, test_ds=N
     model = Ridge(alpha=alpha)
     model.fit(train_data_inputs, train_data_latents)
 
-    results = {"best_val_loss_num_samples": 0}
+    results = {
+        "alpha": alpha,
+        "model": model_name,
+        "subject": subject,
+        "features": args.features,
+        "training_mode": args.training_mode,
+        "testing_mode": args.testing_mode,
+        "fold": fold,
+        "best_val_loss": best_val_loss,
+        "best_val_acc": best_val_acc,
+    }
     if val_ds is not None:
         val_data = [d for d in val_ds]
         val_data_inputs = np.array([i for i, _, _, _ in val_data])
@@ -368,7 +376,7 @@ def train_and_test(alpha, results_dir, run_str, train_ds, val_ds=None, test_ds=N
                        "predictions": val_predicted_latents,
                        "latents": val_data_latents}
         val_results = calculate_eval_metrics(val_results, args)
-        results = {**results, **{'val_' + key: val for key, val in val_results.items()}}
+        results = results | {'val_' + key: val for key, val in val_results.items()}
 
     if test_ds is not None:
         test_data = [d for d in test_ds]
@@ -381,17 +389,17 @@ def train_and_test(alpha, results_dir, run_str, train_ds, val_ds=None, test_ds=N
                         "predictions": test_predicted_latents,
                         "latents": test_data_latents}
         test_results = calculate_eval_metrics(test_results, args)
-        results = {**results, **test_results}
+        results = results | test_results
 
     pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
     return results
 
 
-def retrain_full_train(run_str, train_dataset, test_dataset, alpha, results_dir):
+def retrain_full_train(run_str, train_dataset, test_dataset, alpha, results_dir, args, model_name, subject, best_val_loss=False, best_val_acc=False):
     print(f"Retraining on full train set with alpha: ", alpha)
 
-    train_and_test(alpha, results_dir, run_str, train_dataset, val_ds=None, test_ds=test_dataset)
+    train_and_test(alpha, results_dir, run_str, args, model_name, subject, train_dataset, val_ds=None, test_ds=test_dataset, best_val_loss=best_val_loss, best_val_acc=best_val_acc)
 
 
 def run(args):
@@ -442,7 +450,7 @@ def run(args):
 
                     run_str = get_run_str(alpha, model_name, args.features, fold=fold)
 
-                    results = train_and_test(alpha, results_dir, run_str, train_dataset, val_dataset, test_dataset)
+                    results = train_and_test(alpha, results_dir, run_str, args, model_name, subject, train_dataset, fold, val_dataset, test_dataset)
 
                     val_losses_for_folds.append(results['val_loss'])
                     print(f"best val loss: {results['val_loss']:.4f}")
@@ -465,10 +473,10 @@ def run(args):
 
             # Re-train on full train set with best HP settings:
             run_str = get_run_str(best_alpha, model_name, args.features, fold=None, best_val_loss=True)
-            retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha, results_dir)
+            retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha, results_dir, args, model_name, subject, best_val_loss=True)
 
             run_str = get_run_str(best_alpha, model_name, args.features, fold=None, best_val_acc=True)
-            retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha_pairwise_acc, results_dir)
+            retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha_pairwise_acc, results_dir, args, model_name, subject, best_val_acc=True)
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -479,7 +487,7 @@ def get_args():
     parser.add_argument("--testing-mode", type=str, default='test')
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
-    parser.add_argument("--features", type=str, default=CONCAT_FEATS, choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--features", type=str, default=AVG_FEATS, choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
