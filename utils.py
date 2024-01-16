@@ -19,7 +19,7 @@ SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 PCA_NUM_COMPONENTS = 768
 
 VISION_FEAT_KEY = "visual_feature"
-LING_FEAT_KEY = "lingual_feature"
+LANG_FEAT_KEY = "lingual_feature"
 
 
 def model_features_file_path(model_name):

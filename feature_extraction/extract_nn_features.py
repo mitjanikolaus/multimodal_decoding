@@ -49,7 +49,7 @@ from torch import nn, Tensor
 
 from feature_extraction.feat_extraction_utils import COCOSelected
 from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, \
-    IMAGES_TEST, PCA_NUM_COMPONENTS, SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR, LING_FEAT_KEY, \
+    IMAGES_TEST, PCA_NUM_COMPONENTS, SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR, LANG_FEAT_KEY, \
     VISION_FEAT_KEY
 
 NUM_WORKERS = 8
@@ -162,7 +162,7 @@ def get_lingual_features_transformers(model_name, dataloader):
             fdata = model(list(captions))
             for vector, sid, caption in zip(fdata, ids, captions):
                 v = np.array(vector[0]).mean(axis=0)
-                features[int(sid.item())] = {LING_FEAT_KEY: v.squeeze()}
+                features[int(sid.item())] = {LANG_FEAT_KEY: v.squeeze()}
     return features
 
 

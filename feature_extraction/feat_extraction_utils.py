@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from utils import IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, FEATURES_DIR, \
-    LING_FEAT_KEY, VISION_FEAT_KEY, model_features_file_path
+    LANG_FEAT_KEY, VISION_FEAT_KEY, model_features_file_path
 
 
 class COCOSelected(Dataset):
@@ -83,7 +83,7 @@ class FeatureExtractor:
                 if feats_vision.device != "cpu":
                     feats_vision = feats_vision.cpu()
 
-                all_feats[id] = {LING_FEAT_KEY: feats_lang.numpy(), VISION_FEAT_KEY: feats_vision.numpy()}
+                all_feats[id] = {LANG_FEAT_KEY: feats_lang.numpy(), VISION_FEAT_KEY: feats_vision.numpy()}
 
         path_out = model_features_file_path(self.model_name)
         os.makedirs(os.path.dirname(path_out), exist_ok=True)
