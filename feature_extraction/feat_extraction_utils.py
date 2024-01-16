@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from utils import IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, FEATURES_DIR, \
-    MODEL_FEATURES_FILES
+    LING_FEAT_KEY, VISION_FEAT_KEY, model_features_file_path
 
 
 class COCOSelected(Dataset):
@@ -82,14 +82,17 @@ class FeatureExtractor:
     def extract_features(self):
         all_feats = dict()
         for ids, captions, img_paths in tqdm(self.dloader):
-            feats_batch = self.extract_features_from_batch(ids, captions, img_paths)
-            for id, feats, path in zip(ids, feats_batch, img_paths):
-                if feats.device != "cpu":
-                    feats = feats.cpu()
+            ids = [id.item() for id in ids]
+            language_feats_batch, vision_feats_batch = self.extract_features_from_batch(ids, captions, img_paths)
+            for id, feats_lang, feats_vision, path in zip(ids, language_feats_batch, vision_feats_batch, img_paths):
+                if feats_lang.device != "cpu":
+                    feats_lang = feats_lang.cpu()
+                if feats_vision.device != "cpu":
+                    feats_vision = feats_vision.cpu()
 
-                all_feats[id.item()] = {"multimodal_feature": feats.numpy(), "image_path": path}
+                all_feats[id] = {LING_FEAT_KEY: feats_lang.numpy(), VISION_FEAT_KEY: feats_vision.numpy()}
 
-        path_out = MODEL_FEATURES_FILES[self.model_name]
+        path_out = model_features_file_path(self.model_name)
         os.makedirs(os.path.dirname(path_out), exist_ok=True)
         pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 

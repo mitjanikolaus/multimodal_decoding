@@ -1,13 +1,10 @@
 import os
-import pickle
 
 import torch
-from tqdm import tqdm
 
 from transformers import ViltModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import MODEL_FEATURES_FILES
 from transformers import ViltProcessor
 from PIL import Image
 
@@ -20,25 +17,6 @@ BATCH_SIZE = 2
 
 
 class ViLTFeatureExtractor(FeatureExtractor):
-
-    def extract_features(self):
-        all_feats = dict()
-        all_feats_avg = dict()
-        for ids, captions, img_paths in tqdm(self.dloader):
-            text_embeddings, img_embeddings, embeddings = self.extract_features_from_batch(ids, captions, img_paths)
-            for id, feats_avg, path, text_embedding, img_embedding in zip(ids, embeddings, img_paths,
-                                                                          text_embeddings, img_embeddings):
-                concatenated = torch.cat((text_embedding, img_embedding))
-                all_feats[id.item()] = {"multimodal_feature": concatenated.cpu().numpy(), "image_path": path}
-                all_feats_avg[id.item()] = {"multimodal_feature": feats_avg.cpu().numpy(), "image_path": path}
-
-        path_out = MODEL_FEATURES_FILES["VILT"]
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
-        pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
-
-        path_out = MODEL_FEATURES_FILES["VILT_AVG"]
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
-        pickle.dump(all_feats_avg, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
     def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(path) for path in img_paths]
@@ -53,15 +31,13 @@ class ViLTFeatureExtractor(FeatureExtractor):
 
         text_input_size = inputs.data["input_ids"].shape[1]
 
-        text_embeddings = last_hidden_states[:, :text_input_size]
+        language_embeddings = last_hidden_states[:, :text_input_size]
         img_embeddings = last_hidden_states[:, text_input_size:]
 
-        text_embeddings = text_embeddings.mean(dim=1)   #TODO ignore padding tokens?
+        language_embeddings = language_embeddings.mean(dim=1)   #TODO ignore padding tokens?
         img_embeddings = img_embeddings.mean(dim=1)
 
-        general_embeddings = last_hidden_states.mean(dim=1)
-
-        return text_embeddings, img_embeddings, general_embeddings
+        return language_embeddings, img_embeddings
 
 
 if __name__ == "__main__":

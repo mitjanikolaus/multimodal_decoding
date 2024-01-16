@@ -232,7 +232,7 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         attention_mask = torch.tensor(tokens["attention_mask"], device=device)
         token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)
 
-        visual_embeds = [torch.tensor(self.maskrcnn_feats[id.item()], device=device) for id in ids]
+        visual_embeds = [torch.tensor(self.maskrcnn_feats[id], device=device) for id in ids]
         visual_embeds = torch.stack(visual_embeds)
         visual_attention_mask = torch.ones(visual_embeds.shape[:-1], dtype=torch.long, device=device)
         visual_token_type_ids = torch.ones(visual_embeds.shape[:-1], dtype=torch.long, device=device)
@@ -246,7 +246,8 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         # average last hidden states over all words:
         last_hidden_states = outputs.last_hidden_state.mean(dim=1)  # TODO correct way?
 
-        return last_hidden_states
+        # language and vision features are the same (they were internally merged)
+        return last_hidden_states, last_hidden_states
 
 
 if __name__ == "__main__":

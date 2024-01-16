@@ -10,7 +10,7 @@ from tqdm import tqdm
 from feature_extraction.extract_nn_features import apply_pca
 from feature_extraction.feat_extraction_utils import COCOSelected
 from utils import FEATURES_DIR, IMAGES_IMAGERY_CONDITION, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, \
-    PCA_NUM_COMPONENTS, STIMULI_IDS_PATH
+    PCA_NUM_COMPONENTS, STIMULI_IDS_PATH, LING_FEAT_KEY, VISION_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -50,7 +50,7 @@ def extract_visual_features():
                 with torch.no_grad():
                     feats_batch = model.encode_image(images.to(device)).cpu().numpy()
                     for id, feats, name in zip(ids, feats_batch, names):
-                        all_feats[id.item()] = {"visual_feature": feats, "image_name": name}
+                        all_feats[id.item()] = {VISION_FEAT_KEY: feats, "image_name": name}
 
         path_out = os.path.join(FEATURES_DIR, "clip", "clip_v_VITL14336px_selected_coco_dataset_crop.p")
 
@@ -91,7 +91,7 @@ def extract_language_features():
                         raise Exception('Key already exists: ', stim_ids_batch[i])
                     id = stim_ids_batch[i]
                     temp = dict()
-                    temp['lingual_feature'] = text_features[i]
+                    temp[LING_FEAT_KEY] = text_features[i]
                     temp['caption'] = captions_batch[i]
                     all_feats[id] = temp
             print("done.")

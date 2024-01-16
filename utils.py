@@ -4,7 +4,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
-FEATURES_DIR = os.path.join(DATA_DIR, "feats_unimodal")
+FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 
 COCO_2017_TRAIN_IMAGES_DIR = os.path.expanduser("~/data/coco/images/train_2017")
 
@@ -18,26 +18,12 @@ SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 PCA_NUM_COMPONENTS = 768
 
-MODEL_FEATURES_FILES = {
-    "RESNET152_AVGPOOL_PCA768": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop_pca_768.p"),
-    "RESNET152_AVGPOOL": os.path.join(FEATURES_DIR, "resnet/resnet152_avgpool_selected_coco_crop.p"),
-    "GPT2XL_AVG_PCA768": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco_pca_768.p"),
-    "GPT2XL_AVG": os.path.join(FEATURES_DIR, "gpt/gpt2_xl_avg_selected_coco.p"),
-    "VITL16_ENCODER": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop.p"), 
-    "VITL16_ENCODER_PCA768": os.path.join(FEATURES_DIR, "vit/vit_l_16_encoder_selected_coco_crop_pca_768.p"),
-    "CLIP_L": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop.p"),
-    "CLIP_V": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop.p"),
-    "CLIP_L_PCA768": os.path.join(FEATURES_DIR, "clip/clip_l_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
-    "CLIP_V_PCA768": os.path.join(FEATURES_DIR, "clip/clip_v_VITL14336px_selected_coco_dataset_crop_pca_768.p"),
-    "BERT_LARGE": os.path.join(FEATURES_DIR, "bert/bert_large_avg_selected_coco.p"),
-    "VisualBERT": os.path.join(FEATURES_DIR, "visualbert/visualbert_vl_avg.p"),
-    "VILT": os.path.join(FEATURES_DIR, "vilt/vilt_vl_concatenated.p"),
-    "VILT_AVG": os.path.join(FEATURES_DIR, "vilt/vilt_vl_averaged.p"),
-    "ImageBind": os.path.join(FEATURES_DIR, "imagebind/imagebind_vl_concatenated.p"),
-    "ImageBind_AVG": os.path.join(FEATURES_DIR, "imagebind/imagebind_vl_avg.p"),
-    "LXMERT": os.path.join(FEATURES_DIR, "lxmert/lxmert_vl_concatenated.p"),
-    "LXMERT_AVG": os.path.join(FEATURES_DIR, "lxmert/lxmert_vl_avg.p"),
-}
+VISION_FEAT_KEY = "visual_feature"
+LING_FEAT_KEY = "lingual_feature"
+
+
+def model_features_file_path(model_name):
+    return os.path.join(FEATURES_DIR, f"{model_name.lower()}.p")
 
 
 IMAGES_IMAGERY_CONDITION = [
