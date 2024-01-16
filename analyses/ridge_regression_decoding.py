@@ -487,7 +487,7 @@ def get_args():
     parser.add_argument("--testing-mode", type=str, default='test')
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
-    parser.add_argument("--features", type=str, default=AVG_FEATS, choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--features", type=str, default=CONCAT_FEATS, choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
