@@ -34,7 +34,9 @@ MODEL_FEATURES_FILES = {
     "VILT": os.path.join(FEATURES_DIR, "vilt/vilt_vl_concatenated.p"),
     "VILT_AVG": os.path.join(FEATURES_DIR, "vilt/vilt_vl_averaged.p"),
     "ImageBind": os.path.join(FEATURES_DIR, "imagebind/imagebind_vl_concatenated.p"),
-    "ImageBind_AVG": os.path.join(FEATURES_DIR, "imagebind/imagebind_vl_avg.p")
+    "ImageBind_AVG": os.path.join(FEATURES_DIR, "imagebind/imagebind_vl_avg.p"),
+    "LXMERT": os.path.join(FEATURES_DIR, "lxmert/lxmert_vl_concatenated.p"),
+    "LXMERT_AVG": os.path.join(FEATURES_DIR, "lxmert/lxmert_vl_avg.p"),
 }
 
 

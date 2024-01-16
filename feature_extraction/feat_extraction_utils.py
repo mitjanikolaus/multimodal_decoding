@@ -65,6 +65,8 @@ class FeatureExtractor:
         super().__init__()
         print(f"Feature extraction on {device}")
 
+        self.device = device
+
         self.model = model.to(device)
         self.model.eval()
 
