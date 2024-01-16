@@ -499,7 +499,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1, 1e3, 1e5, 1e7])
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
 
     return parser.parse_args()
 
