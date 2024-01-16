@@ -332,7 +332,7 @@ def calculate_eval_metrics(results, args):
 
 def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False):
     run_str = f"{model_name}_{features}_alpha_{alpha}"
-    if fold:
+    if fold is not None:
         run_str += f"_fold_{fold}"
     if best_val_loss:
         run_str += "_best_val_loss"
@@ -477,6 +477,7 @@ def run(args):
 
             run_str = get_run_str(best_alpha, model_name, args.features, fold=None, best_val_acc=True)
             retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha_pairwise_acc, results_dir, args, model_name, subject, best_val_acc=True)
+
 
 def get_args():
     parser = argparse.ArgumentParser()
