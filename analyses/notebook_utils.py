@@ -19,8 +19,6 @@ def load_results_data(distance_metrics = ["cosine"]):
     for dist_metric in distance_metrics:
         metrics.extend([f'acc_{dist_metric}', f'acc_{dist_metric}_captions', f'acc_{dist_metric}_images', f'val_acc_{dist_metric}'])         
     
-    all_dfs = []
-    
     data = []
         
     result_files = sorted(glob(f"{results_root_dir}/*/*/*/results.p"))
@@ -35,15 +33,7 @@ def load_results_data(distance_metrics = ["cosine"]):
                 data.append(data_item)   
 
     df = pd.DataFrame.from_records(data)
-    
-    df_mean = df.copy()
-    df_mean["subject"] = "average"
-    df = pd.concat((df, df_mean))
-    all_dfs.append(df)
-    
-    all_data = pd.concat(all_dfs)
 
-    all_data["model"] = all_data.model + "_" + all_data.features
+    df["model"] = df.model + "_" + df.features
 
-
-    return all_data
+    return df
