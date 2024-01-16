@@ -2,14 +2,12 @@ import os
 import pickle
 
 import torch
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from transformers import ViltModel
 
-from feature_extraction.extract_nn_features import COCOSelected
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import FEATURES_DIR, CAPTIONS_PATH, COCO_2017_TRAIN_IMAGES_DIR, STIMULI_IDS_PATH, MODEL_FEATURES_FILES
+from utils import MODEL_FEATURES_FILES
 from transformers import ViltProcessor
 from PIL import Image
 
