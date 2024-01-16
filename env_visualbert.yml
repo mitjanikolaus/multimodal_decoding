@@ -217,4 +217,3 @@ dependencies:
       - urllib3==2.1.0
       - werkzeug==3.0.1
       - yacs==0.1.8
-prefix: /home/mitja/anaconda3/envs/visualbert
