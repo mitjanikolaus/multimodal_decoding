@@ -58,7 +58,7 @@ class COCOSelected(Dataset):
 class FeatureExtractor:
     def __init__(self, model, prepocessor=None, model_name=None, batch_size=10, device="cpu"):
         super().__init__()
-        print(f"Feature extraction on {device}")
+        print(f"Feature extraction for {model_name} on {device}")
 
         self.device = device
 
