@@ -34,7 +34,13 @@ class ViLTFeatureExtractor(FeatureExtractor):
         language_embeddings = last_hidden_states[:, :text_input_size]
         img_embeddings = last_hidden_states[:, text_input_size:]
 
-        language_embeddings = language_embeddings.mean(dim=1)   #TODO ignore padding tokens?
+        att_mask = inputs.data["attention_mask"]
+        averaged_lang_embeddings = []
+        for emb, mask in zip(language_embeddings, att_mask):
+            length_without_padding = mask.sum().item()
+            averaged_lang_embeddings.append(emb[:length_without_padding].mean(dim=0))
+        language_embeddings = torch.stack(averaged_lang_embeddings)
+
         img_embeddings = img_embeddings.mean(dim=1)
 
         return language_embeddings, img_embeddings
