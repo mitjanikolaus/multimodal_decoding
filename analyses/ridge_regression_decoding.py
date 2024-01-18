@@ -335,7 +335,9 @@ def calculate_eval_metrics(results, args):
 
 
 def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False):
-    run_str = f"{model_name}_{features}_alpha_{alpha}"
+    run_str = f"{model_name}_{features}"
+    if not best_val_acc and not best_val_loss:
+        run_str += f"_alpha_{alpha}"
     if fold is not None:
         run_str += f"_fold_{fold}"
     if best_val_loss:
