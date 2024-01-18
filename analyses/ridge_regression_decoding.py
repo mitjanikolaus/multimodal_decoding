@@ -21,13 +21,15 @@ from torchvision.transforms import Compose
 from decoding_utils import get_distance_matrix
 from tqdm import trange
 
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_FEAT_KEY, LANG_FEAT_KEY
+from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_FEAT_KEY, LANG_FEAT_KEY, \
+    MULTIMODAL_FEAT_KEY
 
 CONCAT_FEATS = 'concat'
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
-FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY]
+MULTIMODAL_FEATS = 'multi'
+FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS]
 
 NUM_CV_SPLITS = 5
 
@@ -109,6 +111,8 @@ class COCOBOLDDataset(Dataset):
             elif self.features == CONCAT_FEATS:
                 feats = np.concatenate(
                     (latent_vectors[stim_id][LANG_FEAT_KEY], latent_vectors[stim_id][VISION_FEAT_KEY]))
+            elif self.features == MULTIMODAL_FEATS:
+                feats = latent_vectors[stim_id][MULTIMODAL_FEAT_KEY]
             else:
                 raise RuntimeError(f"Unknown feature selection/combination method: {self.features}")
             self.nn_latent_vectors.append(feats)
