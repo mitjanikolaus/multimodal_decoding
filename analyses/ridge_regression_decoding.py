@@ -230,10 +230,11 @@ class COCOBOLDDataset(Dataset):
         return sample, latent_vector, sid, stype
 
 
-class Normalize():
-    def __init__(self, mean, std):
+class Normalize:
+    def __init__(self, mean, std, eps=1e-8):
         self.mean = mean
         self.std = std
+        self.std = self.std + eps  # Avoid division by 0
 
     def __call__(self, x):
         return ((x - self.mean) / self.std).astype(np.float32).squeeze()
@@ -265,7 +266,7 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
 
 
 def pairwise_accuracy(predictions, latents, stimulus_ids, metric="cosine"):
-    std = predictions.std(axis=0) + 1e-8  # For numerical stability
+    std = predictions.std(axis=0) + 1e-8  # Avoid division by 0
     predictions = (predictions - predictions.mean(axis=0)) / std
 
     if "csls_" in metric:
