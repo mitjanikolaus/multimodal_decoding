@@ -100,40 +100,40 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    # load_and_save_relevant_coco_ids()
+    load_and_save_relevant_coco_ids()
+
+    # model_name = 'microsoft/resnet-152'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel(ResNetModel.from_pretrained(model_name).config)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
+    # extractor.extract_features()
+
+    model_name = 'google/vit-large-patch16-224-in21k'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16_21K", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'google/vit-large-patch16-224'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
+    extractor.extract_features()
 
     model_name = 'microsoft/resnet-152'
     feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel(ResNetModel.from_pretrained(model_name).config)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
+    model = ResNetModel.from_pretrained(model_name)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152", BATCH_SIZE, device)
     extractor.extract_features()
 
-    # model_name = 'google/vit-large-patch16-224-in21k'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16_21K", BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'google/vit-large-patch16-224'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'microsoft/resnet-152'
-    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    # model = ResNetModel.from_pretrained(model_name)
-    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152", BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'bert-large-uncased'
-    # tokenizer = BertTokenizer.from_pretrained(model_name)
-    # model = BertModel.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'gpt2-xl'
-    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    # model = GPT2Model.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
-    # extractor.extract_features()
+    model_name = 'bert-large-uncased'
+    tokenizer = BertTokenizer.from_pretrained(model_name)
+    model = BertModel.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'gpt2-xl'
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = GPT2Model.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
+    extractor.extract_features()
