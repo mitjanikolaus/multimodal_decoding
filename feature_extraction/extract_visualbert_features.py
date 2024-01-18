@@ -227,7 +227,7 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         self.maskrcnn_feats = pickle.load(open(MASKRCNN_FEATS_PATH, "rb"))
 
     def extract_features_from_batch(self, ids, captions, img_paths):
-        tokens = self.preprocessor(captions, padding='max_length', max_length=50)
+        tokens = self.preprocessor(captions, padding=True)
         input_ids = torch.tensor(tokens["input_ids"], device=device)
         attention_mask = torch.tensor(tokens["attention_mask"], device=device)
         token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)
@@ -243,11 +243,13 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
                                        visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
                                        visual_token_type_ids=visual_token_type_ids)
 
-        # average last hidden states over all words:
-        last_hidden_states = outputs.last_hidden_state.mean(dim=1)  # TODO correct way?
+        last_hidden_states = outputs.last_hidden_state
 
-        # language and vision features are the same (they were internally merged)
-        return last_hidden_states, last_hidden_states
+        text_input_size = input_ids.data.shape[1]
+        language_embeddings = last_hidden_states[:, :text_input_size].mean(dim=1)
+        img_embeddings = last_hidden_states[:, text_input_size:].mean(dim=1)
+
+        return language_embeddings, img_embeddings
 
 
 if __name__ == "__main__":
