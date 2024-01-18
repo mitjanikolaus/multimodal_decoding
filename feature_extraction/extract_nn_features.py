@@ -12,7 +12,7 @@ from feature_extraction.feat_extraction_utils import FeatureExtractor
 from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR, LANG_FEAT_KEY, \
     model_features_file_path
 
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 
 if torch.cuda.is_available():
     device = "cuda"
@@ -100,7 +100,7 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    # load_and_save_relevant_coco_ids()
+    load_and_save_relevant_coco_ids()
 
     # model_name = 'microsoft/resnet-152'
     # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
@@ -108,17 +108,17 @@ if __name__ == "__main__":
     # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
     # extractor.extract_features()
 
-    # model_name = 'google/vit-large-patch16-224'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'microsoft/resnet-152'
-    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    # model = ResNetModel.from_pretrained(model_name)
-    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152", BATCH_SIZE, device)
-    # extractor.extract_features()
+    model_name = 'google/vit-large-patch16-224'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'microsoft/resnet-152'
+    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    model = ResNetModel.from_pretrained(model_name)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152", BATCH_SIZE, device)
+    extractor.extract_features()
 
     model_name = 'bert-large-uncased'
     tokenizer = BertTokenizer.from_pretrained(model_name)
@@ -126,8 +126,8 @@ if __name__ == "__main__":
     extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
     extractor.extract_features()
 
-    # model_name = 'gpt2-xl'
-    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    # model = GPT2Model.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
-    # extractor.extract_features()
+    model_name = 'gpt2-xl'
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = GPT2Model.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
+    extractor.extract_features()
