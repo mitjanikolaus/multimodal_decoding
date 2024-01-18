@@ -187,8 +187,7 @@ class COCOBOLDDataset(Dataset):
         self.fmri_betas_transform = Compose(compose_ops)
 
     def preload(self):
-        print("preloading")
-        for idx in trange(len(self.fmri_betas_addresses)):
+        for idx in trange(len(self.fmri_betas_addresses), desc="loading fmri data"):
             if self.fmri_betas[idx] is None:
                 sample = nib.load(self.fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
                 sample = sample[self.brain_mask]
@@ -412,7 +411,7 @@ def retrain_full_train(run_str, train_dataset, test_dataset, alpha, results_dir,
 
 def run(args):
     for features in args.features:
-        print(features)
+        print("FEATURES: ", features)
         for subject in args.subjects:
             print(subject)
             for model_name in args.models:
