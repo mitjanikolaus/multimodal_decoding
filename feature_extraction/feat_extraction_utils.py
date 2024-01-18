@@ -87,7 +87,7 @@ class FeatureExtractor:
                 vision_feats_batch = [None] * len(ids)
             else:
                 vision_feats_batch = vision_feats_batch.cpu().numpy()
-            for id, feats_lang, feats_vision, path in zip(ids, language_feats_batch, vision_feats_batch, img_paths):
+            for id, feats_lang, feats_vision in zip(ids, language_feats_batch, vision_feats_batch):
                 all_feats[id] = {LANG_FEAT_KEY: feats_lang, VISION_FEAT_KEY: feats_vision}
 
         path_out = model_features_file_path(self.model_name)

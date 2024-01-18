@@ -20,6 +20,7 @@ PCA_NUM_COMPONENTS = 768
 
 VISION_FEAT_KEY = "visual_feature"
 LANG_FEAT_KEY = "lingual_feature"
+MULTIMODAL_FEAT_KEY = "multimodal_feature"
 
 
 def model_features_file_path(model_name):
