@@ -33,10 +33,9 @@ class FlavaFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        img_embeddings = outputs.image_embeddings  # Batch size X (Number of image patches + 1) x Hidden size => 2 X 197 X 768
-        language_embeddings = outputs.text_embeddings  # Batch size X (Text sequence length + 1) X Hidden size => 2 X 77 X 768
-        # Multimodal embeddings can be used for multimodal tasks such as VQA
-        multimodal_embeddings = outputs.multimodal_embeddings  # Batch size X (Number of image patches + Text Sequence Length + 3) X Hidden size => 2 X 275 x 768
+        img_embeddings = outputs.image_embeddings
+        language_embeddings = outputs.text_embeddings
+        multimodal_embeddings = outputs.multimodal_embeddings
 
         att_mask = inputs.data["attention_mask"]
         averaged_lang_embeddings = []
