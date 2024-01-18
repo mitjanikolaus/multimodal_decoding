@@ -129,5 +129,5 @@ if __name__ == "__main__":
     model_name = 'gpt2-xl'
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
     model = GPT2Model.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
     extractor.extract_features()
