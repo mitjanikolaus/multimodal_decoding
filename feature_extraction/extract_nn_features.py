@@ -1,7 +1,7 @@
 import os
 import torch
 from transformers import pipeline, ViTModel, ViTImageProcessor, AutoFeatureExtractor, ResNetModel, BertModel, \
-    BertTokenizer, GPT2Tokenizer, GPT2Model
+    BertTokenizer, GPT2Tokenizer, GPT2Model, AutoModelForCausalLM, AutoTokenizer
 import numpy as np
 from glob import glob
 from PIL import Image
@@ -90,6 +90,7 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
 
                 with torch.no_grad():
                     feats_batch = model(list(captions))
+
                 for feats, id, caption in zip(feats_batch, ids, captions):
                     feats_mean = np.array(feats[0]).mean(axis=0)
                     all_feats[id] = {LANG_FEAT_KEY: feats_mean.squeeze()}
@@ -108,26 +109,33 @@ if __name__ == "__main__":
     # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
     # extractor.extract_features()
 
-    model_name = 'google/vit-large-patch16-224'
-    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    model = ViTModel.from_pretrained(model_name)
-    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
-    extractor.extract_features()
+    # model_name = 'google/vit-large-patch16-224'
+    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    # model = ViTModel.from_pretrained(model_name)
+    # extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-152'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'bert-large-uncased'
+    # tokenizer = BertTokenizer.from_pretrained(model_name)
+    # model = BertModel.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'gpt2-xl'
+    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    # model = GPT2Model.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
+    # extractor.extract_features()
 
-    model_name = 'microsoft/resnet-152'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152", BATCH_SIZE, device)
-    extractor.extract_features()
 
-    model_name = 'bert-large-uncased'
-    tokenizer = BertTokenizer.from_pretrained(model_name)
-    model = BertModel.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'gpt2-xl'
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    model = GPT2Model.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
+    model_name = 'facebook/opt-30b'
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "opt-30b", batch_size=10, device="cpu")
     extractor.extract_features()
