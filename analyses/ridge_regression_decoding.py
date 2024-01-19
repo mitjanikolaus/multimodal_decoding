@@ -64,7 +64,7 @@ class COCOBOLDDataset(Dataset):
             mode (str): 'train', 'test', or 'imagery'. You can append _images or _captions to make it unimodal
             blank_correction (boolean): If `True`, the blank image will be subtracted from the imagery patterns (if exists)
         """
-        self.root_dir = os.path.join(bold_root_dir, subject)
+        self.bold_root_dir = os.path.join(bold_root_dir, subject)
         self.subject = subject
         self.imagery_scenes = IMAGERY_SCENES[subject]
         self.mode = mode
@@ -81,7 +81,7 @@ class COCOBOLDDataset(Dataset):
 
         latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
-        fmri_addresses_regex = os.path.join(self.root_dir, f'betas_{self.mode}*', '*.nii')
+        fmri_addresses_regex = os.path.join(self.bold_root_dir, f'betas_{self.mode}*', '*.nii')
         self.fmri_betas_addresses = np.array(sorted(glob(fmri_addresses_regex)))
         self.stim_ids = []
         self.stim_types = []
@@ -127,13 +127,13 @@ class COCOBOLDDataset(Dataset):
         else:
             self.fmri_betas = np.array([None for _ in range(len(self.fmri_betas_addresses))])
 
-        brain_mask_address = os.path.join(self.root_dir, f'unstructured', 'mask.nii')
+        brain_mask_address = os.path.join(self.bold_root_dir, f'unstructured', 'mask.nii')
         self.brain_mask = nib.load(brain_mask_address).get_fdata().reshape(-1)
         self.brain_mask = np.logical_and(np.logical_not(np.isnan(self.brain_mask)), self.brain_mask != 0)
         self.bold_dim_size = self.brain_mask.sum()
         self.latent_dim_size = self.nn_latent_vectors[0].shape[0]
 
-        beta_blank_address = os.path.join(self.root_dir, f'betas_blank', 'beta_blank.nii')
+        beta_blank_address = os.path.join(self.bold_root_dir, f'betas_blank', 'beta_blank.nii')
         if os.path.exists(beta_blank_address):
             self.blank = nib.load(beta_blank_address).get_fdata().astype('float32').reshape(-1)
             self.blank = self.blank[self.brain_mask]
