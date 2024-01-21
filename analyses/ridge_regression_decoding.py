@@ -443,7 +443,6 @@ def test_model_ensemble(test_dataset, alpha, results_dir, args, model_name, subj
     run_str = get_run_str(alpha, model_name, features, best_val_loss=best_val_loss, best_val_acc=best_val_acc,
                           ensemble=True)
     results_file_dir = f'{results_dir}/{run_str}'
-    print("Saving model ensemble result to ", results_file_dir)
     os.makedirs(results_file_dir, exist_ok=True)
     pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
