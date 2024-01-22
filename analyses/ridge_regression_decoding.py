@@ -338,9 +338,9 @@ def calculate_eval_metrics(results, args):
     return results
 
 
-def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False, best_val_mse=False):
+def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False):
     run_str = f"{model_name}_{features}"
-    if not best_val_acc and not best_val_loss and not best_val_mse:
+    if not best_val_acc and not best_val_loss:
         run_str += f"_alpha_{alpha}"
     if fold is not None:
         run_str += f"_fold_{fold}"
@@ -348,8 +348,6 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
         run_str += "_best_val_loss"
     if best_val_acc:
         run_str += "_best_val_acc"
-    if best_val_mse:
-        run_str += "_best_val_mse"
     return run_str
 
 
@@ -512,7 +510,7 @@ def run(args):
                     "features": features,
                     "training_mode": args.training_mode,
                     "testing_mode": args.testing_mode,
-                    "best_val_mse": True,
+                    "best_val_acc": True,
                 }
 
                 best_model = clf.best_estimator_
@@ -529,7 +527,7 @@ def run(args):
                 test_results = calculate_eval_metrics(test_results, args)
                 results = results | test_results
 
-                run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_mse=True)
+                run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
                 results_file_dir = f'{results_dir}/{run_str}'
                 os.makedirs(results_file_dir, exist_ok=True)
 
