@@ -284,7 +284,7 @@ def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
     diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
     comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
 
-    if stimulus_ids:
+    if stimulus_ids is not None:
         # Take only cases where the stimulus ids are not the same (do not compare cases where caption id == image id)
         not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
         comp_mat = comp_mat[not_same_id]
