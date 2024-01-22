@@ -334,9 +334,9 @@ def calculate_eval_metrics(results, args):
     return results
 
 
-def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False, ensemble=False):
+def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False):
     run_str = f"{model_name}_{features}"
-    if not best_val_acc and not best_val_loss and not ensemble:
+    if not best_val_acc and not best_val_loss:
         run_str += f"_alpha_{alpha}"
     if fold is not None:
         run_str += f"_fold_{fold}"
@@ -344,8 +344,6 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
         run_str += "_best_val_loss"
     if best_val_acc:
         run_str += "_best_val_acc"
-    if ensemble:
-        run_str += "_ensemble"
     return run_str
 
 
@@ -372,7 +370,6 @@ def train_and_test(alpha, results_dir, run_str, args, model_name, subject, featu
         "fold": fold,
         "best_val_loss": best_val_loss,
         "best_val_acc": best_val_acc,
-        "ensemble": False,
     }
     if val_ds is not None:
         val_data = [d for d in val_ds]
@@ -405,46 +402,6 @@ def train_and_test(alpha, results_dir, run_str, args, model_name, subject, featu
     pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
     return results
-
-
-def test_model_ensemble(test_dataset, alpha, results_dir, args, model_name, subject, features, best_val_loss=False,
-                        best_val_acc=False):
-    models = []
-    for fold in range(NUM_CV_SPLITS):
-        model_run_str = get_run_str(alpha, model_name, features, fold=fold)
-        results_file_dir = f'{results_dir}/{model_run_str}'
-        model = pickle.load(open(os.path.join(results_file_dir, "model.p"), 'rb'))
-        models.append(model)
-
-    results = {
-        "alpha": alpha,
-        "model": model_name,
-        "subject": subject,
-        "features": features,
-        "training_mode": args.training_mode,
-        "testing_mode": args.testing_mode,
-        "best_val_loss": best_val_loss,
-        "best_val_acc": best_val_acc,
-        "ensemble": True,
-    }
-    test_data = [d for d in test_dataset]
-    test_data_inputs = np.array([i for i, _, _, _ in test_data])
-    test_data_latents = np.array([l for _, l, _, _ in test_data])
-    test_predicted_latents = [model.predict(test_data_inputs) for model in models]
-    test_predicted_latents = np.mean(test_predicted_latents, axis=0)
-
-    test_results = {"stimulus_ids": test_dataset.stim_ids,
-                    "stimulus_types": test_dataset.stim_types,
-                    "predictions": test_predicted_latents,
-                    "latents": test_data_latents}
-    test_results = calculate_eval_metrics(test_results, args)
-    results = results | test_results
-
-    run_str = get_run_str(alpha, model_name, features, best_val_loss=best_val_loss, best_val_acc=best_val_acc,
-                          ensemble=True)
-    results_file_dir = f'{results_dir}/{run_str}'
-    os.makedirs(results_file_dir, exist_ok=True)
-    pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
 
 def retrain_full_train(run_str, train_dataset, test_dataset, alpha, results_dir, args, model_name, subject, features,
@@ -525,12 +482,6 @@ def run(args):
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
-
-                # Final test using model ensemble:
-                test_model_ensemble(test_dataset, best_alpha, results_dir, args, model_name, subject, features,
-                                    best_val_loss=True)
-                test_model_ensemble(test_dataset, best_alpha_pairwise_acc, results_dir, args, model_name, subject,
-                                    features, best_val_acc=True)
 
                 # Re-train on full train set with best HP settings:
                 run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_loss=True)
