@@ -44,8 +44,7 @@ DISTANCE_METRICS = ['cosine']
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 
-def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_transform=None,
-                 overwrite_transformations_mean_std=False):
+def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_transform=None):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
@@ -73,7 +72,7 @@ def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_
     if nn_latent_transform is None:
         model_std_mean_name = f'{model_name}_{features}_mean_std_{mode}.p'
         model_std_mean_path = os.path.join(mean_std_dir, model_std_mean_name)
-        if overwrite_transformations_mean_std or (not os.path.exists(model_std_mean_path)):
+        if not os.path.exists(model_std_mean_path):
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
             os.makedirs(mean_std_dir, exist_ok=True)
 
@@ -89,10 +88,7 @@ def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_
     return nn_latent_vectors, nn_latent_transform
 
 
-def get_fmri_data(subject, mode=TRAINING_MODES[0],
-                 blank_correction=True, preloaded_betas=None,
-                 overwrite_transformations_mean_std=False,
-                 fmri_betas_transform=None):
+def get_fmri_data(subject, mode=TRAINING_MODES[0], fmri_betas_transform=None):
     """
     Args:
         subject (str): Subject ID.
@@ -125,20 +121,11 @@ def get_fmri_data(subject, mode=TRAINING_MODES[0],
     stim_ids = np.array(stim_ids)
     stim_types = np.array(stim_types)
 
-    if preloaded_betas is not None:
-        assert len(preloaded_betas) == len(fmri_betas_addresses), f"Preloaded betas shape does not match!"
-        fmri_betas = preloaded_betas
-    else:
-        fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
+    fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
 
     brain_mask_address = os.path.join(bold_root_dir, f'unstructured', 'mask.nii')
     brain_mask = nib.load(brain_mask_address).get_fdata().reshape(-1)
     brain_mask = np.logical_and(np.logical_not(np.isnan(brain_mask)), brain_mask != 0)
-
-    beta_blank_address = os.path.join(bold_root_dir, f'betas_blank', 'beta_blank.nii')
-    if os.path.exists(beta_blank_address):
-        blank = nib.load(beta_blank_address).get_fdata().astype('float32').reshape(-1)
-        blank = blank[brain_mask]
 
     for idx in trange(len(fmri_betas_addresses), desc="loading fmri data"):
         if fmri_betas[idx] is None:
@@ -150,7 +137,7 @@ def get_fmri_data(subject, mode=TRAINING_MODES[0],
         bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
         bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
 
-        if overwrite_transformations_mean_std or (not os.path.exists(bold_std_mean_path)):
+        if not os.path.exists(bold_std_mean_path):
             print(f"Calculating Mean and STD of BOLD Signals for {mode} samples")
             os.makedirs(mean_std_dir, exist_ok=True)
 
@@ -164,7 +151,6 @@ def get_fmri_data(subject, mode=TRAINING_MODES[0],
     fmri_betas = np.array([fmri_betas_transform(v) for v in fmri_betas])
 
     return fmri_betas, stim_ids, stim_types, fmri_betas_transform
-
 
 
 class Normalize:
@@ -203,8 +189,8 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
 
 
 def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
-    std = predictions.std(axis=0) + 1e-8  # Avoid division by 0
-    predictions = (predictions - predictions.mean(axis=0)) / std
+    pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
+    predictions = pred_normalize(predictions)
 
     if "csls_" in metric:
         metric = metric.replace("csls_", "")
@@ -286,11 +272,11 @@ def run(args):
     for features in args.features:
         print("FEATURES: ", features)
         for subject in args.subjects:
-            print(subject)
-            fmri_betas, train_stim_ids, train_stim_types, fmri_betas_transform = get_fmri_data(subject, args.training_mode)
+            print("SUBJECT: ", subject)
+            fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, args.training_mode)
 
             fmri_test_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode,
-                                       fmri_betas_transform=fmri_betas_transform)
+                                                                               fmri_transform)
 
             for model_name in args.models:
                 model_name = model_name.lower()
@@ -298,15 +284,16 @@ def run(args):
                 results_dir = os.path.join(GLM_OUT_DIR, f'{args.training_mode}/{subject}/')
 
                 train_data_inputs = fmri_betas
-                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, train_stim_ids, subject,
-                                                    args.training_mode)
+                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, train_stim_ids,
+                                                                             subject,
+                                                                             args.training_mode)
 
                 model = Ridge()
                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
 
                 clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=N_JOBS,
-                                   pre_dispatch="1*n_jobs", refit=True, verbose=3)
+                                   pre_dispatch=4, refit=True, verbose=3)
 
                 start = time.time()
                 clf.fit(train_data_inputs, train_data_latents)
@@ -328,8 +315,9 @@ def run(args):
 
                 best_model = clf.best_estimator_
 
-                test_data_latents, _ = get_nn_latent_data(model_name, features, test_stim_ids, subject, args.testing_mode,
-                                           nn_latent_transform=nn_latent_transform)
+                test_data_latents, _ = get_nn_latent_data(model_name, features, test_stim_ids, subject,
+                                                          args.testing_mode,
+                                                          nn_latent_transform=nn_latent_transform)
                 test_predicted_latents = best_model.predict(fmri_test_betas)
 
                 test_results = {"stimulus_ids": test_stim_ids,
