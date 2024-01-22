@@ -328,7 +328,7 @@ def run(args):
 
                 best_model = clf.best_estimator_
 
-                test_data_latents = get_nn_latent_data(model_name, features, test_stim_ids, subject, args.testing_mode,
+                test_data_latents, _ = get_nn_latent_data(model_name, features, test_stim_ids, subject, args.testing_mode,
                                            nn_latent_transform=nn_latent_transform)
                 test_predicted_latents = best_model.predict(fmri_test_betas)
 
