@@ -501,7 +501,6 @@ def run(args):
                 print(f"Elapsed time: {int(end - start)}s")
 
                 best_alpha = clf.best_params_["alpha"]
-                print(f"Best alpha: {best_alpha}")
 
                 results = {
                     "alpha": clf.best_params_["alpha"],
@@ -525,6 +524,8 @@ def run(args):
                                 "predictions": test_predicted_latents,
                                 "latents": test_data_latents}
                 test_results = calculate_eval_metrics(test_results, args)
+                print(f"Best alpha: {best_alpha} | Pairwise acc: {results['acc_cosine']:.3f}")
+
                 results = results | test_results
 
                 run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
