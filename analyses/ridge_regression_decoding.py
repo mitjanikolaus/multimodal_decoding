@@ -84,7 +84,7 @@ def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_
         model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
         nn_latent_transform = Normalize(model_mean_std['mean'], model_mean_std['std'])
 
-    nn_latent_vectors = [nn_latent_transform(v) for v in nn_latent_vectors]
+    nn_latent_vectors = np.array([nn_latent_transform(v) for v in nn_latent_vectors])
 
     return nn_latent_vectors, nn_latent_transform
 
