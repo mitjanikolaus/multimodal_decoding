@@ -12,6 +12,7 @@ import nibabel as nib
 from scipy.spatial.distance import cdist, cosine
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import KFold, GridSearchCV
 from torch.utils.data import Dataset
 import os
@@ -33,7 +34,7 @@ FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_
 
 NUM_CV_SPLITS = 5
 
-N_JOBS = 8 # TODO
+N_JOBS = 8
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 DECODER_TESTING_MODES = ['test', 'test_captions', 'test_images']
@@ -270,7 +271,7 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
     return dist_mat
 
 
-def pairwise_accuracy(predictions, latents, stimulus_ids, metric="cosine"):
+def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
     std = predictions.std(axis=0) + 1e-8  # Avoid division by 0
     predictions = (predictions - predictions.mean(axis=0)) / std
 
@@ -280,13 +281,14 @@ def pairwise_accuracy(predictions, latents, stimulus_ids, metric="cosine"):
     else:
         dist_mat = get_distance_matrix(predictions, latents, metric)
 
-    not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
-
     diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
     comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
 
-    # Take only cases where the stimulus ids are not the same (do not compare cases where caption id == image id)
-    comp_mat = comp_mat[not_same_id]
+    if stimulus_ids:
+        # Take only cases where the stimulus ids are not the same (do not compare cases where caption id == image id)
+        not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
+        comp_mat = comp_mat[not_same_id]
+
     score = comp_mat.mean()
 
     return score
@@ -322,11 +324,11 @@ def calculate_eval_metrics(results, args):
     val_latents = np.concatenate((latents_caption, latents_image))
 
     for metric in DISTANCE_METRICS:
-        acc = pairwise_accuracy(val_predictions, val_latents, val_ids, metric)
+        acc = pairwise_accuracy(val_latents, val_predictions, val_ids, metric)
         results[f"acc_{metric}"] = acc
 
-        acc_captions = pairwise_accuracy(predictions_caption, latents_caption, stimulus_ids_caption, metric)
-        acc_images = pairwise_accuracy(predictions_image, latents_image, stimulus_ids_image, metric)
+        acc_captions = pairwise_accuracy(latents_caption, predictions_caption, stimulus_ids_caption, metric)
+        acc_images = pairwise_accuracy(latents_image, predictions_image, stimulus_ids_image, metric)
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
 
@@ -429,7 +431,7 @@ def run(args):
 
                 train_val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                     args.training_mode, features)
-                preloaded_betas = train_val_dataset.preload()
+                preloaded_betas = train_val_dataset.preload() #TODO
 
                 # kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
@@ -450,9 +452,12 @@ def run(args):
                 train_data_latents = np.array([l for _, l, _, _ in train_data])
 
                 model = Ridge()
-                # clf = GridSearchCV(model, param_grid={"alpha": [1, 10]}, cv=2, n_jobs=N_JOBS, refit=True, verbose=3)
+                pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                # clf = GridSearchCV(model, param_grid={"alpha": [1, 10]}, scoring=scorer, cv=2, n_jobs=1, refit=True,
+                #                    verbose=3)
 
-                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas}, cv=NUM_CV_SPLITS, n_jobs=N_JOBS, refit=True, verbose=3)
+                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=N_JOBS, refit=True, verbose=3)
 
                 start = time.time()
                 clf.fit(train_data_inputs, train_data_latents)
@@ -497,6 +502,9 @@ def run(args):
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
 
+                best_alpha = clf.best_params_["alpha"]
+                print(f"Best alpha: {best_alpha}")
+
                 results = {
                     "alpha": clf.best_params_["alpha"],
                     "model": model_name,
@@ -521,7 +529,7 @@ def run(args):
                 test_results = calculate_eval_metrics(test_results, args)
                 results = results | test_results
 
-                run_str = get_run_str(clf.best_params_["alpha"], model_name, features, fold=None, best_val_mse=True)
+                run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_mse=True)
                 results_file_dir = f'{results_dir}/{run_str}'
                 os.makedirs(results_file_dir, exist_ok=True)
 
@@ -536,9 +544,6 @@ def run(args):
                 # retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha_pairwise_acc, results_dir, args,
                 #                    model_name, subject, features, best_val_acc=True)
 
-
-# def pairwise_acc_scorer(estimator, X, y):
-#     pairwise_accuracy(predictions, latents, stimulus_ids)
 
 def get_args():
     parser = argparse.ArgumentParser()
