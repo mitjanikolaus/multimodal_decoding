@@ -12,7 +12,7 @@ import nibabel as nib
 from scipy.spatial.distance import cdist, cosine
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, GridSearchCV
 from torch.utils.data import Dataset
 import os
 from glob import glob
@@ -32,6 +32,8 @@ MULTIMODAL_FEATS = 'multi'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS]
 
 NUM_CV_SPLITS = 5
+
+N_JOBS = 8 # TODO
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 DECODER_TESTING_MODES = ['test', 'test_captions', 'test_images']
@@ -334,9 +336,9 @@ def calculate_eval_metrics(results, args):
     return results
 
 
-def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False):
+def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False, best_val_mse=False):
     run_str = f"{model_name}_{features}"
-    if not best_val_acc and not best_val_loss:
+    if not best_val_acc and not best_val_loss and not best_val_mse:
         run_str += f"_alpha_{alpha}"
     if fold is not None:
         run_str += f"_fold_{fold}"
@@ -344,6 +346,8 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
         run_str += "_best_val_loss"
     if best_val_acc:
         run_str += "_best_val_acc"
+    if best_val_mse:
+        run_str += "_best_val_mse"
     return run_str
 
 
@@ -358,7 +362,6 @@ def train_and_test(alpha, results_dir, run_str, args, model_name, subject, featu
 
     model = Ridge(alpha=alpha)
     model.fit(train_data_inputs, train_data_latents)
-    pickle.dump(model, open(os.path.join(results_file_dir, "model.p"), 'wb'))
 
     results = {
         "alpha": alpha,
@@ -428,7 +431,7 @@ def run(args):
                                                     args.training_mode, features)
                 preloaded_betas = train_val_dataset.preload()
 
-                kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
+                # kf = KFold(n_splits=NUM_CV_SPLITS, shuffle=True, random_state=1)
 
                 test_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
                                                args.testing_mode, features,
@@ -436,62 +439,106 @@ def run(args):
                                                nn_latent_transform=train_val_dataset.nn_latent_transform)
                 test_dataset.preload()
 
-                best_alpha = None
-                best_alpha_val_loss = math.inf
+                # best_alpha = None
+                # best_alpha_val_loss = math.inf
+                #
+                # best_alpha_pairwise_acc = None
+                # best_alpha_acc_cosine_value = 0
 
-                best_alpha_pairwise_acc = None
-                best_alpha_acc_cosine_value = 0
+                train_data = [d for d in train_val_dataset]
+                train_data_inputs = np.array([i for i, _, _, _ in train_data])
+                train_data_latents = np.array([l for _, l, _, _ in train_data])
+
+                model = Ridge()
+                # clf = GridSearchCV(model, param_grid={"alpha": [1, 10]}, cv=2, n_jobs=N_JOBS, refit=True, verbose=3)
+
+                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas}, cv=NUM_CV_SPLITS, n_jobs=N_JOBS, refit=True, verbose=3)
 
                 start = time.time()
-                for alpha in args.l2_regularization_alphas:
-                    print(f"alpha: {alpha}")
+                clf.fit(train_data_inputs, train_data_latents)
 
-                    val_losses_for_folds = []
-                    accs_cosine_for_folds = []
-
-                    for fold, (train_idx, val_idx) in enumerate(kf.split(list(range(len(train_val_dataset))))):
-                        train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                                        args.training_mode, features, subset=train_idx, fold=fold,
-                                                        preloaded_betas=preloaded_betas)
-                        val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
-                                                      args.training_mode, features, subset=val_idx, fold=fold,
-                                                      preloaded_betas=preloaded_betas,
-                                                      fmri_betas_transform=train_dataset.fmri_betas_transform,
-                                                      nn_latent_transform=train_dataset.nn_latent_transform)
-                        print(f"Fold {fold} | train set size: {len(train_dataset)} | val set size: {len(val_dataset)}",
-                              end=" | ")
-
-                        run_str = get_run_str(alpha, model_name, features, fold=fold)
-
-                        results = train_and_test(alpha, results_dir, run_str, args, model_name, subject, features,
-                                                 train_dataset, fold, val_dataset, test_dataset)
-
-                        val_losses_for_folds.append(results['val_loss'])
-                        accs_cosine_for_folds.append(results['val_acc_cosine'])
-                        print(f"val loss: {results['val_loss']:.4f} | val acc cosine: {results['val_acc_cosine']:.4f}")
-
-                    if np.mean(val_losses_for_folds) < best_alpha_val_loss:
-                        best_alpha_val_loss = np.mean(val_losses_for_folds)
-                        best_alpha = alpha
-                        print(f"new best val loss: {np.mean(val_losses_for_folds):.4f}")
-
-                    if np.mean(accs_cosine_for_folds) > best_alpha_acc_cosine_value:
-                        best_alpha_acc_cosine_value = np.mean(accs_cosine_for_folds)
-                        best_alpha_pairwise_acc = alpha
-                        print(f"new best pairwise acc: {np.mean(accs_cosine_for_folds):.4f}")
+                # for alpha in args.l2_regularization_alphas:
+                #     print(f"alpha: {alpha}")
+                #
+                #     val_losses_for_folds = []
+                #     accs_cosine_for_folds = []
+                #
+                #     for fold, (train_idx, val_idx) in enumerate(kf.split(list(range(len(train_val_dataset))))):
+                #         train_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                #                                         args.training_mode, features, subset=train_idx, fold=fold,
+                #                                         preloaded_betas=preloaded_betas)
+                #         val_dataset = COCOBOLDDataset(TWO_STAGE_GLM_DATA_DIR, subject, model_name, std_mean_dir,
+                #                                       args.training_mode, features, subset=val_idx, fold=fold,
+                #                                       preloaded_betas=preloaded_betas,
+                #                                       fmri_betas_transform=train_dataset.fmri_betas_transform,
+                #                                       nn_latent_transform=train_dataset.nn_latent_transform)
+                #         print(f"Fold {fold} | train set size: {len(train_dataset)} | val set size: {len(val_dataset)}",
+                #               end=" | ")
+                #
+                #         run_str = get_run_str(alpha, model_name, features, fold=fold)
+                #
+                #         results = train_and_test(alpha, results_dir, run_str, args, model_name, subject, features,
+                #                                  train_dataset, fold, val_dataset, test_dataset)
+                #
+                #         val_losses_for_folds.append(results['val_loss'])
+                #         accs_cosine_for_folds.append(results['val_acc_cosine'])
+                #         print(f"val loss: {results['val_loss']:.4f} | val acc cosine: {results['val_acc_cosine']:.4f}")
+                #
+                #     if np.mean(val_losses_for_folds) < best_alpha_val_loss:
+                #         best_alpha_val_loss = np.mean(val_losses_for_folds)
+                #         best_alpha = alpha
+                #         print(f"new best val loss: {np.mean(val_losses_for_folds):.4f}")
+                #
+                #     if np.mean(accs_cosine_for_folds) > best_alpha_acc_cosine_value:
+                #         best_alpha_acc_cosine_value = np.mean(accs_cosine_for_folds)
+                #         best_alpha_pairwise_acc = alpha
+                #         print(f"new best pairwise acc: {np.mean(accs_cosine_for_folds):.4f}")
 
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
 
+                results = {
+                    "alpha": clf.best_params_["alpha"],
+                    "model": model_name,
+                    "subject": subject,
+                    "features": features,
+                    "training_mode": args.training_mode,
+                    "testing_mode": args.testing_mode,
+                    "best_val_mse": True,
+                }
+
+                best_model = clf.best_estimator_
+
+                test_data = [d for d in test_dataset]
+                test_data_inputs = np.array([i for i, _, _, _ in test_data])
+                test_data_latents = np.array([l for _, l, _, _ in test_data])
+                test_predicted_latents = best_model.predict(test_data_inputs)
+
+                test_results = {"stimulus_ids": test_dataset.stim_ids,
+                                "stimulus_types": test_dataset.stim_types,
+                                "predictions": test_predicted_latents,
+                                "latents": test_data_latents}
+                test_results = calculate_eval_metrics(test_results, args)
+                results = results | test_results
+
+                run_str = get_run_str(clf.best_params_["alpha"], model_name, features, fold=None, best_val_mse=True)
+                results_file_dir = f'{results_dir}/{run_str}'
+                os.makedirs(results_file_dir, exist_ok=True)
+
+                pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+
                 # Re-train on full train set with best HP settings:
-                run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_loss=True)
-                retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha, results_dir, args, model_name,
-                                   subject, features, best_val_loss=True)
+                # run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_loss=True)
+                # retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha, results_dir, args, model_name,
+                #                    subject, features, best_val_loss=True)
+                #
+                # run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
+                # retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha_pairwise_acc, results_dir, args,
+                #                    model_name, subject, features, best_val_acc=True)
 
-                run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
-                retrain_full_train(run_str, train_val_dataset, test_dataset, best_alpha_pairwise_acc, results_dir, args,
-                                   model_name, subject, features, best_val_acc=True)
 
+# def pairwise_acc_scorer(estimator, X, y):
+#     pairwise_accuracy(predictions, latents, stimulus_ids)
 
 def get_args():
     parser = argparse.ArgumentParser()
