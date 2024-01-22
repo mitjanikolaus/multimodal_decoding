@@ -161,7 +161,7 @@ def get_fmri_data(subject, mode=TRAINING_MODES[0],
         bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
         fmri_betas_transform = Normalize(bold_mean_std['mean'], bold_mean_std['std'])
 
-    fmri_betas = [fmri_betas_transform(v) for v in fmri_betas]
+    fmri_betas = np.array([fmri_betas_transform(v) for v in fmri_betas])
 
     return fmri_betas, stim_ids, stim_types, fmri_betas_transform
 
