@@ -1,6 +1,7 @@
 import os
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel, GPT2Tokenizer, GPT2Model
+from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel, GPT2Tokenizer, GPT2Model, \
+    MistralModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 
     model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
+    model = MistralModel.from_pretrained(model_name)
     extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
     extractor.extract_features()
 
