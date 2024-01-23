@@ -1,9 +1,10 @@
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel, GPT2Tokenizer, GPT2Model, \
-    MistralModel
+    MistralModel, LlamaTokenizer, LlamaModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
+from utils import DATA_DIR
 
 BATCH_SIZE = 512
 
@@ -51,10 +52,16 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
     # extractor.extract_features()
 
-    model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = MistralModel.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
+    # model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
+    # tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # model = MistralModel.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
+    # extractor.extract_features()
+
+    model_weights_path = os.path.join(DATA_DIR, "llama2_7b")
+    tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
+    model = LlamaModel.from_pretrained(model_weights_path)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-7b", batch_size=10, device="cpu")
     extractor.extract_features()
 
     # model_name = 'facebook/opt-30b'
