@@ -216,18 +216,28 @@ def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
     return score
 
 
-def create_dissimilarity_matrix(sample_embeds):
-    sim_mat = spearmanr(sample_embeds, axis=1)[0]
+def create_dissimilarity_matrix(sample_embeds, matrix_metric="spearmanr"):
+    if matrix_metric == "spearmanr":
+        sim_mat = spearmanr(sample_embeds, axis=1)[0]
+    else:
+        raise RuntimeError("Unknown metric: ", matrix_metric)
     dissim_mat = np.ones(sim_mat.shape) - sim_mat
     matrix = dissim_mat[np.triu_indices(sample_embeds.shape[0], 1)].reshape(-1)
     return matrix
 
 
-def calc_rsa(latent_1, latent_2):
-    matrix_1 = create_dissimilarity_matrix(latent_1)
-    matrix_2 = create_dissimilarity_matrix(latent_2)
-    corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
+def rsa_from_matrices(matrix_1, matrix_2, metric="spearmanr"):
+    if metric == "spearmanr":
+        corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
+    else:
+        raise RuntimeError("Unknown metric: ", metric)
     return corr
+
+
+def calc_rsa(latent_1, latent_2, metric="spearmanr", matrix_metric="spearmanr"):
+    matrix_1 = create_dissimilarity_matrix(latent_1, matrix_metric)
+    matrix_2 = create_dissimilarity_matrix(latent_2, matrix_metric)
+    return rsa_from_matrices(matrix_1, matrix_2, metric=metric)
 
 
 def calculate_eval_metrics(results, args):
