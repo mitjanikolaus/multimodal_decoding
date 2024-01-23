@@ -40,7 +40,6 @@ class ViLTFeatureExtractor(FeatureExtractor):
         language_embeddings[mask_expanded == 0] = 0
         feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
 
-        # Average image features embeddings
         feats_vision_cls = img_embeddings[:, 0, :]
         feats_vision_mean = img_embeddings[:, 1:].mean(axis=1)
 
