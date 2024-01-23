@@ -36,13 +36,13 @@ NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
 DEFAULT_N_PRE_DISPATCH = 5
 
+DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
+
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 TESTING_MODES = ['test', 'test_captions', 'test_images']
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
-
-SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None):
@@ -351,7 +351,7 @@ def get_args():
     parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS], choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY, choices=VISION_FEAT_COMBINATION_CHOICES)
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
 
