@@ -1,6 +1,6 @@
 import os
 import torch
-from transformers import AutoFeatureExtractor, ResNetModel
+from transformers import AutoFeatureExtractor, ResNetModel, ViTImageProcessor, ViTModel
 from glob import glob
 from PIL import Image
 import pickle
@@ -57,7 +57,8 @@ class ViTFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs)
 
         last_hidden_state = outputs.last_hidden_state
-        feats_vision = last_hidden_state[:, 0, :]
+        # feats_vision = last_hidden_state[:, 0, :]
+        feats_vision = last_hidden_state.mean(axis=0)
         return None, feats_vision
 
 
@@ -91,14 +92,14 @@ if __name__ == "__main__":
     # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
     # extractor.extract_features()
 
-    # model_name = 'google/vit-large-patch16-224'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
-    # extractor.extract_features()
-
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-18", BATCH_SIZE, device)
+    model_name = 'google/vit-large-patch16-224'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16_MEAN", BATCH_SIZE, device)
     extractor.extract_features()
+
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-18", BATCH_SIZE, device)
+    # extractor.extract_features()
