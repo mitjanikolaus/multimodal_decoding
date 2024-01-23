@@ -9,9 +9,9 @@ from transformers import ViltProcessor
 from PIL import Image
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 2
 
@@ -41,7 +41,6 @@ class ViLTFeatureExtractor(FeatureExtractor):
         feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
 
         # Average image features embeddings
-        img_embeddings = img_embeddings.mean(dim=1)
         feats_vision_cls = img_embeddings[:, 0, :]
         feats_vision_mean = img_embeddings[:, 1:].mean(axis=1)
 
