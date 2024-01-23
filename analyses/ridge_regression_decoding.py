@@ -82,7 +82,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
 
     if nn_latent_transform is None:
         mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
-        model_std_mean_name = f'{model_name}_{features}_mean_std_{mode}.p'
+        model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
         model_std_mean_path = os.path.join(mean_std_dir, model_std_mean_name)
         if not os.path.exists(model_std_mean_path):
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
