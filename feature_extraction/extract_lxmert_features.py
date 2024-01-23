@@ -90,7 +90,7 @@ class LXMERTFeatureExtractor(FeatureExtractor):
 
         feats_lang = outputs.language_hidden_states[-1].mean(dim=1)
         feats_vision = outputs.vision_hidden_states[-1].mean(dim=1)
-        return feats_lang, feats_vision
+        return feats_lang, feats_vision, None
 
 
 if __name__ == "__main__":

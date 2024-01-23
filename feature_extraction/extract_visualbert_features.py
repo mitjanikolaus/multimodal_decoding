@@ -249,7 +249,7 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         language_embeddings = last_hidden_states[:, :text_input_size].mean(dim=1)
         img_embeddings = last_hidden_states[:, text_input_size:].mean(dim=1)
 
-        return language_embeddings, img_embeddings
+        return language_embeddings, img_embeddings, None
 
 
 if __name__ == "__main__":
