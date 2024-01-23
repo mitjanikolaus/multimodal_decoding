@@ -18,7 +18,9 @@ SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 PCA_NUM_COMPONENTS = 768
 
-VISION_FEAT_KEY = "visual_feature"
+VISION_MEAN_FEAT_KEY = "visual_feature_mean"
+VISION_CLS_FEAT_KEY = "visual_feature_cls"
+
 LANG_FEAT_KEY = "lingual_feature"
 MULTIMODAL_FEAT_KEY = "multimodal_feature"
 

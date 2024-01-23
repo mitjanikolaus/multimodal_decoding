@@ -57,9 +57,10 @@ class ViTFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs)
 
         last_hidden_state = outputs.last_hidden_state
-        # feats_vision = last_hidden_state[:, 0, :]
-        feats_vision = last_hidden_state.mean(axis=1)
-        return None, feats_vision
+
+        feats_vision_cls = last_hidden_state[:, 0, :]
+        feats_vision_mean = last_hidden_state[:, 1:].mean(axis=1)
+        return None, feats_vision_mean, feats_vision_cls
 
 
 class ResNetFeatureExtractor(FeatureExtractor):
@@ -74,7 +75,7 @@ class ResNetFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs)
 
         feats_vision = outputs.pooler_output.squeeze()
-        return None, feats_vision
+        return None, feats_vision, None
 
 
 if __name__ == "__main__":

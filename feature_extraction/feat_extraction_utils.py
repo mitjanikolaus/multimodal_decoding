@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from utils import IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, FEATURES_DIR, \
-    LANG_FEAT_KEY, VISION_FEAT_KEY, model_features_file_path, IMAGES_TEST
+    LANG_FEAT_KEY, VISION_FEAT_KEY, model_features_file_path, IMAGES_TEST, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 
 class COCOSelected(Dataset):
@@ -78,17 +78,26 @@ class FeatureExtractor:
         all_feats = dict()
         for ids, captions, img_paths in tqdm(self.dloader):
             ids = [id.item() for id in ids]
-            language_feats_batch, vision_feats_batch = self.extract_features_from_batch(ids, captions, img_paths)
+            language_feats_batch, vision_mean_feats_batch, vision_cls_feats_batch = self.extract_features_from_batch(
+                ids, captions, img_paths)
             if language_feats_batch is None:
                 language_feats_batch = [None] * len(ids)
             else:
                 language_feats_batch = language_feats_batch.cpu().numpy()
-            if vision_feats_batch is None:
-                vision_feats_batch = [None] * len(ids)
+            if vision_mean_feats_batch is None:
+                vision_mean_feats_batch = [None] * len(ids)
             else:
-                vision_feats_batch = vision_feats_batch.cpu().numpy()
-            for id, feats_lang, feats_vision in zip(ids, language_feats_batch, vision_feats_batch):
-                all_feats[id] = {LANG_FEAT_KEY: feats_lang, VISION_FEAT_KEY: feats_vision}
+                vision_mean_feats_batch = vision_mean_feats_batch.cpu().numpy()
+            if vision_cls_feats_batch is None:
+                vision_cls_feats_batch = [None] * len(ids)
+            else:
+                vision_cls_feats_batch = vision_cls_feats_batch.cpu().numpy()
+            for id, feats_lang, feats_vision_mean, feats_vision_cls in zip(ids,
+                                                                           language_feats_batch,
+                                                                           vision_mean_feats_batch,
+                                                                           vision_cls_feats_batch):
+                all_feats[id] = {LANG_FEAT_KEY: feats_lang, VISION_MEAN_FEAT_KEY: feats_vision_mean,
+                                 VISION_CLS_FEAT_KEY: feats_vision_cls}
 
         path_out = model_features_file_path(self.model_name)
         os.makedirs(os.path.dirname(path_out), exist_ok=True)
@@ -173,4 +182,3 @@ def apply_pca(n_components, data_pickle_file):
 
     with open(new_file, 'wb') as handle:
         pickle.dump(transformed_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
