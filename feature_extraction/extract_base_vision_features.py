@@ -96,7 +96,7 @@ if __name__ == "__main__":
     model_name = 'google/vit-large-patch16-224'
     feature_extractor = ViTImageProcessor.from_pretrained(model_name)
     model = ViTModel.from_pretrained(model_name)
-    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16_MEAN", BATCH_SIZE, device)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "ViT_L_16", BATCH_SIZE, device)
     extractor.extract_features()
 
     # model_name = 'microsoft/resnet-18'
