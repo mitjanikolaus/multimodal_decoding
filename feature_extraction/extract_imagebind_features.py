@@ -27,7 +27,7 @@ class ImagebindFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             embeddings = self.model(inputs)
 
-        return embeddings[ModalityType.TEXT], embeddings[ModalityType.VISION]
+        return embeddings[ModalityType.TEXT], embeddings[ModalityType.VISION], None
 
 
 if __name__ == "__main__":
