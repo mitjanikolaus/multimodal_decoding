@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from utils import IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, FEATURES_DIR, \
-    LANG_FEAT_KEY, VISION_FEAT_KEY, model_features_file_path, IMAGES_TEST, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
+    LANG_FEAT_KEY, model_features_file_path, IMAGES_TEST, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 
 class COCOSelected(Dataset):
