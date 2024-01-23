@@ -25,12 +25,12 @@ class CLIPFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = model(**inputs)
 
-        return outputs.text_embeds, outputs.image_embeds
+        return outputs.text_embeds, outputs.image_embeds, None
 
 
 if __name__ == "__main__":
     model = CLIPModel.from_pretrained(CLIP_MODEL)
     processor = CLIPProcessor.from_pretrained(CLIP_MODEL)
 
-    extractor = CLIPFeatureExtractor(model, processor, "CLIP", BATCH_SIZE, device)
+    extractor = CLIPFeatureExtractor(model, processor, "clip", BATCH_SIZE, device)
     extractor.extract_features()
