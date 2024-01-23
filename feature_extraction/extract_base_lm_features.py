@@ -35,7 +35,7 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
         last_hidden_state[mask_expanded == 0] = 0
         feats_lang = last_hidden_state.sum(axis=1) / mask_expanded.sum(dim=1)
 
-        return feats_lang, None
+        return feats_lang, None, None
 
 
 if __name__ == "__main__":
