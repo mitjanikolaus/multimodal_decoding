@@ -8,7 +8,6 @@ import time
 
 import numpy as np
 import nibabel as nib
-import torch
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
@@ -34,8 +33,8 @@ VISION_CONCAT_FEATS = "concat"
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS]
 
 NUM_CV_SPLITS = 5
-DEFAULT_N_JOBS = 8
-DEFAULT_N_PRE_DISPATCH = 8
+DEFAULT_N_JOBS = 4
+DEFAULT_N_PRE_DISPATCH = 4
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 TESTING_MODES = ['test', 'test_captions', 'test_images']
