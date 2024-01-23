@@ -1,6 +1,6 @@
 import os
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel, GPT2Tokenizer, GPT2Model
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 
@@ -33,17 +33,17 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model_name = 'bert-large-uncased'
-    tokenizer = BertTokenizer.from_pretrained(model_name)
-    model = BertModel.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
-    extractor.extract_features()
-    #
-    # model_name = 'gpt2-xl'
-    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    # model = GPT2Model.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
+    # model_name = 'bert-large-uncased'
+    # tokenizer = BertTokenizer.from_pretrained(model_name)
+    # model = BertModel.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
     # extractor.extract_features()
+
+    model_name = 'gpt2-xl'
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = GPT2Model.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
+    extractor.extract_features()
 
     # model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
     # tokenizer = AutoTokenizer.from_pretrained(model_name)
