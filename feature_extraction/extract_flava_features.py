@@ -1,20 +1,16 @@
 import os
-import pickle
 
 import torch
-from tqdm import tqdm
 
 from transformers import FlavaModel, FlavaProcessor
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from utils import LANG_FEAT_KEY, VISION_FEAT_KEY, MULTIMODAL_FEAT_KEY, model_features_file_path
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 10
 
@@ -35,44 +31,17 @@ class FlavaFeatureExtractor(FeatureExtractor):
 
         img_embeddings = outputs.image_embeddings
         language_embeddings = outputs.text_embeddings
-        multimodal_embeddings = outputs.multimodal_embeddings
 
-        att_mask = inputs.data["attention_mask"]
-        averaged_lang_embeddings = []
-        for emb, mask in zip(language_embeddings, att_mask):
-            length_without_padding = mask.sum().item()
-            averaged_lang_embeddings.append(emb[:length_without_padding].mean(dim=0))
-        language_embeddings = torch.stack(averaged_lang_embeddings)
+        # Average lang feats while ignoring padding tokens
+        mask = inputs.data["attention_mask"]
+        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
+        language_embeddings[mask_expanded == 0] = 0
+        feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
 
-        # output from CLS tokens
-        img_embeddings = img_embeddings[:, 0]
-        multimodal_embeddings = multimodal_embeddings[:, 0]
+        feats_vision_cls = img_embeddings[:, 0, :]
+        feats_vision_mean = img_embeddings[:, 1:].mean(axis=1)
 
-        return language_embeddings, img_embeddings, multimodal_embeddings
-
-    def extract_features(self):
-        all_feats = dict()
-        for ids, captions, img_paths in tqdm(self.dloader):
-            ids = [id.item() for id in ids]
-            language_feats_batch, vision_feats_batch, multi_feats_batch = self.extract_features_from_batch(ids, captions, img_paths)
-            if language_feats_batch is None:
-                language_feats_batch = [None] * len(ids)
-            else:
-                language_feats_batch = language_feats_batch.cpu().numpy()
-            if vision_feats_batch is None:
-                vision_feats_batch = [None] * len(ids)
-            else:
-                vision_feats_batch = vision_feats_batch.cpu().numpy()
-            if multi_feats_batch is None:
-                multi_feats_batch = [None] * len(ids)
-            else:
-                multi_feats_batch = multi_feats_batch.cpu().numpy()
-            for id, feats_lang, feats_vision, feats_multi in zip(ids, language_feats_batch, vision_feats_batch, multi_feats_batch):
-                all_feats[id] = {LANG_FEAT_KEY: feats_lang, VISION_FEAT_KEY: feats_vision, MULTIMODAL_FEAT_KEY: feats_multi}
-
-        path_out = model_features_file_path(self.model_name)
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
-        pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        return feats_lang, feats_vision_mean, feats_vision_cls
 
 
 if __name__ == "__main__":
@@ -80,6 +49,6 @@ if __name__ == "__main__":
     processor = FlavaProcessor.from_pretrained(model_name)
     model = FlavaModel.from_pretrained(model_name)
 
-    extractor = FlavaFeatureExtractor(model, processor, "Flava", BATCH_SIZE, device)
+    extractor = FlavaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
     extractor.extract_features()
 
