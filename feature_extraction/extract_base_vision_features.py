@@ -58,7 +58,7 @@ class ViTFeatureExtractor(FeatureExtractor):
 
         last_hidden_state = outputs.last_hidden_state
         # feats_vision = last_hidden_state[:, 0, :]
-        feats_vision = last_hidden_state.mean(axis=0)
+        feats_vision = last_hidden_state.mean(axis=1)
         return None, feats_vision
 
 
