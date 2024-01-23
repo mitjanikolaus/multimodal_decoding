@@ -8,6 +8,7 @@ import time
 
 import numpy as np
 import nibabel as nib
+import torch
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
@@ -19,7 +20,7 @@ import pickle
 from decoding_utils import get_distance_matrix
 from tqdm import trange
 
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_FEAT_KEY, LANG_FEAT_KEY, \
+from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, \
     MULTIMODAL_FEAT_KEY
 
 CONCAT_FEATS = 'concat'
@@ -29,8 +30,11 @@ VISION_FEATS_ONLY = 'vision'
 MULTIMODAL_FEATS = 'multi'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS]
 
+VISION_CONCAT_FEATS = "concat"
+VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS]
+
 NUM_CV_SPLITS = 5
-DEFAULT_N_JOBS = 15
+DEFAULT_N_JOBS = 8
 DEFAULT_N_PRE_DISPATCH = 8
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
@@ -42,22 +46,33 @@ DISTANCE_METRICS = ['cosine']
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 
-def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_transform=None):
+def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
     nn_latent_vectors = []
     for stim_id in stim_ids:
+        if not features in [LANG_FEATS_ONLY, MULTIMODAL_FEATS]:
+            if vision_features_mode == VISION_MEAN_FEAT_KEY:
+                vision_feats = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
+            elif vision_features_mode == VISION_CLS_FEAT_KEY:
+                vision_feats = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
+            elif vision_features_mode == VISION_CONCAT_FEATS:
+                vision_feats_mean = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
+                vision_feats_cls = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
+                vision_feats = np.concatenate((vision_feats_mean, vision_feats_cls))
+            else:
+                raise RuntimeError("Unknown vision feature combination choice: ", vision_features_mode)
         if features == VISION_FEATS_ONLY:
-            feats = latent_vectors[stim_id][VISION_FEAT_KEY]
+            feats = vision_feats
         elif features == LANG_FEATS_ONLY:
             feats = latent_vectors[stim_id][LANG_FEAT_KEY]
         elif features == AVG_FEATS:
-            feats = np.stack((latent_vectors[stim_id][LANG_FEAT_KEY], latent_vectors[stim_id][VISION_FEAT_KEY]))
+            feats = np.stack((latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
             feats = feats.mean(axis=0)
         elif features == CONCAT_FEATS:
             feats = np.concatenate(
-                (latent_vectors[stim_id][LANG_FEAT_KEY], latent_vectors[stim_id][VISION_FEAT_KEY]))
+                (latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
         elif features == MULTIMODAL_FEATS:
             feats = latent_vectors[stim_id][MULTIMODAL_FEAT_KEY]
         else:
@@ -274,7 +289,7 @@ def run(args):
                 model_name = model_name.lower()
                 print("MODEL: ", model_name)
 
-                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, train_stim_ids,
+                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features, train_stim_ids,
                                                                              subject,
                                                                              args.training_mode)
 
@@ -301,7 +316,7 @@ def run(args):
                     "best_val_acc": True,
                 }
 
-                test_data_latents, _ = get_nn_latent_data(model_name, features, test_stim_ids, subject,
+                test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids, subject,
                                                           args.testing_mode,
                                                           nn_latent_transform=nn_latent_transform)
                 best_model = clf.best_estimator_
@@ -333,7 +348,8 @@ def get_args():
     parser.add_argument("--testing-mode", type=str, default='test')
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
-    parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS])
+    parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS], options=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--vision-features", type=str, default=VISION_CLS_FEAT_KEY, options=VISION_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
