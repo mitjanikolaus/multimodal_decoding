@@ -349,7 +349,7 @@ def get_args():
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
     parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS], choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--vision-features", type=str, default=VISION_CLS_FEAT_KEY, choices=VISION_FEAT_COMBINATION_CHOICES)
+    parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY, choices=VISION_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
