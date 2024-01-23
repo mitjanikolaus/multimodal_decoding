@@ -40,6 +40,12 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
+    model_name = 'bert-base-uncased'
+    tokenizer = BertTokenizer.from_pretrained(model_name)
+    model = BertModel.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
+    extractor.extract_features()
+
     # model_name = 'bert-large-uncased'
     # tokenizer = BertTokenizer.from_pretrained(model_name)
     # model = BertModel.from_pretrained(model_name)
@@ -58,11 +64,11 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
     # extractor.extract_features()
 
-    model_weights_path = os.path.join(DATA_DIR, "llama2_7b")
-    tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
-    model = LlamaModel.from_pretrained(model_weights_path)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-7b", batch_size=10, device="cpu")
-    extractor.extract_features()
+    # model_weights_path = os.path.join(DATA_DIR, "llama2_7b")
+    # tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
+    # model = LlamaModel.from_pretrained(model_weights_path)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-7b", batch_size=10, device="cpu")
+    # extractor.extract_features()
 
     # model_name = 'facebook/opt-30b'
     # tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
