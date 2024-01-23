@@ -15,19 +15,6 @@ BATCH_SIZE = 128
 CLIP_MODEL = "openai/clip-vit-large-patch14"
 
 
-# def modify_preprocess(preprocess):
-#     r"""
-#     modifies the default CLIP preprocess and returns two version:
-#     1- resize and center crop
-#     2- force resize to the target size
-#     """
-#     transforms_crop = [transforms.Resize(size=preprocess.transforms[0].size, interpolation=transforms.InterpolationMode.BICUBIC, max_size=None, antialias=True)]
-#     transforms_crop.extend(preprocess.transforms[1:])
-#
-#     return transforms.Compose(transforms_crop)
-# #
-
-
 class CLIPFeatureExtractor(FeatureExtractor):
 
     def extract_features_from_batch(self, ids, captions, img_paths):
