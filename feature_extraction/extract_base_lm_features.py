@@ -1,12 +1,8 @@
 import os
 import torch
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
-import numpy as np
-import pickle
-from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import LANG_FEAT_KEY, model_features_file_path
 
 BATCH_SIZE = 512
 
@@ -20,31 +16,28 @@ else:
 
 class LanguageModelFeatureExtractor(FeatureExtractor):
 
-    def extract_features(self):
-        all_feats = dict()
-        model = pipeline('feature-extraction', model=self.model_name, device=self.device)
-        with tqdm(self.dloader, unit="batch") as tepoch:
-            for ids, captions, _ in tepoch:
-                ids = [id.item() for id in ids]
+    def extract_features_from_batch(self, ids, captions, img_paths):
+        inputs = self.preprocessor(text=captions, return_tensors="pt", padding=True)
+        inputs = inputs.to(self.device)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
 
-                with torch.no_grad():
-                    feats_batch = model(list(captions))
+        last_hidden_state = outputs.last_hidden_state
+        mask = inputs.data["attention_mask"]
+        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_state.shape[-1]))
+        last_hidden_state[mask_expanded == 0] = 0
 
-                for feats, id, caption in zip(feats_batch, ids, captions):
-                    feats_mean = np.array(feats[0]).mean(axis=0)
-                    all_feats[id] = {LANG_FEAT_KEY: feats_mean.squeeze()}
-
-        path_out = model_features_file_path(self.model_name)
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
-        pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        # Average while ignoring padding tokens
+        feats_lang = last_hidden_state.sum(axis=1) / mask_expanded.sum(dim=1)
+        return feats_lang, None
 
 
 if __name__ == "__main__":
-    # model_name = 'bert-large-uncased'
-    # tokenizer = BertTokenizer.from_pretrained(model_name)
-    # model = BertModel.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
-    # extractor.extract_features()
+    model_name = 'bert-large-uncased'
+    tokenizer = BertTokenizer.from_pretrained(model_name)
+    model = BertModel.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, BATCH_SIZE, device)
+    extractor.extract_features()
     #
     # model_name = 'gpt2-xl'
     # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
@@ -52,11 +45,11 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
     # extractor.extract_features()
 
-    model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
-    extractor.extract_features()
+    # model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
+    # tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # model = AutoModelForCausalLM.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
+    # extractor.extract_features()
 
     # model_name = 'facebook/opt-30b'
     # tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
