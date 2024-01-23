@@ -4,7 +4,6 @@
 # outputs are uni-modal
 ############################################
 import argparse
-import math
 import time
 
 import numpy as np
@@ -13,12 +12,10 @@ from scipy.spatial.distance import cdist, cosine
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import KFold, GridSearchCV
-from torch.utils.data import Dataset
+from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
-from torchvision.transforms import Compose
 from decoding_utils import get_distance_matrix
 from tqdm import trange
 
@@ -37,7 +34,7 @@ N_JOBS = 8
 PRE_DISPATCH = 8
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
-DECODER_TESTING_MODES = ['test', 'test_captions', 'test_images']
+TESTING_MODES = ['test', 'test_captions', 'test_images']
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
@@ -48,8 +45,6 @@ SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_transform=None):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
-
-    mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
 
     nn_latent_vectors = []
     for stim_id in stim_ids:
@@ -71,6 +66,7 @@ def get_nn_latent_data(model_name, features, stim_ids, subject, mode, nn_latent_
     nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
 
     if nn_latent_transform is None:
+        mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
         model_std_mean_name = f'{model_name}_{features}_mean_std_{mode}.p'
         model_std_mean_path = os.path.join(mean_std_dir, model_std_mean_name)
         if not os.path.exists(model_std_mean_path):
@@ -96,15 +92,14 @@ def get_fmri_data(subject, mode=TRAINING_MODES[0], fmri_betas_transform=None):
         mode (str): 'train', 'test', or 'imagery'. You can append _images or _captions to make it unimodal
         blank_correction (boolean): If `True`, the blank image will be subtracted from the imagery patterns (if exists)
     """
-    bold_root_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
     imagery_scenes = IMAGERY_SCENES[subject]
-    mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
 
-    fmri_addresses_regex = os.path.join(bold_root_dir, f'betas_{mode}*', '*.nii')
+    fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+    fmri_addresses_regex = os.path.join(fmri_data_dir, f'betas_{mode}*', '*.nii')
     fmri_betas_addresses = np.array(sorted(glob(fmri_addresses_regex)))
+
     stim_ids = []
     stim_types = []
-
     for addr in fmri_betas_addresses:
         file_name = os.path.basename(addr)
         if 'I' in file_name:  # Image
@@ -122,19 +117,18 @@ def get_fmri_data(subject, mode=TRAINING_MODES[0], fmri_betas_transform=None):
     stim_ids = np.array(stim_ids)
     stim_types = np.array(stim_types)
 
-    fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
-
-    brain_mask_address = os.path.join(bold_root_dir, f'unstructured', 'mask.nii')
+    brain_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
     brain_mask = nib.load(brain_mask_address).get_fdata().reshape(-1)
     brain_mask = np.logical_and(np.logical_not(np.isnan(brain_mask)), brain_mask != 0)
 
+    fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
     for idx in trange(len(fmri_betas_addresses), desc="loading fmri data"):
-        if fmri_betas[idx] is None:
-            sample = nib.load(fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
-            sample = sample[brain_mask]
-            fmri_betas[idx] = sample.copy()
+        sample = nib.load(fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
+        sample = sample[brain_mask]
+        fmri_betas[idx] = sample.copy()
 
     if fmri_betas_transform is None:
+        mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
         bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
         bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
 
@@ -162,10 +156,6 @@ class Normalize:
 
     def __call__(self, x):
         return ((x - self.mean) / self.std).astype(np.float32).squeeze()
-
-
-def calc_cosine_distances(predictions, targets):
-    return np.mean([cosine(pred, target) for pred, target in zip(predictions, targets)])
 
 
 def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
@@ -274,38 +264,35 @@ def run(args):
         print("FEATURES: ", features)
         for subject in args.subjects:
             print("SUBJECT: ", subject)
-            fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, args.training_mode)
+            train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
+                                                                                               args.training_mode)
 
-            fmri_test_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode,
+            test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode,
                                                                                fmri_transform)
 
             for model_name in args.models:
                 model_name = model_name.lower()
-                print(model_name)
-                results_dir = os.path.join(GLM_OUT_DIR, f'{args.training_mode}/{subject}/')
+                print("MODEL: ", model_name)
 
-                train_data_inputs = fmri_betas
                 train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, train_stim_ids,
                                                                              subject,
                                                                              args.training_mode)
 
                 model = Ridge()
                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-
                 clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=N_JOBS,
                                    pre_dispatch=PRE_DISPATCH, refit=True, verbose=3)
 
                 start = time.time()
-                clf.fit(train_data_inputs, train_data_latents)
-
+                clf.fit(train_fmri_betas, train_data_latents)
                 end = time.time()
                 print(f"Elapsed time: {int(end - start)}s")
 
                 best_alpha = clf.best_params_["alpha"]
 
                 results = {
-                    "alpha": clf.best_params_["alpha"],
+                    "alpha": best_alpha,
                     "model": model_name,
                     "subject": subject,
                     "features": features,
@@ -314,12 +301,11 @@ def run(args):
                     "best_val_acc": True,
                 }
 
-                best_model = clf.best_estimator_
-
                 test_data_latents, _ = get_nn_latent_data(model_name, features, test_stim_ids, subject,
                                                           args.testing_mode,
                                                           nn_latent_transform=nn_latent_transform)
-                test_predicted_latents = best_model.predict(fmri_test_betas)
+                best_model = clf.best_estimator_
+                test_predicted_latents = best_model.predict(test_fmri_betas)
 
                 test_results = {"stimulus_ids": test_stim_ids,
                                 "stimulus_types": test_stim_types,
@@ -330,6 +316,7 @@ def run(args):
 
                 results = results | test_results
 
+                results_dir = os.path.join(GLM_OUT_DIR, args.training_mode, subject)
                 run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
                 results_file_dir = f'{results_dir}/{run_str}'
                 os.makedirs(results_file_dir, exist_ok=True)
