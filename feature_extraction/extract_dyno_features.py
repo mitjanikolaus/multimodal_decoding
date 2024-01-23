@@ -34,5 +34,17 @@ if __name__ == "__main__":
     model_name = 'facebook/dinov2-base'
     prepocessor = AutoImageProcessor.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name)
-    extractor = DynoFeatureExtractor(model, prepocessor, "dino", BATCH_SIZE, device)
+    extractor = DynoFeatureExtractor(model, prepocessor, "dino-base", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'facebook/dinov2-large'
+    prepocessor = AutoImageProcessor.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
+    extractor = DynoFeatureExtractor(model, prepocessor, "dino-large", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'facebook/dinov2-giant'
+    prepocessor = AutoImageProcessor.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
+    extractor = DynoFeatureExtractor(model, prepocessor, "dino-giant", BATCH_SIZE, device)
     extractor.extract_features()
