@@ -17,18 +17,23 @@ else:
 class LanguageModelFeatureExtractor(FeatureExtractor):
 
     def extract_features_from_batch(self, ids, captions, img_paths):
+        if self.preprocessor.pad_token is None:
+            self.preprocessor.pad_token = tokenizer.eos_token
+            self.preprocessor.pad_token_id = tokenizer.eos_token_id
+
         inputs = self.preprocessor(text=captions, return_tensors="pt", padding=True)
         inputs = inputs.to(self.device)
+
         with torch.no_grad():
             outputs = self.model(**inputs)
 
         last_hidden_state = outputs.last_hidden_state
+        # Average while ignoring padding tokens
         mask = inputs.data["attention_mask"]
         mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_state.shape[-1]))
         last_hidden_state[mask_expanded == 0] = 0
-
-        # Average while ignoring padding tokens
         feats_lang = last_hidden_state.sum(axis=1) / mask_expanded.sum(dim=1)
+
         return feats_lang, None
 
 
