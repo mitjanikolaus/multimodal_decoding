@@ -20,7 +20,7 @@ class DynoFeatureExtractor(FeatureExtractor):
     def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(img_path).convert('RGB') for img_path in img_paths]
 
-        inputs = self.preprocessor(images=images, return_tensors="pt")
+        inputs = self.preprocessor(images=images, return_tensors="pt").to(self.device)
         with torch.no_grad():
             outputs = model(**inputs)
 
@@ -34,5 +34,5 @@ if __name__ == "__main__":
     model_name = 'facebook/dinov2-base'
     prepocessor = AutoImageProcessor.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name)
-    extractor = DynoFeatureExtractor(model, prepocessor, "dyno", BATCH_SIZE, device)
+    extractor = DynoFeatureExtractor(model, prepocessor, "dino", BATCH_SIZE, device)
     extractor.extract_features()
