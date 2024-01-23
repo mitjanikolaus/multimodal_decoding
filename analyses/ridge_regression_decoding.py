@@ -33,7 +33,8 @@ MULTIMODAL_FEATS = 'multi'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS]
 
 NUM_CV_SPLITS = 5
-N_JOBS = 4
+N_JOBS = 8
+PRE_DISPATCH = 8
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 DECODER_TESTING_MODES = ['test', 'test_captions', 'test_images']
@@ -293,7 +294,7 @@ def run(args):
 
                 clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=N_JOBS,
-                                   pre_dispatch=4, refit=True, verbose=3)
+                                   pre_dispatch=PRE_DISPATCH, refit=True, verbose=3)
 
                 start = time.time()
                 clf.fit(train_data_inputs, train_data_latents)
