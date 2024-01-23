@@ -8,7 +8,7 @@ import time
 
 import numpy as np
 import nibabel as nib
-from scipy.spatial.distance import cdist, cosine
+from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
@@ -30,8 +30,8 @@ MULTIMODAL_FEATS = 'multi'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS]
 
 NUM_CV_SPLITS = 5
-N_JOBS = 8
-PRE_DISPATCH = 8
+DEFAULT_N_JOBS = 15
+DEFAULT_N_PRE_DISPATCH = 8
 
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 TESTING_MODES = ['test', 'test_captions', 'test_images']
@@ -281,8 +281,8 @@ def run(args):
                 model = Ridge()
                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                 clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=N_JOBS,
-                                   pre_dispatch=PRE_DISPATCH, refit=True, verbose=3)
+                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                 start = time.time()
                 clf.fit(train_fmri_betas, train_data_latents)
@@ -338,6 +338,9 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
+
+    parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
+    parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
 
     return parser.parse_args()
 
