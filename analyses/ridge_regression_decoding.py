@@ -311,6 +311,7 @@ def run(args):
                     "model": model_name,
                     "subject": subject,
                     "features": features,
+                    "vision_features": args.vision_features,
                     "training_mode": args.training_mode,
                     "testing_mode": args.testing_mode,
                     "best_val_acc": True,
