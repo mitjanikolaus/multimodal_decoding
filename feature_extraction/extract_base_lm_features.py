@@ -54,7 +54,7 @@ if __name__ == "__main__":
     model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = MistralModel.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device=device)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
     extractor.extract_features()
 
     # model_name = 'facebook/opt-30b'
