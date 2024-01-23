@@ -133,10 +133,15 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
     # extractor.extract_features()
 
-
-    model_name = 'facebook/opt-30b'
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-    model_kwargs = {"device_map": "auto", "load_in_8bit": True}
-    model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "opt-30b", batch_size=10, device="cpu")
+    model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
     extractor.extract_features()
+
+    # model_name = 'facebook/opt-30b'
+    # tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+    # model_kwargs = {"device_map": "auto", "load_in_8bit": True}
+    # model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "opt-30b", batch_size=10, device="cpu")
+    # extractor.extract_features()
