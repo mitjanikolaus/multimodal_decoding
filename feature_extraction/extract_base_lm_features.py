@@ -57,30 +57,36 @@ if __name__ == "__main__":
     # model = GPT2Model.from_pretrained(model_name)
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
     # extractor.extract_features()
-
-    model_name = 'gpt2-large'
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    model = GPT2Model.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
-    extractor.extract_features()
-
-    model_name = 'gpt2-medium'
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    model = GPT2Model.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
-    extractor.extract_features()
-
-    model_name = 'gpt2'
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    model = GPT2Model.from_pretrained(model_name)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "gpt2-small", batch_size=BATCH_SIZE, device=device)
-    extractor.extract_features()
+    #
+    # model_name = 'gpt2-large'
+    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    # model = GPT2Model.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
+    # extractor.extract_features()
+    #
+    # model_name = 'gpt2-medium'
+    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    # model = GPT2Model.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
+    # extractor.extract_features()
+    #
+    # model_name = 'gpt2'
+    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    # model = GPT2Model.from_pretrained(model_name)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "gpt2-small", batch_size=BATCH_SIZE, device=device)
+    # extractor.extract_features()
 
     # model_name = "mistralai/Mistral-7B-v0.1"    # mistralai/Mixtral-8x7B-v0.1
     # tokenizer = AutoTokenizer.from_pretrained(model_name)
     # model = MistralModel.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral", batch_size=10, device="cpu")
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral-7b", batch_size=10, device="cpu")
     # extractor.extract_features()
+
+    model_name = "mistralai/Mixtral-8x7B-v0.1"   # mistralai/Mixtral-8x7B-v0.1
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = MistralModel.from_pretrained(model_name, load_in_4bit=True)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral-8x7B", batch_size=100, device=device)
+    extractor.extract_features()
 
     # model_weights_path = os.path.join(DATA_DIR, "llama2_7b")
     # tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
