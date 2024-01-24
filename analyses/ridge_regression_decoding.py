@@ -19,7 +19,8 @@ import pickle
 from decoding_utils import get_distance_matrix
 from tqdm import trange
 
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, \
+from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
+    VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, \
     MULTIMODAL_FEAT_KEY
 
 CONCAT_FEATS = 'concat'
@@ -274,21 +275,20 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
 
 
 def run(args):
-    for features in args.features:
-        print("FEATURES: ", features)
-        for subject in args.subjects:
-            print("SUBJECT: ", subject)
-            train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
-                                                                                               args.training_mode)
+    for subject in args.subjects:
+        print("SUBJECT: ", subject)
+        train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, args.training_mode)
+        test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform)
 
-            test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode,
-                                                                               fmri_transform)
+        for model_name in args.models:
+            model_name = model_name.lower()
+            print("MODEL: ", model_name)
 
-            for model_name in args.models:
-                model_name = model_name.lower()
-                print("MODEL: ", model_name)
+            for features in args.features:
+                print("FEATURES: ", features)
 
-                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features, train_stim_ids,
+                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features,
+                                                                             train_stim_ids,
                                                                              subject,
                                                                              args.training_mode)
 
@@ -316,7 +316,8 @@ def run(args):
                     "best_val_acc": True,
                 }
 
-                test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids, subject,
+                test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
+                                                          subject,
                                                           args.testing_mode,
                                                           nn_latent_transform=nn_latent_transform)
                 best_model = clf.best_estimator_
@@ -349,7 +350,8 @@ def get_args():
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
     parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS], choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY, choices=VISION_FEAT_COMBINATION_CHOICES)
+    parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
+                        choices=VISION_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
