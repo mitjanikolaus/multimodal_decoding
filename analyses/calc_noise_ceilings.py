@@ -53,8 +53,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--metric", type=str, default='pearsonr')
-    parser.add_argument("--matrix-metric", type=str, default='pearsonr')
+    parser.add_argument("--metric", type=str, default='spearmanr')
+    parser.add_argument("--matrix-metric", type=str, default='spearmanr')
 
     return parser.parse_args()
 
