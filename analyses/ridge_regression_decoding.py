@@ -37,13 +37,13 @@ NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
 DEFAULT_N_PRE_DISPATCH = 5
 
+DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
+
 TRAINING_MODES = ['train', 'train_captions', 'train_images']
 TESTING_MODES = ['test', 'test_captions', 'test_images']
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
-
-SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None):
@@ -217,18 +217,28 @@ def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
     return score
 
 
-def create_dissimilarity_matrix(sample_embeds):
-    sim_mat = spearmanr(sample_embeds, axis=1)[0]
+def create_dissimilarity_matrix(sample_embeds, matrix_metric="spearmanr"):
+    if matrix_metric == "spearmanr":
+        sim_mat = spearmanr(sample_embeds, axis=1)[0]
+    else:
+        raise RuntimeError("Unknown metric: ", matrix_metric)
     dissim_mat = np.ones(sim_mat.shape) - sim_mat
     matrix = dissim_mat[np.triu_indices(sample_embeds.shape[0], 1)].reshape(-1)
     return matrix
 
 
-def calc_rsa(latent_1, latent_2):
-    matrix_1 = create_dissimilarity_matrix(latent_1)
-    matrix_2 = create_dissimilarity_matrix(latent_2)
-    corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
+def rsa_from_matrices(matrix_1, matrix_2, metric="spearmanr"):
+    if metric == "spearmanr":
+        corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
+    else:
+        raise RuntimeError("Unknown metric: ", metric)
     return corr
+
+
+def calc_rsa(latent_1, latent_2, metric="spearmanr", matrix_metric="spearmanr"):
+    matrix_1 = create_dissimilarity_matrix(latent_1, matrix_metric)
+    matrix_2 = create_dissimilarity_matrix(latent_2, matrix_metric)
+    return rsa_from_matrices(matrix_1, matrix_2, metric=metric)
 
 
 def calculate_eval_metrics(results, args):
@@ -353,7 +363,7 @@ def get_args():
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
 
