@@ -46,9 +46,17 @@ class FlavaFeatureExtractor(FeatureExtractor):
 
 if __name__ == "__main__":
     model_name = "facebook/flava-full"
-    processor = FlavaProcessor.from_pretrained(model_name)
-    model = FlavaModel.from_pretrained(model_name)
+    # processor = FlavaProcessor.from_pretrained(model_name)
+    # model = FlavaModel.from_pretrained(model_name)
+    #
+    # extractor = FlavaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
+    # extractor.extract_features()
 
-    extractor = FlavaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
+    processor = FlavaProcessor.from_pretrained(model_name)
+    model = FlavaModel(FlavaModel.from_pretrained(model_name).config)
+
+    extractor = FlavaFeatureExtractor(model, processor, "random-flava", BATCH_SIZE, device)
     extractor.extract_features()
+
+
 
