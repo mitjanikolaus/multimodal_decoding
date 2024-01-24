@@ -9,7 +9,7 @@ import time
 import numpy as np
 import nibabel as nib
 from scipy.spatial.distance import cdist
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, pearsonr
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -233,7 +233,7 @@ def rsa_from_matrices(matrix_1, matrix_2, metric="spearmanr"):
     if metric == "spearmanr":
         corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
     elif metric == "pearsonr":
-        corr = np.corrcoef([matrix_1, matrix_2], rowvar=1)
+        corr = pearsonr(matrix_1, matrix_2)[0]
     else:
         raise RuntimeError("Unknown metric: ", metric)
     return corr
