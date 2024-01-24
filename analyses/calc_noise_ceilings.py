@@ -40,10 +40,11 @@ def run(args):
 
     rsa_scores = dict()
     for subj1, subj2 in itertools.combinations(SUBJECTS, 2):
-        corr = rsa_from_matrices(matrices[subj1], matrices[subj2], args.metric)
-        rsa_scores[f"{subj1}_{subj2}"] = corr
+        rsa = rsa_from_matrices(matrices[subj1], matrices[subj2], args.metric)
+        rsa_scores[f"{subj1}_{subj2}"] = rsa
 
-    print(f"Mean RSA: {np.mean(rsa_scores.values):.2f} Std: {np.std(rsa_scores.values):.2f}")
+    values = list(rsa_scores.values())
+    print(f"Mean RSA: {np.mean(values):.2f} Std: {np.std(values):.2f}")
 
     results_file = os.path.join(RSA_NOISE_CEILING_DIR, f"{args.metric}_{args.matrix_metric}.p")
     os.makedirs(RSA_NOISE_CEILING_DIR, exist_ok=True)
@@ -52,8 +53,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--metric", type=str, default='spearmanr')
-    parser.add_argument("--matrix-metric", type=str, default='spearmanr')
+    parser.add_argument("--metric", type=str, default='pearsonr')
+    parser.add_argument("--matrix-metric", type=str, default='pearsonr')
 
     return parser.parse_args()
 

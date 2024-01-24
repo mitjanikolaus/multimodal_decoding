@@ -220,6 +220,8 @@ def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
 def create_dissimilarity_matrix(sample_embeds, matrix_metric="spearmanr"):
     if matrix_metric == "spearmanr":
         sim_mat = spearmanr(sample_embeds, axis=1)[0]
+    elif matrix_metric == "pearsonr":
+        sim_mat = np.corrcoef(sample_embeds, rowvar=1)
     else:
         raise RuntimeError("Unknown metric: ", matrix_metric)
     dissim_mat = np.ones(sim_mat.shape) - sim_mat
@@ -230,6 +232,8 @@ def create_dissimilarity_matrix(sample_embeds, matrix_metric="spearmanr"):
 def rsa_from_matrices(matrix_1, matrix_2, metric="spearmanr"):
     if metric == "spearmanr":
         corr = spearmanr([matrix_1, matrix_2], axis=1)[0]
+    elif metric == "pearsonr":
+        corr = np.corrcoef([matrix_1, matrix_2], rowvar=1)
     else:
         raise RuntimeError("Unknown metric: ", metric)
     return corr
