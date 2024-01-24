@@ -1,7 +1,7 @@
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, BertModel, GPT2Tokenizer, GPT2Model, \
-    MistralModel, LlamaTokenizer, LlamaModel
+    MistralModel, LlamaTokenizer, LlamaModel, MixtralModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from utils import DATA_DIR
@@ -84,8 +84,8 @@ if __name__ == "__main__":
 
     model_name = "mistralai/Mixtral-8x7B-v0.1"   # mistralai/Mixtral-8x7B-v0.1
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = MistralModel.from_pretrained(model_name, load_in_4bit=True)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mistral-8x7B", batch_size=100, device=device)
+    model = MixtralModel.from_pretrained(model_name, load_in_4bit=True)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mixtral-8x7B", batch_size=100, device=device)
     extractor.extract_features()
 
     # model_weights_path = os.path.join(DATA_DIR, "llama2_7b")
