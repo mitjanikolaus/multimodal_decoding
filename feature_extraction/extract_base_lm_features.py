@@ -85,7 +85,7 @@ if __name__ == "__main__":
     model_name = "mistralai/Mixtral-8x7B-v0.1"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = MixtralModel.from_pretrained(model_name, load_in_4bit=True)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mixtral-8x7B", batch_size=100, device=device)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "mixtral-8x7B", batch_size=10, device="cpu")
     extractor.extract_features()
 
     # model_weights_path = os.path.join(DATA_DIR, "llama2_7b")
