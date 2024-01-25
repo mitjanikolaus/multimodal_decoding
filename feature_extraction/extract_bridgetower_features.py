@@ -34,18 +34,9 @@ class BridgeTowerFeatureExtractor(FeatureExtractor):
         img_embeddings = outputs.image_embeds
         language_embeddings = outputs.text_embeds
 
-        # Average lang feats while ignoring padding tokens
-        mask = inputs.data["attention_mask"]
-        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
-        language_embeddings[mask_expanded == 0] = 0
-        feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
-
-        feats_vision_cls = img_embeddings[:, 0, :]
-        feats_vision_mean = img_embeddings[:, 1:].mean(axis=1)
-
         feats_multimodal = outputs.cross_embeds
 
-        return feats_lang, feats_vision_mean, feats_vision_cls, feats_multimodal
+        return language_embeddings, img_embeddings, None, feats_multimodal
 
     def extract_features(self):
         all_feats = dict()
