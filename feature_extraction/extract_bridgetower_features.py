@@ -58,6 +58,9 @@ class BridgeTowerFeatureExtractor(FeatureExtractor):
                 vision_cls_feats_batch = vision_cls_feats_batch.cpu().numpy()
             if multi_feats_batch is None:
                 multi_feats_batch = [None] * len(ids)
+            else:
+                multi_feats_batch = multi_feats_batch.cpu().numpy()
+
             for id, feats_lang, feats_vision_mean, feats_vision_cls, feats_multi in zip(ids,
                                                                            language_feats_batch,
                                                                            vision_mean_feats_batch,
