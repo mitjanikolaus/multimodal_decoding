@@ -90,8 +90,7 @@ COLORS_PLOT_CATEGORICAL = [
 def add_avg_subject(df):
     df_mean = df.copy()
     df_mean["subject"] = "average"
-    df = pd.concat((df.copy(), df_mean))
-    return df
+    return pd.concat((df.copy(), df_mean))
 
 
 def load_results_data(distance_metrics = ["cosine"]):
