@@ -324,6 +324,7 @@ def run(args):
                         "training_mode": training_mode,
                         "testing_mode": args.testing_mode,
                         "best_val_acc": True,
+                        "cv_results": clf.cv_results_
                     }
 
                     test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
@@ -337,8 +338,7 @@ def run(args):
                                     "stimulus_types": test_stim_types,
                                     "predictions": test_predicted_latents,
                                     "latents": test_data_latents,
-                                    "training_mode": training_mode,
-                                    "cv_results": clf.cv_results_}
+                                    "training_mode": training_mode}
                     test_results = calculate_eval_metrics(test_results, args)
                     print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}")
 
