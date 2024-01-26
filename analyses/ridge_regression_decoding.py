@@ -39,8 +39,8 @@ DEFAULT_N_PRE_DISPATCH = 5
 
 DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
-TRAINING_MODES = ['train', 'train_captions', 'train_images']
-TESTING_MODES = ['test', 'test_captions', 'test_images']
+TRAIN_MODE_CHOICES = ["train", "train_captions", "train_images"]
+TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
@@ -100,13 +100,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
     return nn_latent_vectors, nn_latent_transform
 
 
-def get_fmri_data(subject, mode=TRAINING_MODES[0], fmri_betas_transform=None):
-    """
-    Args:
-        subject (str): Subject ID.
-        mode (str): 'train', 'test', or 'imagery'. You can append _images or _captions to make it unimodal
-        blank_correction (boolean): If `True`, the blank image will be subtracted from the imagery patterns (if exists)
-    """
+def get_fmri_data(subject, mode, fmri_betas_transform=None):
     imagery_scenes = IMAGERY_SCENES[subject]
 
     fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
@@ -289,69 +283,73 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
 
 
 def run(args):
-    for subject in args.subjects:
-        print("SUBJECT: ", subject)
-        train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, args.training_mode)
-        test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform)
+    for training_mode in args.training_modes:
+        print("TRAIN MODE: ", training_mode)
+        for subject in args.subjects:
+            print("SUBJECT: ", subject)
+            train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, training_mode)
+            test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform)
 
-        for model_name in args.models:
-            model_name = model_name.lower()
-            print("MODEL: ", model_name)
+            for model_name in args.models:
+                model_name = model_name.lower()
+                print("MODEL: ", model_name)
 
-            for features in args.features:
-                print("FEATURES: ", features)
+                for features in args.features:
+                    print("FEATURES: ", features)
 
-                train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features,
-                                                                             train_stim_ids,
-                                                                             subject,
-                                                                             args.training_mode)
+                    train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features,
+                                                                                 train_stim_ids,
+                                                                                 subject,
+                                                                                 training_mode)
 
-                model = Ridge()
-                pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                    model = Ridge()
+                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                    clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                       scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                       pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
-                start = time.time()
-                clf.fit(train_fmri_betas, train_data_latents)
-                end = time.time()
-                print(f"Elapsed time: {int(end - start)}s")
+                    start = time.time()
+                    clf.fit(train_fmri_betas, train_data_latents)
+                    end = time.time()
+                    print(f"Elapsed time: {int(end - start)}s")
 
-                best_alpha = clf.best_params_["alpha"]
+                    best_alpha = clf.best_params_["alpha"]
 
-                results = {
-                    "alpha": best_alpha,
-                    "model": model_name,
-                    "subject": subject,
-                    "features": features,
-                    "vision_features": args.vision_features,
-                    "training_mode": args.training_mode,
-                    "testing_mode": args.testing_mode,
-                    "best_val_acc": True,
-                }
+                    results = {
+                        "alpha": best_alpha,
+                        "model": model_name,
+                        "subject": subject,
+                        "features": features,
+                        "vision_features": args.vision_features,
+                        "training_mode": training_mode,
+                        "testing_mode": args.testing_mode,
+                        "best_val_acc": True,
+                    }
 
-                test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
-                                                          subject,
-                                                          args.testing_mode,
-                                                          nn_latent_transform=nn_latent_transform)
-                best_model = clf.best_estimator_
-                test_predicted_latents = best_model.predict(test_fmri_betas)
+                    test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
+                                                              subject,
+                                                              args.testing_mode,
+                                                              nn_latent_transform=nn_latent_transform)
+                    best_model = clf.best_estimator_
+                    test_predicted_latents = best_model.predict(test_fmri_betas)
 
-                test_results = {"stimulus_ids": test_stim_ids,
-                                "stimulus_types": test_stim_types,
-                                "predictions": test_predicted_latents,
-                                "latents": test_data_latents}
-                test_results = calculate_eval_metrics(test_results, args)
-                print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}")
+                    test_results = {"stimulus_ids": test_stim_ids,
+                                    "stimulus_types": test_stim_types,
+                                    "predictions": test_predicted_latents,
+                                    "latents": test_data_latents,
+                                    "training_mode": training_mode,
+                                    "cv_results": clf.cv_results_}
+                    test_results = calculate_eval_metrics(test_results, args)
+                    print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}")
 
-                results = results | test_results
+                    results = results | test_results
 
-                results_dir = os.path.join(GLM_OUT_DIR, args.training_mode, subject)
-                run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
-                results_file_dir = f'{results_dir}/{run_str}'
-                os.makedirs(results_file_dir, exist_ok=True)
+                    results_dir = os.path.join(GLM_OUT_DIR, training_mode, subject)
+                    run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
+                    results_file_dir = f'{results_dir}/{run_str}'
+                    os.makedirs(results_file_dir, exist_ok=True)
 
-                pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+                    pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
 
 def get_args():
@@ -359,8 +357,9 @@ def get_args():
 
     parser.add_argument("--max-samples-eval-metrics", type=int, default=1000)
 
-    parser.add_argument("--training-mode", type=str, default='train')
-    parser.add_argument("--testing-mode", type=str, default='test')
+    parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
+                        choices=TRAIN_MODE_CHOICES)
+    parser.add_argument("--testing-mode", type=str, default='test', choices=TEST_MODE_CHOICES)
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
     parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS],
