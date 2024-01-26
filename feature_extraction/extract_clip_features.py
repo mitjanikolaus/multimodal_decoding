@@ -6,10 +6,9 @@ from transformers import CLIPModel, CLIPProcessor
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(device)
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 128
 CLIP_MODEL = "openai/clip-vit-large-patch14"

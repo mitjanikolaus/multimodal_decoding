@@ -17,7 +17,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 10
+BATCH_SIZE = 32
 
 
 class BridgeTowerFeatureExtractor(FeatureExtractor):
