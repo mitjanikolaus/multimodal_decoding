@@ -164,10 +164,12 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, mask=None):
     if fmri_betas_transform is None:
         mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
         bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
+        if mask is not None:
+            bold_std_mean_name += f'_mask_{mask}'
         bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
 
         if not os.path.exists(bold_std_mean_path):
-            print(f"Calculating Mean and STD of BOLD Signals for {mode} samples")
+            print(f"Calculating mean and std of BOLD Signals for mode {mode} with mask {mask}")
             os.makedirs(mean_std_dir, exist_ok=True)
 
             mean_std = {'mean': fmri_betas.mean(axis=0),
