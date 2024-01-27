@@ -313,8 +313,8 @@ def run(args):
             print("MASK: ", mask)
             for subject in args.subjects:
                 print("SUBJECT: ", subject)
-                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, training_mode, mask=mask)
-                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform, mask=mask)
+                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, training_mode, roi_mask_name=mask)
+                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform, roi_mask_name=mask)
 
                 for model_name in args.models:
                     model_name = model_name.lower()
