@@ -9,7 +9,7 @@ from tqdm import tqdm
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR
 
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 
 if torch.cuda.is_available():
     device = "cuda"
