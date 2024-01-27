@@ -8,6 +8,7 @@ import time
 
 import numpy as np
 import nibabel as nib
+from nilearn.datasets import fetch_atlas_destrieux_2009
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.linear_model import Ridge
@@ -44,6 +45,8 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
+
+MASK_OCCIPITAL = "occipital"
 
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None):
@@ -100,7 +103,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
     return nn_latent_vectors, nn_latent_transform
 
 
-def get_fmri_data(subject, mode, fmri_betas_transform=None):
+def get_fmri_data(subject, mode, fmri_betas_transform=None, mask=None):
     imagery_scenes = IMAGERY_SCENES[subject]
 
     fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
@@ -126,14 +129,36 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None):
     stim_ids = np.array(stim_ids)
     stim_types = np.array(stim_types)
 
-    brain_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
-    brain_mask = nib.load(brain_mask_address).get_fdata().reshape(-1)
-    brain_mask = np.logical_and(np.logical_not(np.isnan(brain_mask)), brain_mask != 0)
+    gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
+    gray_matter_mask = nib.load(gray_matter_mask_address).get_fdata()
+    gray_matter_mask = np.logical_and(np.logical_not(np.isnan(gray_matter_mask)), gray_matter_mask != 0)
+
+    roi_mask = None
+    if mask is not None:
+        if mask == MASK_OCCIPITAL:
+            destrieux_atlas = fetch_atlas_destrieux_2009()
+            label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
+
+            labels_occipital = [key for key in label_to_value_dict.keys() if "occipital" in key]
+            values_occipital = [label_to_value_dict[label] for label in labels_occipital]
+
+            atlas_map = nib.load(destrieux_atlas.maps).get_fdata().transpose(0, 2, 1)
+
+            roi_mask = np.isin(atlas_map, values_occipital)
+
+            print(f"Applying ROI mask of size {roi_mask.sum()}")
+            print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
+        else:
+            raise RuntimeError("Unknown mask: ", mask)
+
+    mask = gray_matter_mask
+    if roi_mask is not None:
+        mask = roi_mask & gray_matter_mask
 
     fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
     for idx in trange(len(fmri_betas_addresses), desc="loading fmri data"):
-        sample = nib.load(fmri_betas_addresses[idx]).get_fdata().astype('float32').reshape(-1)
-        sample = sample[brain_mask]
+        sample = nib.load(fmri_betas_addresses[idx]).get_fdata()
+        sample = sample[mask].astype('float32').reshape(-1)
         fmri_betas[idx] = sample.copy()
 
     if fmri_betas_transform is None:
@@ -269,12 +294,10 @@ def calculate_eval_metrics(results, args):
     return results
 
 
-def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, best_val_acc=False):
+def get_run_str(model_name, features, mask=None, best_val_loss=False, best_val_acc=False):
     run_str = f"{model_name}_{features}"
-    if not best_val_acc and not best_val_loss:
-        run_str += f"_alpha_{alpha}"
-    if fold is not None:
-        run_str += f"_fold_{fold}"
+    if mask is not None:
+        run_str += f"_mask_{mask}"
     if best_val_loss:
         run_str += "_best_val_loss"
     if best_val_acc:
@@ -285,71 +308,73 @@ def get_run_str(alpha, model_name, features, fold=None, best_val_loss=False, bes
 def run(args):
     for training_mode in args.training_modes:
         print("TRAIN MODE: ", training_mode)
-        for subject in args.subjects:
-            print("SUBJECT: ", subject)
-            train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, training_mode)
-            test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform)
+        for mask in args.masks:
+            print("MASK: ", mask)
+            for subject in args.subjects:
+                print("SUBJECT: ", subject)
+                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, training_mode, mask=mask)
+                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform, mask=mask)
 
-            for model_name in args.models:
-                model_name = model_name.lower()
-                print("MODEL: ", model_name)
+                for model_name in args.models:
+                    model_name = model_name.lower()
+                    print("MODEL: ", model_name)
 
-                for features in args.features:
-                    print("FEATURES: ", features)
+                    for features in args.features:
+                        print("FEATURES: ", features)
 
-                    train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features,
-                                                                                 train_stim_ids,
-                                                                                 subject,
-                                                                                 training_mode)
+                        train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features,
+                                                                                     train_stim_ids,
+                                                                                     subject,
+                                                                                     training_mode)
 
-                    model = Ridge()
-                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                       scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                       pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                        model = Ridge()
+                        pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                        clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                           scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                           pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
-                    start = time.time()
-                    clf.fit(train_fmri_betas, train_data_latents)
-                    end = time.time()
-                    print(f"Elapsed time: {int(end - start)}s")
+                        start = time.time()
+                        clf.fit(train_fmri_betas, train_data_latents)
+                        end = time.time()
+                        print(f"Elapsed time: {int(end - start)}s")
 
-                    best_alpha = clf.best_params_["alpha"]
+                        best_alpha = clf.best_params_["alpha"]
 
-                    results = {
-                        "alpha": best_alpha,
-                        "model": model_name,
-                        "subject": subject,
-                        "features": features,
-                        "vision_features": args.vision_features,
-                        "training_mode": training_mode,
-                        "testing_mode": args.testing_mode,
-                        "best_val_acc": True,
-                        "cv_results": clf.cv_results_
-                    }
+                        results = {
+                            "alpha": best_alpha,
+                            "model": model_name,
+                            "subject": subject,
+                            "features": features,
+                            "vision_features": args.vision_features,
+                            "training_mode": training_mode,
+                            "testing_mode": args.testing_mode,
+                            "mask": mask,
+                            "best_val_acc": True,
+                            "cv_results": clf.cv_results_
+                        }
 
-                    test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
-                                                              subject,
-                                                              args.testing_mode,
-                                                              nn_latent_transform=nn_latent_transform)
-                    best_model = clf.best_estimator_
-                    test_predicted_latents = best_model.predict(test_fmri_betas)
+                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
+                                                                  subject,
+                                                                  args.testing_mode,
+                                                                  nn_latent_transform=nn_latent_transform)
+                        best_model = clf.best_estimator_
+                        test_predicted_latents = best_model.predict(test_fmri_betas)
 
-                    test_results = {"stimulus_ids": test_stim_ids,
-                                    "stimulus_types": test_stim_types,
-                                    "predictions": test_predicted_latents,
-                                    "latents": test_data_latents,
-                                    "training_mode": training_mode}
-                    test_results = calculate_eval_metrics(test_results, args)
-                    print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}")
+                        test_results = {"stimulus_ids": test_stim_ids,
+                                        "stimulus_types": test_stim_types,
+                                        "predictions": test_predicted_latents,
+                                        "latents": test_data_latents}
+                        test_results = calculate_eval_metrics(test_results, args)
+                        print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}")
 
-                    results = results | test_results
+                        results = results | test_results
 
-                    results_dir = os.path.join(GLM_OUT_DIR, training_mode, subject)
-                    run_str = get_run_str(best_alpha, model_name, features, fold=None, best_val_acc=True)
-                    results_file_dir = f'{results_dir}/{run_str}'
-                    os.makedirs(results_file_dir, exist_ok=True)
+                        results_dir = os.path.join(GLM_OUT_DIR, training_mode, subject)
+                        run_str = get_run_str(model_name, features, mask, best_val_acc=True)
+                        results_file_dir = f'{results_dir}/{run_str}'
+                        os.makedirs(results_file_dir, exist_ok=True)
 
-                    pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+                        pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
 
 def get_args():
@@ -366,6 +391,8 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
+
+    parser.add_argument("--masks", type=str, nargs='+', default=[None])
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
