@@ -103,7 +103,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
     return nn_latent_vectors, nn_latent_transform
 
 
-def get_fmri_data(subject, mode, fmri_betas_transform=None, mask=None):
+def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
     imagery_scenes = IMAGERY_SCENES[subject]
 
     fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
@@ -133,9 +133,8 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, mask=None):
     gray_matter_mask = nib.load(gray_matter_mask_address).get_fdata()
     gray_matter_mask = np.logical_and(np.logical_not(np.isnan(gray_matter_mask)), gray_matter_mask != 0)
 
-    roi_mask = None
-    if mask is not None:
-        if mask == MASK_OCCIPITAL:
+    if roi_mask_name is not None:
+        if roi_mask_name == MASK_OCCIPITAL:
             destrieux_atlas = fetch_atlas_destrieux_2009()
             label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
 
@@ -149,7 +148,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, mask=None):
             print(f"Applying ROI mask of size {roi_mask.sum()}")
             print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
         else:
-            raise RuntimeError("Unknown mask: ", mask)
+            raise RuntimeError("Unknown mask: ", roi_mask_name)
 
     mask = gray_matter_mask
     if roi_mask is not None:
@@ -169,7 +168,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, mask=None):
         bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
 
         if not os.path.exists(bold_std_mean_path):
-            print(f"Calculating mean and std of BOLD Signals for mode {mode} with mask {mask}")
+            print(f"Calculating mean and std of BOLD Signals for mode {mode} with mask {roi_mask_name}")
             os.makedirs(mean_std_dir, exist_ok=True)
 
             mean_std = {'mean': fmri_betas.mean(axis=0),
