@@ -166,7 +166,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
             raise RuntimeError("Unknown mask: ", roi_mask_name)
 
     mask = gray_matter_mask
-    if roi_mask is not None:
+    if roi_mask_name is not None:
         mask = roi_mask & gray_matter_mask
 
     fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
