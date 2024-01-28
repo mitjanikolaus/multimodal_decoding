@@ -437,7 +437,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
 
-    parser.add_argument("--recompute-std-mean", type=bool, action="store_true", default=False)
+    parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
     return parser.parse_args()
 
