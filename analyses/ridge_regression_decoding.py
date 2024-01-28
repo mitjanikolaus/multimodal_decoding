@@ -49,11 +49,20 @@ DISTANCE_METRICS = ['cosine']
 MASK_OCCIPITAL = "occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 
-REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor', 'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital', 'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat', 'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf', 'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual', 'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus', 'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat', 'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
-VISUAL_REGIONS_TEMPORAL = ['L G_temporal_inf', 'L G_temporal_middle', 'L Pole_temporal', 'L S_temporal_inf', 'R G_temporal_inf', 'R G_temporal_middle', 'R Pole_temporal', 'R S_temporal_inf']
+REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor',
+                     'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital',
+                     'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat',
+                     'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf',
+                     'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual',
+                     'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus',
+                     'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat',
+                     'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
+VISUAL_REGIONS_TEMPORAL = ['L G_temporal_inf', 'L G_temporal_middle', 'L Pole_temporal', 'L S_temporal_inf',
+                           'R G_temporal_inf', 'R G_temporal_middle', 'R Pole_temporal', 'R S_temporal_inf']
 
 
-def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None):
+def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None,
+                       recompute_std_mean=False):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
@@ -91,7 +100,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
         mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
         model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
         model_std_mean_path = os.path.join(mean_std_dir, model_std_mean_name)
-        if not os.path.exists(model_std_mean_path):
+        if not os.path.exists(model_std_mean_path) or recompute_std_mean:
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
             os.makedirs(mean_std_dir, exist_ok=True)
 
@@ -107,7 +116,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
     return nn_latent_vectors, nn_latent_transform
 
 
-def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
+def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
     imagery_scenes = IMAGERY_SCENES[subject]
 
     fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
@@ -134,8 +143,10 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
     stim_types = np.array(stim_types)
 
     gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
-    gray_matter_mask = nib.load(gray_matter_mask_address).get_fdata()
-    gray_matter_mask = np.logical_and(np.logical_not(np.isnan(gray_matter_mask)), gray_matter_mask != 0)
+    gray_matter_mask_img = nib.load(gray_matter_mask_address)
+    gray_matter_mask_ras = nib.as_closest_canonical(gray_matter_mask_img)
+    gray_matter_mask_ras_data = gray_matter_mask_ras.get_fdata()
+    gray_matter_mask = gray_matter_mask_ras_data == 1
 
     if roi_mask_name is not None:
         if roi_mask_name == MASK_OCCIPITAL:
@@ -156,7 +167,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
             label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
 
             values = [label_to_value_dict[label] for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
-            atlas_map = nib.load(destrieux_atlas.maps).get_fdata().transpose(0, 2, 1)
+            atlas_map = nib.load(destrieux_atlas.maps).get_fdata()  # .transpose(0, 2, 1)
 
             roi_mask = np.isin(atlas_map, values)
 
@@ -171,7 +182,9 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
 
     fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
     for idx in trange(len(fmri_betas_addresses), desc="loading fmri data"):
-        sample = nib.load(fmri_betas_addresses[idx]).get_fdata()
+        sample = nib.load(fmri_betas_addresses[idx])
+        sample = nib.as_closest_canonical(sample)
+        sample = sample.get_fdata()
         sample = sample[mask].astype('float32').reshape(-1)
         fmri_betas[idx] = sample.copy()
 
@@ -182,7 +195,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
             bold_std_mean_name += f'_mask_{roi_mask_name}'
         bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
 
-        if not os.path.exists(bold_std_mean_path):
+        if not os.path.exists(bold_std_mean_path) or recompute_std_mean:
             print(f"Calculating mean and std of BOLD Signals for mode {mode} with mask {roi_mask_name}")
             os.makedirs(mean_std_dir, exist_ok=True)
 
@@ -328,8 +341,12 @@ def run(args):
             print("MASK: ", mask)
             for subject in args.subjects:
                 print("SUBJECT: ", subject)
-                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject, training_mode, roi_mask_name=mask)
-                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode, fmri_transform, roi_mask_name=mask)
+                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
+                                                                                                   training_mode,
+                                                                                                   roi_mask_name=mask,
+                                                                                                   recompute_std_mean=args.recompute_std_mean)
+                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode,
+                                                                                   fmri_transform, roi_mask_name=mask)
 
                 for model_name in args.models:
                     model_name = model_name.lower()
@@ -338,10 +355,12 @@ def run(args):
                     for features in args.features:
                         print("FEATURES: ", features)
 
-                        train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features, args.vision_features,
+                        train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
+                                                                                     args.vision_features,
                                                                                      train_stim_ids,
                                                                                      subject,
-                                                                                     training_mode)
+                                                                                     training_mode,
+                                                                                     recompute_std_mean=args.recompute_std_mean)
 
                         model = Ridge()
                         pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
@@ -369,7 +388,8 @@ def run(args):
                             "cv_results": clf.cv_results_
                         }
 
-                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features, test_stim_ids,
+                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
+                                                                  test_stim_ids,
                                                                   subject,
                                                                   args.testing_mode,
                                                                   nn_latent_transform=nn_latent_transform)
@@ -416,6 +436,8 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
+
+    parser.add_argument("--recompute-std-mean", type=bool, action="store_true", default=False)
 
     return parser.parse_args()
 
