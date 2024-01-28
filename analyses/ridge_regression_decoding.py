@@ -47,6 +47,10 @@ GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_OCCIPITAL = "occipital"
+MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
+
+REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor', 'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital', 'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat', 'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf', 'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual', 'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus', 'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat', 'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
+VISUAL_REGIONS_TEMPORAL = ['L G_temporal_inf', 'L G_temporal_middle', 'L Pole_temporal', 'L S_temporal_inf', 'R G_temporal_inf', 'R G_temporal_middle', 'R Pole_temporal', 'R S_temporal_inf']
 
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None):
@@ -144,6 +148,17 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None):
             atlas_map = nib.load(destrieux_atlas.maps).get_fdata().transpose(0, 2, 1)
 
             roi_mask = np.isin(atlas_map, values_occipital)
+
+            print(f"Applying ROI mask of size {roi_mask.sum()}")
+            print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
+        elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX:
+            destrieux_atlas = fetch_atlas_destrieux_2009()
+            label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
+
+            values = [label_to_value_dict[label] for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
+            atlas_map = nib.load(destrieux_atlas.maps).get_fdata().transpose(0, 2, 1)
+
+            roi_mask = np.isin(atlas_map, values)
 
             print(f"Applying ROI mask of size {roi_mask.sum()}")
             print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
