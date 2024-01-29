@@ -78,7 +78,6 @@ def run(args):
     print(f"RSA imgs-caps: {np.mean(rsa_img_caps):.2f} Std: {np.std(rsa_img_caps):.2f}")
 
 
-
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--metric", type=str, default='spearmanr')
