@@ -293,6 +293,20 @@ def calc_rsa(latent_1, latent_2, metric="spearmanr", matrix_metric="spearmanr"):
     return rsa_from_matrices(matrix_1, matrix_2, metric=metric)
 
 
+def calc_rsa_images(latent_1, latent_2, stimulus_types, metric="spearmanr", matrix_metric="spearmanr"):
+    assert len(latent_1) == len(latent_2) == len(stimulus_types)
+    latent_1_images = latent_1[stimulus_types == 'image']
+    latent_2_images = latent_2[stimulus_types == 'image']
+    return calc_rsa(latent_1_images, latent_2_images, metric, matrix_metric)
+
+
+def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", matrix_metric="spearmanr"):
+    assert len(latent_1) == len(latent_2) == len(stimulus_types)
+    latent_1_captions = latent_1[stimulus_types == 'caption']
+    latent_2_captions = latent_2[stimulus_types == 'caption']
+    return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
+
+
 def calculate_eval_metrics(results, args):
     # take equally sized subsets of samples for captions and images
     stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption'][
@@ -317,8 +331,9 @@ def calculate_eval_metrics(results, args):
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
 
-    rsa = calc_rsa(val_predictions, val_latents)
-    results['rsa'] = rsa
+    results['rsa'] = calc_rsa(val_predictions, val_latents)
+    results['rsa_images'] = calc_rsa_images(val_predictions, val_latents, results["stimulus_types"])
+    results['rsa_captions'] = calc_rsa_captions(val_predictions, val_latents, results["stimulus_types"])
 
     return results
 
