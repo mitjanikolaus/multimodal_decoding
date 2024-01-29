@@ -94,8 +94,8 @@ def get_roi_mask(roi_mask_name):
     else:
         raise RuntimeError("Unknown mask: ", roi_mask_name)
 
-
     return roi_mask
+
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None,
                        recompute_std_mean=False):
