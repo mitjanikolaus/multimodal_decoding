@@ -7,8 +7,8 @@ import pickle
 
 from scipy.stats import spearmanr, pearsonr
 
-from analyses.ridge_regression_decoding import get_fmri_data, create_dissimilarity_matrix, GLM_OUT_DIR, \
-    rsa_from_matrices
+from analyses.ridge_regression_decoding import get_fmri_data, GLM_OUT_DIR, calc_rsa, calc_rsa_images, calc_rsa_captions, \
+    create_dissimilarity_matrix, rsa_from_matrices
 
 from utils import SUBJECTS
 
@@ -35,41 +35,23 @@ def load_mean_std(subject, mode="train"):
 
 
 def run(args):
-    matrices = dict()
-    matrices_images = dict()
-    matrices_captions = dict()
-    all_rsa_img_caps = []
+    all_betas = dict()
+    all_stim_types = dict()
 
     for subj in SUBJECTS:
-        fmri_test_betas, stim_ids, stim_types, _ = get_fmri_data(subj, "test", load_mean_std(subj))
-        matrices[subj] = create_dissimilarity_matrix(fmri_test_betas, args.matrix_metric)
-
-        betas_captions = fmri_test_betas[stim_types == 'caption']
-        betas_images = fmri_test_betas[stim_types == 'image']
-
-        matrix_captions = create_dissimilarity_matrix(betas_captions)
-        matrices_captions[subj] = matrix_captions
-
-        matrix_images = create_dissimilarity_matrix(betas_images)
-        matrices_images[subj] = matrix_images
-
-        rsa_img_caps = rsa_from_matrices(matrix_images, matrix_captions, args.metric)
-        all_rsa_img_caps.append(rsa_img_caps)
-
-    print(f"RSA imgs-caps: {np.mean(all_rsa_img_caps):.2f} Std: {np.std(all_rsa_img_caps):.2f}")
+        fmri_test_betas, _, stim_types, _ = get_fmri_data(subj, "test", load_mean_std(subj))
+        all_betas[subj] = fmri_test_betas
+        all_stim_types[subj] = stim_types
 
     rsa_scores = dict()
     rsa_images_scores = dict()
     rsa_captions_scores = dict()
+
     for subj1, subj2 in itertools.combinations(SUBJECTS, 2):
-        rsa = rsa_from_matrices(matrices[subj1], matrices[subj2], args.metric)
-        rsa_scores[f"{subj1}_{subj2}"] = rsa
+        rsa_scores[f"{subj1}_{subj2}"] = calc_rsa(all_betas[subj1], all_betas[subj2], args.metric, args.matrix_metric)
 
-        rsa = rsa_from_matrices(matrices_images[subj1], matrices_images[subj2], args.metric)
-        rsa_images_scores[f"{subj1}_{subj2}"] = rsa
-
-        rsa = rsa_from_matrices(matrices_captions[subj1], matrices_captions[subj2], args.metric)
-        rsa_captions_scores[f"{subj1}_{subj2}"] = rsa
+        rsa_images_scores[f"{subj1}_{subj2}"] = calc_rsa_images(all_betas[subj1], all_betas[subj2], all_stim_types[subj1], args.metric, args.matrix_metric)
+        rsa_captions_scores[f"{subj1}_{subj2}"] = calc_rsa_captions(all_betas[subj1], all_betas[subj2], all_stim_types[subj1], args.metric, args.matrix_metric)
 
     values = list(rsa_scores.values())
     print(f"Between-subject RSA: {np.mean(values):.2f} Std: {np.std(values):.2f}")
@@ -84,6 +66,17 @@ def run(args):
     results_file = os.path.join(RSA_NOISE_CEILING_DIR, f"{args.metric}_{args.matrix_metric}.p")
     os.makedirs(RSA_NOISE_CEILING_DIR, exist_ok=True)
     pickle.dump(all_rsa_ceilings, open(results_file, "wb"))
+
+    rsa_img_caps = []
+    for subj in SUBJECTS:
+        betas_captions = all_betas[subj][all_stim_types[subj] == 'caption']
+        betas_images = all_betas[subj][all_stim_types[subj] == 'image']
+        matrix_images = create_dissimilarity_matrix(betas_images, matrix_metric=args.matrix_metric)
+        matrix_captions = create_dissimilarity_matrix(betas_captions, matrix_metric=args.matrix_metric)
+        rsa_img_caps.append(rsa_from_matrices(matrix_images, matrix_captions, args.metric))
+
+    print(f"RSA imgs-caps: {np.mean(rsa_img_caps):.2f} Std: {np.std(rsa_img_caps):.2f}")
+
 
 
 def get_args():
