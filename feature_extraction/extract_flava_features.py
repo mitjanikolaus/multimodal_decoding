@@ -54,6 +54,7 @@ if __name__ == "__main__":
 
     processor = FlavaProcessor.from_pretrained(model_name)
     model = FlavaModel(FlavaModel.from_pretrained(model_name).config)
+    model.init_weights()
 
     extractor = FlavaFeatureExtractor(model, processor, "random-flava", BATCH_SIZE, device)
     extractor.extract_features()
