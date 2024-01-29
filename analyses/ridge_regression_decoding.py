@@ -46,9 +46,14 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_OCCIPITAL = "occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
+MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
+MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
+MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
+
+REGIONS_OCCIPITAL_V1 = ['L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
+                        'R S_oc_middle_and_Lunatus', 'L Pole_occipital', 'R Pole_occipital']
 REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor',
                      'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital',
                      'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat',
@@ -60,6 +65,37 @@ REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occ
 VISUAL_REGIONS_TEMPORAL = ['L G_temporal_inf', 'L G_temporal_middle', 'L Pole_temporal', 'L S_temporal_inf',
                            'R G_temporal_inf', 'R G_temporal_middle', 'R Pole_temporal', 'R S_temporal_inf']
 
+
+def get_roi_mask(roi_mask_name):
+    destrieux_atlas = fetch_atlas_destrieux_2009()
+    label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
+    atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
+
+    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX:
+        region_names = [label for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL:
+        region_names = [label for label in REGIONS_OCCIPITAL]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
+        region_names = [label for label in REGIONS_OCCIPITAL_V1]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_NOT_VISUAL_CORTEX:
+        region_names = [label for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = ~np.isin(atlas_map, values)
+
+    else:
+        raise RuntimeError("Unknown mask: ", roi_mask_name)
+
+
+    return roi_mask
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None,
                        recompute_std_mean=False):
@@ -149,32 +185,9 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
     gray_matter_mask = gray_matter_mask_ras_data == 1
 
     if roi_mask_name is not None:
-        if roi_mask_name == MASK_OCCIPITAL:
-            destrieux_atlas = fetch_atlas_destrieux_2009()
-            label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
-
-            labels_occipital = [key for key in label_to_value_dict.keys() if "occipital" in key]
-            values_occipital = [label_to_value_dict[label] for label in labels_occipital]
-
-            atlas_map = nib.load(destrieux_atlas.maps).get_fdata().transpose(0, 2, 1)
-
-            roi_mask = np.isin(atlas_map, values_occipital)
-
-            print(f"Applying ROI mask of size {roi_mask.sum()}")
-            print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
-        elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX:
-            destrieux_atlas = fetch_atlas_destrieux_2009()
-            label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
-
-            values = [label_to_value_dict[label] for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
-            atlas_map = nib.load(destrieux_atlas.maps).get_fdata()  # .transpose(0, 2, 1)
-
-            roi_mask = np.isin(atlas_map, values)
-
-            print(f"Applying ROI mask of size {roi_mask.sum()}")
-            print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
-        else:
-            raise RuntimeError("Unknown mask: ", roi_mask_name)
+        roi_mask = get_roi_mask(roi_mask_name)
+        print(f"Applying ROI mask of size {roi_mask.sum()}")
+        print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
 
     mask = gray_matter_mask
     if roi_mask_name is not None:
