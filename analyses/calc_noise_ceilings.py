@@ -51,7 +51,7 @@ def run(args):
         matrices_captions[subj] = matrix_captions
 
         matrix_images = create_dissimilarity_matrix(betas_images)
-        matrices_images[subj] = matrices_images
+        matrices_images[subj] = matrix_images
 
         rsa_img_caps = rsa_from_matrices(matrix_images, matrix_captions, args.metric)
         all_rsa_img_caps.append(rsa_img_caps)
