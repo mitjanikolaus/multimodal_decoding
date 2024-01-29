@@ -37,17 +37,21 @@ def load_mean_std(subject, mode="train"):
 def run(args):
     all_betas = dict()
     all_stim_types = dict()
+    all_stim_ids = dict()
 
     for subj in SUBJECTS:
-        fmri_test_betas, _, stim_types, _ = get_fmri_data(subj, "test", load_mean_std(subj))
+        fmri_test_betas, stim_ids, stim_types, _ = get_fmri_data(subj, "test", load_mean_std(subj))
         all_betas[subj] = fmri_test_betas
         all_stim_types[subj] = stim_types
+        all_stim_ids[subj] = stim_ids
 
     rsa_scores = dict()
     rsa_images_scores = dict()
     rsa_captions_scores = dict()
 
     for subj1, subj2 in itertools.combinations(SUBJECTS, 2):
+        assert np.all(all_stim_ids[subj1] == all_stim_ids[subj2])
+
         rsa_scores[f"{subj1}_{subj2}"] = calc_rsa(all_betas[subj1], all_betas[subj2], args.metric, args.matrix_metric)
 
         rsa_images_scores[f"{subj1}_{subj2}"] = calc_rsa_images(all_betas[subj1], all_betas[subj2], all_stim_types[subj1], args.metric, args.matrix_metric)
