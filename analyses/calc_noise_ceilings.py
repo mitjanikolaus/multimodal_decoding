@@ -36,6 +36,8 @@ def load_mean_std(subject, mode="train"):
 
 def run(args):
     matrices = dict()
+    matrices_images = dict()
+    matrices_captions = dict()
     all_rsa_img_caps = []
 
     for subj in SUBJECTS:
@@ -46,23 +48,42 @@ def run(args):
         betas_images = fmri_test_betas[stim_types == 'image']
 
         matrix_captions = create_dissimilarity_matrix(betas_captions)
+        matrices_captions[subj] = matrix_captions
+
         matrix_images = create_dissimilarity_matrix(betas_images)
+        matrices_images[subj] = matrices_images
+
         rsa_img_caps = rsa_from_matrices(matrix_images, matrix_captions, args.metric)
         all_rsa_img_caps.append(rsa_img_caps)
 
     print(f"RSA imgs-caps: {np.mean(all_rsa_img_caps):.2f} Std: {np.std(all_rsa_img_caps):.2f}")
 
     rsa_scores = dict()
+    rsa_images_scores = dict()
+    rsa_captions_scores = dict()
     for subj1, subj2 in itertools.combinations(SUBJECTS, 2):
         rsa = rsa_from_matrices(matrices[subj1], matrices[subj2], args.metric)
         rsa_scores[f"{subj1}_{subj2}"] = rsa
 
+        rsa = rsa_from_matrices(matrices_images[subj1], matrices_images[subj2], args.metric)
+        rsa_images_scores[f"{subj1}_{subj2}"] = rsa
+
+        rsa = rsa_from_matrices(matrices_captions[subj1], matrices_captions[subj2], args.metric)
+        rsa_captions_scores[f"{subj1}_{subj2}"] = rsa
+
     values = list(rsa_scores.values())
     print(f"Between-subject RSA: {np.mean(values):.2f} Std: {np.std(values):.2f}")
 
+    values = list(rsa_images_scores.values())
+    print(f"Between-subject RSA (images): {np.mean(values):.2f} Std: {np.std(values):.2f}")
+
+    values = list(rsa_captions_scores.values())
+    print(f"Between-subject RSA (captions): {np.mean(values):.2f} Std: {np.std(values):.2f}")
+
+    all_rsa_ceilings = {"rsa": rsa_scores, "rsa_images": rsa_images_scores, "rsa_captions": rsa_captions_scores}
     results_file = os.path.join(RSA_NOISE_CEILING_DIR, f"{args.metric}_{args.matrix_metric}.p")
     os.makedirs(RSA_NOISE_CEILING_DIR, exist_ok=True)
-    pickle.dump(rsa_scores, open(results_file, "wb"))
+    pickle.dump(all_rsa_ceilings, open(results_file, "wb"))
 
 
 def get_args():
