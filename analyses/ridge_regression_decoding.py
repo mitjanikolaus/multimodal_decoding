@@ -55,6 +55,7 @@ MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
 MASK_ANATOMICAL_TEMPORAL_CORTEX = "anatomical_temporal"
+MASK_ANATOMICAL_TEMPORAL_CORTEX_EXCLUSIVE = "anatomical_temporal_exclusive"
 
 MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL = "anatomical_temporal_not_visual"
 
@@ -102,6 +103,27 @@ REGIONS_TEMPORAL = ['L G_oc-temp_lat-fusifor',
                     'R S_temporal_inf',
                     'R S_temporal_sup',
                     'R S_temporal_transverse']
+REGIONS_TEMPORAL_EXCLUSIVE = [
+                    'L G_temp_sup-G_T_transv',
+                    'L G_temp_sup-Lateral',
+                    'L G_temp_sup-Plan_polar',
+                    'L G_temp_sup-Plan_tempo',
+                    'L G_temporal_inf',
+                    'L G_temporal_middle',
+                    'L Pole_temporal',
+                    'L S_temporal_inf',
+                    'L S_temporal_sup',
+                    'L S_temporal_transverse',
+                    'R G_temp_sup-G_T_transv',
+                    'R G_temp_sup-Lateral',
+                    'R G_temp_sup-Plan_polar',
+                    'R G_temp_sup-Plan_tempo',
+                    'R G_temporal_inf',
+                    'R G_temporal_middle',
+                    'R Pole_temporal',
+                    'R S_temporal_inf',
+                    'R S_temporal_sup',
+                    'R S_temporal_transverse']
 REGIONS_LANGUAGE_TEST = ['L G_and_S_cingul-Ant', 'R G_and_S_cingul-Ant', 'L G_pariet_inf-Angular',
                          'R G_pariet_inf-Angular', 'R G_front_middle', 'L G_front_middle', 'R G_cingul-Post-dorsal',
                          'L G_cingul-Post-dorsal', 'R G_cingul-Post-ventral', 'L G_cingul-Post-ventral']
@@ -129,6 +151,11 @@ def get_roi_mask(roi_mask_name):
 
     elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX:
         region_names = [label for label in REGIONS_TEMPORAL]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX_EXCLUSIVE:
+        region_names = [label for label in REGIONS_TEMPORAL_EXCLUSIVE]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
