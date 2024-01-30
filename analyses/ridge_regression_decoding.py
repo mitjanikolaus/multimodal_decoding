@@ -52,6 +52,8 @@ MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
 MASK_ANATOMICAL_TEMPORAL_CORTEX = "anatomical_temporal"
 
+MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL = "anatomical_temporal_not_visual"
+
 MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
 
 REGIONS_OCCIPITAL_V1 = ['L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
@@ -120,6 +122,11 @@ def get_roi_mask(roi_mask_name):
 
     elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX:
         region_names = [label for label in REGIONS_TEMPORAL]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL:
+        region_names = [label for label in REGIONS_TEMPORAL if label not in VISUAL_REGIONS_TEMPORAL]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
