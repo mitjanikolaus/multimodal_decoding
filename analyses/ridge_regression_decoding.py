@@ -429,9 +429,11 @@ def run(args):
                                         "predictions": test_predicted_latents,
                                         "latents": test_data_latents}
                         test_results = calculate_eval_metrics(test_results, test_fmri_betas, args)
-                        print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}"
-                              f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.3f}"
-                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.3f}")
+                        print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
+                              f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
+                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}"
+                              f" | RSA (captions): {test_results['rsa_captions']:.2f}"
+                              f" | RSA (images): {test_results['rsa_images']:.2f}")
 
                         results = results | test_results
 
