@@ -29,7 +29,9 @@ AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
 MULTIMODAL_FEATS = 'multi'
-FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS]
+FEATS_SELECT_DEFAULT = 'default'
+FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS,
+                               FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS]
@@ -140,6 +142,19 @@ def get_roi_mask(roi_mask_name):
 
     return roi_mask
 
+
+def get_default_features(model_name):
+    if model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith("llama") or model_name.startswith("mistral") or model_name.startswith("mixtral"):
+        features = LANG_FEATS_ONLY
+    elif model_name.startswith("resnet") or model_name.startswith("vit") or model_name.startswith("dino"):
+        features = VISION_FEATS_ONLY
+    elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith("vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith("flava"):
+        features = CONCAT_FEATS
+    else:
+        raise RuntimeError(f"Unknown default features for {model_name}")
+
+    print(f"Selected default features for {model_name}: {features}")
+    return features
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None,
                        recompute_std_mean=False):
@@ -425,6 +440,8 @@ def run(args):
                     print("MODEL: ", model_name)
 
                     for features in args.features:
+                        if features == FEATS_SELECT_DEFAULT:
+                            features = get_default_features(model_name)
                         print("FEATURES: ", features)
 
                         train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
@@ -499,7 +516,7 @@ def get_args():
     parser.add_argument("--testing-mode", type=str, default='test', choices=TEST_MODE_CHOICES)
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
-    parser.add_argument("--features", type=str, nargs='+', default=[CONCAT_FEATS],
+    parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
