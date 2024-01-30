@@ -5,8 +5,6 @@ import numpy as np
 import os
 import pickle
 
-from scipy.stats import spearmanr, pearsonr
-
 from analyses.ridge_regression_decoding import get_fmri_data, GLM_OUT_DIR, calc_rsa, calc_rsa_images, calc_rsa_captions, \
     create_dissimilarity_matrix, rsa_from_matrices
 
