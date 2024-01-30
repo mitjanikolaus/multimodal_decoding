@@ -320,7 +320,7 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def calculate_eval_metrics(results, args):
+def calculate_eval_metrics(results, fmri_betas, args):
     # take equally sized subsets of samples for captions and images
     stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption'][
                            :args.max_samples_eval_metrics]
@@ -344,9 +344,9 @@ def calculate_eval_metrics(results, args):
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
 
-    results['rsa'] = calc_rsa(val_predictions, val_latents)
-    results['rsa_images'] = calc_rsa_images(val_predictions, val_latents, results["stimulus_types"])
-    results['rsa_captions'] = calc_rsa_captions(val_predictions, val_latents, results["stimulus_types"])
+    results['rsa'] = calc_rsa(fmri_betas, val_latents)
+    results['rsa_images'] = calc_rsa_images(fmri_betas, val_latents, results["stimulus_types"])
+    results['rsa_captions'] = calc_rsa_captions(fmri_betas, val_latents, results["stimulus_types"])
 
     return results
 
@@ -428,7 +428,7 @@ def run(args):
                                         "stimulus_types": test_stim_types,
                                         "predictions": test_predicted_latents,
                                         "latents": test_data_latents}
-                        test_results = calculate_eval_metrics(test_results, args)
+                        test_results = calculate_eval_metrics(test_results, test_fmri_betas, args)
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.3f}"
                               f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.3f}"
                               f" | Pairwise acc (images): {test_results['acc_cosine_images']:.3f}")
