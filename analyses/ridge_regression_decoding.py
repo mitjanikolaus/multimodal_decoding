@@ -126,9 +126,14 @@ REGIONS_TEMPORAL_EXCLUSIVE = [
                     'R S_temporal_inf',
                     'R S_temporal_sup',
                     'R S_temporal_transverse']
-REGIONS_LANGUAGE_TEST = ['L G_and_S_cingul-Ant', 'R G_and_S_cingul-Ant', 'L G_pariet_inf-Angular',
-                         'R G_pariet_inf-Angular', 'R G_front_middle', 'L G_front_middle', 'R G_cingul-Post-dorsal',
-                         'L G_cingul-Post-dorsal', 'R G_cingul-Post-ventral', 'L G_cingul-Post-ventral']
+REGIONS_LANGUAGE_TEST = ['L G_front_inf-Opercular',  # left inferior frontal gyrus
+                         'L G_front_inf-Orbital',  # left orbital inferior frontal gyrus
+                         'L G_front_inf-Triangul'  # left inferior frontal gyrus
+                         'L G_pariet_inf-Angular',  # left angular gyrus
+                         'L G_front_middle',    # left middle frontal gyrus
+                         'L G_front_sup'    # left superior frontal gyrus
+                         'L G_cingul-Post-dorsal',
+                         'L G_cingul-Post-ventral']
 REGIONS_ANGULAR_GYRUS = ['L G_pariet_inf-Angular', 'R G_pariet_inf-Angular']
 
 REGIONS_LEFT_ANGULAR_GYRUS = ['L G_pariet_inf-Angular']
