@@ -50,6 +50,7 @@ DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE_TEST = "anatomical_lang_test"
 MASK_ANATOMICAL_ANGULAR_GYRUS = "anatomical_angular_gyrus"
+MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
 
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
@@ -130,6 +131,8 @@ REGIONS_LANGUAGE_TEST = ['L G_and_S_cingul-Ant', 'R G_and_S_cingul-Ant', 'L G_pa
                          'L G_cingul-Post-dorsal', 'R G_cingul-Post-ventral', 'L G_cingul-Post-ventral']
 REGIONS_ANGULAR_GYRUS = ['L G_pariet_inf-Angular', 'R G_pariet_inf-Angular']
 
+REGIONS_LEFT_ANGULAR_GYRUS = ['L G_pariet_inf-Angular']
+
 
 def get_roi_mask(roi_mask_name):
     destrieux_atlas = fetch_atlas_destrieux_2009()
@@ -168,6 +171,11 @@ def get_roi_mask(roi_mask_name):
 
     elif roi_mask_name == MASK_ANATOMICAL_ANGULAR_GYRUS:
         region_names = [label for label in REGIONS_ANGULAR_GYRUS]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS:
+        region_names = [label for label in REGIONS_LEFT_ANGULAR_GYRUS]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
