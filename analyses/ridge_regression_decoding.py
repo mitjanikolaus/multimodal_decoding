@@ -134,8 +134,13 @@ REGIONS_LANGUAGE_TEST = ['L G_front_inf-Opercular',  # left inferior frontal gyr
                          'L G_pariet_inf-Angular',  # left angular gyrus
                          'L G_front_middle',    # left middle frontal gyrus
                          'L G_front_sup',    # left superior frontal gyrus
-                         'L G_cingul-Post-dorsal',
-                         'L G_cingul-Post-ventral']
+                         'L G_temp_sup-Lateral',    # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe?
+                         'L G_and_S_subcentral',    # Subcentral gyrus (central operculum) and sulci:
+                         'L G_pariet_inf-Supramar',   # Supramarginal gyrus:
+                         'L G_cingul-Post-dorsal',  # ??
+                         'L G_cingul-Post-ventral', # ??
+                         ]
+
 REGIONS_ANGULAR_GYRUS = ['L G_pariet_inf-Angular', 'R G_pariet_inf-Angular']
 
 REGIONS_LEFT_ANGULAR_GYRUS = ['L G_pariet_inf-Angular']
