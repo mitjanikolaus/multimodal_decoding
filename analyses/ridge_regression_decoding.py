@@ -534,6 +534,7 @@ def run(args):
                             "training_mode": training_mode,
                             "testing_mode": args.testing_mode,
                             "mask": mask,
+                            "num_voxels": test_fmri_betas.shape[1],
                             "best_val_acc": True,
                             "cv_results": clf.cv_results_
                         }
