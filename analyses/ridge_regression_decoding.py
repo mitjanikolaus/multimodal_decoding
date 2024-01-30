@@ -48,6 +48,8 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
+MASK_ANATOMICAL_LANGUAGE_TEST = "anatomical_lang_test"
+
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
@@ -100,6 +102,9 @@ REGIONS_TEMPORAL = ['L G_oc-temp_lat-fusifor',
                     'R S_temporal_inf',
                     'R S_temporal_sup',
                     'R S_temporal_transverse']
+REGIONS_LANGUAGE_TEST = ['L G_and_S_cingul-Ant', 'R G_and_S_cingul-Ant', 'L G_pariet_inf-Angular',
+                         'R G_pariet_inf-Angular', 'R G_front_middle', 'L G_front_middle', 'R G_cingul-Post-dorsal',
+                         'L G_cingul-Post-dorsal', 'R G_cingul-Post-ventral', 'L G_cingul-Post-ventral']
 
 
 def get_roi_mask(roi_mask_name):
@@ -127,6 +132,11 @@ def get_roi_mask(roi_mask_name):
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
+    elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE_TEST:
+        region_names = [label for label in REGIONS_LANGUAGE_TEST]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
     elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL:
         region_names = [label for label in REGIONS_TEMPORAL if label not in VISUAL_REGIONS_TEMPORAL]
         values = [label_to_value_dict[label] for label in region_names]
@@ -144,17 +154,21 @@ def get_roi_mask(roi_mask_name):
 
 
 def get_default_features(model_name):
-    if model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith("llama") or model_name.startswith("mistral") or model_name.startswith("mixtral"):
+    if model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
+            "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral"):
         features = LANG_FEATS_ONLY
     elif model_name.startswith("resnet") or model_name.startswith("vit") or model_name.startswith("dino"):
         features = VISION_FEATS_ONLY
-    elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith("vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith("flava"):
+    elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
+            "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
+            "flava"):
         features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
 
     print(f"Selected default features for {model_name}: {features}")
     return features
+
 
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, subject, mode, nn_latent_transform=None,
                        recompute_std_mean=False):
