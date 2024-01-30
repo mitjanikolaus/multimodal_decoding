@@ -50,6 +50,8 @@ MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
+MASK_ANATOMICAL_TEMPORAL_CORTEX = "anatomical_temporal"
+
 MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
 
 REGIONS_OCCIPITAL_V1 = ['L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
@@ -64,6 +66,36 @@ REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occ
                      'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
 VISUAL_REGIONS_TEMPORAL = ['L G_temporal_inf', 'L G_temporal_middle', 'L Pole_temporal', 'L S_temporal_inf',
                            'R G_temporal_inf', 'R G_temporal_middle', 'R Pole_temporal', 'R S_temporal_inf']
+REGIONS_TEMPORAL = ['L G_oc-temp_lat-fusifor',
+                    'L G_oc-temp_med-Lingual',
+                    'L G_oc-temp_med-Parahip',
+                    'L G_temp_sup-G_T_transv',
+                    'L G_temp_sup-Lateral',
+                    'L G_temp_sup-Plan_polar',
+                    'L G_temp_sup-Plan_tempo',
+                    'L G_temporal_inf',
+                    'L G_temporal_middle',
+                    'L Pole_temporal',
+                    'L S_oc-temp_lat',
+                    'L S_oc-temp_med_and_Lingual',
+                    'L S_temporal_inf',
+                    'L S_temporal_sup',
+                    'L S_temporal_transverse',
+                    'R G_oc-temp_lat-fusifor',
+                    'R G_oc-temp_med-Lingual',
+                    'R G_oc-temp_med-Parahip',
+                    'R G_temp_sup-G_T_transv',
+                    'R G_temp_sup-Lateral',
+                    'R G_temp_sup-Plan_polar',
+                    'R G_temp_sup-Plan_tempo',
+                    'R G_temporal_inf',
+                    'R G_temporal_middle',
+                    'R Pole_temporal',
+                    'R S_oc-temp_lat',
+                    'R S_oc-temp_med_and_Lingual',
+                    'R S_temporal_inf',
+                    'R S_temporal_sup',
+                    'R S_temporal_transverse']
 
 
 def get_roi_mask(roi_mask_name):
@@ -83,6 +115,11 @@ def get_roi_mask(roi_mask_name):
 
     elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
         region_names = [label for label in REGIONS_OCCIPITAL_V1]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX:
+        region_names = [label for label in REGIONS_TEMPORAL]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
