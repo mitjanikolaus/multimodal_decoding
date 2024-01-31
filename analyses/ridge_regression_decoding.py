@@ -534,7 +534,6 @@ def run(args):
     for training_mode in args.training_modes:
         for mask in args.masks:
             for subject in args.subjects:
-                print(f"TRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject}")
                 train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
                                                                                                    training_mode,
                                                                                                    roi_mask_name=mask,
@@ -548,7 +547,8 @@ def run(args):
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
-                        print(f"MODEL: {model_name} | FEATURES: {features}")
+                        print(f"TRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                              f"MODEL: {model_name} | FEATURES: {features}")
 
                         train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
                                                                                      args.vision_features,
