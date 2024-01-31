@@ -94,10 +94,10 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-7b", batch_size=10, device="cpu")
     # extractor.extract_features()
 
-    model_weights_path = os.path.join(DATA_DIR, "llama2_13b")
+    model_weights_path = os.path.join(DATA_DIR, "llama2_70b")
     tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
     model = LlamaModel.from_pretrained(model_weights_path)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-13b", batch_size=10, device="cpu")
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-70b", batch_size=5, device="cpu")
     extractor.extract_features()
 
     # model_name = 'facebook/opt-30b'
