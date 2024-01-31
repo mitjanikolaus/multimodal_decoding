@@ -504,11 +504,9 @@ def get_run_str(model_name, features, mask=None, best_val_loss=False, best_val_a
 
 def run(args):
     for training_mode in args.training_modes:
-        print("TRAIN MODE: ", training_mode)
         for mask in args.masks:
-            print("MASK: ", mask)
             for subject in args.subjects:
-                print("SUBJECT: ", subject)
+                print(f"TRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject}")
                 train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
                                                                                                    training_mode,
                                                                                                    roi_mask_name=mask,
@@ -518,12 +516,11 @@ def run(args):
 
                 for model_name in args.models:
                     model_name = model_name.lower()
-                    print("MODEL: ", model_name)
 
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
-                        print("FEATURES: ", features)
+                        print(f"MODEL: {model_name} | FEATURES: {features}")
 
                         train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
                                                                                      args.vision_features,
