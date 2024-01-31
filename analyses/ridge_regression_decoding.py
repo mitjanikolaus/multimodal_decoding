@@ -489,20 +489,23 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def calculate_eval_metrics(results, fmri_betas, args):
+def calculate_eval_metrics(results, fmri_betas):
     # take equally sized subsets of samples for captions and images
-    stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption'][
-                           :args.max_samples_eval_metrics]
-    stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != 'caption'][:args.max_samples_eval_metrics]
+    stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption']
+    stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != 'caption']
     val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
 
-    predictions_caption = results["predictions"][results["stimulus_types"] == 'caption'][:args.max_samples_eval_metrics]
-    predictions_image = results["predictions"][results["stimulus_types"] != 'caption'][:args.max_samples_eval_metrics]
+    predictions_caption = results["predictions"][results["stimulus_types"] == 'caption']
+    predictions_image = results["predictions"][results["stimulus_types"] != 'caption']
     val_predictions = np.concatenate((predictions_caption, predictions_image))
 
-    latents_caption = results["latents"][results["stimulus_types"] == 'caption'][:args.max_samples_eval_metrics]
-    latents_image = results["latents"][results["stimulus_types"] != 'caption'][:args.max_samples_eval_metrics]
+    latents_caption = results["latents"][results["stimulus_types"] == 'caption']
+    latents_image = results["latents"][results["stimulus_types"] != 'caption']
     val_latents = np.concatenate((latents_caption, latents_image))
+
+    fmri_betas_caption = fmri_betas[results["stimulus_types"] == 'caption']
+    fmri_betas_image = fmri_betas[results["stimulus_types"] != 'caption']
+    fmri_betas = np.concatenate((fmri_betas_caption, fmri_betas_image))
 
     for metric in DISTANCE_METRICS:
         acc = pairwise_accuracy(val_latents, val_predictions, val_ids, metric)
@@ -597,7 +600,7 @@ def run(args):
                                         "stimulus_types": test_stim_types,
                                         "predictions": test_predicted_latents,
                                         "latents": test_data_latents}
-                        test_results = calculate_eval_metrics(test_results, test_fmri_betas, args)
+                        test_results = calculate_eval_metrics(test_results, test_fmri_betas)
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
                               f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
                               f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}"
@@ -616,8 +619,6 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("--max-samples-eval-metrics", type=int, default=1000)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
