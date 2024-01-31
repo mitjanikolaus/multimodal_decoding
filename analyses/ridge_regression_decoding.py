@@ -48,11 +48,10 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_ANATOMICAL_LANGUAGE_TEST = "anatomical_lang_test_6"
+MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
+
 MASK_ANATOMICAL_ANGULAR_GYRUS = "anatomical_angular_gyrus"
 MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
-
-MASK_ANATOMICAL_MIDDLE_TEMPORAL_GYRUS = "anatomical_middle_temporal_gyrus"
 
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
@@ -65,93 +64,90 @@ MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL = "anatomical_temporal_not_visual"
 
 MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
 
-REGIONS_OCCIPITAL_V1 = ['L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
-                        'R S_oc_middle_and_Lunatus', 'L Pole_occipital', 'R Pole_occipital']
-REGIONS_OCCIPITAL = ['L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor',
-                     'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital',
-                     'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat',
-                     'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf',
-                     'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual',
-                     'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus',
-                     'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat',
-                     'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
-VISUAL_REGIONS_TEMPORAL = ['L G_temporal_inf', 'L G_temporal_middle', 'L Pole_temporal', 'L S_temporal_inf',
-                           'R G_temporal_inf', 'R G_temporal_middle', 'R Pole_temporal', 'R S_temporal_inf']
-REGIONS_TEMPORAL = ['L G_oc-temp_lat-fusifor',
-                    'L G_oc-temp_med-Lingual',
-                    'L G_oc-temp_med-Parahip',
-                    'L G_temp_sup-G_T_transv',
-                    'L G_temp_sup-Lateral',
-                    'L G_temp_sup-Plan_polar',
-                    'L G_temp_sup-Plan_tempo',
-                    'L G_temporal_inf',
-                    'L G_temporal_middle',
-                    'L Pole_temporal',
-                    'L S_oc-temp_lat',
-                    'L S_oc-temp_med_and_Lingual',
-                    'L S_temporal_inf',
-                    'L S_temporal_sup',
-                    'L S_temporal_transverse',
-                    'R G_oc-temp_lat-fusifor',
-                    'R G_oc-temp_med-Lingual',
-                    'R G_oc-temp_med-Parahip',
-                    'R G_temp_sup-G_T_transv',
-                    'R G_temp_sup-Lateral',
-                    'R G_temp_sup-Plan_polar',
-                    'R G_temp_sup-Plan_tempo',
-                    'R G_temporal_inf',
-                    'R G_temporal_middle',
-                    'R Pole_temporal',
-                    'R S_oc-temp_lat',
-                    'R S_oc-temp_med_and_Lingual',
-                    'R S_temporal_inf',
-                    'R S_temporal_sup',
-                    'R S_temporal_transverse']
+REGIONS_OCCIPITAL_V1 = [
+    'L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
+    'R S_oc_middle_and_Lunatus', 'L Pole_occipital', 'R Pole_occipital']
+REGIONS_OCCIPITAL = [
+    'L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor',
+    'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital',
+    'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat',
+    'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf',
+    'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus',
+    'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat',
+    'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
+REGIONS_TEMPORAL = [
+    'L G_oc-temp_lat-fusifor',
+    'L G_oc-temp_med-Lingual',
+    'L G_oc-temp_med-Parahip',
+    'L G_temp_sup-G_T_transv',
+    'L G_temp_sup-Lateral',
+    'L G_temp_sup-Plan_polar',
+    'L G_temp_sup-Plan_tempo',
+    'L G_temporal_inf',
+    'L G_temporal_middle',
+    'L Pole_temporal',
+    'L S_oc-temp_lat',
+    'L S_oc-temp_med_and_Lingual',
+    'L S_temporal_inf',
+    'L S_temporal_sup',
+    'L S_temporal_transverse',
+    'R G_oc-temp_lat-fusifor',
+    'R G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Parahip',
+    'R G_temp_sup-G_T_transv',
+    'R G_temp_sup-Lateral',
+    'R G_temp_sup-Plan_polar',
+    'R G_temp_sup-Plan_tempo',
+    'R G_temporal_inf',
+    'R G_temporal_middle',
+    'R Pole_temporal',
+    'R S_oc-temp_lat',
+    'R S_oc-temp_med_and_Lingual',
+    'R S_temporal_inf',
+    'R S_temporal_sup',
+    'R S_temporal_transverse']
 REGIONS_TEMPORAL_EXCLUSIVE = [
-                    'L G_temp_sup-G_T_transv',
-                    'L G_temp_sup-Lateral',
-                    'L G_temp_sup-Plan_polar',
-                    'L G_temp_sup-Plan_tempo',
-                    'L G_temporal_inf',
-                    'L G_temporal_middle',
-                    'L Pole_temporal',
-                    'L S_temporal_inf',
-                    'L S_temporal_sup',
-                    'L S_temporal_transverse',
-                    'R G_temp_sup-G_T_transv',
-                    'R G_temp_sup-Lateral',
-                    'R G_temp_sup-Plan_polar',
-                    'R G_temp_sup-Plan_tempo',
-                    'R G_temporal_inf',
-                    'R G_temporal_middle',
-                    'R Pole_temporal',
-                    'R S_temporal_inf',
-                    'R S_temporal_sup',
-                    'R S_temporal_transverse']
-REGIONS_LANGUAGE_TEST = ['L G_front_inf-Opercular',  # left inferior frontal gyrus
-                         'L G_front_inf-Orbital',  # left orbital inferior frontal gyrus
-                         'L G_front_inf-Triangul',  # left inferior frontal gyrus
-                         'L G_pariet_inf-Angular',  # left angular gyrus
-                         'L G_front_middle',    # left middle frontal gyrus
-                         'L G_front_sup',    # left superior frontal gyrus
-                         'L G_temp_sup-Lateral',  # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe?
-                         'L G_temp_sup-Plan_tempo', # Planum temporale of the superior temporal gyrus
-                         'L G_temp_sup-Plan_polar', # Planum polare of the superior temporal gyrus
-                         'L G_and_S_subcentral',    # Subcentral gyrus (central operculum) and sulci:
-                         'L Pole_temporal',
-                         'L G_pariet_inf-Supramar',   # Supramarginal gyrus:
-                         'R G_pariet_inf-Supramar',  # Supramarginal gyrus:
-                         'R G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
-                         'L G_cingul-Post-dorsal',  # ??
-                         'L G_cingul-Post-ventral', # ??
-                         ]
+    'L G_temp_sup-G_T_transv',
+    'L G_temp_sup-Lateral',
+    'L G_temp_sup-Plan_polar',
+    'L G_temp_sup-Plan_tempo',
+    'L G_temporal_inf',
+    'L G_temporal_middle',
+    'L Pole_temporal',
+    'L S_temporal_inf',
+    'L S_temporal_sup',
+    'L S_temporal_transverse',
+    'R G_temp_sup-G_T_transv',
+    'R G_temp_sup-Lateral',
+    'R G_temp_sup-Plan_polar',
+    'R G_temp_sup-Plan_tempo',
+    'R G_temporal_inf',
+    'R G_temporal_middle',
+    'R Pole_temporal',
+    'R S_temporal_inf',
+    'R S_temporal_sup',
+    'R S_temporal_transverse']
 
+REGIONS_LANGUAGE = [
+    'L G_front_inf-Opercular',  # left inferior frontal gyrus
+    'L G_front_inf-Orbital',  # left orbital inferior frontal gyrus
+    'L G_front_inf-Triangul',  # left inferior frontal gyrus
+    'L G_pariet_inf-Angular',  # left angular gyrus
+    'L G_front_middle',  # left middle frontal gyrus
+    'L G_front_sup',  # left superior frontal gyrus
+    'L G_temp_sup-Lateral',  # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe?
+    'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
+    'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
+    'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci:
+    'L Pole_temporal',  # Temporal pole
+    'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
+    'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
+    'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
+]
 
 REGIONS_ANGULAR_GYRUS = ['L G_pariet_inf-Angular', 'R G_pariet_inf-Angular']
-
 REGIONS_LEFT_ANGULAR_GYRUS = ['L G_pariet_inf-Angular']
-
-REGIONS_MIDDLE_TEMPORAL_GYRUS = ['L G_temporal_middle', 'R G_temporal_middle']
 
 
 def get_roi_mask(roi_mask_name):
@@ -159,12 +155,7 @@ def get_roi_mask(roi_mask_name):
     label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
     atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
 
-    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX:
-        region_names = [label for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL:
+    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL:
         region_names = [label for label in REGIONS_OCCIPITAL]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
@@ -184,8 +175,8 @@ def get_roi_mask(roi_mask_name):
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
-    elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE_TEST:
-        region_names = [label for label in REGIONS_LANGUAGE_TEST]
+    elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE:
+        region_names = [label for label in REGIONS_LANGUAGE]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
@@ -198,21 +189,6 @@ def get_roi_mask(roi_mask_name):
         region_names = [label for label in REGIONS_LEFT_ANGULAR_GYRUS]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_MIDDLE_TEMPORAL_GYRUS:
-        region_names = [label for label in REGIONS_MIDDLE_TEMPORAL_GYRUS]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL:
-        region_names = [label for label in REGIONS_TEMPORAL if label not in VISUAL_REGIONS_TEMPORAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_NOT_VISUAL_CORTEX:
-        region_names = [label for label in VISUAL_REGIONS_TEMPORAL + REGIONS_OCCIPITAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = ~np.isin(atlas_map, values)
 
     else:
         raise RuntimeError("Unknown mask: ", roi_mask_name)
@@ -228,7 +204,7 @@ def get_default_features(model_name):
         features = VISION_FEATS_ONLY
     elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-            "flava"):
+        "flava"):
         features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
