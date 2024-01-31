@@ -138,7 +138,7 @@ REGIONS_LANGUAGE_TEST = ['L G_front_inf-Opercular',  # left inferior frontal gyr
                          'L G_temp_sup-Plan_tempo', # Planum temporale of the superior temporal gyrus
                          'L G_temp_sup-Plan_polar', # Planum polare of the superior temporal gyrus
                          'L G_and_S_subcentral',    # Subcentral gyrus (central operculum) and sulci:
-                         'L Temporal pole',
+                         'L Pole_temporal',
                          'L G_pariet_inf-Supramar',   # Supramarginal gyrus:
                          'L G_cingul-Post-dorsal',  # ??
                          'L G_cingul-Post-ventral', # ??
