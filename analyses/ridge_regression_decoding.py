@@ -97,19 +97,20 @@ REGIONS_OCCIPITAL_EXCLUSIVE = [
     'R S_oc_middle_and_Lunatus',
     'R S_oc_sup_and_transversal',
     'R S_occipital_ant',
-    'R S_parieto_occipital']
+    'R S_parieto_occipital',
+    'L G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Lingual',
+]
 
 REGIONS_HIGH_LEVEL_VISUAL = [
     'L G_oc-temp_lat-fusifor',
-    'L G_oc-temp_med-Parahip',
-    'L G_oc-temp_med-Lingual',
-    'L S_oc-temp_lat',
-    'L S_oc-temp_med_and_Lingual',
     'R G_oc-temp_lat-fusifor',
-    'R S_oc-temp_med_and_Lingual',
-    'R G_oc-temp_med-Lingual',
-    'R S_oc-temp_lat',
+    'L G_oc-temp_med-Parahip',
     'R G_oc-temp_med-Parahip',
+    'L S_oc-temp_med_and_Lingual',
+    'R S_oc-temp_med_and_Lingual',
+    'L S_oc-temp_lat',
+    'R S_oc-temp_lat',
     'L G_temporal_inf',
     'L G_temporal_middle',
     'L S_temporal_inf',
