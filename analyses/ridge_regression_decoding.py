@@ -84,8 +84,8 @@ REGIONS_OCCIPITAL = [
 REGIONS_OCCIPITAL_EXCLUSIVE = [
     'L G_and_S_occipital_inf',
     'L G_occipital_middle',
-    'L G_occipital_sup'
-    , 'L Pole_occipital',
+    'L G_occipital_sup',
+    'L Pole_occipital',
     'L S_oc_middle_and_Lunatus',
     'L S_oc_sup_and_transversal',
     'L S_occipital_ant',
@@ -103,7 +103,7 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'L G_oc-temp_lat-fusifor',
     'L G_oc-temp_med-Parahip',
     'L G_oc-temp_med-Lingual',
-    'L S_oc-temp_lat'
+    'L S_oc-temp_lat',
     'L S_oc-temp_med_and_Lingual',
     'R G_oc-temp_lat-fusifor',
     'R S_oc-temp_med_and_Lingual',
@@ -115,7 +115,7 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'L S_temporal_inf',
     'R G_temporal_inf',
     'R G_temporal_middle',
-    'R S_temporal_inf'
+    'R S_temporal_inf',
 ]  # TODO 'R Pole_temporal' , 'L Pole_temporal'
 
 REGIONS_TEMPORAL = [
