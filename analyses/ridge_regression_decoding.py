@@ -48,7 +48,7 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_ANATOMICAL_LANGUAGE_TEST = "anatomical_lang_test_3"
+MASK_ANATOMICAL_LANGUAGE_TEST = "anatomical_lang_test_4"
 MASK_ANATOMICAL_ANGULAR_GYRUS = "anatomical_angular_gyrus"
 MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
 
@@ -134,8 +134,9 @@ REGIONS_LANGUAGE_TEST = ['L G_front_inf-Opercular',  # left inferior frontal gyr
                          'L G_pariet_inf-Angular',  # left angular gyrus
                          'L G_front_middle',    # left middle frontal gyrus
                          'L G_front_sup',    # left superior frontal gyrus
+                         'L G_temp_sup-Lateral',  # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe?
                          'L G_temp_sup-Plan_tempo', # Planum temporale of the superior temporal gyrus
-                         'L G_temp_sup-Lateral',    # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe?
+                         'L G_temp_sup-Plan_polar', # Planum polare of the superior temporal gyrus
                          'L G_and_S_subcentral',    # Subcentral gyrus (central operculum) and sulci:
                          'L G_pariet_inf-Supramar',   # Supramarginal gyrus:
                          'L G_cingul-Post-dorsal',  # ??
