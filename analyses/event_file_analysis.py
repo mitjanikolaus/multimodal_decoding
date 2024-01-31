@@ -11,17 +11,23 @@ from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR
 def subject_performance(subj):
     path = os.path.join(FMRI_DATA_DIR, f'fmri_data/bids/{subj}/')
     sess = sorted(list(glob(os.path.join(path, 'ses-*'))))
-    print(f"Subject: {subj} Number of sessions: {len(sess)}")
+    print(f"Subject: {subj}\nNumber of sessions: {len(sess)}")
 
     confusion = np.zeros((2, 2)).astype('int')
-    total_num_events = 0
+    total_num_runs = 0
+    runs_per_session = dict()
+    stimuli_per_run = dict()
+    stim_ids = []
     for ses in sess:
         events = sorted(list(glob(os.path.join(ses, "func/*events*.tsv"))))
-        total_num_events += len(events)
+        total_num_runs += len(events)
+        runs_per_session[ses] = len(events)
         for event in events:
             data = pd.read_csv(event, sep='\t')
             condition = np.array(data['condition_name'])
             allowed = condition != 0
+            stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
+            stim_ids.extend(list(condition[condition != 0]))
 
             one_back = np.array(data['one_back'])[allowed]
             response = np.array(data['subj_resp'])[allowed]
@@ -33,12 +39,19 @@ def subject_performance(subj):
 
     error_rate_false_positives = 100 * confusion[0, 1] / confusion[0].sum()
     error_rate_false_negatives = 100 * confusion[1, 0] / confusion[1].sum()
-    print("Total number of events: ", total_num_events)
+    # print(f"Stimuli per session: {stimuli_per_run}")
+    print(f"Mean stimuli per session: {np.mean(list(stimuli_per_run.values()))}")
+
+    # print(f"Runs per session: {runs_per_session}")
+    print(f"Min runs per session: {np.min(list(runs_per_session.values()))}")
+    print(f"Max runs per session: {np.max(list(runs_per_session.values()))}")
+
+    print("Total number of runs: ", total_num_runs)
     print(f"{' ':10s} {'stim':>6s} {'oneback':>10s} {'error %':>10s}")
     print(f"{'stim':10s} {confusion[0, 0]:6d} {confusion[0, 1]:10d} {error_rate_false_positives:10.2f}")
     print(f"{'oneback':10s} {confusion[1, 0]:6d} {confusion[1, 1]:10d} {error_rate_false_negatives:10.2f}")
-
-    return error_rate_false_positives, error_rate_false_negatives
+    print("")
+    return error_rate_false_positives, error_rate_false_negatives, stim_ids
 
 
 def get_oneback_errors(subj):
@@ -67,8 +80,10 @@ if __name__ == "__main__":
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
     results = []
+    subject_stim_ids = dict()
     for subj in SUBJECTS:
-        fp, fn = subject_performance(subj)
+        fp, fn, stim_ids = subject_performance(subj)
+        subject_stim_ids[subj] = stim_ids
         # get_oneback_errors(subj)
         results.append({"subject": subj, "metric": "false_positives", "value": fp})
         results.append({"subject": subj, "metric": "false_negatives", "value": fn})
