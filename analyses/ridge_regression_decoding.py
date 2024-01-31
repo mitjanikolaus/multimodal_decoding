@@ -116,7 +116,7 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R G_temporal_inf',
     'R G_temporal_middle',
     'R S_temporal_inf',
-]  # TODO 'R Pole_temporal' , 'L Pole_temporal'
+]
 
 REGIONS_TEMPORAL = [
     'L G_oc-temp_lat-fusifor',
@@ -149,6 +149,7 @@ REGIONS_TEMPORAL = [
     'R S_temporal_inf',
     'R S_temporal_sup',
     'R S_temporal_transverse']
+
 REGIONS_TEMPORAL_EXCLUSIVE = [
     'L G_temp_sup-G_T_transv',
     'L G_temp_sup-Lateral',
