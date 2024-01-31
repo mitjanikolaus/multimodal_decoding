@@ -57,6 +57,10 @@ MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
+MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
+
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
+
 MASK_ANATOMICAL_TEMPORAL_CORTEX = "anatomical_temporal"
 MASK_ANATOMICAL_TEMPORAL_CORTEX_EXCLUSIVE = "anatomical_temporal_exclusive"
 
@@ -76,6 +80,44 @@ REGIONS_OCCIPITAL = [
     'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus',
     'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat',
     'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
+
+REGIONS_OCCIPITAL_EXCLUSIVE = [
+    'L G_and_S_occipital_inf',
+    'L G_occipital_middle',
+    'L G_occipital_sup'
+    , 'L Pole_occipital',
+    'L S_oc_middle_and_Lunatus',
+    'L S_oc_sup_and_transversal',
+    'L S_occipital_ant',
+    'L S_parieto_occipital',
+    'R G_and_S_occipital_inf',
+    'R G_occipital_middle',
+    'R G_occipital_sup',
+    'R Pole_occipital',
+    'R S_oc_middle_and_Lunatus',
+    'R S_oc_sup_and_transversal',
+    'R S_occipital_ant',
+    'R S_parieto_occipital']
+
+REGIONS_HIGH_LEVEL_VISUAL = [
+    'L G_oc-temp_lat-fusifor',
+    'L G_oc-temp_med-Parahip',
+    'L G_oc-temp_med-Lingual',
+    'L S_oc-temp_lat'
+    'L S_oc-temp_med_and_Lingual',
+    'R G_oc-temp_lat-fusifor',
+    'R S_oc-temp_med_and_Lingual',
+    'R G_oc-temp_med-Lingual',
+    'R S_oc-temp_lat',
+    'R G_oc-temp_med-Parahip',
+    'L G_temporal_inf',
+    'L G_temporal_middle',
+    'L S_temporal_inf',
+    'R G_temporal_inf',
+    'R G_temporal_middle',
+    'R S_temporal_inf'
+]  # TODO 'R Pole_temporal' , 'L Pole_temporal'
+
 REGIONS_TEMPORAL = [
     'L G_oc-temp_lat-fusifor',
     'L G_oc-temp_med-Lingual',
@@ -162,6 +204,16 @@ def get_roi_mask(roi_mask_name):
 
     elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
         region_names = [label for label in REGIONS_OCCIPITAL_V1]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE:
+        region_names = [label for label in REGIONS_OCCIPITAL_EXCLUSIVE]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_HIGH_LEVEL:
+        region_names = [label for label in REGIONS_HIGH_LEVEL_VISUAL]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
