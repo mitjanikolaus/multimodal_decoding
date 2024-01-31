@@ -52,6 +52,7 @@ MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
 
 MASK_ANATOMICAL_ANGULAR_GYRUS = "anatomical_angular_gyrus"
 MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
+MASK_ANATOMICAL_LEFT_TEMPORAL_POLE = "anatomical_left_temporal_pole"
 
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
 MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
@@ -184,7 +185,6 @@ REGIONS_LANGUAGE = [
     'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
     'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci:
-    'L Pole_temporal',  # Temporal pole
     'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
     'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
     'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
@@ -192,6 +192,7 @@ REGIONS_LANGUAGE = [
 
 REGIONS_ANGULAR_GYRUS = ['L G_pariet_inf-Angular', 'R G_pariet_inf-Angular']
 REGIONS_LEFT_ANGULAR_GYRUS = ['L G_pariet_inf-Angular']
+REGIONS_LEFT_TEMPORAL_POLE = ['L Pole_temporal']
 
 
 def get_roi_mask(roi_mask_name):
@@ -241,6 +242,11 @@ def get_roi_mask(roi_mask_name):
 
     elif roi_mask_name == MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS:
         region_names = [label for label in REGIONS_LEFT_ANGULAR_GYRUS]
+        values = [label_to_value_dict[label] for label in region_names]
+        roi_mask = np.isin(atlas_map, values)
+
+    elif roi_mask_name == MASK_ANATOMICAL_LEFT_TEMPORAL_POLE:
+        region_names = [label for label in REGIONS_LEFT_TEMPORAL_POLE]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
 
