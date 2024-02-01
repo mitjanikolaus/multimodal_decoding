@@ -544,6 +544,7 @@ def get_run_str(model_name, features, mask=None, best_val_loss=False, best_val_a
 def run(args):
     for training_mode in args.training_modes:
         for mask in args.masks:
+            mask = None if mask.lower() == "none" else mask
             for subject in args.subjects:
                 train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
                                                                                                    training_mode,
