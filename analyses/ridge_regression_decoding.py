@@ -359,6 +359,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
     gray_matter_mask_ras = nib.as_closest_canonical(gray_matter_mask_img)
     gray_matter_mask_ras_data = gray_matter_mask_ras.get_fdata()
     gray_matter_mask = gray_matter_mask_ras_data == 1
+    print(f"Gray matter mask size: {gray_matter_mask.sum()}")
 
     if roi_mask_name is not None:
         roi_mask = get_roi_mask(roi_mask_name)
