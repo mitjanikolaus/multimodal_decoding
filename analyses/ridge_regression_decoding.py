@@ -363,7 +363,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
 
     if roi_mask_name is not None:
         roi_mask = get_roi_mask(roi_mask_name)
-        print(f"Applying ROI mask of size {roi_mask.sum()}")
+        print(f"Applying ROI {roi_mask_name} mask of size {roi_mask.sum()}")
         print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
 
     mask = gray_matter_mask
