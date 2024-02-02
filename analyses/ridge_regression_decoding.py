@@ -560,7 +560,7 @@ def run(args):
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
-                        print(f"TRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                        print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                               f"MODEL: {model_name} | FEATURES: {features}")
 
                         train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
