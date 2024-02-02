@@ -55,7 +55,6 @@ MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
 MASK_ANATOMICAL_LEFT_TEMPORAL_POLE = "anatomical_left_temporal_pole"
 
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
-MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
 MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
@@ -72,15 +71,6 @@ MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
 REGIONS_OCCIPITAL_V1 = [
     'L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
     'R S_oc_middle_and_Lunatus', 'L Pole_occipital', 'R Pole_occipital']
-REGIONS_OCCIPITAL = [
-    'L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor',
-    'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital',
-    'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat',
-    'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf',
-    'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus',
-    'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat',
-    'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
 
 REGIONS_OCCIPITAL_EXCLUSIVE = [
     'L G_and_S_occipital_inf',
@@ -201,12 +191,7 @@ def get_roi_mask(roi_mask_name):
     label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
     atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
 
-    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL:
-        region_names = [label for label in REGIONS_OCCIPITAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
+    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
         region_names = [label for label in REGIONS_OCCIPITAL_V1]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
@@ -265,7 +250,7 @@ def get_default_features(model_name):
         features = VISION_FEATS_ONLY
     elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava") or model_name.startswith("random-flava"):
+        "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower"):
         features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
@@ -364,7 +349,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
 
     if roi_mask_name is not None:
         roi_mask = get_roi_mask(roi_mask_name)
-        print(f"Applying ROI mask of size {roi_mask.sum()}")
+        print(f"Applying ROI {roi_mask_name} mask of size {roi_mask.sum()}")
         print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
 
     mask = gray_matter_mask
@@ -525,9 +510,9 @@ def calculate_eval_metrics(results, fmri_betas):
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
 
-    results['rsa'] = calc_rsa(fmri_betas, val_latents)
-    results['rsa_images'] = calc_rsa_images(fmri_betas, val_latents, results["stimulus_types"])
-    results['rsa_captions'] = calc_rsa_captions(fmri_betas, val_latents, results["stimulus_types"])
+    # results['rsa'] = calc_rsa(fmri_betas, val_latents)
+    # results['rsa_images'] = calc_rsa_images(fmri_betas, val_latents, results["stimulus_types"])
+    # results['rsa_captions'] = calc_rsa_captions(fmri_betas, val_latents, results["stimulus_types"])
 
     return results
 
@@ -561,7 +546,7 @@ def run(args):
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
-                        print(f"TRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                        print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                               f"MODEL: {model_name} | FEATURES: {features}")
 
                         train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
@@ -613,9 +598,9 @@ def run(args):
                         test_results = calculate_eval_metrics(test_results, test_fmri_betas)
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
                               f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
-                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}"
-                              f" | RSA (captions): {test_results['rsa_captions']:.2f}"
-                              f" | RSA (images): {test_results['rsa_images']:.2f}")
+                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}")
+                              # f" | RSA (captions): {test_results['rsa_captions']:.2f}"
+                              # f" | RSA (images): {test_results['rsa_images']:.2f}")
 
                         results = results | test_results
 
