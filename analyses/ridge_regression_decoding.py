@@ -264,7 +264,7 @@ def get_default_features(model_name):
         features = VISION_FEATS_ONLY
     elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava"):
+        "flava") or model_name.startswith("bridgetower"):
         features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
