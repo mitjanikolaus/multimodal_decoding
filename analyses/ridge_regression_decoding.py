@@ -264,7 +264,7 @@ def get_default_features(model_name):
         features = VISION_FEATS_ONLY
     elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava") or model_name.startswith("bridgetower"):
+        "flava") or model_name.startswith("random-flava"):
         features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
@@ -643,7 +643,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e4, 1e5, 1e6, 1e7])
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
