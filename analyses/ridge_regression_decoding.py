@@ -55,7 +55,6 @@ MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
 MASK_ANATOMICAL_LEFT_TEMPORAL_POLE = "anatomical_left_temporal_pole"
 
 MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
-MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL = "anatomical_visual_occipital"
 MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
 
 MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
@@ -72,15 +71,6 @@ MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
 REGIONS_OCCIPITAL_V1 = [
     'L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
     'R S_oc_middle_and_Lunatus', 'L Pole_occipital', 'R Pole_occipital']
-REGIONS_OCCIPITAL = [
-    'L G_and_S_occipital_inf', 'L G_occipital_middle', 'L G_occipital_sup', 'L G_oc-temp_lat-fusifor',
-    'L G_oc-temp_med-Lingual', 'L G_oc-temp_med-Parahip', 'L Pole_occipital',
-    'L S_oc_middle_and_Lunatus', 'L S_oc_sup_and_transversal', 'L S_occipital_ant', 'L S_oc-temp_lat',
-    'L S_oc-temp_med_and_Lingual', 'L S_parieto_occipital', 'R G_and_S_occipital_inf',
-    'R G_occipital_middle', 'R G_occipital_sup', 'R G_oc-temp_lat-fusifor', 'R G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Parahip', 'R Pole_occipital', 'R S_oc_middle_and_Lunatus',
-    'R S_oc_sup_and_transversal', 'R S_occipital_ant', 'R S_oc-temp_lat',
-    'R S_oc-temp_med_and_Lingual', 'R S_parieto_occipital']
 
 REGIONS_OCCIPITAL_EXCLUSIVE = [
     'L G_and_S_occipital_inf',
@@ -200,12 +190,7 @@ def get_roi_mask(roi_mask_name):
     label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
     atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
 
-    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_OCCIPITAL:
-        region_names = [label for label in REGIONS_OCCIPITAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
+    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
         region_names = [label for label in REGIONS_OCCIPITAL_V1]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)
