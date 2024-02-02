@@ -524,9 +524,9 @@ def calculate_eval_metrics(results, fmri_betas):
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
 
-    results['rsa'] = calc_rsa(fmri_betas, val_latents)
-    results['rsa_images'] = calc_rsa_images(fmri_betas, val_latents, results["stimulus_types"])
-    results['rsa_captions'] = calc_rsa_captions(fmri_betas, val_latents, results["stimulus_types"])
+    # results['rsa'] = calc_rsa(fmri_betas, val_latents)
+    # results['rsa_images'] = calc_rsa_images(fmri_betas, val_latents, results["stimulus_types"])
+    # results['rsa_captions'] = calc_rsa_captions(fmri_betas, val_latents, results["stimulus_types"])
 
     return results
 
@@ -612,9 +612,9 @@ def run(args):
                         test_results = calculate_eval_metrics(test_results, test_fmri_betas)
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
                               f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
-                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}"
-                              f" | RSA (captions): {test_results['rsa_captions']:.2f}"
-                              f" | RSA (images): {test_results['rsa_images']:.2f}")
+                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}")
+                              # f" | RSA (captions): {test_results['rsa_captions']:.2f}"
+                              # f" | RSA (images): {test_results['rsa_images']:.2f}")
 
                         results = results | test_results
 
