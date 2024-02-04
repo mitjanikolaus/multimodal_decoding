@@ -133,15 +133,13 @@ MASK_FUNCTIONAL_VISUAL2 = "functional_Visual2"
 
 
 def get_functional_mask(roi_mask_name, ref_img):
+    ji_conv_filename = 'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt'
+    ji_conversion = pd.read_csv(ji_conv_filename, delimiter='\t')
+
     network_name = roi_mask_name.split("_")[1]
-
-    filename = 'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt'
-    ji_conversion = pd.read_csv(filename, delimiter='\t')
-
     glasser_labels = ji_conversion[ji_conversion.NETWORK == network_name].GLASSERLABELNAME.dropna().unique()
 
     atlas_hcp = nib.load('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.nii.gz')
-
     hcp_resampled = resample_to_img(atlas_hcp, ref_img, interpolation='nearest')
     hcp_data = hcp_resampled.get_fdata().round().astype(np.int32)
 
