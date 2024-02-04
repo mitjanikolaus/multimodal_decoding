@@ -139,15 +139,20 @@ def get_functional_mask(roi_mask_name, ref_img):
     network_name = roi_mask_name.split("_")[1]
     glasser_labels = ji_conversion[ji_conversion.NETWORK == network_name].GLASSERLABELNAME.dropna().unique()
 
-    atlas_hcp = nib.load('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.nii.gz')
+    atlas_hcp = nib.load('atlas_data/MNI_Glasser_HCP_v1.0.nii.gz')
     hcp_resampled = resample_to_img(atlas_hcp, ref_img, interpolation='nearest')
     hcp_data = hcp_resampled.get_fdata().round().astype(np.int32)
 
     glasser_label_to_idx = pd.read_csv('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt',
                                        delimiter=' ', names=['idx', 'label'], index_col=1)
 
-    # TODO: lateralization?
-    ids = np.unique([glasser_label_to_idx.loc[label.replace('R_', 'L_')].idx for label in glasser_labels])
+    def get_idx(label):
+        idx = glasser_label_to_idx.loc[label.replace('R_', 'L_')].idx
+        if label.startswith("R_"):
+            idx += 1000
+        return idx
+
+    ids = np.unique([get_idx(label) for label in glasser_labels])
     roi_mask = np.isin(hcp_data, ids)
     return roi_mask
 
