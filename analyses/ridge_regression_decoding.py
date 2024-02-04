@@ -24,7 +24,7 @@ import pandas as pd
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, \
-    MULTIMODAL_FEAT_KEY
+    MULTIMODAL_FEAT_KEY, ROOT_DIR
 
 CONCAT_FEATS = 'concat'
 AVG_FEATS = 'avg'
@@ -133,17 +133,17 @@ MASK_FUNCTIONAL_VISUAL2 = "functional_Visual2"
 
 
 def get_functional_mask(roi_mask_name, ref_img):
-    ji_conv_filename = 'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt'
+    ji_conv_filename = os.path.join(ROOT_DIR, 'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt')
     ji_conversion = pd.read_csv(ji_conv_filename, delimiter='\t')
 
     network_name = roi_mask_name.split("_")[1]
     glasser_labels = ji_conversion[ji_conversion.NETWORK == network_name].GLASSERLABELNAME.dropna().unique()
 
-    atlas_hcp = nib.load('atlas_data/MNI_Glasser_HCP_v1.0.nii.gz')
+    atlas_hcp = nib.load(os.path.join(ROOT_DIR, 'atlas_data/MNI_Glasser_HCP_v1.0.nii.gz'))
     hcp_resampled = resample_to_img(atlas_hcp, ref_img, interpolation='nearest')
     hcp_data = hcp_resampled.get_fdata().round().astype(np.int32)
 
-    glasser_label_to_idx = pd.read_csv('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt',
+    glasser_label_to_idx = pd.read_csv(os.path.join(ROOT_DIR, 'atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt'),
                                        delimiter=' ', names=['idx', 'label'], index_col=1)
 
     def get_idx(label):
