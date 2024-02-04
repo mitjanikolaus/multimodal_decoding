@@ -9,6 +9,7 @@ import time
 import numpy as np
 import nibabel as nib
 from nilearn.datasets import fetch_atlas_destrieux_2009
+from nilearn.image import resample_to_img
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.linear_model import Ridge
@@ -19,6 +20,7 @@ from glob import glob
 import pickle
 from decoding_utils import get_distance_matrix
 from tqdm import trange
+import pandas as pd
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, \
@@ -49,28 +51,8 @@ GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
-
-MASK_ANATOMICAL_ANGULAR_GYRUS = "anatomical_angular_gyrus"
-MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS = "anatomical_left_angular_gyrus"
-MASK_ANATOMICAL_LEFT_TEMPORAL_POLE = "anatomical_left_temporal_pole"
-
-MASK_ANATOMICAL_VISUAL_CORTEX = "anatomical_visual"
-MASK_ANATOMICAL_VISUAL_CORTEX_V1 = "anatomical_visual_v1"
-
 MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
-
 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
-
-MASK_ANATOMICAL_TEMPORAL_CORTEX = "anatomical_temporal"
-MASK_ANATOMICAL_TEMPORAL_CORTEX_EXCLUSIVE = "anatomical_temporal_exclusive"
-
-MASK_ANATOMICAL_TEMPORAL_CORTEX_NOT_VISUAL = "anatomical_temporal_not_visual"
-
-MASK_ANATOMICAL_NOT_VISUAL_CORTEX = "anatomical_not_visual"
-
-REGIONS_OCCIPITAL_V1 = [
-    'L G_occipital_middle', 'R G_occipital_middle', 'L S_oc_middle_and_Lunatus',
-    'R S_oc_middle_and_Lunatus', 'L Pole_occipital', 'R Pole_occipital']
 
 REGIONS_OCCIPITAL_EXCLUSIVE = [
     'L G_and_S_occipital_inf',
@@ -110,60 +92,6 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R S_temporal_inf',
 ]
 
-REGIONS_TEMPORAL = [
-    'L G_oc-temp_lat-fusifor',
-    'L G_oc-temp_med-Lingual',
-    'L G_oc-temp_med-Parahip',
-    'L G_temp_sup-G_T_transv',
-    'L G_temp_sup-Lateral',
-    'L G_temp_sup-Plan_polar',
-    'L G_temp_sup-Plan_tempo',
-    'L G_temporal_inf',
-    'L G_temporal_middle',
-    'L Pole_temporal',
-    'L S_oc-temp_lat',
-    'L S_oc-temp_med_and_Lingual',
-    'L S_temporal_inf',
-    'L S_temporal_sup',
-    'L S_temporal_transverse',
-    'R G_oc-temp_lat-fusifor',
-    'R G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Parahip',
-    'R G_temp_sup-G_T_transv',
-    'R G_temp_sup-Lateral',
-    'R G_temp_sup-Plan_polar',
-    'R G_temp_sup-Plan_tempo',
-    'R G_temporal_inf',
-    'R G_temporal_middle',
-    'R Pole_temporal',
-    'R S_oc-temp_lat',
-    'R S_oc-temp_med_and_Lingual',
-    'R S_temporal_inf',
-    'R S_temporal_sup',
-    'R S_temporal_transverse']
-
-REGIONS_TEMPORAL_EXCLUSIVE = [
-    'L G_temp_sup-G_T_transv',
-    'L G_temp_sup-Lateral',
-    'L G_temp_sup-Plan_polar',
-    'L G_temp_sup-Plan_tempo',
-    'L G_temporal_inf',
-    'L G_temporal_middle',
-    'L Pole_temporal',
-    'L S_temporal_inf',
-    'L S_temporal_sup',
-    'L S_temporal_transverse',
-    'R G_temp_sup-G_T_transv',
-    'R G_temp_sup-Lateral',
-    'R G_temp_sup-Plan_polar',
-    'R G_temp_sup-Plan_tempo',
-    'R G_temporal_inf',
-    'R G_temporal_middle',
-    'R Pole_temporal',
-    'R S_temporal_inf',
-    'R S_temporal_sup',
-    'R S_temporal_transverse']
-
 REGIONS_LANGUAGE = [
     'L G_front_inf-Opercular',  # left inferior frontal gyrus
     'L G_front_inf-Orbital',  # left orbital inferior frontal gyrus
@@ -180,65 +108,62 @@ REGIONS_LANGUAGE = [
     'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
 ]
 
-REGIONS_ANGULAR_GYRUS = ['L G_pariet_inf-Angular', 'R G_pariet_inf-Angular']
-REGIONS_LEFT_ANGULAR_GYRUS = ['L G_pariet_inf-Angular']
-REGIONS_LEFT_TEMPORAL_POLE = ['L Pole_temporal']
 
-
-def get_roi_mask(roi_mask_name):
+def get_anatomical_mask(roi_mask_name):
     destrieux_atlas = fetch_atlas_destrieux_2009()
-    label_to_value_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
+    label_to_id_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
     atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
-
-    if roi_mask_name == MASK_ANATOMICAL_VISUAL_CORTEX_V1:
-        region_names = [label for label in REGIONS_OCCIPITAL_V1]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE:
+    if roi_mask_name == MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE:
         region_names = [label for label in REGIONS_OCCIPITAL_EXCLUSIVE]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
     elif roi_mask_name == MASK_ANATOMICAL_VISUAL_HIGH_LEVEL:
         region_names = [label for label in REGIONS_HIGH_LEVEL_VISUAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX:
-        region_names = [label for label in REGIONS_TEMPORAL]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_TEMPORAL_CORTEX_EXCLUSIVE:
-        region_names = [label for label in REGIONS_TEMPORAL_EXCLUSIVE]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
     elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE:
         region_names = [label for label in REGIONS_LANGUAGE]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_ANGULAR_GYRUS:
-        region_names = [label for label in REGIONS_ANGULAR_GYRUS]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_LEFT_ANGULAR_GYRUS:
-        region_names = [label for label in REGIONS_LEFT_ANGULAR_GYRUS]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
-    elif roi_mask_name == MASK_ANATOMICAL_LEFT_TEMPORAL_POLE:
-        region_names = [label for label in REGIONS_LEFT_TEMPORAL_POLE]
-        values = [label_to_value_dict[label] for label in region_names]
-        roi_mask = np.isin(atlas_map, values)
-
     else:
         raise RuntimeError("Unknown mask: ", roi_mask_name)
 
+    ids = [label_to_id_dict[label] for label in region_names]
+    roi_mask = np.isin(atlas_map, ids)
     return roi_mask
+
+
+MASK_FUNCTIONAL_LANGUAGE = "functional_Language"
+MASK_FUNCTIONAL_VISUAL1 = "functional_Visual1"
+MASK_FUNCTIONAL_VISUAL2 = "functional_Visual2"
+
+
+def get_functional_mask(roi_mask_name, ref_img):
+    network_name = roi_mask_name.split("_")[1]
+
+    filename = 'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt'
+    ji_conversion = pd.read_csv(filename, delimiter='\t')
+
+    glasser_labels = ji_conversion[ji_conversion.NETWORK == network_name].GLASSERLABELNAME.dropna().unique()
+    print(glasser_labels)
+
+    atlas_hcp = nib.load('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.nii.gz')
+
+    hcp_resampled = resample_to_img(atlas_hcp, ref_img, interpolation='nearest')
+    hcp_data = hcp_resampled.get_fdata().round().astype(np.int32)
+
+    glasser_label_to_idx = pd.read_csv('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt',
+                                       delimiter=' ', names=['idx', 'label'], index_col=1)
+
+    # TODO: lateralization?
+    ids = np.unique([glasser_label_to_idx.loc[label.replace('R_', 'L_')].idx for label in glasser_labels])
+    roi_mask = np.isin(hcp_data, ids)
+    return roi_mask
+
+
+def get_roi_mask(roi_mask_name, ref_img):
+    if roi_mask_name.startswith("anatomical_"):
+        return get_anatomical_mask(roi_mask_name)
+
+    elif roi_mask_name.startswith("functional_"):
+        return get_functional_mask(roi_mask_name, ref_img)
+
+    else:
+        raise RuntimeError("Unknown mask: ", roi_mask_name)
 
 
 def get_default_features(model_name):
@@ -347,7 +272,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
     print(f"Gray matter mask size: {gray_matter_mask.sum()}")
 
     if roi_mask_name is not None:
-        roi_mask = get_roi_mask(roi_mask_name)
+        roi_mask = get_roi_mask(roi_mask_name, gray_matter_mask_ras)
         print(f"Applying ROI {roi_mask_name} mask of size {roi_mask.sum()}")
         print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
 
