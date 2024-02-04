@@ -139,7 +139,6 @@ def get_functional_mask(roi_mask_name, ref_img):
     ji_conversion = pd.read_csv(filename, delimiter='\t')
 
     glasser_labels = ji_conversion[ji_conversion.NETWORK == network_name].GLASSERLABELNAME.dropna().unique()
-    print(glasser_labels)
 
     atlas_hcp = nib.load('atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.nii.gz')
 
