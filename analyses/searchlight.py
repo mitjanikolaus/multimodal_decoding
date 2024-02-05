@@ -109,7 +109,7 @@ def run(args):
                     # Average voxels 5 mm close to the 3d pial surface
                     radius = 5.0
                     pial_mesh = fsaverage[f"pial_{hemi}"]
-                    X = surface.vol_to_surf(train_fmri, pial_mesh, radius=radius).T
+                    X = surface.vol_to_surf(train_fmri, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     coords, _ = surface.load_surf_mesh(infl_mesh)
                     nn = neighbors.NearestNeighbors(radius=args.radius)
