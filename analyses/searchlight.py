@@ -8,10 +8,13 @@ import time
 
 import numpy as np
 import nibabel as nib
+from nilearn import datasets
 from nilearn.decoding import SearchLight
 from nilearn.image import new_img_like, get_data
 from nilearn.maskers import NiftiMasker
 from nilearn.plotting import plot_img
+from nilearn.surface import surface
+from sklearn import neighbors
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import KFold
@@ -94,25 +97,36 @@ def run(args):
                                                                                  args.vision_features,
                                                                                  train_stim_ids,
                                                                                  subject,
-                                                                                 training_mode,
-                                                                                 recompute_std_mean=args.recompute_std_mean)
+                                                                                 training_mode)
 
-                    model = make_pipeline(StandardScaler(), Ridge())
+                    if args.subset is not None:
+                        train_fmri = train_fmri[:args.subset]
+                        train_data_latents = train_data_latents[:args.subset]
+
+                    fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage5")
+                    hemi = "left"
+                    # Average voxels 5 mm close to the 3d pial surface
+                    radius = 5.0
+                    pial_mesh = fsaverage[f"pial_{hemi}"]
+                    X = surface.vol_to_surf(train_fmri, pial_mesh, radius=radius).T
+                    infl_mesh = fsaverage[f"infl_{hemi}"]
+                    coords, _ = surface.load_surf_mesh(infl_mesh)
+                    nn = neighbors.NearestNeighbors(radius=args.radius)
+                    adjacency = nn.fit(coords).radius_neighbors_graph(coords).tolil()
+                    if args.subset is not None:
+                        adjacency = adjacency[:args.subset]
+
+                    model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                     cv = KFold(n_splits=NUM_CV_SPLITS)
-                    searchlight = SearchLight(mask_img=gray_matter_mask,
+                    searchlight = SearchLight(mask_img=gray_matter_mask, process_mask_img=adjacency,
                                               radius=args.radius, estimator=model,
                                               n_jobs=args.n_jobs, scoring=pairwise_acc_scorer, cv=cv,
                                               verbose=3)
 
-                    # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                    #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                    #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
-
                     start = time.time()
-                    train_fmri = train_fmri[:10]  # TODO
-                    train_data_latents = train_data_latents[:10]
-                    searchlight.fit(train_fmri, train_data_latents)
+
+                    searchlight.fit(X, train_data_latents)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
@@ -215,6 +229,8 @@ def get_args():
                         choices=TRAIN_MODE_CHOICES)
     parser.add_argument("--testing-mode", type=str, default='test', choices=TEST_MODE_CHOICES)
 
+    parser.add_argument("--subset", type=int, default=None)
+
     parser.add_argument("--models", type=str, nargs='+', default=['clip'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
@@ -223,13 +239,11 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e4, 1e5, 1e6, 1e7])
+    parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
 
     parser.add_argument("--radius", type=float, default=2)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
-
-    parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
     return parser.parse_args()
 
