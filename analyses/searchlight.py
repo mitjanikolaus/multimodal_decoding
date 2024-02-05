@@ -111,7 +111,7 @@ def run(args):
                     pial_mesh = fsaverage[f"pial_{hemi}"]
                     X = surface.vol_to_surf(train_fmri, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                     for x in X:
-                        print(np.argwhere(np.isnan(x))[0])
+                        x[np.isnan(x)] = 0 # TODO
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     coords, _ = surface.load_surf_mesh(infl_mesh)
                     nn = neighbors.NearestNeighbors(radius=args.radius)
