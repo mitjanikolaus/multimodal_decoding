@@ -28,10 +28,7 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, TEST_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, calculate_eval_metrics, pairwise_accuracy
-from decoding_utils import get_distance_matrix
-from tqdm import trange
-import pandas as pd
+    get_default_features, pairwise_accuracy, get_run_str
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, VISION_MEAN_FEAT_KEY
 
@@ -48,6 +45,7 @@ def get_graymatter_mask(subject):
     # gray_matter_mask_data = gray_matter_mask_img.get_fdata().astype(np.int32)
     # print(f"Gray matter mask size: {gray_matter_mask_data.sum()}")
     return gray_matter_mask_address
+
 
 def get_fmri_data(subject, mode):
     imagery_scenes = IMAGERY_SCENES[subject]
@@ -88,7 +86,7 @@ def run(args):
 
             fmri_data = np.concatenate((train_fmri, test_fmri))
             train_ids = list(range(len(train_fmri)))
-            test_ids = list(range(len(train_fmri), len(train_fmri)+len(test_fmri)))
+            test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
 
             gray_matter_mask = get_graymatter_mask(subject)
 
@@ -116,14 +114,13 @@ def run(args):
                     latents = np.concatenate((train_data_latents, test_data_latents))
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-                    hemi = "left"
                     # Average voxels 5 mm close to the 3d pial surface
                     radius = 5.0
-                    pial_mesh = fsaverage[f"pial_{hemi}"]
+                    pial_mesh = fsaverage[f"pial_{args.hemi}"]
                     X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                     for x in X:
-                        x[np.isnan(x)] = 0 # TODO
-                    infl_mesh = fsaverage[f"infl_{hemi}"]
+                        x[np.isnan(x)] = 0  # TODO
+                    infl_mesh = fsaverage[f"infl_{args.hemi}"]
                     coords, _ = surface.load_surf_mesh(infl_mesh)
                     nn = neighbors.NearestNeighbors(radius=args.radius)
                     adjacency = nn.fit(coords).radius_neighbors_graph(coords).tolil()
@@ -132,112 +129,20 @@ def run(args):
 
                     model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-
-
                     cv = [(train_ids, test_ids)]
-
-                    # cv = KFold(n_splits=NUM_CV_SPLITS)
-                    # searchlight = SearchLight(mask_img=gray_matter_mask, process_mask_img=adjacency,
-                    #                           radius=args.radius, estimator=model,
-                    #                           n_jobs=args.n_jobs, scoring=pairwise_acc_scorer, cv=cv,
-                    #                           verbose=3)
 
                     start = time.time()
                     scores = search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
                                           scoring=pairwise_acc_scorer, verbose=3)
-
-                    # searchlight.fit(X, train_data_latents)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
+                    print(f"Mean score: {scores.mean():.2f} | Max score: {scores.max():.2f}")
 
-                    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, subject)
+                    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject,
+                                               args.resolution, args.hemi)
                     os.makedirs(results_dir, exist_ok=True)
-
-                    print(scores.mean())
-                    print(scores.max())
-                    pickle.dump(scores, open(os.path.join(results_dir, f"searchlight_{args.resolution}.p"), 'wb'))
-
-                    # searchlight_img = new_img_like(gray_matter_mask, searchlight.scores_)
-                    #
-                    # plot_img(
-                    #     searchlight_img,
-                    #     bg_img=gray_matter_mask, # TODO mean
-                    #     title="Searchlight",
-                    #     display_mode="z",
-                    #     cut_coords=[-9],
-                    #     vmin=0.42,
-                    #     cmap="hot",
-                    #     threshold=0.2,
-                    #     black_bg=True,
-                    # )
-                    #
-                    # nifti_masker = NiftiMasker(
-                    #     mask_img=gray_matter_mask,
-                    #     runs=run,
-                    #     standardize="zscore_sample",
-                    #     memory="nilearn_cache",
-                    #     memory_level=1,
-                    # )
-                    # fmri_masked = nifti_masker.fit_transform(fmri_img)
-                    #
-                    # from sklearn.feature_selection import f_classif
-                    #
-                    # _, p_values = f_classif(fmri_masked, y)
-                    # p_values = -np.log10(p_values)
-                    # p_values[p_values > 10] = 10
-                    # p_unmasked = get_data(nifti_masker.inverse_transform(p_values))
-                    #
-                    # # F_score results
-                    # p_ma = np.ma.array(p_unmasked, mask=np.logical_not(process_mask))
-                    # f_score_img = new_img_like(mean_fmri, p_ma)
-                    # plot_stat_map(
-                    #     f_score_img,
-                    #     mean_fmri,
-                    #     title="F-scores",
-                    #     display_mode="z",
-                    #     cut_coords=[-9],
-                    #     colorbar=False,
-                    # )
-
-                    # best_alpha = searchlight.best_params_["alpha"]
-
-                    # results = {
-                    #     "alpha": best_alpha,
-                    #     "model": model_name,
-                    #     "subject": subject,
-                    #     "features": features,
-                    #     "vision_features": args.vision_features,
-                    #     "training_mode": training_mode,
-                    #     "testing_mode": args.testing_mode,
-                    #     "mask": mask,
-                    #     "num_voxels": test_fmri_betas.shape[1],
-                    #     "best_val_acc": True,
-                    #     "cv_results": clf.cv_results_
-                    # }
-                    #
-
-                    # best_model = clf.best_estimator_
-                    # test_predicted_latents = best_model.predict(test_fmri_betas)
-                    #
-                    # test_results = {"stimulus_ids": test_stim_ids,
-                    #                 "stimulus_types": test_stim_types,
-                    #                 "predictions": test_predicted_latents,
-                    #                 "latents": test_data_latents}
-                    # test_results = calculate_eval_metrics(test_results, test_fmri_betas)
-                    # print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
-                    #       f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
-                    #       f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}")
-                    # # f" | RSA (captions): {test_results['rsa_captions']:.2f}"
-                    # # f" | RSA (images): {test_results['rsa_images']:.2f}")
-                    #
-                    # results = results | test_results
-                    #
-                    # results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, subject)
-                    # run_str = get_run_str(model_name, features, mask, best_val_acc=True)
-                    # results_file_dir = f'{results_dir}/{run_str}'
-                    # os.makedirs(results_file_dir, exist_ok=True)
-                    #
-                    # pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+                    file_name = f"alpha_{args.alpha}_test_{args.testing_mode}.p"
+                    pickle.dump(scores, open(os.path.join(results_dir, file_name), 'wb'))
 
 
 def get_args():
@@ -258,6 +163,8 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
     parser.add_argument("--resolution", type=str, default="fsaverage")
+
+    parser.add_argument("--hemi", type=str, default="left")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
 
