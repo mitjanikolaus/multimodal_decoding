@@ -83,6 +83,13 @@ def run(args):
         for subject in args.subjects:
             train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, training_mode)
             test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, args.testing_mode)
+            if args.subset is not None:
+                train_fmri = train_fmri[:args.subset]
+
+            fmri_data = np.concatenate((train_fmri, test_fmri))
+            train_ids = list(range(len(train_fmri)))
+            test_ids = list(range(len(train_fmri), len(train_fmri)+len(test_fmri)))
+
             gray_matter_mask = get_graymatter_mask(subject)
 
             for model_name in args.models:
@@ -99,17 +106,21 @@ def run(args):
                                                                                  train_stim_ids,
                                                                                  subject,
                                                                                  training_mode)
-
+                    test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
+                                                              test_stim_ids,
+                                                              subject,
+                                                              args.testing_mode,
+                                                              nn_latent_transform=nn_latent_transform)
                     if args.subset is not None:
-                        train_fmri = train_fmri[:args.subset]
                         train_data_latents = train_data_latents[:args.subset]
+                    latents = np.concatenate((train_data_latents, test_data_latents))
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage3")
                     hemi = "left"
                     # Average voxels 5 mm close to the 3d pial surface
                     radius = 5.0
                     pial_mesh = fsaverage[f"pial_{hemi}"]
-                    X = surface.vol_to_surf(train_fmri, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
+                    X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                     for x in X:
                         x[np.isnan(x)] = 0 # TODO
                     infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -121,14 +132,18 @@ def run(args):
 
                     model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    cv = KFold(n_splits=NUM_CV_SPLITS)
+
+
+                    cv = [(train_ids, test_ids)]
+
+                    # cv = KFold(n_splits=NUM_CV_SPLITS)
                     # searchlight = SearchLight(mask_img=gray_matter_mask, process_mask_img=adjacency,
                     #                           radius=args.radius, estimator=model,
                     #                           n_jobs=args.n_jobs, scoring=pairwise_acc_scorer, cv=cv,
                     #                           verbose=3)
 
                     start = time.time()
-                    scores = search_light(X, train_data_latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
+                    scores = search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
                                           scoring=pairwise_acc_scorer, verbose=3)
 
                     # searchlight.fit(X, train_data_latents)
@@ -200,11 +215,7 @@ def run(args):
                     #     "cv_results": clf.cv_results_
                     # }
                     #
-                    # test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
-                    #                                           test_stim_ids,
-                    #                                           subject,
-                    #                                           args.testing_mode,
-                    #                                           nn_latent_transform=nn_latent_transform)
+
                     # best_model = clf.best_estimator_
                     # test_predicted_latents = best_model.predict(test_fmri_betas)
                     #
