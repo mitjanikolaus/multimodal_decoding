@@ -9,7 +9,7 @@ import time
 import numpy as np
 import nibabel as nib
 from nilearn.decoding import SearchLight
-from nilearn.image import new_img_like
+from nilearn.image import new_img_like, get_data
 from nilearn.maskers import NiftiMasker
 from nilearn.plotting import plot_img
 from sklearn.linear_model import Ridge
@@ -100,7 +100,8 @@ def run(args):
                     model = make_pipeline(StandardScaler(), Ridge())
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                     cv = KFold(n_splits=NUM_CV_SPLITS)
-                    searchlight = SearchLight(mask_img=gray_matter_mask, radius=args.radius, estimator=model,
+                    searchlight = SearchLight(mask_img=gray_matter_mask,
+                                              radius=args.radius, estimator=model,
                                               n_jobs=args.n_jobs, scoring=pairwise_acc_scorer, cv=cv,
                                               verbose=3)
 
@@ -109,6 +110,8 @@ def run(args):
                     #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                     start = time.time()
+                    train_fmri = train_fmri[:10]  # TODO
+                    train_data_latents = train_data_latents[:10]
                     searchlight.fit(train_fmri, train_data_latents)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
