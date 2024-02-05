@@ -138,6 +138,8 @@ def run(args):
                     results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, subject)
                     os.makedirs(results_dir, exist_ok=True)
 
+                    print(scores.mean())
+                    print(scores.max())
                     pickle.dump(scores, open(os.path.join(results_dir, "searchlight_test.p"), 'wb'))
 
                     # searchlight_img = new_img_like(gray_matter_mask, searchlight.scores_)
