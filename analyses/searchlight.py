@@ -116,8 +116,8 @@ def run(args):
                     coords, _ = surface.load_surf_mesh(infl_mesh)
                     nn = neighbors.NearestNeighbors(radius=args.radius)
                     adjacency = nn.fit(coords).radius_neighbors_graph(coords).tolil()
-                    if args.subset is not None:
-                        adjacency = adjacency[:args.subset]
+                    # if args.subset is not None:
+                    #     adjacency = adjacency[:args.subset]
 
                     model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
