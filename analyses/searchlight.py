@@ -118,8 +118,16 @@ def run(args):
                     radius = 5.0
                     pial_mesh = fsaverage[f"pial_{args.hemi}"]
                     X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
-                    for x in X:
-                        x[np.isnan(x)] = 0  # TODO
+                    for i, x in enumerate(X):
+                        if i == 0:
+                            ref_nans = np.isnan(x)
+                            print(f"nans: {np.isnan(x).sum()}")
+                        nans = np.isnan(x)
+                        if not np.all(nans == ref_nans):
+                            print("different nans!")
+                            print(nans)
+                            print(ref_nans)
+                        x[nans] = 0  # TODO
                     infl_mesh = fsaverage[f"infl_{args.hemi}"]
                     coords, _ = surface.load_surf_mesh(infl_mesh)
                     nn = neighbors.NearestNeighbors(radius=args.radius)
