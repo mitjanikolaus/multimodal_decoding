@@ -47,7 +47,7 @@ DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 TRAIN_MODE_CHOICES = ["train", "train_captions", "train_images"]
 TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 
-GLM_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
+DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
@@ -221,7 +221,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sub
     nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
 
     if nn_latent_transform is None:
-        mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
+        mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
         model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
         model_std_mean_path = os.path.join(mean_std_dir, model_std_mean_name)
         if not os.path.exists(model_std_mean_path) or recompute_std_mean:
@@ -291,7 +291,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
         fmri_betas[idx] = sample.copy()
 
     if fmri_betas_transform is None:
-        mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
+        mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
         bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
         if mask is not None:
             bold_std_mean_name += f'_mask_{roi_mask_name}'
@@ -530,7 +530,7 @@ def run(args):
 
                         results = results | test_results
 
-                        results_dir = os.path.join(GLM_OUT_DIR, training_mode, subject)
+                        results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                         run_str = get_run_str(model_name, features, mask, best_val_acc=True)
                         results_file_dir = f'{results_dir}/{run_str}'
                         os.makedirs(results_file_dir, exist_ok=True)
@@ -567,6 +567,6 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(GLM_OUT_DIR, exist_ok=True)
+    os.makedirs(DECODER_OUT_DIR, exist_ok=True)
 
     run(args)

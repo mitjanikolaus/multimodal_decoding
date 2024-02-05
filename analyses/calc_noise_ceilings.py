@@ -5,13 +5,13 @@ import numpy as np
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import get_fmri_data, GLM_OUT_DIR, calc_rsa, calc_rsa_images, calc_rsa_captions, \
+from analyses.ridge_regression_decoding import get_fmri_data, DECODER_OUT_DIR, calc_rsa, calc_rsa_images, calc_rsa_captions, \
     create_dissimilarity_matrix, rsa_from_matrices
 
 from utils import SUBJECTS
 
 
-RSA_NOISE_CEILING_DIR = os.path.join(GLM_OUT_DIR, "noise_ceilings")
+RSA_NOISE_CEILING_DIR = os.path.join(DECODER_OUT_DIR, "noise_ceilings")
 
 
 class Normalize:
@@ -25,7 +25,7 @@ class Normalize:
 
 
 def load_mean_std(subject, mode="train"):
-    mean_std_dir = os.path.join(GLM_OUT_DIR, subject)
+    mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
     bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
     bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
     bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
@@ -90,6 +90,6 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(GLM_OUT_DIR, exist_ok=True)
+    os.makedirs(DECODER_OUT_DIR, exist_ok=True)
 
     run(args)
