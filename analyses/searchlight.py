@@ -10,6 +10,7 @@ import numpy as np
 import nibabel as nib
 from nilearn import datasets
 from nilearn.decoding import SearchLight
+from nilearn.decoding.searchlight import search_light
 from nilearn.image import new_img_like, get_data
 from nilearn.maskers import NiftiMasker
 from nilearn.plotting import plot_img
@@ -119,21 +120,23 @@ def run(args):
                     model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                     cv = KFold(n_splits=NUM_CV_SPLITS)
-                    searchlight = SearchLight(mask_img=gray_matter_mask, process_mask_img=adjacency,
-                                              radius=args.radius, estimator=model,
-                                              n_jobs=args.n_jobs, scoring=pairwise_acc_scorer, cv=cv,
-                                              verbose=3)
+                    # searchlight = SearchLight(mask_img=gray_matter_mask, process_mask_img=adjacency,
+                    #                           radius=args.radius, estimator=model,
+                    #                           n_jobs=args.n_jobs, scoring=pairwise_acc_scorer, cv=cv,
+                    #                           verbose=3)
 
                     start = time.time()
+                    scores = search_light(X, train_data_latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
+                                          scoring=pairwise_acc_scorer, verbose=3)
 
-                    searchlight.fit(X, train_data_latents)
+                    # searchlight.fit(X, train_data_latents)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
                     results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, subject)
                     os.makedirs(results_dir, exist_ok=True)
 
-                    pickle.dump(searchlight, open(os.path.join(results_dir, "searchlight_test.p"), 'wb'))
+                    pickle.dump(scores, open(os.path.join(results_dir, "searchlight_test.p"), 'wb'))
 
                     # searchlight_img = new_img_like(gray_matter_mask, searchlight.scores_)
                     #
@@ -177,7 +180,7 @@ def run(args):
                     #     colorbar=False,
                     # )
 
-                    best_alpha = searchlight.best_params_["alpha"]
+                    # best_alpha = searchlight.best_params_["alpha"]
 
                     # results = {
                     #     "alpha": best_alpha,
