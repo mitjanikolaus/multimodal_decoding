@@ -149,7 +149,7 @@ def run(args):
                     results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject,
                                                args.resolution, args.hemi)
                     os.makedirs(results_dir, exist_ok=True)
-                    file_name = f"alpha_{args.alpha}_test_{args.testing_mode}.p"
+                    file_name = f"alpha_{args.l2_regularization_alpha}_test_{args.testing_mode}.p"
                     pickle.dump(scores, open(os.path.join(results_dir, file_name), 'wb'))
 
 
