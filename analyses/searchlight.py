@@ -155,7 +155,7 @@ def run(args):
 
                     print(scores.mean())
                     print(scores.max())
-                    pickle.dump(scores, open(os.path.join(results_dir, "searchlight_test.p"), 'wb'))
+                    pickle.dump(scores, open(os.path.join(results_dir, f"searchlight_{args.resolution}.p"), 'wb'))
 
                     # searchlight_img = new_img_like(gray_matter_mask, searchlight.scores_)
                     #
