@@ -117,16 +117,12 @@ def run(args):
                     # Average voxels 5 mm close to the 3d pial surface
                     radius = 5.0
                     pial_mesh = fsaverage[f"pial_{args.hemi}"]
+                    start = time.time()
                     X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                     for i, x in enumerate(X):
                         if i == 0:
-                            ref_nans = np.isnan(x)
                             print(f"nans: {np.isnan(x).sum()}")
                         nans = np.isnan(x)
-                        if not np.all(nans == ref_nans):
-                            print("different nans!")
-                            print(nans)
-                            print(ref_nans)
                         x[nans] = 0  # TODO
                     infl_mesh = fsaverage[f"infl_{args.hemi}"]
                     coords, _ = surface.load_surf_mesh(infl_mesh)
@@ -138,12 +134,16 @@ def run(args):
                     model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                     cv = [(train_ids, test_ids)]
+                    end = time.time()
+                    prepr_time = int(end - start)
+                    print(f"Preprocessing time: {prepr_time}s")
 
                     start = time.time()
                     scores = search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
-                                          scoring=pairwise_acc_scorer, verbose=3)
+                                          scoring=pairwise_acc_scorer, verbose=4)
                     end = time.time()
-                    print(f"Elapsed time: {int(end - start)}s")
+                    print(f"Preprocessing time: {prepr_time}s")
+                    print(f"Searchlight time: {int(end - start)}s")
                     print(f"Mean score: {scores.mean():.2f} | Max score: {scores.max():.2f}")
 
                     results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject,
