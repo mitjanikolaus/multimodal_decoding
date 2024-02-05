@@ -115,7 +115,7 @@ def run(args):
                         train_data_latents = train_data_latents[:args.subset]
                     latents = np.concatenate((train_data_latents, test_data_latents))
 
-                    fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage3")
+                    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     hemi = "left"
                     # Average voxels 5 mm close to the 3d pial surface
                     radius = 5.0
@@ -256,6 +256,8 @@ def get_args():
                         choices=VISION_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
+
+    parser.add_argument("--resolution", type=str, default="fsaverage")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
 
