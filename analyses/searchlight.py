@@ -1,24 +1,13 @@
-############################################
-# Training multimodal linear brain decoders
-# inputs can be of any modality
-# outputs are uni-modal
-############################################
 import argparse
 import time
 
 import numpy as np
-import nibabel as nib
 from nilearn import datasets
-from nilearn.decoding import SearchLight
 from nilearn.decoding.searchlight import search_light
-from nilearn.image import new_img_like, get_data
-from nilearn.maskers import NiftiMasker
-from nilearn.plotting import plot_img
 from nilearn.surface import surface
 from sklearn import neighbors
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import KFold
 import os
 from glob import glob
 import pickle
@@ -28,11 +17,11 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, TEST_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, pairwise_accuracy, get_run_str
+    get_default_features, pairwise_accuracy
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, VISION_MEAN_FEAT_KEY
 
-DEFAULT_N_JOBS = 20
+DEFAULT_N_JOBS = 10
 NUM_CV_SPLITS = 3
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
@@ -41,9 +30,6 @@ SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight
 def get_graymatter_mask(subject):
     fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
     gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
-    # gray_matter_mask_img = nib.load(gray_matter_mask_address)
-    # gray_matter_mask_data = gray_matter_mask_img.get_fdata().astype(np.int32)
-    # print(f"Gray matter mask size: {gray_matter_mask_data.sum()}")
     return gray_matter_mask_address
 
 
