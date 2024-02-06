@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from utils import IMAGES_IMAGERY_CONDITION, COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, FEATURES_DIR, \
-    LANG_FEAT_KEY, model_features_file_path, IMAGES_TEST, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
+    LANG_FEAT_KEY, model_features_file_path, IDS_IMAGES_TEST, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 
 class COCOSelected(Dataset):
@@ -121,7 +121,7 @@ def apply_pca(n_components, data_pickle_file):
         `data_pickle_file` (str): address to the pickle file containing latent vectors
     """
     print("Performing PCA..")
-    excluded = set(IMAGES_TEST + [a[0] for a in IMAGES_IMAGERY_CONDITION])
+    excluded = set(IDS_IMAGES_TEST + [a[0] for a in IMAGES_IMAGERY_CONDITION])
 
     filename = os.path.basename(data_pickle_file)
     dirname = os.path.dirname(data_pickle_file)
