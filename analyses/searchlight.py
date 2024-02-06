@@ -96,61 +96,62 @@ def run(args):
                 for features in args.features:
                     if features == FEATS_SELECT_DEFAULT:
                         features = get_default_features(model_name)
-                    print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
-                          f"MODEL: {model_name} | FEATURES: {features}")
 
-                    train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
-                                                                                 args.vision_features,
-                                                                                 train_stim_ids,
-                                                                                 subject,
-                                                                                 training_mode)
-                    test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
-                                                              test_stim_ids,
-                                                              subject,
-                                                              args.testing_mode,
-                                                              nn_latent_transform=nn_latent_transform)
-                    if args.subset is not None:
-                        train_data_latents = train_data_latents[:args.subset]
-                    latents = np.concatenate((train_data_latents, test_data_latents))
+                    for testing_mode in args.testing_modes:
+                        print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
+                              f"MODEL: {model_name} | FEATURES: {features} | TESTING MODE: {testing_mode}")
 
-                    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-                    # Average voxels 5 mm close to the 3d pial surface
-                    radius = 5.0
-                    pial_mesh = fsaverage[f"pial_{args.hemi}"]
-                    start = time.time()
-                    X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
-                    for i, x in enumerate(X):
-                        if i == 0:
-                            print(f"nans: {np.isnan(x).sum()}")
-                        nans = np.isnan(x)
-                        x[nans] = 0  # TODO
-                    infl_mesh = fsaverage[f"infl_{args.hemi}"]
-                    coords, _ = surface.load_surf_mesh(infl_mesh)
-                    nn = neighbors.NearestNeighbors(radius=args.radius)
-                    adjacency = nn.fit(coords).radius_neighbors_graph(coords).tolil()
-                    # if args.subset is not None:
-                    #     adjacency = adjacency[:args.subset]
+                        train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
+                                                                                     args.vision_features,
+                                                                                     train_stim_ids,
+                                                                                     subject,
+                                                                                     training_mode)
+                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
+                                                                  test_stim_ids,
+                                                                  subject,
+                                                                  testing_mode,
+                                                                  nn_latent_transform=nn_latent_transform)
+                        if args.subset is not None:
+                            train_data_latents = train_data_latents[:args.subset]
+                        latents = np.concatenate((train_data_latents, test_data_latents))
 
-                    model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
-                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    cv = [(train_ids, test_ids)]
-                    end = time.time()
-                    prepr_time = int(end - start)
-                    print(f"Preprocessing time: {prepr_time}s")
+                        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+                        for hemi in args.hemis:
+                            # Average voxels 5 mm close to the 3d pial surface
+                            pial_mesh = fsaverage[f"pial_{hemi}"]
+                            start = time.time()
+                            radius = 5.0
+                            X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
+                            for i, x in enumerate(X):
+                                if i == 0:
+                                    print(f"nans: {np.isnan(x).sum()}")
+                                nans = np.isnan(x)
+                                x[nans] = 0  # TODO
+                            infl_mesh = fsaverage[f"infl_{hemi}"]
+                            coords, _ = surface.load_surf_mesh(infl_mesh)
+                            nn = neighbors.NearestNeighbors(radius=args.radius)
+                            adjacency = nn.fit(coords).radius_neighbors_graph(coords).tolil()
 
-                    start = time.time()
-                    scores = search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
-                                          scoring=pairwise_acc_scorer, verbose=3)
-                    end = time.time()
-                    print(f"Preprocessing time: {prepr_time}s")
-                    print(f"Searchlight time: {int(end - start)}s")
-                    print(f"Mean score: {scores.mean():.2f} | Max score: {scores.max():.2f}")
+                            model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
+                            pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                            cv = [(train_ids, test_ids)]
+                            end = time.time()
+                            prepr_time = int(end - start)
+                            print(f"Preprocessing time: {prepr_time}s")
 
-                    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject,
-                                               args.resolution, args.hemi)
-                    os.makedirs(results_dir, exist_ok=True)
-                    file_name = f"alpha_{args.l2_regularization_alpha}_test_{args.testing_mode}.p"
-                    pickle.dump(scores, open(os.path.join(results_dir, file_name), 'wb'))
+                            start = time.time()
+                            scores = search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
+                                                  scoring=pairwise_acc_scorer, verbose=3)
+                            end = time.time()
+                            print(f"Preprocessing time: {prepr_time}s")
+                            print(f"Searchlight time: {int(end - start)}s")
+                            print(f"Mean score: {scores.mean():.2f} | Max score: {scores.max():.2f}")
+
+                            results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject,
+                                                       args.resolution, hemi)
+                            os.makedirs(results_dir, exist_ok=True)
+                            file_name = f"alpha_{args.l2_regularization_alpha}_test_{testing_mode}.p"
+                            pickle.dump(scores, open(os.path.join(results_dir, file_name), 'wb'))
 
 
 def get_args():
@@ -158,11 +159,11 @@ def get_args():
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
-    parser.add_argument("--testing-mode", type=str, default='test', choices=TEST_MODE_CHOICES)
+    parser.add_argument("--testing-modes", type=str, default=['test'], nargs="+", choices=TEST_MODE_CHOICES)
 
     parser.add_argument("--subset", type=int, default=None)
 
-    parser.add_argument("--models", type=str, nargs='+', default=['clip'])
+    parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
@@ -172,7 +173,7 @@ def get_args():
 
     parser.add_argument("--resolution", type=str, default="fsaverage6")
 
-    parser.add_argument("--hemi", type=str, default="left")
+    parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
 
