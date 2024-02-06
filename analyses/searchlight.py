@@ -143,7 +143,7 @@ def run(args):
 
                             start = time.time()
                             scores = search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
-                                                  scoring=pairwise_acc_scorer, verbose=3)
+                                                  scoring=pairwise_acc_scorer, verbose=1)
                             end = time.time()
                             print(f"Preprocessing time: {prepr_time}s")
                             print(f"Searchlight time: {int(end - start)}s")
