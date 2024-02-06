@@ -32,7 +32,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, TEST_MODE_CHO
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, VISION_MEAN_FEAT_KEY
 
-DEFAULT_N_JOBS = 5
+DEFAULT_N_JOBS = 20
 NUM_CV_SPLITS = 3
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
@@ -170,13 +170,13 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
-    parser.add_argument("--resolution", type=str, default="fsaverage")
+    parser.add_argument("--resolution", type=str, default="fsaverage6")
 
     parser.add_argument("--hemi", type=str, default="left")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
 
-    parser.add_argument("--radius", type=float, default=2)
+    parser.add_argument("--radius", type=float, default=10)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
 
