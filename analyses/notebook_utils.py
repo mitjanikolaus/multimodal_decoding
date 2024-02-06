@@ -44,6 +44,8 @@ def load_results_data(distance_metrics = ["cosine"]):
     df = pd.DataFrame.from_records(data)
 
     df["features"] = df.features.replace({"concat": "vision+lang"})
+    df["model"] = df.model.replace({"mistral": "mistral-7b"})
+
     df["training_mode"] = df.training_mode.replace({"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
     df["mask"] = df["mask"].fillna("whole_brain")
 
