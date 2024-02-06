@@ -80,24 +80,24 @@ def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
             train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, training_mode)
-            test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, args.testing_mode)
             if args.subset is not None:
                 train_fmri = train_fmri[:args.subset]
 
-            fmri_data = np.concatenate((train_fmri, test_fmri))
-            train_ids = list(range(len(train_fmri)))
-            test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
+            for testing_mode in args.testing_modes:
+                test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, testing_mode)
+                fmri_data = np.concatenate((train_fmri, test_fmri))
+                train_ids = list(range(len(train_fmri)))
+                test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
 
-            gray_matter_mask = get_graymatter_mask(subject)
+                gray_matter_mask = get_graymatter_mask(subject)
 
-            for model_name in args.models:
-                model_name = model_name.lower()
+                for model_name in args.models:
+                    model_name = model_name.lower()
 
-                for features in args.features:
-                    if features == FEATS_SELECT_DEFAULT:
-                        features = get_default_features(model_name)
+                    for features in args.features:
+                        if features == FEATS_SELECT_DEFAULT:
+                            features = get_default_features(model_name)
 
-                    for testing_mode in args.testing_modes:
                         print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                               f"MODEL: {model_name} | FEATURES: {features} | TESTING MODE: {testing_mode}")
 
