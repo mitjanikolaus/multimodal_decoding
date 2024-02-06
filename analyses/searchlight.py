@@ -263,7 +263,7 @@ def custom_group_iter_search_light(
                 remaining = (100.0 - percent) / max(0.01, percent) * dt
                 sys.stderr.write(
                     f"Job #{thread_id}, processed {i}/{len(list_rows)} voxels "
-                    f"({percent:0.2f}%, {remaining} seconds remaining){crlf}"
+                    f"({percent:0.2f}%, {round(remaining/60)} minutes remaining){crlf}"
                 )
     return par_scores
 
