@@ -121,7 +121,9 @@ def run(args):
                             pial_mesh = fsaverage[f"pial_{hemi}"]
                             start = time.time()
                             radius = 5.0
+                            print("transforming to surface..", end=" ")
                             X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
+                            print("done.")
                             for i, x in enumerate(X):
                                 if i == 0:
                                     print(f"nans: {np.isnan(x).sum()}")
