@@ -499,7 +499,7 @@ def get_args():
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
+    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--radius", type=float, default=10)
 
