@@ -103,7 +103,7 @@ REGIONS_LANGUAGE = [
     'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
     'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci:
-    'S_temporal_sup',   # Superior temporal sulcus
+    'L S_temporal_sup',   # Superior temporal sulcus
     # 'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
     # 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
     # 'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
