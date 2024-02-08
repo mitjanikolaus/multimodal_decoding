@@ -51,8 +51,8 @@ DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test8"
-MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
-MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test"
+MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive_test2"
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test2"
 
 REGIONS_OCCIPITAL_EXCLUSIVE = [
     'L G_and_S_occipital_inf',
@@ -71,8 +71,6 @@ REGIONS_OCCIPITAL_EXCLUSIVE = [
     'R S_oc_sup_and_transversal',
     'R S_occipital_ant',
     'R S_parieto_occipital',
-    'L G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Lingual',
 ]
 
 REGIONS_HIGH_LEVEL_VISUAL = [
@@ -90,8 +88,8 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R G_temporal_inf',
     'R G_temporal_middle',
     'R S_temporal_inf',
-    'L G_temporal_middle',
-    'R G_temporal_middle',
+    'L G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Lingual',
 ]
 
 REGIONS_LANGUAGE = [
