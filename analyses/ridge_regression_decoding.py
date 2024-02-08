@@ -51,7 +51,7 @@ DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
-MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test3"
+MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test4"
 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test2"
 
 REGIONS_LOW_LEVEL_VISUAL = [
@@ -73,6 +73,8 @@ REGIONS_LOW_LEVEL_VISUAL = [
     'R S_parieto_occipital',
     'L S_calcarine',
     'R S_calcarine',
+    'L G_cuneus',
+    'R G_cuneus',
 ]
 
 REGIONS_HIGH_LEVEL_VISUAL = [
