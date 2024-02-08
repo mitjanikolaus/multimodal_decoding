@@ -50,7 +50,7 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test13"
+MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test14"
 MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test13"
 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test13"
 
@@ -112,7 +112,7 @@ REGIONS_LANGUAGE = [
     'L S_temporal_sup',   # Superior temporal sulcus
     'L S_temporal_transverse',  # Transverse temporal sulcus
     'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
-    'L G_pariet_inf-Supramar',  # Supramarginal gyrus
+    # 'L G_pariet_inf-Supramar',  # Supramarginal gyrus
 ]
 
 
