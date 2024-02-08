@@ -50,7 +50,7 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test5"
+MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test6"
 MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
 
@@ -104,10 +104,9 @@ REGIONS_LANGUAGE = [
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
     'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci:
     'L S_temporal_sup',   # Superior temporal sulcus
-    'L S_temporal_transverse', #
-    'L G_temp_sup-G_T_transv',  #
-    'L Lat_Fis-ant-Horizont',
-    'L Lat_Fis-ant-Vertical',
+    'L S_temporal_transverse',  # Transverse temporal sulcus
+    'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
+    'L Lat_Fis-post',
     # 'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
     # 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
     # 'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
