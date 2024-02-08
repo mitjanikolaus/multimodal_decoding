@@ -106,8 +106,8 @@ REGIONS_LANGUAGE = [
     'L S_temporal_sup',   # Superior temporal sulcus
     'L S_temporal_transverse', #
     'L G_temp_sup-G_T_transv',  #
-    'Lat_Fis-ant-Horizont',
-    'Lat_Fis-ant-Vertical',
+    'L Lat_Fis-ant-Horizont',
+    'L Lat_Fis-ant-Vertical',
     # 'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
     # 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
     # 'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
