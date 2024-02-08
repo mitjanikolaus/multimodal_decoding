@@ -3,7 +3,7 @@ import re
 import numpy as np
 import nibabel as nib
 from nilearn.datasets import fetch_atlas_destrieux_2009
-from analyses.ridge_regression_decoding import REGIONS_OCCIPITAL_EXCLUSIVE, REGIONS_HIGH_LEVEL_VISUAL, REGIONS_LANGUAGE
+from analyses.ridge_regression_decoding import REGIONS_LOW_LEVEL_VISUAL, REGIONS_HIGH_LEVEL_VISUAL, REGIONS_LANGUAGE
 import pandas as pd
 
 def run():
@@ -25,7 +25,7 @@ def run():
 
     roi_descs = {}
     roi_names = ["visual_low_level", "visual_high_level", "language_network"]
-    for roi_name, region in zip(roi_names, [REGIONS_OCCIPITAL_EXCLUSIVE, REGIONS_HIGH_LEVEL_VISUAL, REGIONS_LANGUAGE]):
+    for roi_name, region in zip(roi_names, [REGIONS_LOW_LEVEL_VISUAL, REGIONS_HIGH_LEVEL_VISUAL, REGIONS_LANGUAGE]):
         region_names = [label for label in region]
         values = [label_to_value_dict[label] for label in region_names]
         roi_mask = np.isin(atlas_map, values)

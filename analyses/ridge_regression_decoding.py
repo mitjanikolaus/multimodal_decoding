@@ -51,10 +51,10 @@ DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
-MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive_test2"
+MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test3"
 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test2"
 
-REGIONS_OCCIPITAL_EXCLUSIVE = [
+REGIONS_LOW_LEVEL_VISUAL = [
     'L G_and_S_occipital_inf',
     'L G_occipital_middle',
     'L G_occipital_sup',
@@ -71,6 +71,8 @@ REGIONS_OCCIPITAL_EXCLUSIVE = [
     'R S_oc_sup_and_transversal',
     'R S_occipital_ant',
     'R S_parieto_occipital',
+    'L S_calcarine',
+    'R S_calcarine',
 ]
 
 REGIONS_HIGH_LEVEL_VISUAL = [
@@ -119,8 +121,8 @@ def get_anatomical_mask(roi_mask_name):
     destrieux_atlas = fetch_atlas_destrieux_2009()
     label_to_id_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
     atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
-    if roi_mask_name == MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE:
-        region_names = [label for label in REGIONS_OCCIPITAL_EXCLUSIVE]
+    if roi_mask_name == MASK_ANATOMICAL_VISUAL_LOW_LEVEL:
+        region_names = [label for label in REGIONS_LOW_LEVEL_VISUAL]
     elif roi_mask_name == MASK_ANATOMICAL_VISUAL_HIGH_LEVEL:
         region_names = [label for label in REGIONS_HIGH_LEVEL_VISUAL]
     elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE:
