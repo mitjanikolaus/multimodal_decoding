@@ -50,7 +50,7 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test4"
+MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test5"
 MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
 
@@ -106,6 +106,8 @@ REGIONS_LANGUAGE = [
     'L S_temporal_sup',   # Superior temporal sulcus
     'L S_temporal_transverse', #
     'L G_temp_sup-G_T_transv',  #
+    'Lat_Fis-ant-Horizont',
+    'Lat_Fis-ant-Vertical',
     # 'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
     # 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
     # 'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
