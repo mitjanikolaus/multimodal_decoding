@@ -51,8 +51,8 @@ DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test14"
-MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test13"
-MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test14"
+MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test15"
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test15"
 
 REGIONS_LOW_LEVEL_VISUAL = [
     'L G_and_S_occipital_inf',
@@ -73,6 +73,14 @@ REGIONS_LOW_LEVEL_VISUAL = [
     'R S_calcarine',
     'L G_cuneus',
     'R G_cuneus',
+    'L S_collat_transv_post',
+    'R S_collat_transv_post',
+    'L S_parieto_occipital',
+    'R S_parieto_occipital',
+    'L S_intrapariet_and_P_trans',
+    'R S_intrapariet_and_P_trans',
+    'L G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Lingual',
 ]
 
 REGIONS_HIGH_LEVEL_VISUAL = [
@@ -88,16 +96,8 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R G_temporal_inf',
     'R G_temporal_middle',
     'R S_temporal_inf',
-    'L S_collat_transv_post',
-    'R S_collat_transv_post',
-    'L S_parieto_occipital',
-    'R S_parieto_occipital',
     'L S_oc-temp_med_and_Lingual',
     'R S_oc-temp_med_and_Lingual',
-    'L S_intrapariet_and_P_trans',
-    'R S_intrapariet_and_P_trans',
-    'L G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Lingual',
 ]
 
 REGIONS_LANGUAGE = [
