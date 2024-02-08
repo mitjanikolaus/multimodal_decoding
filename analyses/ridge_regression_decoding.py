@@ -52,7 +52,7 @@ DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test14"
 MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test13"
-MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test13"
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test14"
 
 REGIONS_LOW_LEVEL_VISUAL = [
     'L G_and_S_occipital_inf',
@@ -94,6 +94,8 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R S_parieto_occipital',
     'L S_oc-temp_med_and_Lingual',
     'R S_oc-temp_med_and_Lingual',
+    'L S_intrapariet_and_P_trans',
+    'R S_intrapariet_and_P_trans',
     'L G_oc-temp_med-Lingual',
     'R G_oc-temp_med-Lingual',
 ]
