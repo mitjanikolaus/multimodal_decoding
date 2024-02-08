@@ -52,7 +52,7 @@ DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test8"
 MASK_ANATOMICAL_OCCIPITAL_EXCLUSIVE = "anatomical_occipital_exclusive"
-MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test"
 
 REGIONS_OCCIPITAL_EXCLUSIVE = [
     'L G_and_S_occipital_inf',
@@ -90,6 +90,8 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R G_temporal_inf',
     'R G_temporal_middle',
     'R S_temporal_inf',
+    'L G_temporal_middle',
+    'R G_temporal_middle',
 ]
 
 REGIONS_LANGUAGE = [
