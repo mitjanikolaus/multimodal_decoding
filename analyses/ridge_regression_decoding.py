@@ -126,6 +126,7 @@ REGIONS_LANGUAGE = [
 # 'L S_temporal_transverse',  # Transverse temporal sulcus
 # 'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
 
+
 def get_anatomical_mask(roi_mask_name):
     destrieux_atlas = fetch_atlas_destrieux_2009()
     label_to_id_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
