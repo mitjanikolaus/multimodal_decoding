@@ -50,9 +50,9 @@ TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
-MASK_ANATOMICAL_LANGUAGE = "anatomical_lang_test1"
-MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level_test1"
-MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level_test1"
+MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
+MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level"
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
 
 REGIONS_LOW_LEVEL_VISUAL = [
     'L G_and_S_occipital_inf',
@@ -69,17 +69,25 @@ REGIONS_LOW_LEVEL_VISUAL = [
     'R S_oc_middle_and_Lunatus',
     'R S_oc_sup_and_transversal',
     'R S_occipital_ant',
-    'L S_calcarine',
-    'R S_calcarine',
-    'L G_cuneus',
-    'R G_cuneus',
+    'R S_parieto_occipital',
+    'L S_parieto_occipital',
+    'L G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Lingual',
 ]
+# TODO: add?
+#     'L S_calcarine',
+#     'R S_calcarine',
+#     'L G_cuneus',
+#     'R G_cuneus',
+
 
 REGIONS_HIGH_LEVEL_VISUAL = [
     'L G_oc-temp_lat-fusifor',
     'R G_oc-temp_lat-fusifor',
     'L G_oc-temp_med-Parahip',
     'R G_oc-temp_med-Parahip',
+    'L S_oc-temp_med_and_Lingual',
+    'R S_oc-temp_med_and_Lingual',
     'L S_oc-temp_lat',
     'R S_oc-temp_lat',
     'L G_temporal_inf',
@@ -88,15 +96,10 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R G_temporal_inf',
     'R G_temporal_middle',
     'R S_temporal_inf',
-    'L S_collat_transv_post',
-    'R S_collat_transv_post',
-    'L S_parieto_occipital',
-    'R S_parieto_occipital',
-    'L S_oc-temp_med_and_Lingual',
-    'R S_oc-temp_med_and_Lingual',
-    'L G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Lingual',
 ]
+# TODO: move?
+# 'L S_oc-temp_med_and_Lingual',
+# 'R S_oc-temp_med_and_Lingual',
 
 REGIONS_LANGUAGE = [
     'L G_front_inf-Opercular',  # left inferior frontal gyrus
@@ -109,12 +112,19 @@ REGIONS_LANGUAGE = [
     'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
     'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci
-    'L S_temporal_sup',   # Superior temporal sulcus
-    'L S_temporal_transverse',  # Transverse temporal sulcus
-    'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
-    # 'L G_pariet_inf-Supramar',  # Supramarginal gyrus
+    'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
+    'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
+    'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
 ]
-
+# TODO
+# remove?
+# 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
+# 'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
+# 'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
+# add?
+# 'L S_temporal_sup',  # Superior temporal sulcus
+# 'L S_temporal_transverse',  # Transverse temporal sulcus
+# 'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
 
 def get_anatomical_mask(roi_mask_name):
     destrieux_atlas = fetch_atlas_destrieux_2009()
