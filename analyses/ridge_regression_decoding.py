@@ -69,25 +69,19 @@ REGIONS_LOW_LEVEL_VISUAL = [
     'R S_oc_middle_and_Lunatus',
     'R S_oc_sup_and_transversal',
     'R S_occipital_ant',
-    'R S_parieto_occipital',
-    'L S_parieto_occipital',
+    'L S_calcarine',
+    'R S_calcarine',
+    'L G_cuneus',
+    'R G_cuneus',
     'L G_oc-temp_med-Lingual',
     'R G_oc-temp_med-Lingual',
 ]
-# TODO: add?
-#     'L S_calcarine',
-#     'R S_calcarine',
-#     'L G_cuneus',
-#     'R G_cuneus',
-
 
 REGIONS_HIGH_LEVEL_VISUAL = [
     'L G_oc-temp_lat-fusifor',
     'R G_oc-temp_lat-fusifor',
     'L G_oc-temp_med-Parahip',
     'R G_oc-temp_med-Parahip',
-    'L S_oc-temp_med_and_Lingual',
-    'R S_oc-temp_med_and_Lingual',
     'L S_oc-temp_lat',
     'R S_oc-temp_lat',
     'L G_temporal_inf',
@@ -96,10 +90,13 @@ REGIONS_HIGH_LEVEL_VISUAL = [
     'R G_temporal_inf',
     'R G_temporal_middle',
     'R S_temporal_inf',
+    'L S_collat_transv_post',
+    'R S_collat_transv_post',
+    'L S_parieto_occipital',
+    'R S_parieto_occipital',
+    'L S_oc-temp_med_and_Lingual',
+    'R S_oc-temp_med_and_Lingual',
 ]
-# TODO: move?
-# 'L S_oc-temp_med_and_Lingual',
-# 'R S_oc-temp_med_and_Lingual',
 
 REGIONS_LANGUAGE = [
     'L G_front_inf-Opercular',  # left inferior frontal gyrus
@@ -112,21 +109,16 @@ REGIONS_LANGUAGE = [
     'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
     'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci
-    'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
-    'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
-    'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
+    'L S_temporal_sup',   # Superior temporal sulcus
+    'L S_temporal_transverse',  # Transverse temporal sulcus
+    'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
+    'L G_pariet_inf-Supramar',  # Supramarginal gyrus
+    'L G_Ins_lg_and_S_cent_ins',    # Insula
+    'L G_insular_short',    # Insula
+    'L S_circular_insula_ant',    # Insula
+    'L S_circular_insula_inf',    # Insula
+    'L S_circular_insula_sup',    # Insula
 ]
-
-
-# TODO
-# remove?
-# 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
-# 'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
-# 'L G_pariet_inf-Supramar',  # Supramarginal gyrus:
-# add?
-# 'L S_temporal_sup',  # Superior temporal sulcus
-# 'L S_temporal_transverse',  # Transverse temporal sulcus
-# 'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
 
 
 def get_anatomical_mask(roi_mask_name):
@@ -444,9 +436,9 @@ def calculate_eval_metrics(results, fmri_betas):
     latents_image = results["latents"][results["stimulus_types"] != 'caption']
     val_latents = np.concatenate((latents_caption, latents_image))
 
-    fmri_betas_caption = fmri_betas[results["stimulus_types"] == 'caption']
-    fmri_betas_image = fmri_betas[results["stimulus_types"] != 'caption']
-    fmri_betas = np.concatenate((fmri_betas_caption, fmri_betas_image))
+    # fmri_betas_caption = fmri_betas[results["stimulus_types"] == 'caption']
+    # fmri_betas_image = fmri_betas[results["stimulus_types"] != 'caption']
+    # fmri_betas = np.concatenate((fmri_betas_caption, fmri_betas_image))
 
     for metric in DISTANCE_METRICS:
         acc = pairwise_accuracy(val_latents, val_predictions, val_ids, metric)
