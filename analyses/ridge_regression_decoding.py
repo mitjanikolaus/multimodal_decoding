@@ -45,7 +45,7 @@ DEFAULT_N_PRE_DISPATCH = 5
 DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 TRAIN_MODE_CHOICES = ["train", "train_captions", "train_images"]
-TEST_MODE_CHOICES = ['test', 'test_captions', 'test_images']
+TESTING_MODE = "test"
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
@@ -116,6 +116,8 @@ REGIONS_LANGUAGE = [
     'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
     'L G_cingul-Post-ventral',  # Posterior-ventral part of the cingulate gyrus (vPCC)
 ]
+
+
 # TODO
 # remove?
 # 'L G_cingul-Post-dorsal',  # Posterior-dorsal part of the cingulate gyrus (dPCC)
@@ -151,7 +153,8 @@ MASK_FUNCTIONAL_VISUAL2 = "functional_Visual2"
 
 
 def get_functional_mask(roi_mask_name, ref_img):
-    ji_conv_filename = os.path.join(ROOT_DIR, 'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt')
+    ji_conv_filename = os.path.join(ROOT_DIR,
+                                    'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt')
     ji_conversion = pd.read_csv(ji_conv_filename, delimiter='\t')
 
     network_names = roi_mask_name.split("_")[1:]
@@ -481,7 +484,7 @@ def run(args):
                                                                                                    training_mode,
                                                                                                    roi_mask_name=mask,
                                                                                                    recompute_std_mean=args.recompute_std_mean)
-                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, args.testing_mode,
+                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, TESTING_MODE,
                                                                                    fmri_transform, roi_mask_name=mask)
 
                 for model_name in args.models:
@@ -493,12 +496,12 @@ def run(args):
                         print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                               f"MODEL: {model_name} | FEATURES: {features}")
 
-                        train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
-                                                                                     args.vision_features,
-                                                                                     train_stim_ids,
-                                                                                     subject,
-                                                                                     training_mode,
-                                                                                     recompute_std_mean=args.recompute_std_mean)
+                        train_latents, latent_transform = get_nn_latent_data(model_name, features,
+                                                                             args.vision_features,
+                                                                             train_stim_ids,
+                                                                             subject,
+                                                                             training_mode,
+                                                                             recompute_std_mean=args.recompute_std_mean)
 
                         model = Ridge()
                         pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
@@ -507,7 +510,7 @@ def run(args):
                                            pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                         start = time.time()
-                        clf.fit(train_fmri_betas, train_data_latents)
+                        clf.fit(train_fmri_betas, train_latents)
                         end = time.time()
                         print(f"Elapsed time: {int(end - start)}s")
 
@@ -520,7 +523,6 @@ def run(args):
                             "features": features,
                             "vision_features": args.vision_features,
                             "training_mode": training_mode,
-                            "testing_mode": args.testing_mode,
                             "mask": mask,
                             "num_voxels": test_fmri_betas.shape[1],
                             "best_val_acc": True,
@@ -530,8 +532,8 @@ def run(args):
                         test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
                                                                   test_stim_ids,
                                                                   subject,
-                                                                  args.testing_mode,
-                                                                  nn_latent_transform=nn_latent_transform)
+                                                                  TESTING_MODE,
+                                                                  nn_latent_transform=latent_transform)
                         best_model = clf.best_estimator_
                         test_predicted_latents = best_model.predict(test_fmri_betas)
 
@@ -543,8 +545,6 @@ def run(args):
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
                               f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
                               f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}")
-                              # f" | RSA (captions): {test_results['rsa_captions']:.2f}"
-                              # f" | RSA (images): {test_results['rsa_images']:.2f}")
 
                         results = results | test_results
 
@@ -561,7 +561,6 @@ def get_args():
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
-    parser.add_argument("--testing-mode", type=str, default='test', choices=TEST_MODE_CHOICES)
 
     parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
