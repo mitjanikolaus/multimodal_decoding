@@ -326,7 +326,7 @@ def custom_search_light(
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
-                A.rows[list_i],
+                A[list_i],
                 estimator,
                 X,
                 y,
@@ -451,7 +451,16 @@ def run(args):
                         infl_mesh = fsaverage[f"infl_{hemi}"]
                         coords, _ = surface.load_surf_mesh(infl_mesh)
                         nn = neighbors.NearestNeighbors(radius=args.radius)
-                        adjacency = nn.fit(coords).radius_neighbors_graph(coords).tolil()
+                        if args.radius is not None:
+                            adjacency = nn.fit(coords).radius_neighbors_graph(coords)
+                            n_neighbors = [adj.sum() for adj in adjacency]
+                            print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
+
+                        elif args.n_neighbors is not None:
+                            distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
+                            print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+                        else:
+                            raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
                         model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                         pairwise_acc_scorers = {name: make_scorer(measure, greater_is_better=True) for name, measure
@@ -474,6 +483,10 @@ def run(args):
                         results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features,
                                                    subject,
                                                    args.resolution, hemi)
+                        if args.radius is not None:
+                            results_dir = os.path.join(results_dir, f"radius_{args.radius}")
+                        else:
+                            results_dir = os.path.join(results_dir, f"n_neighbors_{args.n_neighbors}")
                         os.makedirs(results_dir, exist_ok=True)
                         file_name = f"alpha_{args.l2_regularization_alpha}.p"
                         pickle.dump(scores, open(os.path.join(results_dir, file_name), 'wb'))
@@ -502,6 +515,7 @@ def get_args():
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--radius", type=float, default=10)
+    parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
 
