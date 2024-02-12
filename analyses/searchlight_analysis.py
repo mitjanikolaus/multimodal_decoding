@@ -11,7 +11,7 @@ from nilearn.image import resample_to_img
 from nilearn.surface import surface
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, TEST_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
+from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS
 
 from utils import VISION_MEAN_FEAT_KEY, RESULTS_DIR
@@ -198,7 +198,6 @@ def get_args():
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
-    parser.add_argument("--testing-mode", type=str, default='test', choices=TEST_MODE_CHOICES)
 
     parser.add_argument("--subset", type=int, default=None)
 

@@ -6,9 +6,9 @@ import warnings
 import numpy as np
 from joblib import Parallel, delayed
 from nilearn import datasets
-from nilearn.decoding.searchlight import search_light, GroupIterator
+from nilearn.decoding.searchlight import GroupIterator
 from nilearn.surface import surface
-from scipy.spatial.distance import cdist
+
 from sklearn import neighbors
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import Ridge
@@ -21,7 +21,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, TEST_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
+from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
     get_default_features, pairwise_accuracy
 
