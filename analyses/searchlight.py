@@ -436,6 +436,9 @@ def run(args):
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
                         print("Hemisphere: ", hemi)
+                        results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
+                        results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
+
                         # Average voxels 5 mm close to the 3d pial surface
                         pial_mesh = fsaverage[f"pial_{hemi}"]
                         start = time.time()
@@ -451,14 +454,18 @@ def run(args):
                         infl_mesh = fsaverage[f"infl_{hemi}"]
                         coords, _ = surface.load_surf_mesh(infl_mesh)
                         nn = neighbors.NearestNeighbors(radius=args.radius)
+                        results_dict = {}
                         if args.radius is not None:
                             adjacency = nn.fit(coords).radius_neighbors_graph(coords)
                             n_neighbors = [adj.sum() for adj in adjacency]
+                            results_dict["n_neighbors"] = n_neighbors
                             print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
-
+                            pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
+                            results_dict["distances"] = distances
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+                            pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
@@ -480,16 +487,20 @@ def run(args):
                         test_scores = [score["test_overall"] for score in scores]
                         print(f"Mean score: {np.mean(test_scores):.2f} | Max score: {np.max(test_scores):.2f}")
 
-                        results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features,
-                                                   subject,
-                                                   args.resolution, hemi)
-                        if args.radius is not None:
-                            results_dir = os.path.join(results_dir, f"radius_{args.radius}")
-                        else:
-                            results_dir = os.path.join(results_dir, f"n_neighbors_{args.n_neighbors}")
-                        os.makedirs(results_dir, exist_ok=True)
-                        file_name = f"alpha_{args.l2_regularization_alpha}.p"
-                        pickle.dump(scores, open(os.path.join(results_dir, file_name), 'wb'))
+                        results_dict["scores"] = scores
+                        pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
+
+
+def get_results_dir(args, features, hemi, model_name, subject, training_mode):
+    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features,
+                               subject,
+                               args.resolution, hemi)
+    if args.radius is not None:
+        results_dir = os.path.join(results_dir, f"radius_{args.radius}")
+    else:
+        results_dir = os.path.join(results_dir, f"n_neighbors_{args.n_neighbors}")
+    os.makedirs(results_dir, exist_ok=True)
+    return results_dir
 
 
 def get_args():
