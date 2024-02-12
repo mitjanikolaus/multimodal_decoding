@@ -321,12 +321,12 @@ def custom_search_light(
     scores : array-like of shape (number of rows in A)
         search_light scores
     """
-    group_iter = GroupIterator(A.shape[0], n_jobs)
+    group_iter = GroupIterator(len(A), n_jobs)
     with warnings.catch_warnings():  # might not converge
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
-                A[list_i],
+                [A[i] for i in list_i],
                 estimator,
                 X,
                 y,
@@ -334,7 +334,7 @@ def custom_search_light(
                 scoring,
                 cv,
                 thread_id + 1,
-                A.shape[0],
+                len(A),
                 verbose,
             )
             for thread_id, list_i in enumerate(group_iter)
@@ -456,7 +456,7 @@ def run(args):
                         nn = neighbors.NearestNeighbors(radius=args.radius)
                         results_dict = {}
                         if args.radius is not None:
-                            adjacency = nn.fit(coords).radius_neighbors_graph(coords)
+                            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in nn.fit(coords).radius_neighbors_graph(coords).toarray()]
                             n_neighbors = [adj.sum() for adj in adjacency]
                             results_dict["n_neighbors"] = n_neighbors
                             print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
@@ -525,7 +525,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
-    parser.add_argument("--radius", type=float, default=10)
+    parser.add_argument("--radius", type=float, default=None)
     parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
