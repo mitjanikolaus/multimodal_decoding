@@ -27,7 +27,7 @@ VIEWS = ["lateral", "medial"]#, "ventral"]   #, "ventral"]
 def run(args):
     all_scores = []
 
-    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/*/*/*/fsaverage6/left/*/alpha*.p')
+    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/*/*/*/fsaverage6/left/*/*.p')
     results_paths = np.array(sorted(glob(results_regex)))
     for path in results_paths:
         training_mode = os.path.dirname(path).split("/")[-7]
@@ -44,13 +44,17 @@ def run(args):
             scores[hemi] = dict()
             path_scores_hemi = path.replace('left', hemi)
             if os.path.isfile(path_scores_hemi):
-                scores_hemi = pickle.load(open(path_scores_hemi, 'rb'))['scores']
+                scores_data = pickle.load(open(path_scores_hemi, 'rb'))
+                nan_locations = scores_data['nan_locations']
+                scores_hemi = scores_data['scores']
+
                 for testing_mode in ["test_overall", "test_captions", "test_images"]:
                     score_name = "overall" if testing_mode == "test_overall" else testing_mode
-                    scores[hemi][score_name] = np.array([score[testing_mode] for score in scores_hemi])
+                    scores[hemi][score_name] = np.repeat(np.nan, nan_locations.shape)
+                    scores[hemi][score_name][~nan_locations] = np.array([score[testing_mode] for score in scores_hemi])
 
-                print(hemi, {n: round(score.mean(), 4) for n, score in scores[hemi].items()})
-                print(hemi, {f"{n}_max": round(score.max(), 2) for n, score in scores[hemi].items()})
+                print(hemi, {n: round(np.nanmean(score), 4) for n, score in scores[hemi].items()})
+                print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores[hemi].items()})
                 scores[hemi]["min(captions,images)"] = np.min((scores[hemi]['test_images'], scores[hemi]['test_captions']), axis=0)
 
                 path_scores_hemi_captions = path.replace('train/', 'train_captions/')
