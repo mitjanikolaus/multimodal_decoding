@@ -248,11 +248,10 @@ def custom_group_iter_search_light(
     t0 = time.time()
     for i, row in enumerate(list_rows):
         kwargs = {"scoring": scoring, "groups": groups}
-        scores = custom_cross_val_score(estimator, X[:, row], y, cv=cv, n_jobs=1, **kwargs)
+        scores = custom_cross_val_score(estimator, X[:, row], y, cv=cv, n_jobs=1, verbose=0, **kwargs)
         par_scores.append({key: np.mean(score) for key, score in scores.items()})
         if verbose > 0:
-            # One can't print less than each 10 iterations
-            step = 11 - min(verbose, 10)
+            step = 111 - min(verbose, 110)
             if i % step == 0:
                 # If there is only one job, progress information is fixed
                 crlf = "\r" if total == len(list_rows) else "\n"
