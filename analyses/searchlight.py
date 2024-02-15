@@ -445,15 +445,17 @@ def run(args):
                         print("transforming to surface..", end=" ")
                         X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                         print("done.")
-                        for i, x in enumerate(X):
-                            if i == 0:
-                                print(f"nans: {np.isnan(x).sum()}")
-                            nans = np.isnan(x)
-                            x[nans] = 0  # TODO
+                        nan_locations = np.isnan(X[0])
+                        assert np.all(nan_locations == np.isnan(X[-1]))
+                        X = X[:, ~nan_locations]
+
                         infl_mesh = fsaverage[f"infl_{hemi}"]
                         coords, _ = surface.load_surf_mesh(infl_mesh)
+                        coords = coords[~nan_locations]
+
                         nn = neighbors.NearestNeighbors(radius=args.radius)
                         results_dict = {}
+                        results_dict["nan_locations"] = nan_locations
                         if args.radius is not None:
                             adjacency = [np.argwhere(arr == 1)[:, 0] for arr in nn.fit(coords).radius_neighbors_graph(coords).toarray()]
                             n_neighbors = [len(adj) for adj in adjacency]
