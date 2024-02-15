@@ -198,7 +198,7 @@ def custom_group_iter_search_light(
         cv,
         thread_id,
         total,
-        verbose=0,
+        print_interval=500,
 ):
     """Perform grouped iterations of search_light.
 
@@ -236,8 +236,8 @@ def custom_group_iter_search_light(
     total : int
         Total number of voxels, used for display
 
-    verbose : int, default=0
-        The verbosity level.
+    print_interval : int, default=500
+        The interval for printing progress information.
 
     Returns
     -------
@@ -250,9 +250,8 @@ def custom_group_iter_search_light(
         kwargs = {"scoring": scoring, "groups": groups}
         scores = custom_cross_val_score(estimator, X[:, row], y, cv=cv, n_jobs=1, verbose=0, **kwargs)
         par_scores.append({key: np.mean(score) for key, score in scores.items()})
-        if verbose > 0:
-            step = 111 - min(verbose, 110)
-            if i % step == 0:
+        if print_interval > 0:
+            if i % print_interval == 0:
                 # If there is only one job, progress information is fixed
                 crlf = "\r" if total == len(list_rows) else "\n"
                 percent = float(i) / len(list_rows)
@@ -277,6 +276,7 @@ def custom_search_light(
         cv=None,
         n_jobs=-1,
         verbose=0,
+        print_interval=500,
 ):
     """Compute a search_light.
 
@@ -334,7 +334,7 @@ def custom_search_light(
                 cv,
                 thread_id + 1,
                 len(A),
-                verbose,
+                print_interval,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -479,7 +479,7 @@ def run(args):
 
                         start = time.time()
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
-                                              scoring=pairwise_acc_scorers, verbose=1)
+                                              scoring=pairwise_acc_scorers, verbose=1, print_interval=500)
                         end = time.time()
                         print(f"Preprocessing time: {prepr_time}s")
                         print(f"Searchlight time: {int(end - start)}s")
