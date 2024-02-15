@@ -30,11 +30,11 @@ def run(args):
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/*/*/*/fsaverage6/left/*/alpha*.p')
     results_paths = np.array(sorted(glob(results_regex)))
     for path in results_paths:
-        training_mode = os.path.dirname(path).split("/")[-6]
+        training_mode = os.path.dirname(path).split("/")[-7]
         mode = os.path.dirname(path).split("/")[-1]
-        resolution = os.path.dirname(path).split("/")[-2]
-        subject = os.path.dirname(path).split("/")[-3]
-        model_name = os.path.dirname(path).split("/")[-5]
+        resolution = os.path.dirname(path).split("/")[-3]
+        subject = os.path.dirname(path).split("/")[-4]
+        model_name = os.path.dirname(path).split("/")[-6]
         alpha = float(os.path.basename(path).split("_")[1][:-2])
 
         scores = dict()
