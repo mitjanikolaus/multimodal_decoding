@@ -456,7 +456,7 @@ def run(args):
                         results_dict = {}
                         if args.radius is not None:
                             adjacency = [np.argwhere(arr == 1)[:, 0] for arr in nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-                            n_neighbors = [adj.sum() for adj in adjacency]
+                            n_neighbors = [len(adj) for adj in adjacency]
                             results_dict["n_neighbors"] = n_neighbors
                             print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
                             pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
