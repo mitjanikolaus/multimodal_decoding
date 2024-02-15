@@ -126,6 +126,7 @@ def run(args):
 
         for row_axes, testing_mode in zip(axes, metrics):
             cbar_max = None
+            cbar_min = None
             for i, view in enumerate(VIEWS):
                 for j, hemi in enumerate(['left', 'right']):
                     if testing_mode in scores[hemi].keys():
@@ -133,7 +134,8 @@ def run(args):
 
                         infl_mesh = fsaverage[f"infl_{hemi}"]
                         if cbar_max is None:
-                            cbar_max = scores_hemi.max()
+                            cbar_max = np.nanmax(scores_hemi)
+                            cbar_min = np.nanmin(scores_hemi)
                         # print(f" | max score: {cbar_max:.2f}")
                         title = ""
                         # if hemi == "left":
@@ -173,11 +175,11 @@ def run(args):
                             title=title,
                             axes=row_axes[i*2+j],
                             colorbar=True if row_axes[i * 2 + j] == row_axes[-1] else False,
-                            threshold=COLORBAR_THRESHOLD_MIN if cbar_max > 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                            vmax=COLORBAR_MAX if cbar_max > 0.5 else None,# cbar_max,
-                            vmin=0.5 if cbar_max > 0.5 else None,
-                            cmap="hot" if cbar_max > 0.5 else "cold_hot",
-                            symmetric_cbar=True if cbar_max < 0.5 else "auto",
+                            threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                            vmax=COLORBAR_MAX if cbar_min >= 0 else None,# cbar_max,
+                            vmin=0.5 if cbar_min >= 0 else None,
+                            cmap="hot" if cbar_min >= 0 else "cold_hot",
+                            symmetric_cbar=True if cbar_min < 0  else "auto",
                         )
                         row_axes[i * 2 + j].legend(handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1, borderpad=0, loc='upper center', frameon=False)#bbox_to_anchor=(1.9, 0.8),
 
