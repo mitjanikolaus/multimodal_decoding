@@ -439,10 +439,10 @@ def run(args):
                         results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
                         # Average voxels 5 mm close to the 3d pial surface
+                        print("transforming to surface..", end=" ")
                         pial_mesh = fsaverage[f"pial_{hemi}"]
                         start = time.time()
                         radius = 5.0
-                        print("transforming to surface..", end=" ")
                         X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
                         print("done.")
                         nan_locations = np.isnan(X[0])
