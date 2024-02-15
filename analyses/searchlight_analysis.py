@@ -63,7 +63,8 @@ def run(args):
                     scores_hemi_captions = pickle.load(open(path_scores_hemi_captions, 'rb'))['scores']
                     for testing_mode in ["test_overall", "test_captions", "test_images"]:
                         score_name = "overall" if testing_mode == "test_overall" else testing_mode
-                        scores_mod_specific_captions[score_name] = np.array([score[testing_mode] for score in scores_hemi_captions])
+                        scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+                        scores_mod_specific_captions[score_name][~nan_locations] = np.array([score[testing_mode] for score in scores_hemi_captions])
 
                 path_scores_hemi_images = path.replace('train/', 'train_images/')
                 scores_mod_specific_images = dict()
@@ -71,7 +72,8 @@ def run(args):
                     scores_hemi_images = pickle.load(open(path_scores_hemi_images, 'rb'))['scores']
                     for testing_mode in ["test_overall", "test_captions", "test_images"]:
                         score_name = "overall" if testing_mode == "test_overall" else testing_mode
-                        scores_mod_specific_images[score_name] = np.array([score[testing_mode] for score in scores_hemi_images])
+                        scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+                        scores_mod_specific_images[score_name][~nan_locations] = np.array([score[testing_mode] for score in scores_hemi_images])
 
                 if len(scores_mod_specific_captions) > 0 and len(scores_mod_specific_images) > 0:
                     scores[hemi]['mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific)'] = np.array([np.mean((ai, ac)) - np.mean((si, sc)) for ai, ac, si, sc in zip(scores[hemi]['test_images'], scores[hemi]['test_captions'], scores_mod_specific_images['test_images'], scores_mod_specific_captions['test_captions'])])
