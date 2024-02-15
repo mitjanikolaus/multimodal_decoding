@@ -37,6 +37,15 @@ def get_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
+            elif second_modality == "gauss_smaller_stddev":
+                mod_2_class_train_data = class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                                                                        size=(n_train_samples_per_class,
+                                                                              N_VOXELS_FMRI))
+                mod_2_class_train_data += np.random.normal(scale=0.5*STDDEV_WITHIN_CLASS,
+                                                           size=(n_train_samples_per_class, N_VOXELS_FMRI))
+                train_data.append(mod_2_class_train_data)
+                train_labels.extend([c] * len(mod_2_class_train_data))
+
             elif second_modality == "gauss_higher_stddev":
                 mod_2_class_train_data = class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
                                                                         size=(n_train_samples_per_class,
@@ -45,7 +54,6 @@ def get_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
                                                            size=(n_train_samples_per_class, N_VOXELS_FMRI))
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
-
 
             elif second_modality == "inverse":
                 mod_2_class_train_data = -1 * class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
@@ -73,6 +81,13 @@ def get_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
                 mod_2_class_train_data = data_classes_mod_2[c] + np.random.normal(scale=STDDEV_WITHIN_CLASS,
                                                                         size=(n_train_samples_per_class,
                                                                               N_VOXELS_FMRI))
+                train_data.append(mod_2_class_train_data)
+                train_labels.extend([c] * len(mod_2_class_train_data))
+
+            elif second_modality == "just_noise":
+                mod_2_class_train_data = np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                                                            size=(n_train_samples_per_class,
+                                                                  N_VOXELS_FMRI))
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
@@ -122,6 +137,9 @@ def run(args):
     print("SECOND MODALITY: GAUSSIAN NOISE (same stddev)")
     train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_same_stddev")
 
+    print("SECOND MODALITY: GAUSSIAN NOISE (smaller stddev)")
+    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_smaller_stddev")
+
     print("SECOND MODALITY: GAUSSIAN NOISE (higher stddev)")
     train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_higher_stddev")
 
@@ -133,6 +151,9 @@ def run(args):
 
     print("SECOND MODALITY: EXACT INVERSE")
     train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "exact_inverse")
+
+    print("SECOND MODALITY: JUST NOISE")
+    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "just_noise")
 
 
 def get_args():
