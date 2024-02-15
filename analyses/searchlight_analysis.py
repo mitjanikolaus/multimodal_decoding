@@ -21,17 +21,17 @@ SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight
 COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.1
-VIEWS = ["lateral", "medial", "ventral"]   #, "ventral"]
+VIEWS = ["lateral", "medial"]#, "ventral"]   #, "ventral"]
 
 
 def run(args):
     all_scores = []
 
-    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/*/*/*/fsaverage6/left/alpha*1.0.p')
+    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/*/*/*/fsaverage6/left/*/alpha*.p')
     results_paths = np.array(sorted(glob(results_regex)))
     for path in results_paths:
         training_mode = os.path.dirname(path).split("/")[-6]
-
+        mode = os.path.dirname(path).split("/")[-1]
         resolution = os.path.dirname(path).split("/")[-2]
         subject = os.path.dirname(path).split("/")[-3]
         model_name = os.path.dirname(path).split("/")[-5]
@@ -44,7 +44,7 @@ def run(args):
             scores[hemi] = dict()
             path_scores_hemi = path.replace('left', hemi)
             if os.path.isfile(path_scores_hemi):
-                scores_hemi = pickle.load(open(path_scores_hemi, 'rb'))
+                scores_hemi = pickle.load(open(path_scores_hemi, 'rb'))['scores']
                 for testing_mode in ["test_overall", "test_captions", "test_images"]:
                     score_name = "overall" if testing_mode == "test_overall" else testing_mode
                     scores[hemi][score_name] = np.array([score[testing_mode] for score in scores_hemi])
@@ -56,7 +56,7 @@ def run(args):
                 path_scores_hemi_captions = path.replace('train/', 'train_captions/')
                 scores_mod_specific_captions = dict()
                 if os.path.isfile(path_scores_hemi_captions):
-                    scores_hemi_captions = pickle.load(open(path_scores_hemi_captions, 'rb'))
+                    scores_hemi_captions = pickle.load(open(path_scores_hemi_captions, 'rb'))['scores']
                     for testing_mode in ["test_overall", "test_captions", "test_images"]:
                         score_name = "overall" if testing_mode == "test_overall" else testing_mode
                         scores_mod_specific_captions[score_name] = np.array([score[testing_mode] for score in scores_hemi_captions])
@@ -64,7 +64,7 @@ def run(args):
                 path_scores_hemi_images = path.replace('train/', 'train_images/')
                 scores_mod_specific_images = dict()
                 if os.path.isfile(path_scores_hemi_images):
-                    scores_hemi_images = pickle.load(open(path_scores_hemi_images, 'rb'))
+                    scores_hemi_images = pickle.load(open(path_scores_hemi_images, 'rb'))['scores']
                     for testing_mode in ["test_overall", "test_captions", "test_images"]:
                         score_name = "overall" if testing_mode == "test_overall" else testing_mode
                         scores_mod_specific_images[score_name] = np.array([score[testing_mode] for score in scores_hemi_images])
@@ -110,6 +110,7 @@ def run(args):
         scores["model_name"] = model_name
         scores["training_mode"] = training_mode
         scores["resolution"] = resolution
+        scores["mode"] = mode
         scores["alpha"] = alpha
 
         all_scores.append(scores)
@@ -186,7 +187,7 @@ def run(args):
         title = f"{scores['model_name']}_{scores['subject']}"
         plt.suptitle(title, y=0.9)
         title += f"_alpha_{str(scores['alpha'])}"
-        results_searchlight = os.path.join(RESULTS_DIR, "searchlight", scores['resolution'], scores['training_mode'], f"{title}.png")
+        results_searchlight = os.path.join(RESULTS_DIR, "searchlight", scores['resolution'], scores['training_mode'], scores['mode'], f"{title}.png")
         os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
         plt.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
         plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
