@@ -460,12 +460,10 @@ def run(args):
                             n_neighbors = [len(adj) for adj in adjacency]
                             results_dict["n_neighbors"] = n_neighbors
                             print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
-                            pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
                             results_dict["distances"] = distances
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
-                            pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
