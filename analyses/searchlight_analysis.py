@@ -57,7 +57,7 @@ def run(args):
                 print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores[hemi].items()})
                 scores[hemi]["min(captions,images)"] = np.min((scores[hemi]['test_images'], scores[hemi]['test_captions']), axis=0)
 
-                path_scores_hemi_captions = path.replace('train/', 'train_captions/')
+                path_scores_hemi_captions = path_scores_hemi.replace('train/', 'train_captions/')
                 scores_mod_specific_captions = dict()
                 if os.path.isfile(path_scores_hemi_captions):
                     scores_hemi_captions = pickle.load(open(path_scores_hemi_captions, 'rb'))['scores']
@@ -66,7 +66,7 @@ def run(args):
                         scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
                         scores_mod_specific_captions[score_name][~nan_locations] = np.array([score[testing_mode] for score in scores_hemi_captions])
 
-                path_scores_hemi_images = path.replace('train/', 'train_images/')
+                path_scores_hemi_images = path_scores_hemi.replace('train/', 'train_images/')
                 scores_mod_specific_images = dict()
                 if os.path.isfile(path_scores_hemi_images):
                     scores_hemi_images = pickle.load(open(path_scores_hemi_images, 'rb'))['scores']
