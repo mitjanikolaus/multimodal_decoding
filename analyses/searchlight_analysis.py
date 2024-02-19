@@ -20,7 +20,7 @@ SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight
 
 COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
-COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.1
+COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.05
 VIEWS = ["lateral", "medial"]#, "ventral"]   #, "ventral"]
 
 
