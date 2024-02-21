@@ -199,7 +199,7 @@ def run(args):
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
                         cbar_max = np.nanmax(scores_hemi_t_values)
-                        cbar_min = np.nanmin(scores_hemi)
+                        cbar_min = np.nanmin(scores_hemi_t_values)
                     title = ""
                     if row_axes[i * 2 + j] == row_axes[0]:
                         title = f"{metric}"
