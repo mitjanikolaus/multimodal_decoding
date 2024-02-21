@@ -35,6 +35,7 @@ CHANCE_VALUES = {"overall": 0.5,
                  'captions_agno - captions_specific': 0,
                  'imgs_agno - imgs_specific (cross)': 0,
                  'captions_agno - captions_specific (cross)': 0,
+                 'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)': 0
                  }
 
 
@@ -144,25 +145,24 @@ def run(args):
                         [np.mean((ai, ac)) - np.mean((si, sc)) for ai, ac, si, sc in
                          zip(scores[hemi]['test_images'], scores[hemi]['test_captions'],
                              scores_mod_specific_captions['test_images'], scores_mod_specific_images['test_captions'])])
-                    scores[hemi]['imgs_specific (cross)'] = np.array([si for ai, ac, si, sc in
-                                                                      zip(scores[hemi]['test_images'],
-                                                                          scores[hemi]['test_captions'],
-                                                                          scores_mod_specific_captions[
-                                                                              'test_images'],
-                                                                          scores_mod_specific_images[
-                                                                              'test_captions'])])
-                    scores[hemi]['captions_specific (cross)'] = np.array([sc for ai, ac, si, sc in
-                                                                          zip(scores[hemi]['test_images'],
-                                                                              scores[hemi]['test_captions'],
-                                                                              scores_mod_specific_captions[
-                                                                                  'test_images'],
-                                                                              scores_mod_specific_images[
-                                                                                  'test_captions'])])
+                    # scores[hemi]['imgs_specific (cross)'] = np.array([si for ai, ac, si, sc in
+                    #                                                   zip(scores[hemi]['test_images'],
+                    #                                                       scores[hemi]['test_captions'],
+                    #                                                       scores_mod_specific_captions[
+                    #                                                           'test_images'],
+                    #                                                       scores_mod_specific_images[
+                    #                                                           'test_captions'])])
+                    # scores[hemi]['captions_specific (cross)'] = np.array([sc for ai, ac, si, sc in
+                    #                                                       zip(scores[hemi]['test_images'],
+                    #                                                           scores[hemi]['test_captions'],
+                    #                                                           scores_mod_specific_captions[
+                    #                                                               'test_images'],
+                    #                                                           scores_mod_specific_images[
+                    #                                                               'test_captions'])])
 
         add_to_all_scores(all_scores, scores)
 
         print("")
-
 
         all_subjects.add(subject)
         scores["subject"] = subject
@@ -177,13 +177,16 @@ def run(args):
     # calc t-values
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
-            all_scores[hemi][score_name] = [stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name])[0] for x in all_scores[hemi][score_name]]
+            all_scores[hemi][score_name] = [stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name])[0] for x in
+                                            all_scores[hemi][score_name]]
 
     # per-subject plots
     for scores in tqdm(per_subject_scores):
         metrics = ["overall", "test_captions", "test_images", "min(captions,images)",
                    'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific)', 'imgs_agno - imgs_specific',
-                   'captions_agno - captions_specific']
+                   'captions_agno - captions_specific', 'imgs_agno - imgs_specific (cross)',
+                   'captions_agno - captions_specific (cross)',
+                   'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)']
         fig, axes = plt.subplots(nrows=len(metrics), ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'},
                                  figsize=(5 * len(VIEWS), len(metrics) * 2))
         fsaverage = datasets.fetch_surf_fsaverage(mesh=scores['resolution'])
