@@ -216,7 +216,7 @@ def run(args):
                         threshold=3.365,    #p<0.01 for 5 degrees of freedom (6 subjects) (one-sided!)
                         vmax=cbar_max,
                         vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else None,
-                        cmap="hot",
+                        cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
                         symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                     )
                     row_axes[i * 2 + j].legend(
