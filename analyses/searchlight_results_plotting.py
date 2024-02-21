@@ -225,7 +225,7 @@ def run(args):
 
     title = f"{model_name}_{mode}_group_level"
     plt.suptitle(title, y=0.9)
-    title += f"_alpha_{str(scores['alpha'])}"
+    title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
     plt.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
