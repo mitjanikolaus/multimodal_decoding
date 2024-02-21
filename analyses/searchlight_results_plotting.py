@@ -175,10 +175,12 @@ def run(args):
         per_subject_scores.append(scores)
 
     # calc t-values
-    # for hemi in HEMIS:
-    #     for score_name in all_scores[hemi].keys():
-    #         all_scores[hemi][score_name] = [stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name])[0] for x in
-    #                                         all_scores[hemi][score_name]]
+    for hemi in HEMIS:
+        for score_name in all_scores[hemi].keys():
+            all_scores[hemi][score_name] = [
+                stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name])[0] if (~np.isnan(x)).sum() > 3 else np.nan for x
+                in
+                all_scores[hemi][score_name]]
 
     # per-subject plots
     for scores in tqdm(per_subject_scores):
