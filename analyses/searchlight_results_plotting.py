@@ -15,7 +15,7 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS
 
-from utils import VISION_MEAN_FEAT_KEY, RESULTS_DIR
+from utils import VISION_MEAN_FEAT_KEY, RESULTS_DIR, SUBJECTS
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
 
@@ -175,15 +175,13 @@ def run(args):
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
             all_scores[hemi][score_name] = [
-                stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name])[0] if (~np.isnan(x)).sum() > 3 else np.nan for x
+                stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name], alternative="greater") if (~np.isnan(x)).sum() == len(SUBJECTS) else np.nan for x
                 in
                 all_scores[hemi][score_name]]
 
     metrics = ["overall", "test_captions", "test_images", "min(captions,images)",
                'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific)', 'imgs_agno - imgs_specific',
-               'captions_agno - captions_specific', 'imgs_agno - imgs_specific (cross)',
-               'captions_agno - captions_specific (cross)',
-               'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)']
+               'captions_agno - captions_specific'] #'imgs_agno - imgs_specific (cross)', 'captions_agno - captions_specific (cross)', 'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)'
 
     scores = all_scores
     fig, axes = plt.subplots(nrows=len(metrics), ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'},
@@ -192,37 +190,32 @@ def run(args):
 
     for row_axes, metric in zip(axes, metrics):
         cbar_max = None
-        cbar_min = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(['left', 'right']):
                 if metric in scores[hemi].keys():
                     scores_hemi = scores[hemi][metric]
-
+                    scores_hemi_t_values = np.array([d[0] if not np.isnan(d).any() else np.nan for d in scores_hemi])
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
-                        cbar_max = np.nanmax(scores_hemi)
-                        cbar_min = np.nanmin(scores_hemi)
-                    # print(f" | max score: {cbar_max:.2f}")
+                        cbar_max = np.nanmax(scores_hemi_t_values)
                     title = ""
-                    # if hemi == "left":
-                    #     title = f"{view}"
                     if row_axes[i * 2 + j] == row_axes[0]:
                         title = f"{metric}"
 
                     plotting.plot_surf_stat_map(
                         infl_mesh,
-                        scores_hemi,
+                        scores_hemi_t_values,
                         hemi=hemi,
                         view=view,
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         title=title,
                         axes=row_axes[i * 2 + j],
                         colorbar=True if row_axes[i * 2 + j] == row_axes[-1] else False,
-                        threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                        vmax=COLORBAR_MAX if cbar_min >= 0 else None,  # cbar_max,
-                        vmin=0.5 if cbar_min >= 0 else None,
-                        cmap="hot" if cbar_min >= 0 else "cold_hot",
-                        symmetric_cbar=True if cbar_min < 0 else "auto",
+                        threshold=3.365,    #p<0.01 for 5 degrees of freedom (6 subjects)
+                        vmax=cbar_max,
+                        vmin=0,
+                        cmap="hot",
+                        symmetric_cbar=False,
                     )
                     row_axes[i * 2 + j].legend(
                         handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1,
