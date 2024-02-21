@@ -175,7 +175,7 @@ def run(args):
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
             all_scores[hemi][score_name] = [
-                stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name], alternative="greater") if (~np.isnan(x)).sum() == len(SUBJECTS) else np.nan for x
+                stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name], alternative="greater" if CHANCE_VALUES[score_name] == 0.5 else "two-sided") if (~np.isnan(x)).sum() == len(SUBJECTS) else np.nan for x
                 in
                 all_scores[hemi][score_name]]
 
@@ -190,6 +190,7 @@ def run(args):
 
     for row_axes, metric in zip(axes, metrics):
         cbar_max = None
+        cbar_min = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(['left', 'right']):
                 if metric in scores[hemi].keys():
@@ -198,6 +199,7 @@ def run(args):
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
                         cbar_max = np.nanmax(scores_hemi_t_values)
+                        cbar_min = np.nanmin(scores_hemi)
                     title = ""
                     if row_axes[i * 2 + j] == row_axes[0]:
                         title = f"{metric}"
@@ -211,11 +213,11 @@ def run(args):
                         title=title,
                         axes=row_axes[i * 2 + j],
                         colorbar=True if row_axes[i * 2 + j] == row_axes[-1] else False,
-                        threshold=3.365,    #p<0.01 for 5 degrees of freedom (6 subjects)
+                        threshold=3.365,    #p<0.01 for 5 degrees of freedom (6 subjects) (one-sided!)
                         vmax=cbar_max,
-                        vmin=0,
+                        vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else None,
                         cmap="hot",
-                        symmetric_cbar=False,
+                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                     )
                     row_axes[i * 2 + j].legend(
                         handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1,
