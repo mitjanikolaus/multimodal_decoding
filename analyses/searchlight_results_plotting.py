@@ -235,7 +235,7 @@ def run(args):
     for scores in tqdm(per_subject_scores):
         fig, axes = plt.subplots(nrows=len(metrics), ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'},
                                  figsize=(5 * len(VIEWS), len(metrics) * 2))
-        fsaverage = datasets.fetch_surf_fsaverage(mesh=scores['resolution'])
+        fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
 
         for row_axes, metric in zip(axes, metrics):
             cbar_max = None
