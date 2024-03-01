@@ -2,6 +2,8 @@ import argparse
 
 import numpy as np
 from sklearn.linear_model import RidgeClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 N_CLASSES = 10
 N_TRAIN_SAMPLES_PER_CLASS = 100
@@ -12,7 +14,7 @@ N_VOXELS_FMRI = 100
 STDDEV_WITHIN_CLASS = 1.5
 
 
-def get_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
+def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
     np.random.seed(seed)
     data_classes = np.random.uniform(size=(N_CLASSES, N_VOXELS_FMRI))
     if second_modality is not None and second_modality == "independent":
@@ -107,11 +109,10 @@ def get_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
 def train_and_eval(n_train_samples_per_class, second_modality=None):
     test_scores = []
     for seed in range(10):
-        train_fmri_betas, test_fmri_betas, train_labels, test_labels = get_dummy_fmri_data(n_train_samples_per_class,
-                                                                                           seed=seed,
-                                                                                           second_modality=second_modality)
-        # clf = make_pipeline(StandardScaler(), RidgeClassifier(alpha=args.l2_regularization_alpha))
-        clf = RidgeClassifier(alpha=args.l2_regularization_alpha)
+        train_fmri_betas, test_fmri_betas, train_labels, test_labels = generate_dummy_fmri_data(n_train_samples_per_class,
+                                                                                                seed=seed,
+                                                                                                second_modality=second_modality)
+        clf = make_pipeline(StandardScaler(), RidgeClassifier(alpha=args.l2_regularization_alpha))
 
         clf.fit(train_fmri_betas, train_labels)
 
