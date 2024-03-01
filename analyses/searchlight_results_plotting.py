@@ -23,23 +23,24 @@ SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight
 
 COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
-COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.05
+COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.03
 VIEWS = ["lateral", "medial"]  # , "ventral"]   #, "ventral"]
 
 HEMIS = ['left', 'right']
 
 BASE_METRICS = ["test_overall", "test_captions", "test_images"]
-CHANCE_VALUES = {"overall": 0.5,
-                 "captions": 0.5,
+CHANCE_VALUES = {"captions": 0.5,
                  "images": 0.5,
                  "mean(imgs,captions)": 0.5,
                  "min(imgs,captions)": 0.5,
-                 'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific)': 0,
+                 'mean(imgs_agno,captions_agno)-mean(imgs_specific,captions_specific)': 0,
                  'imgs_agno - imgs_specific': 0,
                  'captions_agno - captions_specific': 0,
                  'imgs_agno - imgs_specific (cross)': 0,
                  'captions_agno - captions_specific (cross)': 0,
-                 'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)': 0
+                 'mean(imgs_agno,captions_agno)-mean(imgs_specific,captions_specific) (cross)': 0,
+                 'mean(captions_agno - captions_specific, imgs_agno - imgs_specific)': 0,
+                 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)': 0,
                  }
 
 
@@ -74,13 +75,15 @@ def run(args):
     per_subject_scores = []
     all_subjects = set()
     all_scores = {hemi: dict() for hemi in HEMIS}
+    t_values = {hemi: dict() for hemi in HEMIS}
 
     model_name = "vilt"
     resolution = "fsaverage6"
-    mode = "radius_10.0"    #n_neighbors_100
+    mode = "radius_10.0"  # n_neighbors_100
     alpha = 1
 
-    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/{model_name}/*/*/{resolution}/left/{mode}/alpha_{str(alpha)}.p')
+    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
+                                 f'train/{model_name}/*/*/{resolution}/left/{mode}/alpha_{str(alpha)}.p')
     results_paths = np.array(sorted(glob(results_regex)))
     for path in results_paths:
         mode = os.path.dirname(path).split("/")[-1]
@@ -107,6 +110,7 @@ def run(args):
                 print(hemi, {n: round(np.nanmean(score), 4) for n, score in scores[hemi].items()})
                 print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores[hemi].items()})
                 scores[hemi]["mean(imgs,captions)"] = scores[hemi]["overall"]
+                del scores[hemi]["overall"]
                 scores[hemi]["min(imgs,captions)"] = np.min(
                     (scores[hemi]['images'], scores[hemi]['captions']), axis=0)
 
@@ -131,10 +135,6 @@ def run(args):
                             [score[metric] for score in scores_hemi_images])
 
                 if len(scores_mod_specific_captions) > 0 and len(scores_mod_specific_images) > 0:
-                    scores[hemi]['mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific)'] = np.array(
-                        [np.mean((ai, ac)) - np.mean((si, sc)) for ai, ac, si, sc in
-                         zip(scores[hemi]['images'], scores[hemi]['captions'],
-                             scores_mod_specific_images['images'], scores_mod_specific_captions['captions'])])
                     scores[hemi]['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
                                                                           zip(scores[hemi]['images'],
                                                                               scores[hemi]['captions'],
@@ -149,41 +149,22 @@ def run(args):
                                                                                       scores_mod_specific_captions[
                                                                                           'captions'])])
 
-                    scores[hemi]['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
-                                                                                  zip(scores[hemi]['images'],
-                                                                                      scores[hemi]['captions'],
-                                                                                      scores_mod_specific_captions[
-                                                                                          'images'],
-                                                                                      scores_mod_specific_images[
-                                                                                          'captions'])])
-                    scores[hemi]['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
-                                                                                          zip(scores[hemi][
-                                                                                                  'images'],
-                                                                                              scores[hemi][
-                                                                                                  'captions'],
-                                                                                              scores_mod_specific_captions[
-                                                                                                  'images'],
-                                                                                              scores_mod_specific_images[
-                                                                                                  'captions'])])
-                    scores[hemi][
-                        'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)'] = np.array(
-                        [np.mean((ai, ac)) - np.mean((si, sc)) for ai, ac, si, sc in
-                         zip(scores[hemi]['images'], scores[hemi]['captions'],
-                             scores_mod_specific_captions['images'], scores_mod_specific_images['captions'])])
-                    # scores[hemi]['imgs_specific (cross)'] = np.array([si for ai, ac, si, sc in
-                    #                                                   zip(scores[hemi]['images'],
-                    #                                                       scores[hemi]['captions'],
-                    #                                                       scores_mod_specific_captions[
-                    #                                                           'images'],
-                    #                                                       scores_mod_specific_images[
-                    #                                                           'captions'])])
-                    # scores[hemi]['captions_specific (cross)'] = np.array([sc for ai, ac, si, sc in
-                    #                                                       zip(scores[hemi]['images'],
-                    #                                                           scores[hemi]['captions'],
-                    #                                                           scores_mod_specific_captions[
-                    #                                                               'images'],
-                    #                                                           scores_mod_specific_images[
-                    #                                                               'captions'])])
+                    # scores[hemi]['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
+                    #                                                               zip(scores[hemi]['images'],
+                    #                                                                   scores[hemi]['captions'],
+                    #                                                                   scores_mod_specific_captions[
+                    #                                                                       'images'],
+                    #                                                                   scores_mod_specific_images[
+                    #                                                                       'captions'])])
+                    # scores[hemi]['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
+                    #                                                                       zip(scores[hemi][
+                    #                                                                               'images'],
+                    #                                                                           scores[hemi][
+                    #                                                                               'captions'],
+                    #                                                                           scores_mod_specific_captions[
+                    #                                                                               'images'],
+                    #                                                                           scores_mod_specific_images[
+                    #                                                                               'captions'])])
 
         add_to_all_scores(all_scores, scores)
 
@@ -194,17 +175,26 @@ def run(args):
 
         per_subject_scores.append(scores)
 
-    # calc t-values
+    # calc averages and t-values
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
-            all_scores[hemi][score_name] = [
-                stats.ttest_1samp(x, popmean=CHANCE_VALUES[score_name], alternative="greater" if CHANCE_VALUES[score_name] == 0.5 else "two-sided") if (~np.isnan(x)).sum() == len(SUBJECTS) else np.nan for x
+            alternative = "greater" if CHANCE_VALUES[score_name] == 0.5 else "two-sided"
+            popmean = CHANCE_VALUES[score_name]
+            enough_data = [(~np.isnan(x)).sum() == len(SUBJECTS) for x in all_scores[hemi][score_name]]
+            t_values[hemi][score_name] = np.array([
+                stats.ttest_1samp(x, popmean=popmean, alternative=alternative)[0] if ed else np.nan for x, ed
                 in
-                all_scores[hemi][score_name]]
+                zip(all_scores[hemi][score_name], enough_data)])
 
+            all_scores[hemi][score_name] = np.nanmean(all_scores[hemi][score_name], axis=1)
+
+        t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+        t_values[hemi]['min(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+
+    # plot group-level avg scores
     metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
-               'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific)', 'imgs_agno - imgs_specific',
-               'captions_agno - captions_specific'] #'imgs_agno - imgs_specific (cross)', 'captions_agno - captions_specific (cross)', 'mean(imgs_agno, captions_agno)-mean(imgs_specific, captions_specific) (cross)'
+               'imgs_agno - imgs_specific',
+               'captions_agno - captions_specific']
 
     scores = all_scores
     fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
@@ -220,21 +210,71 @@ def run(args):
             for j, hemi in enumerate(['left', 'right']):
                 if metric in scores[hemi].keys():
                     scores_hemi = scores[hemi][metric]
-                    scores_hemi_t_values = np.array([d[0] if not np.isnan(d).any() else np.nan for d in scores_hemi])
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
-                        cbar_max = min(np.nanmax(scores_hemi_t_values), 99)
-                        cbar_min = np.nanmin(scores_hemi_t_values)
+                        cbar_max = min(np.nanmax(scores_hemi), 99)
+                        cbar_min = np.nanmin(scores_hemi)
 
                     plotting.plot_surf_stat_map(
                         infl_mesh,
-                        scores_hemi_t_values,
+                        scores_hemi,
                         hemi=hemi,
                         view=view,
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=3.365,    #p<0.01 for 5 degrees of freedom (6 subjects) (one-sided!)
+                        threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                        vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
+                        vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
+                        cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
+                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                    )
+                    axes[i * 2 + j].legend(
+                        handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1,
+                        borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
+                else:
+                    axes[i * 2 + j].axis('off')
+
+    title = f"{model_name}_{mode}_group_level_pairwise_acc"
+    fig.suptitle(title)
+    title += f"_alpha_{str(alpha)}"
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
+    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+
+    # plot group-level t-values
+    metrics = ['imgs_agno - imgs_specific',
+               'captions_agno - captions_specific',
+               'mean(captions_agno - captions_specific, imgs_agno - imgs_specific)',
+               'min(captions_agno - captions_specific, imgs_agno - imgs_specific)']
+    scores = t_values
+    fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
+    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+
+    for subfig, metric in zip(subfigs, metrics):
+        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+        cbar_max = None
+        cbar_min = None
+        for i, view in enumerate(VIEWS):
+            for j, hemi in enumerate(['left', 'right']):
+                if metric in scores[hemi].keys():
+                    scores_hemi = scores[hemi][metric]
+                    infl_mesh = fsaverage[f"infl_{hemi}"]
+                    if cbar_max is None:
+                        cbar_max = min(np.nanmax(scores_hemi), 99)
+                        cbar_min = np.nanmin(scores_hemi)
+
+                    plotting.plot_surf_stat_map(
+                        infl_mesh,
+                        scores_hemi,
+                        hemi=hemi,
+                        view=view,
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        axes=axes[i * 2 + j],
+                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                        threshold=2.571, # for 5 degrees of freedom (6 subjects): 2.571 for p<0.05 (two-sided) | 3.365 for p<0.01(one-sided!)
                         vmax=99 if CHANCE_VALUES[metric] == 0.5 else None,
                         vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else None,
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
@@ -246,15 +286,15 @@ def run(args):
                 else:
                     axes[i * 2 + j].axis('off')
 
-    title = f"{model_name}_{mode}_group_level"
+    title = f"{model_name}_{mode}_group_level_t_values"
     fig.suptitle(title)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-    # plt.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
     # per-subject plots
+    print("\n\nCreating per-subject plots..")
     for scores in tqdm(per_subject_scores):
         fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
         subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
