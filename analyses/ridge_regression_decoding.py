@@ -187,9 +187,10 @@ def get_default_features(model_name):
         features = LANG_FEATS_ONLY
     elif model_name.startswith("resnet") or model_name.startswith("vit") or model_name.startswith("dino"):
         features = VISION_FEATS_ONLY
-    elif model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
+    elif (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower"):
+        "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower")
+          or model_name.startswith("glow")):
         features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
