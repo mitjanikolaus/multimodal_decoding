@@ -1,6 +1,9 @@
 import argparse
 
 import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.linear_model import RidgeClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -34,26 +37,34 @@ def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=No
                 mod_2_class_train_data = class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
                                                                         size=(n_train_samples_per_class,
                                                                               N_VOXELS_FMRI))
-                mod_2_class_train_data += np.random.normal(scale=STDDEV_WITHIN_CLASS,
-                                                           size=(n_train_samples_per_class, N_VOXELS_FMRI))
+                # mod_2_class_train_data += np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                #                                            size=(n_train_samples_per_class, N_VOXELS_FMRI))
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
             elif second_modality == "gauss_smaller_stddev":
-                mod_2_class_train_data = class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                mod_2_class_train_data = class_proto + np.random.normal(scale=0.5*STDDEV_WITHIN_CLASS,
                                                                         size=(n_train_samples_per_class,
                                                                               N_VOXELS_FMRI))
-                mod_2_class_train_data += np.random.normal(scale=0.5*STDDEV_WITHIN_CLASS,
-                                                           size=(n_train_samples_per_class, N_VOXELS_FMRI))
+                # mod_2_class_train_data += np.random.normal(scale=0.5*STDDEV_WITHIN_CLASS,
+                #                                            size=(n_train_samples_per_class, N_VOXELS_FMRI))
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
             elif second_modality == "gauss_higher_stddev":
+                mod_2_class_train_data = class_proto + np.random.normal(scale=2*STDDEV_WITHIN_CLASS,
+                                                                        size=(n_train_samples_per_class,
+                                                                              N_VOXELS_FMRI))
+                # mod_2_class_train_data += np.random.normal(scale=2*STDDEV_WITHIN_CLASS,
+                #                                            size=(n_train_samples_per_class, N_VOXELS_FMRI))
+                train_data.append(mod_2_class_train_data)
+                train_labels.extend([c] * len(mod_2_class_train_data))
+
+            elif second_modality == "offset":
                 mod_2_class_train_data = class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
                                                                         size=(n_train_samples_per_class,
                                                                               N_VOXELS_FMRI))
-                mod_2_class_train_data += np.random.normal(scale=2*STDDEV_WITHIN_CLASS,
-                                                           size=(n_train_samples_per_class, N_VOXELS_FMRI))
+                mod_2_class_train_data += 1
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
@@ -75,7 +86,10 @@ def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=No
                     x -= x.dot(k) * k
                     x /= np.linalg.norm(x)
                     return x
-                mod_2_class_train_data = np.array([get_orthogonal(x) for x in class_train_data])
+                mod2_class_proto = get_orthogonal(class_proto)
+                mod_2_class_train_data = mod2_class_proto + np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                                                                        size=(n_train_samples_per_class,
+                                                                              N_VOXELS_FMRI))
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
@@ -112,8 +126,8 @@ def train_and_eval(n_train_samples_per_class, second_modality=None):
         train_fmri_betas, test_fmri_betas, train_labels, test_labels = generate_dummy_fmri_data(n_train_samples_per_class,
                                                                                                 seed=seed,
                                                                                                 second_modality=second_modality)
-        clf = make_pipeline(StandardScaler(), RidgeClassifier(alpha=args.l2_regularization_alpha))
-
+        # clf = make_pipeline(StandardScaler(), RidgeClassifier(alpha=args.l2_regularization_alpha))
+        clf = RidgeClassifier(alpha=args.l2_regularization_alpha)
         clf.fit(train_fmri_betas, train_labels)
 
         test_predicted_labels = clf.predict(test_fmri_betas)
@@ -123,38 +137,85 @@ def train_and_eval(n_train_samples_per_class, second_modality=None):
         test_scores.append(test_acc)
 
     print(f"MEAN: {np.mean(test_scores):.2f}\n")
+    return test_scores
 
 
 def run(args):
-    print("BASELINE")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS)
+    results = []
 
-    print("BASELINE (double training data)")
-    train_and_eval(2*N_TRAIN_SAMPLES_PER_CLASS)
+    condition = "BASELINE\nM1=x+GAUSS(0, sigma_1)"
+    scores_baseline = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS)
+    print(condition)
+    for score in scores_baseline:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: INDEPENDENT")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "independent")
+    # condition = "BASELINE\n(2xtrain_samples)"
+    # scores = train_and_eval(2*N_TRAIN_SAMPLES_PER_CLASS)
+    # print(condition)
+    # for score in scores:
+    #     results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: GAUSSIAN NOISE (same stddev)")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_same_stddev")
+    condition = "SAME STDDEV\nM2=x+GAUSS(0, sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_same_stddev")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: GAUSSIAN NOISE (smaller stddev)")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_smaller_stddev")
+    condition = "SMALLER STDDEV\nM2=x+GAUSS(0, 0.5*sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_smaller_stddev")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: GAUSSIAN NOISE (higher stddev)")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_higher_stddev")
+    condition = "HIGHER STDDEV\nM2=x+GAUSS(0, 2*sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "gauss_higher_stddev")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: INVERSE")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "inverse")
+    condition = "OFFSET\nM2=x+GAUSS(1, sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "offset")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: ORTHOGONAL")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "orthogonal")
+    condition = "ORTHOGONAL\nM2=orth(x)+GAUSS(1, sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "orthogonal")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: EXACT INVERSE")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "exact_inverse")
+    condition = "INVERSE\nM2=-1*x+GAUSS(0, sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "inverse")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
 
-    print("SECOND MODALITY: JUST NOISE")
-    train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "just_noise")
+    # condition = "EXACT INVERSE"
+    # scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "exact_inverse")
+    # print(condition)
+    # for score in scores:
+    #     results.append({"condition": condition, "acc": score})
+
+    condition = "JUST NOISE\nM2=GAUSS(0, sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "just_noise")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
+
+    condition = "INDEPENDENT\nM2=y+GAUSS(0, sigma_1)"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "independent")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
+
+    results = pd.DataFrame.from_records(results)
+    sns.barplot(data=results, y="condition", x="acc")
+    plt.axvline(x=np.mean(scores_baseline), color='black', linestyle="--", linewidth=0.7)
+    # plt.xticks(rotation=85)
+    plt.tight_layout()
+    plt.ylabel("")
+    plt.show()
 
 
 def get_args():
