@@ -10,7 +10,9 @@ import pickle
 from nilearn.image import resample_to_img
 from nilearn.surface import surface
 from scipy import stats
+from scipy.stats import pearsonr
 from tqdm import tqdm
+import seaborn as sns
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS
@@ -51,6 +53,23 @@ def add_to_all_scores(all_scores, scores):
                     (scores[hemi][score_name].reshape(-1, 1), all_scores[hemi][score_name]), axis=1)
 
 
+def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
+    sns.histplot(x=scores_data["n_neighbors"], y=scores[hemi]["overall"][~nan_locations])
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    corr = pearsonr(scores_data["n_neighbors"], scores[hemi]["overall"][~nan_locations])
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig("results/searchlight_correlation_num_voxels_acc.png", dpi=300)
+
+    plt.figure()
+    sns.regplot(x=scores_data["n_neighbors"], y=scores[hemi]["overall"][~nan_locations], x_bins=30)
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    corr = pearsonr(scores_data["n_neighbors"], scores[hemi]["overall"][~nan_locations])
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig("results/searchlight_correlation_num_voxels_acc_binned.png", dpi=300)
+
+
 def run(args):
     per_subject_scores = []
     all_subjects = set()
@@ -58,7 +77,7 @@ def run(args):
 
     model_name = "vilt"
     resolution = "fsaverage6"
-    mode = "n_neighbors_100"
+    mode = "radius_10.0"    #n_neighbors_100
     alpha = 1
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR, f'train/{model_name}/*/*/{resolution}/left/{mode}/alpha_{str(alpha)}.p')
@@ -84,6 +103,7 @@ def run(args):
                     scores[hemi][score_name] = np.repeat(np.nan, nan_locations.shape)
                     scores[hemi][score_name][~nan_locations] = np.array([score[metric] for score in scores_hemi])
 
+                # correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations)
                 print(hemi, {n: round(np.nanmean(score), 4) for n, score in scores[hemi].items()})
                 print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores[hemi].items()})
                 scores[hemi]["mean(imgs,captions)"] = scores[hemi]["overall"]
