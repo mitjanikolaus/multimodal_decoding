@@ -294,6 +294,9 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
     # per-subject plots
+    metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
+               'imgs_agno - imgs_specific',
+               'captions_agno - captions_specific']
     print("\n\nCreating per-subject plots..")
     for scores in tqdm(per_subject_scores):
         fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
