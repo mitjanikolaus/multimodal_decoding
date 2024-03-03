@@ -241,7 +241,7 @@ def run(args):
                 else:
                     axes[i * 2 + j].axis('off')
     fig.tight_layout()
-    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0)
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
@@ -293,7 +293,7 @@ def run(args):
                     axes[i * 2 + j].axis('off')
 
     fig.tight_layout()
-    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0)
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
     title = f"{args.model}_{args.mode}_group_level_t_values"
     fig.suptitle(title)
     title += f"_alpha_{str(alpha)}"
@@ -374,13 +374,12 @@ def run(args):
                         axes[i * 2 + j].axis('off')
 
         fig.tight_layout()
-        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0)
+        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
         title = f"{args.model}_{args.mode}_{scores['subject']}"
         fig.suptitle(title)
         title += f"_alpha_{str(alpha)}"
         results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
         os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-        # plt.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
         plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
 
