@@ -236,7 +236,7 @@ def run(args):
                         borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
                 else:
                     axes[i * 2 + j].axis('off')
-        axes.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
+        subfig.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
