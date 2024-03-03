@@ -236,7 +236,7 @@ def run(args):
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
                         symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                     )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
 
@@ -287,7 +287,7 @@ def run(args):
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
                         symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                     )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
 
@@ -363,7 +363,7 @@ def run(args):
                             cmap="hot" if cbar_min >= 0 else "cold_hot",
                             symmetric_cbar=True if cbar_min < 0 else "auto",
                         )
-                        axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
+                        axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
 
                         # plotting.plot_surf_contours(infl_mesh, parcellation_surf, labels=labels,
                         #                             levels=regions_indices, axes=row_axes[i*2+j],
