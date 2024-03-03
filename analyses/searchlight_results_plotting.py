@@ -250,7 +250,7 @@ def run(args):
                'mean(captions_agno - captions_specific, imgs_agno - imgs_specific)',
                'min(captions_agno - captions_specific, imgs_agno - imgs_specific)']
     scores = t_values
-    fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
+    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
 
@@ -282,12 +282,12 @@ def run(args):
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
                         symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                     )
-                    axes[i * 2 + j].legend(
-                        handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1,
-                        borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
 
+    fig.tight_layout()
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0)
     title = f"{args.model}_{args.mode}_group_level_t_values"
     fig.suptitle(title)
     title += f"_alpha_{str(alpha)}"
@@ -301,7 +301,7 @@ def run(args):
                'captions_agno - captions_specific']
     print("\n\nCreating per-subject plots..")
     for scores in tqdm(per_subject_scores):
-        fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
+        fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
         subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
         fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
 
@@ -358,9 +358,7 @@ def run(args):
                             cmap="hot" if cbar_min >= 0 else "cold_hot",
                             symmetric_cbar=True if cbar_min < 0 else "auto",
                         )
-                        axes[i * 2 + j].legend(
-                            handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1,
-                            borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
+                        axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
 
                         # plotting.plot_surf_contours(infl_mesh, parcellation_surf, labels=labels,
                         #                             levels=regions_indices, axes=row_axes[i*2+j],
@@ -369,6 +367,8 @@ def run(args):
                     else:
                         axes[i * 2 + j].axis('off')
 
+        fig.tight_layout()
+        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0)
         title = f"{args.model}_{args.mode}_{scores['subject']}"
         fig.suptitle(title)
         title += f"_alpha_{str(alpha)}"
