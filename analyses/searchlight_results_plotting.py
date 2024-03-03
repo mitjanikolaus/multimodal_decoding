@@ -241,9 +241,9 @@ def run(args):
                     axes[i * 2 + j].axis('off')
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
-    fig.suptitle(title)
+    # fig.suptitle(title)
     # fig.tight_layout()
-    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
@@ -292,9 +292,9 @@ def run(args):
                     axes[i * 2 + j].axis('off')
 
     title = f"{args.model}_{args.mode}_group_level_t_values"
-    fig.suptitle(title)
-    fig.tight_layout()
-    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
+    # fig.suptitle(title)
+    # fig.tight_layout()
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
@@ -373,9 +373,9 @@ def run(args):
                         axes[i * 2 + j].axis('off')
 
         title = f"{args.model}_{args.mode}_{scores['subject']}"
-        fig.suptitle(title)
-        fig.tight_layout()
-        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
+        # fig.suptitle(title)
+        # fig.tight_layout()
+        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=1)
         title += f"_alpha_{str(alpha)}"
         results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
         os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
