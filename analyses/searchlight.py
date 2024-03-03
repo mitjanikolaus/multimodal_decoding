@@ -466,6 +466,8 @@ def run(args):
                             print(distances.shape)
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
                             print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
+                            print(f"Mean max distance: {distances.max(dim=1).mean():.2f}mm")
+
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
