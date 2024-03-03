@@ -20,7 +20,7 @@ STDDEV_WITHIN_CLASS = 1.5
 def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
     np.random.seed(seed)
     data_classes = np.random.uniform(size=(N_CLASSES, N_VOXELS_FMRI))
-    if second_modality is not None and second_modality == "independent":
+    if second_modality is not None and second_modality in ["independent", "half_independent_half_same"]:
         data_classes_mod_2 = np.random.uniform(size=(N_CLASSES, N_VOXELS_FMRI))
 
     train_data = []
@@ -97,6 +97,36 @@ def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=No
                 mod_2_class_train_data = data_classes_mod_2[c] + np.random.normal(scale=STDDEV_WITHIN_CLASS,
                                                                         size=(n_train_samples_per_class,
                                                                               N_VOXELS_FMRI))
+                train_data.append(mod_2_class_train_data)
+                train_labels.extend([c] * len(mod_2_class_train_data))
+
+            elif second_modality == "half_independent_half_same":
+                half_size = round(len(data_classes_mod_2[c])/2)
+                mod_2_class_train_data = np.concatenate((data_classes_mod_2[c][:half_size], class_proto[half_size:]))
+
+                mod_2_class_train_data = mod_2_class_train_data + np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                                                        size=(n_train_samples_per_class,
+                                                              N_VOXELS_FMRI))
+                train_data.append(mod_2_class_train_data)
+                train_labels.extend([c] * len(mod_2_class_train_data))
+
+            elif second_modality == "half_noise_half_same":
+                half_size = round(len(class_proto)/2)
+                mod_2_class_train_data = np.concatenate((np.repeat(0, half_size), class_proto[half_size:]))
+
+                mod_2_class_train_data = mod_2_class_train_data + np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                                                        size=(n_train_samples_per_class,
+                                                              N_VOXELS_FMRI))
+                train_data.append(mod_2_class_train_data)
+                train_labels.extend([c] * len(mod_2_class_train_data))
+
+            elif second_modality == "quarter_noise_three_quarters_same":
+                quarter_size = round(len(class_proto)/4)
+                mod_2_class_train_data = np.concatenate((np.repeat(0, quarter_size), class_proto[quarter_size:]))
+
+                mod_2_class_train_data = mod_2_class_train_data + np.random.normal(scale=STDDEV_WITHIN_CLASS,
+                                                        size=(n_train_samples_per_class,
+                                                              N_VOXELS_FMRI))
                 train_data.append(mod_2_class_train_data)
                 train_labels.extend([c] * len(mod_2_class_train_data))
 
@@ -179,7 +209,7 @@ def run(args):
     for score in scores:
         results.append({"condition": condition, "acc": score})
 
-    condition = "ORTHOGONAL\nM2=orth(x)+GAUSS(1, sigma_1)"
+    condition = "ORTHOGONAL\nM2=orth(x)+GAUSS(0, sigma_1)"
     scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "orthogonal")
     print(condition)
     for score in scores:
@@ -205,6 +235,24 @@ def run(args):
 
     condition = "INDEPENDENT\nM2=y+GAUSS(0, sigma_1)"
     scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "independent")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
+
+    condition = "HALF INDEPENDENT,\nHALF SAME"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "half_independent_half_same")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
+
+    condition = "HALF NOISE,\nHALF SAME"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "half_noise_half_same")
+    print(condition)
+    for score in scores:
+        results.append({"condition": condition, "acc": score})
+
+    condition = "QUARTER NOISE,\nTHREE QUARTERS SAME"
+    scores = train_and_eval(N_TRAIN_SAMPLES_PER_CLASS, "quarter_noise_three_quarters_same")
     print(condition)
     for score in scores:
         results.append({"condition": condition, "acc": score})
