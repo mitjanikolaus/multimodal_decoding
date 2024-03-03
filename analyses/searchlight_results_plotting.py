@@ -236,7 +236,7 @@ def run(args):
                         borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
                 else:
                     axes[i * 2 + j].axis('off')
-        subfig.tight_layout()
+    fig.tight_layout()
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
