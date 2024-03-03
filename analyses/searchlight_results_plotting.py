@@ -83,6 +83,7 @@ def run(args):
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
                                  f'train/{args.model}/*/*/{resolution}/left/{args.mode}/alpha_{str(alpha)}.p')
     results_paths = np.array(sorted(glob(results_regex)))
+
     for path in results_paths:
         subject = os.path.dirname(path).split("/")[-4]
         alpha = float(os.path.basename(path).split("_")[1][:-2])
@@ -172,6 +173,10 @@ def run(args):
 
         per_subject_scores.append(scores)
 
+    all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
+    print(f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
+    print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
+
     # calc averages and t-values
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
@@ -231,6 +236,7 @@ def run(args):
                         borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
                 else:
                     axes[i * 2 + j].axis('off')
+        axes.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
@@ -369,7 +375,7 @@ def run(args):
         title += f"_alpha_{str(alpha)}"
         results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
         os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-        plt.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
+        # plt.subplots_adjust(hspace=0, wspace=0, right=0.85, left=0)
         plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
 
@@ -377,7 +383,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='vilt')
-    parser.add_argument("--mode", type=str, default='n_neighbors_200')
+    parser.add_argument("--mode", type=str, default='n_neighbors_100')
 
     return parser.parse_args()
 
