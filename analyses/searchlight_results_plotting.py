@@ -77,16 +77,13 @@ def run(args):
     all_scores = {hemi: dict() for hemi in HEMIS}
     t_values = {hemi: dict() for hemi in HEMIS}
 
-    model_name = "vilt"
     resolution = "fsaverage6"
-    mode = "radius_10.0"  # n_neighbors_100
     alpha = 1
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{model_name}/*/*/{resolution}/left/{mode}/alpha_{str(alpha)}.p')
+                                 f'train/{args.model}/*/*/{resolution}/left/{args.mode}/alpha_{str(alpha)}.p')
     results_paths = np.array(sorted(glob(results_regex)))
     for path in results_paths:
-        mode = os.path.dirname(path).split("/")[-1]
         subject = os.path.dirname(path).split("/")[-4]
         alpha = float(os.path.basename(path).split("_")[1][:-2])
 
@@ -235,7 +232,7 @@ def run(args):
                 else:
                     axes[i * 2 + j].axis('off')
 
-    title = f"{model_name}_{mode}_group_level_pairwise_acc"
+    title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
@@ -286,7 +283,7 @@ def run(args):
                 else:
                     axes[i * 2 + j].axis('off')
 
-    title = f"{model_name}_{mode}_group_level_t_values"
+    title = f"{args.model}_{args.mode}_group_level_t_values"
     fig.suptitle(title)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
@@ -367,7 +364,7 @@ def run(args):
                     else:
                         axes[i * 2 + j].axis('off')
 
-        title = f"{model_name}_{mode}_{scores['subject']}"
+        title = f"{args.model}_{args.mode}_{scores['subject']}"
         fig.suptitle(title)
         title += f"_alpha_{str(alpha)}"
         results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
@@ -379,23 +376,8 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
-                        choices=TRAIN_MODE_CHOICES)
-
-    parser.add_argument("--subset", type=int, default=None)
-
-    parser.add_argument("--models", type=str, nargs='+', default=['clip'])
-    parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
-                        choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
-                        choices=VISION_FEAT_COMBINATION_CHOICES)
-
-    parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
-    parser.add_argument("--resolution", type=str, default="fsaverage")
-
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1e3)
-
-    parser.add_argument("--radius", type=float, default=2)
+    parser.add_argument("--model", type=str, default='vilt')
+    parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
     return parser.parse_args()
 
