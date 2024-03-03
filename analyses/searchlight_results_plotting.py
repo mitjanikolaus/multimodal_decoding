@@ -208,7 +208,6 @@ def run(args):
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
@@ -240,11 +239,11 @@ def run(args):
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
-    fig.tight_layout()
-    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
+    # fig.tight_layout()
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
@@ -292,10 +291,10 @@ def run(args):
                 else:
                     axes[i * 2 + j].axis('off')
 
-    fig.tight_layout()
-    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
     title = f"{args.model}_{args.mode}_group_level_t_values"
     fig.suptitle(title)
+    fig.tight_layout()
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
@@ -373,10 +372,10 @@ def run(args):
                     else:
                         axes[i * 2 + j].axis('off')
 
-        fig.tight_layout()
-        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
         title = f"{args.model}_{args.mode}_{scores['subject']}"
         fig.suptitle(title)
+        fig.tight_layout()
+        fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0, top=0.95)
         title += f"_alpha_{str(alpha)}"
         results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
         os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
