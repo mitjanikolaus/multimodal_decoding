@@ -1,4 +1,6 @@
 import argparse
+import warnings
+
 import numpy as np
 from matplotlib.patches import Circle
 from nilearn import datasets, plotting
@@ -188,10 +190,14 @@ def run(args):
                 in
                 zip(all_scores[hemi][score_name], enough_data)])
 
-            all_scores[hemi][score_name] = np.nanmean(all_scores[hemi][score_name], axis=1)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                all_scores[hemi][score_name] = np.nanmean(all_scores[hemi][score_name], axis=1)
 
-        t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
-        t_values[hemi]['min(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+            t_values[hemi]['min(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
 
     # plot group-level avg scores
     metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
