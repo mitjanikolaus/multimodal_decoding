@@ -199,7 +199,7 @@ def run(args):
                'captions_agno - captions_specific']
 
     scores = all_scores
-    fig = plt.figure(constrained_layout=True, figsize=(5 * len(VIEWS), len(metrics) * 2))
+    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
 
