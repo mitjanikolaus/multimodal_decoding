@@ -231,12 +231,11 @@ def run(args):
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
                         symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                     )
-                    axes[i * 2 + j].legend(
-                        handles=[Circle((0, 0), radius=5, color='w', label=f"{hemi} {view}")], labelspacing=1,
-                        borderpad=0, loc='upper center', frameon=False)  # bbox_to_anchor=(1.9, 0.8),
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.9, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
     fig.tight_layout()
+    fig.subplots_adjust(right=0.85, wspace=-0.1, hspace=0)
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.suptitle(title)
