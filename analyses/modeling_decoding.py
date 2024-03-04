@@ -8,13 +8,13 @@ from sklearn.linear_model import RidgeClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-N_CLASSES = 10
+N_CLASSES = 70
 N_TRAIN_SAMPLES_PER_CLASS = 100
 N_TEST_SAMPLES_PER_CLASS = 1000
 
-N_VOXELS_FMRI = 100
+N_VOXELS_FMRI = 200
 
-STDDEV_WITHIN_CLASS = 1.5
+STDDEV_WITHIN_CLASS = 3
 
 
 def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
@@ -156,8 +156,7 @@ def train_and_eval(n_train_samples_per_class, second_modality=None):
         train_fmri_betas, test_fmri_betas, train_labels, test_labels = generate_dummy_fmri_data(n_train_samples_per_class,
                                                                                                 seed=seed,
                                                                                                 second_modality=second_modality)
-        # clf = make_pipeline(StandardScaler(), RidgeClassifier(alpha=args.l2_regularization_alpha))
-        clf = RidgeClassifier(alpha=args.l2_regularization_alpha)
+        clf = make_pipeline(StandardScaler(), RidgeClassifier(alpha=args.l2_regularization_alpha))
         clf.fit(train_fmri_betas, train_labels)
 
         test_predicted_labels = clf.predict(test_fmri_betas)
