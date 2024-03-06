@@ -72,7 +72,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
-    parser.add_argument("--resolution", type=str, default="fsaverage6")
+    parser.add_argument("--resolution", type=str, default="fsaverage7")
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
