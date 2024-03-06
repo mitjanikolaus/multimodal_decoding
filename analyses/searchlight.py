@@ -366,6 +366,7 @@ def run(args):
         train_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
 
         test_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_test.p"), 'rb'))
+        test_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_test.p"), 'rb'))
 
         for training_mode in args.training_modes:
             for model_name in args.models:
@@ -381,10 +382,12 @@ def run(args):
                     train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
                                                                                  args.vision_features,
                                                                                  train_stim_ids,
+                                                                                 train_stim_types,
                                                                                  subject,
                                                                                  training_mode)
                     test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
                                                               test_stim_ids,
+                                                              test_stim_types,
                                                               subject,
                                                               "test",
                                                               nn_latent_transform=nn_latent_transform)
