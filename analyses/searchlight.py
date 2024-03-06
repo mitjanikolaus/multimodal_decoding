@@ -355,12 +355,12 @@ def pairwise_acc(latents, predictions):
 def run(args):
     for subject in args.subjects:
         train_fmri = dict()
-        train_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_train.p"), 'rb'))
-        train_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_train.p"), 'rb'))
+        train_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_train.p"), 'rb'))
+        train_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_train.p"), 'rb'))
 
         test_fmri = dict()
-        test_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_test.p"), 'rb'))
-        test_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_test.p"), 'rb'))
+        test_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb'))
+        test_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb'))
 
         train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
         train_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
@@ -431,7 +431,6 @@ def run(args):
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
                             results_dict["distances"] = distances
-                            print(distances.shape)
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
                             print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
                             print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")

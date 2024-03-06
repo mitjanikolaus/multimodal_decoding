@@ -104,7 +104,7 @@ def run(args):
             X_2 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_2), 'rb'))
             X_3 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_3), 'rb'))
             X_4 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_4), 'rb'))
-            results_file_name = f"{subject}_{hemi}_train.p"
+            results_file_name = f"{subject}_{hemi}_{args.resolution}_train.p"
             pickle.dump(np.concatenate((X_1, X_2, X_3, X_4)), open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name), 'wb'))
             os.remove(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_1))
             os.remove(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_2))
@@ -114,7 +114,7 @@ def run(args):
             print("transforming to surface.. (test)", end=" ")
             X = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
-            results_file_name = f"{subject}_{hemi}_test.p"
+            results_file_name = f"{subject}_{hemi}_{args.resolution}_test.p"
             pickle.dump(X, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name), 'wb'))
             print("saved.")
 
