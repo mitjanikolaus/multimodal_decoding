@@ -104,7 +104,6 @@ REGIONS_LANGUAGE = [
     'L G_front_inf-Triangul',  # left inferior frontal gyrus
     'L G_pariet_inf-Angular',  # left angular gyrus
     'L G_front_middle',  # left middle frontal gyrus
-    'L G_front_sup',  # left superior frontal gyrus
     'L G_temp_sup-Lateral',  # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe
     'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
