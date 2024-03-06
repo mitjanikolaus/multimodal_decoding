@@ -35,8 +35,6 @@ OUT_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 def run(args):
     for subject in args.subjects:
         train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, "train")
-        if args.subset is not None:
-            train_fmri = train_fmri[:args.subset]
 
         test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, "test")
 
