@@ -14,7 +14,6 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 import os
-from glob import glob
 import pickle
 
 from sklearn.model_selection import cross_validate
@@ -25,7 +24,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
     get_default_features, pairwise_accuracy
 
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, VISION_MEAN_FEAT_KEY, IDS_IMAGES_TEST
+from utils import VISION_MEAN_FEAT_KEY, IDS_IMAGES_TEST, SURFACE_LEVEL_FMRI_DIR
 
 DEFAULT_N_JOBS = 10
 
@@ -340,41 +339,6 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
-def get_graymatter_mask(subject):
-    fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
-    gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
-    return gray_matter_mask_address
-
-
-def get_fmri_data(subject, mode):
-    imagery_scenes = IMAGERY_SCENES[subject]
-
-    fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
-    fmri_addresses_regex = os.path.join(fmri_data_dir, f'betas_{mode}*', '*.nii')
-    fmri_betas_addresses = np.array(sorted(glob(fmri_addresses_regex)))
-
-    stim_ids = []
-    stim_types = []
-    for addr in fmri_betas_addresses:
-        file_name = os.path.basename(addr)
-        if 'I' in file_name:  # Image
-            stim_id = int(file_name[file_name.find('I') + 1:-4])
-            stim_types.append('image')
-        elif 'C' in file_name:  # Caption
-            stim_id = int(file_name[file_name.find('C') + 1:-4])
-            stim_types.append('caption')
-        else:  # imagery
-            stim_id = int(file_name[file_name.find('.nii') - 1:-4])
-            stim_id = imagery_scenes[stim_id - 1][1]
-            stim_types.append('imagery')
-        stim_ids.append(stim_id)
-
-    stim_ids = np.array(stim_ids)
-    stim_types = np.array(stim_types)
-
-    return fmri_betas_addresses, stim_ids, stim_types
-
-
 def pairwise_acc_captions(latents, predictions):
     return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION])
 
@@ -389,24 +353,22 @@ def pairwise_acc(latents, predictions):
 
 
 def run(args):
-    for training_mode in args.training_modes:
-        for subject in args.subjects:
-            train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, training_mode)
-            if args.subset is not None:
-                train_fmri = train_fmri[:args.subset]
+    for subject in args.subjects:
+        # train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, training_mode)
+        train_fmri = dict()
+        train_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_train.p"), 'rb'))
+        train_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_train.p"), 'rb'))
 
-            test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, "test")
+        test_fmri = dict()
+        test_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_test.p"), 'rb'))
+        test_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_test.p"), 'rb'))
 
-            assert np.all(test_stim_types[INDICES_TEST_STIM_IMAGE] == "image")
-            assert np.all(test_stim_types[INDICES_TEST_STIM_CAPTION] == "caption")
-            assert np.all(test_stim_ids == IDS_TEST_STIM)
+        train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
+        train_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
 
-            fmri_data = np.concatenate((train_fmri, test_fmri))
-            train_ids = list(range(len(train_fmri)))
-            test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
+        test_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_test.p"), 'rb'))
 
-            gray_matter_mask = get_graymatter_mask(subject)
-
+        for training_mode in args.training_modes:
             for model_name in args.models:
                 model_name = model_name.lower()
 
@@ -427,23 +389,30 @@ def run(args):
                                                               subject,
                                                               "test",
                                                               nn_latent_transform=nn_latent_transform)
-                    if args.subset is not None:
-                        train_data_latents = train_data_latents[:args.subset]
                     latents = np.concatenate((train_data_latents, test_data_latents))
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
                         print("Hemisphere: ", hemi)
+                        if training_mode == "train_captions":
+                            train_fmri_hemi = train_fmri[hemi][train_stim_types == 'caption']
+                        elif training_mode == "train_images":
+                            train_fmri_hemi = train_fmri[hemi][train_stim_types == 'image']
+                        else:
+                            train_fmri_hemi = train_fmri[hemi]
+
+                        print(f"train_fmri_hemi shape: {train_fmri_hemi.shape}")
+                        print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
+
+                        train_ids = list(range(len(train_fmri_hemi)))
+                        test_ids = list(range(len(train_fmri_hemi), len(train_fmri_hemi) + len(test_fmri[hemi])))
+
+                        X = np.concatenate((train_fmri_hemi, test_fmri[hemi])).T
+
+                        print(f"train data dim: {X.shape}")
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
                         results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
-                        # Average voxels 5 mm close to the 3d pial surface
-                        print("transforming to surface..", end=" ")
-                        pial_mesh = fsaverage[f"pial_{hemi}"]
-                        start = time.time()
-                        radius = 5.0
-                        X = surface.vol_to_surf(fmri_data, pial_mesh, radius=radius, mask_img=gray_matter_mask).T
-                        print("done.")
                         nan_locations = np.isnan(X[0])
                         assert np.all(nan_locations == np.isnan(X[-1]))
                         X = X[:, ~nan_locations]
@@ -476,15 +445,11 @@ def run(args):
                                                 in zip(["overall", "captions", "images"],
                                                        [pairwise_acc, pairwise_acc_captions, pairwise_acc_images])}
                         cv = [(train_ids, test_ids)]
-                        end = time.time()
-                        prepr_time = int(end - start)
-                        print(f"Preprocessing time: {prepr_time}s")
 
                         start = time.time()
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
                                               scoring=pairwise_acc_scorers, verbose=1, print_interval=500)
                         end = time.time()
-                        print(f"Preprocessing time: {prepr_time}s")
                         print(f"Searchlight time: {int(end - start)}s")
                         test_scores = [score["test_overall"] for score in scores]
                         print(f"Mean score: {np.mean(test_scores):.2f} | Max score: {np.max(test_scores):.2f}")
@@ -510,8 +475,6 @@ def get_args():
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
-
-    parser.add_argument("--subset", type=int, default=None)
 
     parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
