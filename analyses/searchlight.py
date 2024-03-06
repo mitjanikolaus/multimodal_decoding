@@ -407,7 +407,7 @@ def run(args):
                         train_ids = list(range(len(train_fmri_hemi)))
                         test_ids = list(range(len(train_fmri_hemi), len(train_fmri_hemi) + len(test_fmri[hemi])))
 
-                        X = np.concatenate((train_fmri_hemi, test_fmri[hemi])).T
+                        X = np.concatenate((train_fmri_hemi, test_fmri[hemi]))
 
                         print(f"train data dim: {X.shape}")
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
