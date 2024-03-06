@@ -354,7 +354,6 @@ def pairwise_acc(latents, predictions):
 
 def run(args):
     for subject in args.subjects:
-        # train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, training_mode)
         train_fmri = dict()
         train_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_train.p"), 'rb'))
         train_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_train.p"), 'rb'))
@@ -435,7 +434,7 @@ def run(args):
                             print(distances.shape)
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
                             print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
-                            print(f"Mean max distance: {distances.max(dim=1).mean():.2f}mm")
+                            print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
 
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
