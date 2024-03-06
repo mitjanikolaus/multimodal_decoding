@@ -66,8 +66,8 @@ def run(args):
             pickle.dump(X, open(os.path.join(OUT_DIR, results_file_name_2), 'wb'))
             print("saved.")
 
-            X_1 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_1),'rb'))
-            X_2 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_2),'rb'))
+            X_1 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_1), 'rb'))
+            X_2 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_2), 'rb'))
             results_file_name = f"{subject}_{hemi}_train.p"
             pickle.dump(np.concatenate((X_1, X_2)), open(os.path.join(OUT_DIR, results_file_name), 'wb'))
             os.remove(os.path.join(OUT_DIR, results_file_name_1))
