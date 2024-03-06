@@ -50,8 +50,7 @@ def run(args):
 
             print("transforming to surface.. (train part 1)", end=" ")
             pial_mesh = fsaverage[f"pial_{hemi}"]
-            # Average voxels 5 mm close to the 3d pial surface
-            X = surface.vol_to_surf(train_fmri[:5000], pial_mesh, mask_img=gray_matter_mask).T
+            X = surface.vol_to_surf(train_fmri[:2500], pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name_1 = f"{subject}_{hemi}_train_1.p"
             pickle.dump(X, open(os.path.join(OUT_DIR, results_file_name_1), 'wb'))
@@ -59,19 +58,38 @@ def run(args):
 
             print("transforming to surface.. (train part 2)", end=" ")
             pial_mesh = fsaverage[f"pial_{hemi}"]
-            # Average voxels 5 mm close to the 3d pial surface
-            X = surface.vol_to_surf(train_fmri[5000:], pial_mesh, mask_img=gray_matter_mask).T
+            X = surface.vol_to_surf(train_fmri[2500:5000], pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name_2 = f"{subject}_{hemi}_train_2.p"
             pickle.dump(X, open(os.path.join(OUT_DIR, results_file_name_2), 'wb'))
             print("saved.")
 
+            print("transforming to surface.. (train part 3)", end=" ")
+            pial_mesh = fsaverage[f"pial_{hemi}"]
+            X = surface.vol_to_surf(train_fmri[5000:7500], pial_mesh, mask_img=gray_matter_mask).T
+            print("done.")
+            results_file_name_3 = f"{subject}_{hemi}_train_3.p"
+            pickle.dump(X, open(os.path.join(OUT_DIR, results_file_name_3), 'wb'))
+            print("saved.")
+
+            print("transforming to surface.. (train part 4)", end=" ")
+            pial_mesh = fsaverage[f"pial_{hemi}"]
+            X = surface.vol_to_surf(train_fmri[7500:], pial_mesh, mask_img=gray_matter_mask).T
+            print("done.")
+            results_file_name_4 = f"{subject}_{hemi}_train_4.p"
+            pickle.dump(X, open(os.path.join(OUT_DIR, results_file_name_4), 'wb'))
+            print("saved.")
+
             X_1 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_1), 'rb'))
             X_2 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_2), 'rb'))
+            X_3 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_3), 'rb'))
+            X_4 = pickle.load(open(os.path.join(OUT_DIR, results_file_name_4), 'rb'))
             results_file_name = f"{subject}_{hemi}_train.p"
-            pickle.dump(np.concatenate((X_1, X_2)), open(os.path.join(OUT_DIR, results_file_name), 'wb'))
+            pickle.dump(np.concatenate((X_1, X_2, X_3, X_4)), open(os.path.join(OUT_DIR, results_file_name), 'wb'))
             os.remove(os.path.join(OUT_DIR, results_file_name_1))
             os.remove(os.path.join(OUT_DIR, results_file_name_2))
+            os.remove(os.path.join(OUT_DIR, results_file_name_3))
+            os.remove(os.path.join(OUT_DIR, results_file_name_4))
 
             print("transforming to surface.. (test)", end=" ")
             X = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask).T
