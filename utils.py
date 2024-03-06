@@ -10,7 +10,8 @@ COCO_2017_TRAIN_IMAGES_DIR = os.path.expanduser("~/data/coco/images/train_2017")
 
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
 CAPTIONS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
-FMRI_DATA_DIR = os.path.expanduser("~/data/multimodal_decoding/fmri/")
+FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
+SURFACE_LEVEL_FMRI_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 
 TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
