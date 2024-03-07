@@ -415,6 +415,7 @@ def run(args):
                         results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
                         nan_locations = np.isnan(X[0])
+                        print(f"nan_locations: {nan_locations.sum()}")
                         assert np.all(nan_locations == np.isnan(X[-1]))
                         X = X[:, ~nan_locations]
 
