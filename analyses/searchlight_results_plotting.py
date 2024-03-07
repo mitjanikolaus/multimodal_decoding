@@ -79,11 +79,10 @@ def run(args):
     all_scores = {hemi: dict() for hemi in HEMIS}
     t_values = {hemi: dict() for hemi in HEMIS}
 
-    resolution = "fsaverage6"
     alpha = 1
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{args.model}/*/*/{resolution}/left/{args.mode}/alpha_{str(alpha)}.p')
+                                 f'train/{args.model}/*/*/{args.resolution}/left/{args.mode}/alpha_{str(alpha)}.p')
     results_paths = np.array(sorted(glob(results_regex)))
 
     for path in results_paths:
@@ -207,7 +206,7 @@ def run(args):
     scores = all_scores
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
@@ -245,7 +244,7 @@ def run(args):
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
@@ -257,7 +256,7 @@ def run(args):
     scores = t_values
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
@@ -296,7 +295,7 @@ def run(args):
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
@@ -308,7 +307,7 @@ def run(args):
     for scores in tqdm(per_subject_scores):
         fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
         subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-        fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
         for subfig, metric in zip(subfigs, metrics):
             subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
@@ -377,7 +376,7 @@ def run(args):
         # fig.tight_layout()
         fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
         title += f"_alpha_{str(alpha)}"
-        results_searchlight = os.path.join(RESULTS_DIR, "searchlight", resolution, f"{title}.png")
+        results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
         os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
         plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
@@ -386,6 +385,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='vilt')
+    parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_100')
 
     return parser.parse_args()
