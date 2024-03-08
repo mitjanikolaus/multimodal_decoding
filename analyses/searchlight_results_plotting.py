@@ -179,11 +179,13 @@ def run(args):
     print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
 
     # calc averages and t-values
+    num_subjects = len(all_subjects)
+    print(f"Calculating t-values for {num_subjects} subjects.")
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
             alternative = "greater" if CHANCE_VALUES[score_name] == 0.5 else "two-sided"
             popmean = CHANCE_VALUES[score_name]
-            enough_data = [(~np.isnan(x)).sum() == len(SUBJECTS) for x in all_scores[hemi][score_name]]
+            enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
             t_values[hemi][score_name] = np.array([
                 stats.ttest_1samp(x, popmean=popmean, alternative=alternative)[0] if ed else np.nan for x, ed
                 in
