@@ -186,7 +186,7 @@ def run(args):
             popmean = CHANCE_VALUES[score_name]
             enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
             t_values[hemi][score_name] = np.array([
-                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else None for x, ed
+                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
                 in
                 zip(all_scores[hemi][score_name], enough_data)])
 
@@ -198,56 +198,6 @@ def run(args):
             warnings.simplefilter("ignore", category=RuntimeWarning)
             t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
             t_values[hemi]['min(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
-
-    # plot group-level avg scores
-    metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
-               'imgs_agno - imgs_specific',
-               'captions_agno - captions_specific']
-
-    scores = all_scores
-    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
-    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    for subfig, metric in zip(subfigs, metrics):
-        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-        cbar_max = None
-        cbar_min = None
-        for i, view in enumerate(VIEWS):
-            for j, hemi in enumerate(['left', 'right']):
-                if metric in scores[hemi].keys():
-                    scores_hemi = scores[hemi][metric]
-                    infl_mesh = fsaverage[f"infl_{hemi}"]
-                    if cbar_max is None:
-                        cbar_max = min(np.nanmax(scores_hemi), 99)
-                        cbar_min = np.nanmin(scores_hemi)
-
-                    plotting.plot_surf_stat_map(
-                        infl_mesh,
-                        scores_hemi,
-                        hemi=hemi,
-                        view=view,
-                        bg_map=fsaverage[f"sulc_{hemi}"],
-                        axes=axes[i * 2 + j],
-                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                        vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
-                        vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
-                        cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
-                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
-                    )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-                else:
-                    axes[i * 2 + j].axis('off')
-
-    title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
-    # fig.suptitle(title)
-    # fig.tight_layout()
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    title += f"_alpha_{str(alpha)}"
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
     # plot group-level t-values
     metrics = ['imgs_agno - imgs_specific',
@@ -292,6 +242,57 @@ def run(args):
                     axes[i * 2 + j].axis('off')
 
     title = f"{args.model}_{args.mode}_group_level_t_values"
+    # fig.suptitle(title)
+    # fig.tight_layout()
+    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    title += f"_alpha_{str(alpha)}"
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
+    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+
+
+    # plot group-level avg scores
+    metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
+               'imgs_agno - imgs_specific',
+               'captions_agno - captions_specific']
+
+    scores = all_scores
+    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    for subfig, metric in zip(subfigs, metrics):
+        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+        cbar_max = None
+        cbar_min = None
+        for i, view in enumerate(VIEWS):
+            for j, hemi in enumerate(['left', 'right']):
+                if metric in scores[hemi].keys():
+                    scores_hemi = scores[hemi][metric]
+                    infl_mesh = fsaverage[f"infl_{hemi}"]
+                    if cbar_max is None:
+                        cbar_max = min(np.nanmax(scores_hemi), 99)
+                        cbar_min = np.nanmin(scores_hemi)
+
+                    plotting.plot_surf_stat_map(
+                        infl_mesh,
+                        scores_hemi,
+                        hemi=hemi,
+                        view=view,
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        axes=axes[i * 2 + j],
+                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                        threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                        vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
+                        vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
+                        cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
+                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                    )
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+                else:
+                    axes[i * 2 + j].axis('off')
+
+    title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
