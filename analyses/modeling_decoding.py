@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import numpy as np
 import pandas as pd
@@ -283,25 +284,56 @@ def run(args):
     results.extend(train_and_eval(args, N_TRAIN_SAMPLES_PER_CLASS, condition, "quarter_noise_three_quarters_same"))
 
     results = pd.DataFrame.from_records(results)
-    sns.catplot(data=results, kind="bar", y="condition", x="acc", row="modality", hue="decoder_type")
+    sns.catplot(data=results, kind="bar", y="condition", x="acc", row="modality", hue="decoder_type", aspect=4)
     # sns.barplot(data=results, y="condition", x="acc", hue="modality")
-
     # plt.axhline(x=np.mean(scores_baseline_mod_1), color='black', linestyle="--", linewidth=0.7)
     # plt.xticks(rotation=85)
     plt.tight_layout()
     plt.ylabel("")
+    plt.savefig("results/decoding_simulation/accs.png", dpi=300)
+
+    results_diff = []
+    diff_accs = results[(results.modality == "mod1") & (results.decoder_type == "modality_agnostic")].acc.values - results[
+        (results.modality == "mod1") & (results.decoder_type == "modality_specific_mod1")].acc.values
+    diff_df = results[(results.modality == "mod1") & (results.decoder_type == "modality_agnostic")].copy()
+    diff_df['acc'] = diff_accs
+    diff_df['metric'] = 'mod1_agnostic - mod1_specific'
+    diff_df['decoder_type'] = None
+    results_diff.append(diff_df)
+
+    diff_accs = results[(results.modality == "mod2") & (results.decoder_type == "modality_agnostic")].acc.values - results[
+        (results.modality == "mod2") & (results.decoder_type == "modality_specific_mod2")].acc.values
+    diff_df = results[(results.modality == "mod2") & (results.decoder_type == "modality_agnostic")].copy()
+    diff_df['acc'] = diff_accs
+    diff_df['metric'] = 'mod2_agnostic - mod2_specific'
+    diff_df['decoder_type'] = None
+    results_diff.append(diff_df)
+
+    results_diff_df = pd.concat(results_diff, ignore_index=True)
+
+    min_acc = np.min((results_diff_df[results_diff_df.metric == "mod1_agnostic - mod1_specific"].acc.values, results_diff_df[results_diff_df.metric == "mod2_agnostic - mod2_specific"].acc.values), axis=0)
+    diff_df = results_diff_df[results_diff_df.metric == "mod1_agnostic - mod1_specific"].copy()
+    diff_df['acc'] = min_acc
+    diff_df['metric'] = 'min(mod1_agnostic - mod1_specific, mod2_agnostic - mod2_specific)'
+    diff_df['decoder_type'] = None
+    results_diff_df = pd.concat((results_diff_df, diff_df), ignore_index=True)
+
+    sns.catplot(data=results_diff_df, kind="bar", y="condition", x="acc", row="metric", aspect=3)
+    plt.tight_layout()
+    plt.savefig("results/decoding_simulation/diffs.png", dpi=300)
     plt.show()
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)  # TODO
+    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
+    os.makedirs("results/decoding_simulation/", exist_ok=True)
     args = get_args()
 
     run(args)
