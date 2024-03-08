@@ -232,10 +232,10 @@ def run(args):
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                         threshold=2.015, # for 5 degrees of freedom (6 subjects): 2.015 for p<0.05 (one-sided)
-                        vmax=99 if CHANCE_VALUES[metric] == 0.5 else None,
+                        vmax=99 if CHANCE_VALUES[metric] == 0.5 else cbar_max,
                         vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else -99,
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
-                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                        symmetric_cbar=False # if CHANCE_VALUES[metric] == 0.5 else True,
                     )
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
