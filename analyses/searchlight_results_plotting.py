@@ -183,11 +183,10 @@ def run(args):
     print(f"Calculating t-values for {num_subjects} subjects.")
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
-            alternative = "greater" if CHANCE_VALUES[score_name] == 0.5 else "two-sided"
             popmean = CHANCE_VALUES[score_name]
             enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
             t_values[hemi][score_name] = np.array([
-                stats.ttest_1samp(x, popmean=popmean, alternative=alternative)[0] if ed else np.nan for x, ed
+                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
                 in
                 zip(all_scores[hemi][score_name], enough_data)])
 
@@ -282,7 +281,7 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=2.571, # for 5 degrees of freedom (6 subjects): 2.571 for p<0.05 (two-sided) | 3.365 for p<0.01(one-sided!)
+                        threshold=2.015, # for 5 degrees of freedom (6 subjects): 2.015 for p<0.05 (one-sided)
                         vmax=99 if CHANCE_VALUES[metric] == 0.5 else None,
                         vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else None,
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
