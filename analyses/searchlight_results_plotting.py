@@ -186,7 +186,7 @@ def run(args):
             popmean = CHANCE_VALUES[score_name]
             enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
             t_values[hemi][score_name] = np.array([
-                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else None for x, ed
                 in
                 zip(all_scores[hemi][score_name], enough_data)])
 
