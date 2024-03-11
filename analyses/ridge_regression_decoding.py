@@ -461,7 +461,7 @@ def calculate_eval_metrics(results, fmri_betas):
     return results
 
 
-def get_run_str(model_name, features, mask=None, best_val_loss=False, best_val_acc=False):
+def get_run_str(model_name, features, vision_features, mask=None, best_val_loss=False, best_val_acc=False):
     run_str = f"{model_name}_{features}"
     if mask is not None:
         run_str += f"_mask_{mask}"
@@ -469,6 +469,10 @@ def get_run_str(model_name, features, mask=None, best_val_loss=False, best_val_a
         run_str += "_best_val_loss"
     if best_val_acc:
         run_str += "_best_val_acc"
+    if vision_features == VISION_CLS_FEAT_KEY:
+        run_str += "_vision_feats_cls"
+    if vision_features == VISION_CONCAT_FEATS:
+        run_str += "_vision_feats_concat"
     return run_str
 
 
@@ -548,7 +552,7 @@ def run(args):
                         results = results | test_results
 
                         results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
-                        run_str = get_run_str(model_name, features, mask, best_val_acc=True)
+                        run_str = get_run_str(model_name, features, args.vision_features, mask, best_val_acc=True)
                         results_file_dir = f'{results_dir}/{run_str}'
                         os.makedirs(results_file_dir, exist_ok=True)
 
