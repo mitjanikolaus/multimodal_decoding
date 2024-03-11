@@ -208,6 +208,7 @@ def run(args):
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
+    displays = []
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
@@ -222,7 +223,7 @@ def run(args):
                         cbar_max = min(np.nanmax(scores_hemi), 99)
                         cbar_min = max(np.nanmin(scores_hemi), -99)
 
-                    plotting.plot_surf_stat_map(
+                    display = plotting.plot_surf_stat_map(
                         infl_mesh,
                         scores_hemi,
                         hemi=hemi,
@@ -236,6 +237,8 @@ def run(args):
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
                         symmetric_cbar=True,  # if CHANCE_VALUES[metric] == 0.5 else True,
                     )
+                    displays.append(display)
+                    display.close()
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
