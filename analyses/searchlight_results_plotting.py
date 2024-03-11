@@ -202,7 +202,6 @@ def run(args):
     # plot group-level t-values
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
-               'mean(captions_agno - captions_specific, imgs_agno - imgs_specific)',
                'min(captions_agno - captions_specific, imgs_agno - imgs_specific)']
     scores = t_values
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
@@ -252,7 +251,7 @@ def run(args):
 
 
     # plot group-level avg scores
-    metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
+    metrics = ["captions", "images",
                'imgs_agno - imgs_specific',
                'captions_agno - captions_specific']
 
@@ -302,7 +301,7 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
 
     # per-subject plots
-    metrics = ["captions", "images", "mean(imgs,captions)", "min(imgs,captions)",
+    metrics = ["captions", "images", "min(imgs,captions)",
                'imgs_agno - imgs_specific',
                'captions_agno - captions_specific']
     print("\n\nCreating per-subject plots..")
