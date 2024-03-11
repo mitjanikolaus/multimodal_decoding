@@ -199,7 +199,57 @@ def run(args):
             t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
             t_values[hemi]['min(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
 
-    # plot group-level t-values
+    # plot group-level t-values with low threshold (=0.5)
+    metrics = ['imgs_agno - imgs_specific',
+               'captions_agno - captions_specific',
+               'min(captions_agno - captions_specific, imgs_agno - imgs_specific)']
+    scores = t_values
+    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+
+    for subfig, metric in zip(subfigs, metrics):
+        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+        cbar_max = None
+        cbar_min = None
+        for i, view in enumerate(VIEWS):
+            for j, hemi in enumerate(['left', 'right']):
+                if metric in scores[hemi].keys():
+                    scores_hemi = scores[hemi][metric]
+                    infl_mesh = fsaverage[f"infl_{hemi}"]
+                    if cbar_max is None:
+                        cbar_max = min(np.nanmax(scores_hemi), 99)
+                        cbar_min = max(np.nanmin(scores_hemi), -99)
+
+                    plotting.plot_surf_stat_map(
+                        infl_mesh,
+                        scores_hemi,
+                        hemi=hemi,
+                        view=view,
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        axes=axes[i * 2 + j],
+                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                        threshold=0.5,  # for 5 degrees of freedom (6 subjects): 2.015 for p<0.05 (one-sided)
+                        vmax=99 if CHANCE_VALUES[metric] == 0.5 else cbar_max,
+                        vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else -cbar_max,
+                        cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
+                        symmetric_cbar=True,  # if CHANCE_VALUES[metric] == 0.5 else True,
+                    )
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+                else:
+                    axes[i * 2 + j].axis('off')
+
+    title = f"{args.model}_{args.mode}_group_level_t_values_threshold_0.5"
+    # fig.suptitle(title)
+    # fig.tight_layout()
+    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    title += f"_alpha_{str(alpha)}"
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
+    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+
+    # plot group-level t-values with threshold = 2.015
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
                'min(captions_agno - captions_specific, imgs_agno - imgs_specific)']
