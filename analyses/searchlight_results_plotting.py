@@ -220,7 +220,7 @@ def run(args):
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
                         cbar_max = min(np.nanmax(scores_hemi), 99)
-                        cbar_min = np.nanmin(scores_hemi)
+                        cbar_min = max(np.nanmin(scores_hemi), -99)
 
                     plotting.plot_surf_stat_map(
                         infl_mesh,
@@ -232,9 +232,9 @@ def run(args):
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                         threshold=2.015, # for 5 degrees of freedom (6 subjects): 2.015 for p<0.05 (one-sided)
                         vmax=99 if CHANCE_VALUES[metric] == 0.5 else cbar_max,
-                        vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else -99,
+                        vmin=0.0 if CHANCE_VALUES[metric] == 0.5 else cbar_min,
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
-                        symmetric_cbar=False # if CHANCE_VALUES[metric] == 0.5 else True,
+                        symmetric_cbar=True # if CHANCE_VALUES[metric] == 0.5 else True,
                     )
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
