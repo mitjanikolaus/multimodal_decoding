@@ -8,7 +8,7 @@ from utils import FEATURES_DIR, RESULTS_DIR
 from glob import glob
 import pickle
 
-HP_KEYS = ["alpha", "model", "subject", "features", "training_mode", "mask", "best_val_loss", "best_val_acc", "best_val_mse", "num_voxels"]
+HP_KEYS = ["alpha", "model", "subject", "features", "vision_features", "training_mode", "mask", "num_voxels"]
 METRIC_NAMES = {"acc_cosine": "pairwise_acc", "acc_cosine_captions": "pairwise_acc_captions", "acc_cosine_images": "pairwise_acc_images"}
 
 
@@ -49,13 +49,10 @@ def load_results_data(distance_metrics = ["cosine"]):
     df = pd.DataFrame.from_records(data)
 
     df["features"] = df.features.replace({"concat": "vision+lang"})
-    df["model"] = df.model.replace({"mistral": "mistral-7b"})
 
     df["training_mode"] = df.training_mode.replace({"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
     df["mask"] = df["mask"].fillna("whole_brain")
 
     df["model_feat"] = df.model + "_" + df.features
-
-    # df = df[df.ensemble != True]
 
     return df
