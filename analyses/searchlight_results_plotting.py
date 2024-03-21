@@ -2,24 +2,19 @@ import argparse
 import warnings
 
 import numpy as np
-from matplotlib.patches import Circle
 from nilearn import datasets, plotting
 import matplotlib.pyplot as plt
 import os
 from glob import glob
 import pickle
 
-from nilearn.image import resample_to_img
-from nilearn.surface import surface
 from scipy import stats
 from scipy.stats import pearsonr
 from tqdm import tqdm
 import seaborn as sns
 
-from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
-    FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS
 
-from utils import VISION_MEAN_FEAT_KEY, RESULTS_DIR, SUBJECTS
+from utils import RESULTS_DIR
 
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
 
@@ -28,7 +23,7 @@ SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight
 COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
-VIEWS = ["lateral", "medial"]  # , "ventral"]   #, "ventral"]
+VIEWS = ["lateral", "medial", "ventral"]
 
 HEMIS = ['left', 'right']
 
