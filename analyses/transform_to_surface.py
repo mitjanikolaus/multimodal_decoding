@@ -50,6 +50,7 @@ def get_fmri_data(subject, mode):
 
 def run(args):
     for subject in args.subjects:
+        print("\n", subject)
         train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, "train")
         test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, "test")
 
