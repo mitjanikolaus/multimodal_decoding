@@ -15,7 +15,7 @@ N_TEST_SAMPLES_PER_CLASS = 1000
 
 N_VOXELS_FMRI = 200
 
-STDDEV_WITHIN_CLASS = 1
+STDDEV_WITHIN_CLASS = 1.5
 
 
 def generate_dummy_fmri_data(n_train_samples_per_class, seed, second_modality=None):
@@ -271,9 +271,9 @@ def run(args):
     print(condition)
     results.extend(train_and_eval(args, N_TRAIN_SAMPLES_PER_CLASS, condition, "half_independent_half_same"))
 
-    condition = "THREE QUARTERS NOISE,\nQUARTER SAME"
-    print(condition)
-    results.extend(train_and_eval(args, N_TRAIN_SAMPLES_PER_CLASS, condition, "three_quarters_noise_quarter_same"))
+    # condition = "THREE QUARTERS NOISE,\nQUARTER SAME"
+    # print(condition)
+    # results.extend(train_and_eval(args, N_TRAIN_SAMPLES_PER_CLASS, condition, "three_quarters_noise_quarter_same"))
 
     condition = "HALF NOISE,\nHALF SAME"
     print(condition)
