@@ -196,7 +196,8 @@ def run(args):
             t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
 
-    # plot group-level t-values with low threshold (=0)
+    print("plotting (low threshold)")
+    # plot group-level t-values with low threshold (=1)
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
                METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -227,7 +228,7 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=0.01 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 1.5,
+                        threshold=1 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 1.5,
                         vmax=cbar_max,
                         vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
                         cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
@@ -237,7 +238,7 @@ def run(args):
                 else:
                     axes[i * 2 + j].axis('off')
 
-    title = f"{args.model}_{args.mode}_group_level_t_values_threshold_0.01"
+    title = f"{args.model}_{args.mode}_group_level_t_values_threshold_1"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
@@ -247,6 +248,7 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
+    print("plotting (high threshold)")
     # plot group-level t-values with threshold = 2.015
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
