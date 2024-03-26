@@ -24,7 +24,7 @@ if __name__ == "__main__":
     print("95th quantile: ", np.quantile(t_values, 0.95))
     print("99th quantile: ", np.quantile(t_values, 0.99))
 
-    plt.hist(t_values, bins=100)
+    plt.hist(t_values, bins=100, alpha=0.5)
 
     t_values = []
     for _ in range(100000):
@@ -48,10 +48,15 @@ if __name__ == "__main__":
         t_values.append(t_value)
 
     print("min(X1, X2):")
-    print("95th quantile: ", np.quantile(t_values, 0.95))
-    print("99th quantile: ", np.quantile(t_values, 0.99))
+    x_quantile_95 = np.quantile(t_values, 0.95)
+    x_quantile_99 = np.quantile(t_values, 0.99)
+    print("95th quantile: ", x_quantile_95)
+    print("99th quantile: ", x_quantile_99)
 
-    plt.hist(t_values, bins=100, alpha=0.5)
+    plt.hist(t_values, bins=100, alpha=0.8)
+    plt.axvline(x=x_quantile_95, color='r', linestyle='--')
+    plt.axvline(x=x_quantile_99, color='r', linestyle=':')
+
     plt.show()
 
 
