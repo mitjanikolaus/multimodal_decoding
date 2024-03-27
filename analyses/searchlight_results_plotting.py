@@ -179,6 +179,13 @@ def run(args):
     num_subjects = len(all_subjects)
     print(f"Calculating t-values for {num_subjects} subjects.")
     for hemi in HEMIS:
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter("ignore", category=RuntimeWarning)
+        #     enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi]['captions_agno - captions_specific']]
+        #     popmean = 0
+        #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.array([stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed in zip(np.nanmin((all_scores[hemi]['captions_agno - captions_specific'], all_scores[hemi]['imgs_agno - imgs_specific']), axis=0), enough_data)])
+        #     # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+
         for score_name in all_scores[hemi].keys():
             popmean = CHANCE_VALUES[score_name]
             enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
@@ -193,11 +200,10 @@ def run(args):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            t_values[hemi]['mean(captions_agno - captions_specific, imgs_agno - imgs_specific)'] = np.nanmean((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
 
-    print("plotting (low threshold)")
-    # plot group-level t-values with low threshold (=1)
+    print("plotting (t-values with high threshold)")
+    # plot group-level t-values with high threshold (=0.74)
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
                METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -228,7 +234,7 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=1 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 1.5,
+                        threshold=0.74 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 3.365, # p < 0.01
                         vmax=cbar_max,
                         vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
                         cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
@@ -237,8 +243,7 @@ def run(args):
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
-
-    title = f"{args.model}_{args.mode}_group_level_t_values_threshold_1"
+    title = f"{args.model}_{args.mode}_group_level_t_values_p_0.01"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
@@ -248,8 +253,8 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
-    print("plotting (high threshold)")
-    # plot group-level t-values with threshold = 2.015
+    print("plotting (t-values)")
+    # plot group-level t-values with low threshold (=-0.03)
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
                METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -280,7 +285,7 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=2.015, # for 5 degrees of freedom (6 subjects): 2.015 for p<0.05 (one-sided)
+                        threshold=-0.03 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 2.015,  # p < 0.05
                         vmax=cbar_max,
                         vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
                         cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
@@ -289,8 +294,7 @@ def run(args):
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
-
-    title = f"{args.model}_{args.mode}_group_level_t_values"
+    title = f"{args.model}_{args.mode}_group_level_t_values_p_0.05"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
