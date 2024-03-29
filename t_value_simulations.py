@@ -3,61 +3,78 @@ import numpy as np
 from scipy.stats import ttest_1samp
 
 if __name__ == "__main__":
-    t_values = []
 
-    n_samples = 6
-    popmean = 0
+    X = np.linspace(-5, 5, 100000)
 
-    for _ in range(100000):
-        data = np.random.normal(0, size=n_samples)
+    def cdf_5(t):
+        return 1/2 + (1/np.pi) * ((t/(np.sqrt(5)*(1+((t**2)/5))))*(1+(2/(3*(1+(t**2)/5))))+np.arctan(t/np.sqrt(5)))
 
-        # t_value = (np.mean(data) - popmean) / (np.std(data) / np.sqrt(n_samples-1))
+    Y = [cdf_5(x) for x in X]
+    closest = min(Y, key=lambda x:abs(x-0.95))
+    print(f"x={X[np.argwhere(Y == closest)[0][0]]}")
 
-        # degrees_of_freedom = len(data) - 1
-        # print(degrees_of_freedom)
+    plt.plot(X, Y)
+    plt.ylim((0, 1))
+    plt.axhline(0.95, color="r")
 
-        t_value = ttest_1samp(data, popmean=popmean, alternative="greater")[0]
+    def cdf_5_min(t):
+        return 1 - (1-cdf_5(t))**2
 
-        t_values.append(t_value)
-
-    print("X1")
-    print("95th quantile: ", np.quantile(t_values, 0.95))
-    print("99th quantile: ", np.quantile(t_values, 0.99))
-
-    plt.hist(t_values, bins=100, alpha=0.5)
-
-    t_values = []
-    for _ in range(100000):
-        data = np.random.normal(0, size=n_samples)
-
-        # t_value = (np.mean(data) - popmean) / (np.std(data) / np.sqrt(n_samples-1))
-
-        data_2 = np.random.normal(0, size=n_samples)
-
-        data_min = np.min((data, data_2), axis=0)
-        # t_value = (np.mean(data_min) - popmean) / (np.std(data_min) / np.sqrt(n_samples-1))
-
-        # print(t_value)
-
-        # degrees_of_freedom = len(data) - 1
-        # print(degrees_of_freedom)
-
-        # t_value = ttest_1samp(data, popmean=popmean, alternative="greater")[0]
-        t_value = ttest_1samp(data_min, popmean=popmean, alternative="greater")[0]
-
-        t_values.append(t_value)
-
-    print("min(X1, X2):")
-    x_quantile_95 = np.quantile(t_values, 0.95)
-    x_quantile_99 = np.quantile(t_values, 0.99)
-    print("95th quantile: ", x_quantile_95)
-    print("99th quantile: ", x_quantile_99)
-
-    plt.hist(t_values, bins=100, alpha=0.8)
-    plt.axvline(x=x_quantile_95, color='r', linestyle='--')
-    plt.axvline(x=x_quantile_99, color='r', linestyle=':')
-
+    Y = [cdf_5_min(x) for x in X]
+    closest = min(Y, key=lambda x:abs(x-0.95))
+    print(f"x={X[np.argwhere(Y == closest)[0][0]]}")
+    # Y_round = np.array([cdf_5_min(x) for x in X])
+    plt.plot(X, Y)
+    plt.ylim((0, 1))
+    plt.axhline(0.95, color="r")
     plt.show()
+
+    #x=0.824
+
+    #
+    # t_values = []
+    #
+    # n_samples = 6
+    # popmean = 0
+    #
+    # for r in range(10000):
+    #     data = np.random.normal(0, size=n_samples)
+    #
+    #     # t_value = (np.mean(data) - popmean) / (np.std(data) / np.sqrt(n_samples))
+    #     t_value = ttest_1samp(data, popmean=popmean, alternative="greater")[0]
+    #
+    #     t_values.append(t_value)
+    #
+    # print("X1")
+    # print("95th quantile: ", np.quantile(t_values, 0.95))
+    # print("99th quantile: ", np.quantile(t_values, 0.99))
+    #
+    # plt.hist(t_values, bins=100, alpha=0.5)
+    #
+    # t_values = []
+    # for r in range(10000):
+    #     data = np.random.normal(0, size=n_samples)
+    #
+    #     # t_value = (np.mean(data) - popmean) / (np.std(data) / np.sqrt(n_samples))
+    #     data_2 = np.random.normal(0, size=n_samples)
+    #
+    #     data_min = np.min((data, data_2), axis=0)
+    #     # t_value = (np.mean(data_min) - popmean) / (np.std(data_min) / np.sqrt(n_samples))
+    #     t_value = ttest_1samp(data_min, popmean=popmean, alternative="greater")[0]
+    #
+    #     t_values.append(t_value)
+    #
+    # print("min(X1, X2):")
+    # x_quantile_95 = np.quantile(t_values, 0.95)
+    # x_quantile_99 = np.quantile(t_values, 0.99)
+    # print("95th quantile: ", x_quantile_95)
+    # print("99th quantile: ", x_quantile_99)
+    #
+    # plt.hist(t_values, bins=100, alpha=0.8)
+    # plt.axvline(x=x_quantile_95, color='r', linestyle='--')
+    # plt.axvline(x=x_quantile_99, color='r', linestyle=':')
+    #
+    # plt.show()
 
 
 
