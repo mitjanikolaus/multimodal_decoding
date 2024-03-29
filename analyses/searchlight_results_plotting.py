@@ -202,8 +202,7 @@ def run(args):
             warnings.simplefilter("ignore", category=RuntimeWarning)
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
 
-    print("plotting (t-values with high threshold)")
-    # plot group-level t-values with high threshold (=0.74)
+    print("plotting (t-values) threshold 0.824")
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
                METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -234,7 +233,7 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=0.74 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 3.365, # p < 0.01
+                        threshold=0.824 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 2.015,  # p < 0.05
                         vmax=cbar_max,
                         vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
                         cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
@@ -243,58 +242,7 @@ def run(args):
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
-    title = f"{args.model}_{args.mode}_group_level_t_values_p_0.01"
-    # fig.suptitle(title)
-    # fig.tight_layout()
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    title += f"_alpha_{str(alpha)}"
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
-
-    print("plotting (t-values)")
-    # plot group-level t-values with low threshold (=-0.03)
-    metrics = ['imgs_agno - imgs_specific',
-               'captions_agno - captions_specific',
-               METRIC_MIN_DIFF_BOTH_MODALITIES]
-    scores = t_values
-    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
-    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-
-    for subfig, metric in zip(subfigs, metrics):
-        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-        cbar_max = None
-        cbar_min = None
-        for i, view in enumerate(VIEWS):
-            for j, hemi in enumerate(['left', 'right']):
-                if metric in scores[hemi].keys():
-                    scores_hemi = scores[hemi][metric]
-                    infl_mesh = fsaverage[f"infl_{hemi}"]
-                    if cbar_max is None:
-                        cbar_max = min(np.nanmax(scores_hemi), 99)
-                        cbar_min = max(np.nanmin(scores_hemi), -99)
-
-                    plotting.plot_surf_stat_map(
-                        infl_mesh,
-                        scores_hemi,
-                        hemi=hemi,
-                        view=view,
-                        bg_map=fsaverage[f"sulc_{hemi}"],
-                        axes=axes[i * 2 + j],
-                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=-0.03 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 2.015,  # p < 0.05
-                        vmax=cbar_max,
-                        vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
-                        cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
-                        symmetric_cbar=False if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else True,
-                    )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-                else:
-                    axes[i * 2 + j].axis('off')
-    title = f"{args.model}_{args.mode}_group_level_t_values_p_0.05"
+    title = f"{args.model}_{args.mode}_group_level_t_values_tresh_0.824"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
