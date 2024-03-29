@@ -108,15 +108,15 @@ REGIONS_LANGUAGE = [
     'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
     'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
     'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci
-    'L S_temporal_sup',   # Superior temporal sulcus
+    'L S_temporal_sup',  # Superior temporal sulcus
     'L S_temporal_transverse',  # Transverse temporal sulcus
     'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
     'L G_pariet_inf-Supramar',  # Supramarginal gyrus
-    'L G_Ins_lg_and_S_cent_ins',    # Insula
-    'L G_insular_short',    # Insula
-    'L S_circular_insula_ant',    # Insula
-    'L S_circular_insula_inf',    # Insula
-    'L S_circular_insula_sup',    # Insula
+    'L G_Ins_lg_and_S_cent_ins',  # Insula
+    'L G_insular_short',  # Insula
+    'L S_circular_insula_ant',  # Insula
+    'L S_circular_insula_inf',  # Insula
+    'L S_circular_insula_sup',  # Insula
 ]
 
 
@@ -182,7 +182,8 @@ def get_roi_mask(roi_mask_name, ref_img):
 
 def get_default_features(model_name):
     if model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
-            "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral"):
+            "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral") or model_name.startswith(
+            "bge"):
         features = LANG_FEATS_ONLY
     elif model_name.startswith("resnet") or model_name.startswith("vit") or model_name.startswith("dino"):
         features = VISION_FEATS_ONLY
@@ -198,7 +199,8 @@ def get_default_features(model_name):
     return features
 
 
-def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, stim_types, subject, mode, nn_latent_transform=None,
+def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, stim_types, subject, mode,
+                       nn_latent_transform=None,
                        recompute_std_mean=False):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
