@@ -68,12 +68,11 @@ def run(args):
                         print("Hemisphere: ", hemi)
                         print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
 
-                        X = test_fmri[hemi]
-
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
                         estimators_file_name = f"alpha_{args.l2_regularization_alpha}_estimators.p"
                         estimators = pickle.load(open(os.path.join(results_dir, estimators_file_name), 'rb'))
 
+                        X = test_fmri[hemi]
                         nan_locations = np.isnan(X[0])
                         assert np.all(nan_locations == np.isnan(X[-1]))
                         X = X[:, ~nan_locations]
@@ -86,15 +85,8 @@ def run(args):
                         if args.radius is not None:
                             adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
                                          nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-                            n_neighbors = [len(adj) for adj in adjacency]
-                            print(
-                                f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-                            print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
-                            print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
-                            print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
-
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
@@ -127,7 +119,6 @@ def run(args):
                             )
                             for id in range(DEFAULT_N_JOBS)
                         )
-                        print(all_scores)
                         results_file_name = f"alpha_{args.l2_regularization_alpha}_null_distribution.p"
                         pickle.dump(all_scores, open(os.path.join(results_dir, results_file_name), 'wb'))
 
