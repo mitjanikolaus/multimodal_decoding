@@ -75,15 +75,13 @@ if __name__ == "__main__":
     all_feats = dict()
     for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
         all_feats[id] = {"visual_feature_mean": feat_v, "lingual_feature": feat_l}
-
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/glow.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
     feats_v = np.load(os.path.expanduser("~/Downloads/gw_features/resnet.npy"))[::5]
     all_feats = dict()
     for feat_v, id in zip(feats_v, stimuli_ids):
-        all_feats[id] = {"visual_feature_mean": feats_v}
-
+        all_feats[id] = {"visual_feature_mean": feat_v}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/resnet-50-glow.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -91,6 +89,5 @@ if __name__ == "__main__":
     all_feats = dict()
     for feat_l, id in zip(feats_l, stimuli_ids):
         all_feats[id] = {"lingual_feature": feat_l}
-
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/bge.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
