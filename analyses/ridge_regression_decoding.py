@@ -364,9 +364,10 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
     return dist_mat
 
 
-def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine"):
-    pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
-    predictions = pred_normalize(predictions)
+def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine", normalize=True):
+    if normalize:
+        pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = pred_normalize(predictions)
 
     if "csls_" in metric:
         metric = metric.replace("csls_", "")

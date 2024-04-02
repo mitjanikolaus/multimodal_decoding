@@ -13,7 +13,6 @@ from scipy.stats import pearsonr
 from tqdm import tqdm
 import seaborn as sns
 
-
 from utils import RESULTS_DIR
 
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
@@ -73,6 +72,7 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
 def run(args):
     per_subject_scores = []
     all_subjects = set()
+    features = None
     all_scores = {hemi: dict() for hemi in HEMIS}
     t_values = {hemi: dict() for hemi in HEMIS}
 
@@ -84,6 +84,11 @@ def run(args):
 
     for path in results_paths:
         subject = os.path.dirname(path).split("/")[-4]
+        if features is None:
+            features = os.path.dirname(path).split("/")[-5]
+        else:
+            if features != os.path.dirname(path).split("/")[-5]:
+                raise RuntimeError("different features!")
         alpha = float(os.path.basename(path).split("_")[1][:-2])
 
         scores = dict()
@@ -179,12 +184,11 @@ def run(args):
     num_subjects = len(all_subjects)
     print(f"Calculating t-values for {num_subjects} subjects.")
     for hemi in HEMIS:
-        # with warnings.catch_warnings():
-        #     warnings.simplefilter("ignore", category=RuntimeWarning)
-        #     enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi]['captions_agno - captions_specific']]
-        #     popmean = 0
-        #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.array([stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed in zip(np.nanmin((all_scores[hemi]['captions_agno - captions_specific'], all_scores[hemi]['imgs_agno - imgs_specific']), axis=0), enough_data)])
-        #     # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+        for path in results_paths:
+            results_dir = os.path.dirname(path)
+            null_distribution_file_name = f"alpha_{str(int(alpha))}_null_distribution.p"
+            null_distribution = pickle.load(open(os.path.join(results_dir, null_distribution_file_name), 'rb'))
+            # TODO
 
         for score_name in all_scores[hemi].keys():
             popmean = CHANCE_VALUES[score_name]

@@ -344,28 +344,33 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
-def pairwise_acc_captions(latents, predictions):
-    return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION])
+def pairwise_acc_captions(latents, predictions, normalize=True):
+    return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION], normalize=normalize)
 
 
-def pairwise_acc_images(latents, predictions):
-    return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE])
+def pairwise_acc_images(latents, predictions, normalize=True):
+    return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE], normalize=normalize)
 
 
 def pairwise_acc(latents, predictions):
-    assert len(latents) == len(predictions) == NUM_TEST_STIMULI
     return pairwise_accuracy(latents, predictions, IDS_TEST_STIM)
 
 
 def run(args):
     for subject in args.subjects:
-        train_fmri = dict()
-        train_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_train.p"), 'rb'))
-        train_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_train.p"), 'rb'))
+        train_fmri = {
+            "left": pickle.load(
+                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_train.p"), 'rb')),
+            "right": pickle.load(
+                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_train.p"), 'rb')),
+        }
 
-        test_fmri = dict()
-        test_fmri['left'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb'))
-        test_fmri['right'] = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb'))
+        test_fmri = {
+            "left": pickle.load(
+                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb')),
+            "right": pickle.load(
+                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb')),
+        }
 
         train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
         train_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
