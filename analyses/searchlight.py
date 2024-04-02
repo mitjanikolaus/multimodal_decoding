@@ -36,7 +36,7 @@ IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
 
 
-def custom_cross_val_score(
+def custom_cross_val(
         estimator,
         X,
         y=None,
@@ -49,6 +49,7 @@ def custom_cross_val_score(
         fit_params=None,
         pre_dispatch="2*n_jobs",
         error_score=np.nan,
+        save_estimators=False,
 ):
     """Evaluate a score by cross-validation.
 
@@ -182,6 +183,7 @@ def custom_cross_val_score(
         fit_params=fit_params,
         pre_dispatch=pre_dispatch,
         error_score=error_score,
+        return_estimator=save_estimators,
     )
     return cv_results
 
@@ -197,6 +199,7 @@ def custom_group_iter_search_light(
         thread_id,
         total,
         print_interval=500,
+        save_estimators=False,
 ):
     """Perform grouped iterations of search_light.
 
@@ -242,12 +245,12 @@ def custom_group_iter_search_light(
     par_scores : numpy.ndarray
         score for each voxel. dtype: float64.
     """
-    par_scores = []
+    results = []
     t0 = time.time()
     for i, row in enumerate(list_rows):
-        kwargs = {"scoring": scoring, "groups": groups}
-        scores = custom_cross_val_score(estimator, X[:, row], y, cv=cv, n_jobs=1, verbose=0, **kwargs)
-        par_scores.append({key: np.mean(score) for key, score in scores.items()})
+        kwargs = {"scoring": scoring, "groups": groups, "save_estimators": save_estimators}
+        cv_results = custom_cross_val(estimator, X[:, row], y, cv=cv, n_jobs=1, verbose=0, **kwargs)
+        results.append({key: np.mean(res) if isinstance(res, np.ndarray) else res for key, res in cv_results.items()})
         if print_interval > 0:
             if i % print_interval == 0:
                 # If there is only one job, progress information is fixed
@@ -261,7 +264,7 @@ def custom_group_iter_search_light(
                     f"Job #{thread_id}, processed {i}/{len(list_rows)} voxels "
                     f"({percent:0.2f}%, {round(remaining/60)} minutes remaining){crlf}"
                 )
-    return par_scores
+    return results
 
 
 def custom_search_light(
@@ -275,6 +278,7 @@ def custom_search_light(
         n_jobs=-1,
         verbose=0,
         print_interval=500,
+        save_estimators=False,
 ):
     """Compute a search_light.
 
@@ -333,6 +337,7 @@ def custom_search_light(
                 thread_id + 1,
                 len(A),
                 print_interval,
+                save_estimators,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -447,8 +452,9 @@ def run(args):
                         cv = [(train_ids, test_ids)]
 
                         start = time.time()
-                        scores = custom_search_light(X, latents, estimator=model, A=adjacency, cv=cv, n_jobs=args.n_jobs,
-                                              scoring=pairwise_acc_scorers, verbose=1, print_interval=500)
+                        scores = custom_search_light(X, latents, estimator=model, A=adjacency, cv=cv,
+                                                     n_jobs=args.n_jobs, scoring=pairwise_acc_scorers, verbose=1,
+                                                     print_interval=500, save_estimators=args.save_estimators)
                         end = time.time()
                         print(f"Searchlight time: {int(end - start)}s")
                         test_scores = [score["test_overall"] for score in scores]
@@ -456,6 +462,12 @@ def run(args):
 
                         results_dict["scores"] = scores
                         pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
+
+                        if args.save_estimators:
+                            assert len(scores[0]["estimator"]) == 1
+                            estimators = [score["estimator"][0] for score in scores]
+                            estimators_file_name = results_file_name.replace(".p", "_estimators.p")
+                            pickle.dump(estimators, open(os.path.join(results_dir, estimators_file_name), 'wb'))
 
 
 def get_results_dir(args, features, hemi, model_name, subject, training_mode):
@@ -494,6 +506,8 @@ def get_args():
     parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
+
+    parser.add_argument("--save-estimators", default=False, action="store_true")
 
     return parser.parse_args()
 
