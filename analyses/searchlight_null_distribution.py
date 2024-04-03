@@ -90,7 +90,7 @@ def run(args):
 
                         all_preds = []
                         print("generating test set predictions")
-                        for i, adj in tqdm(enumerate(adjacency)):
+                        for i, adj in tqdm(enumerate(adjacency), total=len(adjacency)):
                             estimator_file = os.path.join(results_dir, "estimators", f"{i}.p")
                             estimator = pickle.load(open(estimator_file, "rb"))
                             preds = estimator.predict(X[:, adj])
