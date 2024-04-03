@@ -71,7 +71,7 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     for metric in BASE_METRICS:
         score_name = metric.split("_")[1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic['scores']])
+        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
     # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
     print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
@@ -85,14 +85,14 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         score_name = metric.split("_")[1]
         scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_mod_specific_captions[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_captions['scores']])
+            [score[metric] for score in scores_captions])
 
     scores_mod_specific_images = dict()
     for metric in BASE_METRICS:
         score_name = metric.split("_")[1]
         scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_mod_specific_images[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_images['scores']])
+            [score[metric] for score in scores_images])
 
     scores['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
                                                     zip(scores['images'],
@@ -149,11 +149,12 @@ def run(args):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
-        scores_agnostic = pickle.load(open(path_agnostic, 'rb'))
-        scores_captions = pickle.load(open(path_caps, 'rb'))
-        scores_images = pickle.load(open(path_imgs, 'rb'))
+        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
+        scores_agnostic = results_agnostic['scores']
+        scores_captions = pickle.load(open(path_caps, 'rb'))['scores']
+        scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
 
-        nan_locations = scores_agnostic['nan_locations']
+        nan_locations = results_agnostic['nan_locations']
         scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
         add_to_all_scores(all_scores, scores, hemi)
 
