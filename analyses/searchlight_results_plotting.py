@@ -156,8 +156,9 @@ def run(args):
         null_distribution_captions = pickle.load(
             open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
 
-        for distr, distr_caps, distr_imgs in tqdm(
-                zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images)):
+        for distr, distr_caps, distr_imgs in zip(null_distribution_agnostic,
+                                                 null_distribution_captions,
+                                                 null_distribution_images):
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             add_to_all_scores(all_scores_null_distr, scores, hemi)
 
