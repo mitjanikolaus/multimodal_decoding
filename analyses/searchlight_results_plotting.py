@@ -156,8 +156,8 @@ def run(args):
         scores_agnostic = pickle.load(open(path_agnostic, 'rb'))
         scores_captions = pickle.load(open(path_caps, 'rb'))
         scores_images = pickle.load(open(path_imgs, 'rb'))
-        scores = process_scores(scores_agnostic, scores_captions, scores_images)
 
+        scores = process_scores(scores_agnostic, scores_captions, scores_images)
         add_to_all_scores(all_scores, scores, hemi)
 
         print("")
@@ -166,11 +166,23 @@ def run(args):
             per_subject_scores[subject] = dict()
         per_subject_scores[subject][hemi] = scores
 
-        # null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
-        # null_distribution = pickle.load(
-        #     open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
-        # null_distribution = np.concatenate(null_distribution)  # TODO update
-        #
+        null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
+        null_distribution_agnostic = pickle.load(
+            open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
+        null_distribution_agnostic = np.concatenate(null_distribution_agnostic)  # TODO update
+
+        null_distribution_captions = pickle.load(
+            open(os.path.join(os.path.dirname(paths_mod_specific_captions), null_distribution_file_name), 'rb'))
+        null_distribution_captions = np.concatenate(null_distribution_captions)  # TODO update
+
+        null_distribution_images = pickle.load(
+            open(os.path.join(os.path.dirname(paths_mod_specific_images), null_distribution_file_name), 'rb'))
+        null_distribution_images = np.concatenate(null_distribution_images)  # TODO update
+
+        for distr, distr_caps, distr_imgs in zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images):
+            scores = process_scores(distr, distr_caps, distr_imgs)
+            add_to_all_scores(all_scores_null_distr, scores, hemi)
+
         # print("len(null_distribution): ", len(null_distribution))
         # print("len(null_distribution)[0]: ", len(null_distribution[0]))
         # null_distr_captions = [n["captions"] for n in null_distribution[0]]
@@ -179,9 +191,7 @@ def run(args):
         # print(f"mean imgs: {np.mean(null_distr_imgs)}")
         # print(f"max imgs: {np.max(null_distr_imgs)}")
         # print(f"min imgs: {np.min(null_distr_imgs)}")
-        #
-        # for distr in null_distribution:
-        #     add_to_all_scores(all_scores_null_distr, distr, hemi)
+        # #
 
     all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
     print(
