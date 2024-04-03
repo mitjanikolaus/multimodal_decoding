@@ -68,12 +68,76 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
     plt.savefig("results/searchlight_correlation_num_voxels_acc_binned.png", dpi=300)
 
 
+def process_scores(scores_agnostic, scores_captions, scores_images):
+    scores = dict()
+    nan_locations = scores_agnostic['nan_locations']
+
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[1]
+        scores[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic['scores']])
+
+    # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
+    print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
+    print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+    scores["mean(imgs,captions)"] = scores["overall"]
+    del scores["overall"]
+    scores["min(imgs,captions)"] = np.min((scores['images'], scores['captions']), axis=0)
+
+    scores_mod_specific_captions = dict()
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[1]
+        scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_mod_specific_captions[score_name][~nan_locations] = np.array(
+            [score[metric] for score in scores_captions['scores']])
+
+    scores_mod_specific_images = dict()
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[1]
+        scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_mod_specific_images[score_name][~nan_locations] = np.array(
+            [score[metric] for score in scores_images['scores']])
+
+    scores['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
+                                                    zip(scores['images'],
+                                                        scores['captions'],
+                                                        scores_mod_specific_images['images'],
+                                                        scores_mod_specific_captions[
+                                                            'captions'])])
+    scores['captions_agno - captions_specific'] = np.array([ac - sc for ai, ac, si, sc in
+                                                            zip(scores['images'],
+                                                                scores['captions'],
+                                                                scores_mod_specific_images[
+                                                                    'images'],
+                                                                scores_mod_specific_captions[
+                                                                    'captions'])])
+
+    # scores['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
+    #                                                               zip(scores['images'],
+    #                                                                   scores['captions'],
+    #                                                                   scores_mod_specific_captions[
+    #                                                                       'images'],
+    #                                                                   scores_mod_specific_images[
+    #                                                                       'captions'])])
+    # scores['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
+    #                                                                       zip(scores[
+    #                                                                               'images'],
+    #                                                                           scores[
+    #                                                                               'captions'],
+    #                                                                           scores_mod_specific_captions[
+    #                                                                               'images'],
+    #                                                                           scores_mod_specific_images[
+    #                                                                               'captions'])])
+
+    return scores
+
+
 def run(args):
     per_subject_scores = dict()
-    features = None
     all_scores = {hemi: dict() for hemi in HEMIS}
     t_values = {hemi: dict() for hemi in HEMIS}
 
+    all_scores_null_distr = {hemi: dict() for hemi in HEMIS}
     alpha = 1
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
@@ -82,77 +146,17 @@ def run(args):
     paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
-    
-    for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions, paths_mod_specific_images):
+
+    for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
+                                                   paths_mod_specific_images):
         print(path_agnostic)
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
-        scores = dict()
-        scores_data = pickle.load(open(path_agnostic, 'rb'))
-        nan_locations = scores_data['nan_locations']
-        scores_hemi = scores_data['scores']
-
-        for metric in BASE_METRICS:
-            score_name = metric.split("_")[1]
-            scores[score_name] = np.repeat(np.nan, nan_locations.shape)
-            scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_hemi])
-
-        # correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations)
-        print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
-        print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-        scores["mean(imgs,captions)"] = scores["overall"]
-        del scores["overall"]
-        scores["min(imgs,captions)"] = np.min(
-            (scores['images'], scores['captions']), axis=0)
-
-        scores_mod_specific_captions = dict()
-        scores_hemi_captions = pickle.load(open(path_caps, 'rb'))['scores']
-        for metric in BASE_METRICS:
-            score_name = metric.split("_")[1]
-            scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-            scores_mod_specific_captions[score_name][~nan_locations] = np.array(
-                [score[metric] for score in scores_hemi_captions])
-
-        scores_mod_specific_images = dict()
-        scores_hemi_images = pickle.load(open(path_imgs, 'rb'))['scores']
-        for metric in BASE_METRICS:
-            score_name = metric.split("_")[1]
-            scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-            scores_mod_specific_images[score_name][~nan_locations] = np.array(
-                [score[metric] for score in scores_hemi_images])
-
-        if len(scores_mod_specific_captions) > 0 and len(scores_mod_specific_images) > 0:
-            scores['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
-                                                                  zip(scores['images'],
-                                                                      scores['captions'],
-                                                                      scores_mod_specific_images['images'],
-                                                                      scores_mod_specific_captions[
-                                                                          'captions'])])
-            scores['captions_agno - captions_specific'] = np.array([ac - sc for ai, ac, si, sc in
-                                                                          zip(scores['images'],
-                                                                              scores['captions'],
-                                                                              scores_mod_specific_images[
-                                                                                  'images'],
-                                                                              scores_mod_specific_captions[
-                                                                                  'captions'])])
-
-            # scores['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
-            #                                                               zip(scores['images'],
-            #                                                                   scores['captions'],
-            #                                                                   scores_mod_specific_captions[
-            #                                                                       'images'],
-            #                                                                   scores_mod_specific_images[
-            #                                                                       'captions'])])
-            # scores['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
-            #                                                                       zip(scores[
-            #                                                                               'images'],
-            #                                                                           scores[
-            #                                                                               'captions'],
-            #                                                                           scores_mod_specific_captions[
-            #                                                                               'images'],
-            #                                                                           scores_mod_specific_images[
-            #                                                                               'captions'])])
+        scores_agnostic = pickle.load(open(path_agnostic, 'rb'))
+        scores_captions = pickle.load(open(path_caps, 'rb'))
+        scores_images = pickle.load(open(path_imgs, 'rb'))
+        scores = process_scores(scores_agnostic, scores_captions, scores_images)
 
         add_to_all_scores(all_scores, scores, hemi)
 
@@ -162,21 +166,26 @@ def run(args):
             per_subject_scores[subject] = dict()
         per_subject_scores[subject][hemi] = scores
 
-        null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
-        null_distribution = pickle.load(open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
-        null_distribution = np.concatenate(null_distribution) #TODO update
-
-        print("len(null_distribution): ", len(null_distribution))
-        print("len(null_distribution)[0]: ", len(null_distribution[0]))
-        null_distr_captions = [n["captions"] for n in null_distribution[0]]
-        print(f"mean caps: {np.mean(null_distr_captions)}")
-        null_distr_imgs = [n["images"] for n in null_distribution[0]]
-        print(f"mean imgs: {np.mean(null_distr_imgs)}")
-        print(f"max imgs: {np.max(null_distr_imgs)}")
-        print(f"min imgs: {np.min(null_distr_imgs)}")
+        # null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
+        # null_distribution = pickle.load(
+        #     open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
+        # null_distribution = np.concatenate(null_distribution)  # TODO update
+        #
+        # print("len(null_distribution): ", len(null_distribution))
+        # print("len(null_distribution)[0]: ", len(null_distribution[0]))
+        # null_distr_captions = [n["captions"] for n in null_distribution[0]]
+        # print(f"mean caps: {np.mean(null_distr_captions)}")
+        # null_distr_imgs = [n["images"] for n in null_distribution[0]]
+        # print(f"mean imgs: {np.mean(null_distr_imgs)}")
+        # print(f"max imgs: {np.max(null_distr_imgs)}")
+        # print(f"min imgs: {np.min(null_distr_imgs)}")
+        #
+        # for distr in null_distribution:
+        #     add_to_all_scores(all_scores_null_distr, distr, hemi)
 
     all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
-    print(f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
+    print(
+        f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
     print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
 
     # calc averages and t-values
@@ -197,7 +206,9 @@ def run(args):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin((t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']), axis=0)
+            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+                (t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']),
+                axis=0)
 
     print("plotting (t-values) threshold 0.824")
     metrics = ['imgs_agno - imgs_specific',
@@ -280,7 +291,8 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                        threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
+                                                                metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
                         vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
                         vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
                         cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
