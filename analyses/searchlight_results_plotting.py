@@ -26,17 +26,15 @@ VIEWS = ["lateral", "medial", "ventral"]
 
 HEMIS = ['left', 'right']
 
-BASE_METRICS = ["test_overall", "test_captions", "test_images"]
+BASE_METRICS = ["test_captions", "test_images"] #"test_overall",
 CHANCE_VALUES = {"captions": 0.5,
                  "images": 0.5,
                  "mean(imgs,captions)": 0.5,
                  "min(imgs,captions)": 0.5,
-                 'mean(imgs_agno,captions_agno)-mean(imgs_specific,captions_specific)': 0,
                  'imgs_agno - imgs_specific': 0,
                  'captions_agno - captions_specific': 0,
                  'imgs_agno - imgs_specific (cross)': 0,
                  'captions_agno - captions_specific (cross)': 0,
-                 'mean(imgs_agno,captions_agno)-mean(imgs_specific,captions_specific) (cross)': 0,
                  'mean(captions_agno - captions_specific, imgs_agno - imgs_specific)': 0,
                  'min(captions_agno - captions_specific, imgs_agno - imgs_specific)': 0,
                  }
@@ -68,10 +66,8 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
     plt.savefig("results/searchlight_correlation_num_voxels_acc_binned.png", dpi=300)
 
 
-def process_scores(scores_agnostic, scores_captions, scores_images):
+def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
     scores = dict()
-    nan_locations = scores_agnostic['nan_locations']
-
     for metric in BASE_METRICS:
         score_name = metric.split("_")[1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
@@ -80,8 +76,8 @@ def process_scores(scores_agnostic, scores_captions, scores_images):
     # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
     print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
     print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-    scores["mean(imgs,captions)"] = scores["overall"]
-    del scores["overall"]
+    # scores["mean(imgs,captions)"] = scores["overall"]
+    # del scores["overall"]
     scores["min(imgs,captions)"] = np.min((scores['images'], scores['captions']), axis=0)
 
     scores_mod_specific_captions = dict()
@@ -157,7 +153,8 @@ def run(args):
         scores_captions = pickle.load(open(path_caps, 'rb'))
         scores_images = pickle.load(open(path_imgs, 'rb'))
 
-        scores = process_scores(scores_agnostic, scores_captions, scores_images)
+        nan_locations = scores_agnostic['nan_locations']
+        scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
         add_to_all_scores(all_scores, scores, hemi)
 
         print("")
@@ -177,7 +174,7 @@ def run(args):
             open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
 
         for distr, distr_caps, distr_imgs in tqdm(zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images)):
-            scores = process_scores(distr, distr_caps, distr_imgs)
+            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             add_to_all_scores(all_scores_null_distr, scores, hemi)
 
         # print("len(null_distribution): ", len(null_distribution))
@@ -188,12 +185,11 @@ def run(args):
         # print(f"mean imgs: {np.mean(null_distr_imgs)}")
         # print(f"max imgs: {np.max(null_distr_imgs)}")
         # print(f"min imgs: {np.min(null_distr_imgs)}")
-        # #
 
-    all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
-    print(
-        f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
-    print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
+    # all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
+    # print(
+    #     f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
+    # print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
 
     # calc averages and t-values
     num_subjects = len(per_subject_scores)
