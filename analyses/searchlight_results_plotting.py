@@ -164,20 +164,6 @@ def run(args):
 
         print(len(all_scores_null_distr['left']['images'][0]))
 
-        # print("len(null_distribution): ", len(null_distribution))
-        # print("len(null_distribution)[0]: ", len(null_distribution[0]))
-        # null_distr_captions = [n["captions"] for n in null_distribution[0]]
-        # print(f"mean caps: {np.mean(null_distr_captions)}")
-        # null_distr_imgs = [n["images"] for n in null_distribution[0]]
-        # print(f"mean imgs: {np.mean(null_distr_imgs)}")
-        # print(f"max imgs: {np.max(null_distr_imgs)}")
-        # print(f"min imgs: {np.min(null_distr_imgs)}")
-
-    # all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
-    # print(
-    #     f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
-    # print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
-
     # calc averages and t-values
     num_subjects = len(per_subject_scores)
     print(f"Calculating t-values for {num_subjects} subjects.")
