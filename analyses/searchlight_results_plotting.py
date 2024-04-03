@@ -42,14 +42,13 @@ CHANCE_VALUES = {"captions": 0.5,
                  }
 
 
-def add_to_all_scores(all_scores, scores):
-    for hemi in HEMIS:
-        for score_name in scores[hemi].keys():
-            if score_name not in all_scores[hemi]:
-                all_scores[hemi][score_name] = scores[hemi][score_name].reshape(-1, 1)
-            else:
-                all_scores[hemi][score_name] = np.concatenate(
-                    (scores[hemi][score_name].reshape(-1, 1), all_scores[hemi][score_name]), axis=1)
+def add_to_all_scores(all_scores, scores, hemi):
+    for score_name in scores.keys():
+        if score_name not in all_scores[hemi]:
+            all_scores[hemi][score_name] = scores[score_name].reshape(-1, 1)
+        else:
+            all_scores[hemi][score_name] = np.concatenate(
+                (scores[score_name].reshape(-1, 1), all_scores[hemi][score_name]), axis=1)
 
 
 def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
@@ -70,7 +69,7 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
 
 
 def run(args):
-    per_subject_scores = []
+    per_subject_scores = dict()
     all_subjects = set()
     features = None
     all_scores = {hemi: dict() for hemi in HEMIS}
@@ -79,102 +78,95 @@ def run(args):
     alpha = 1
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{args.model}/*/*/{args.resolution}/left/{args.mode}/alpha_{str(alpha)}.p')
-    results_paths = np.array(sorted(glob(results_regex)))
-
-    for path in results_paths:
-        subject = os.path.dirname(path).split("/")[-4]
-        if features is None:
-            features = os.path.dirname(path).split("/")[-5]
-        else:
-            if features != os.path.dirname(path).split("/")[-5]:
-                raise RuntimeError("different features!")
-        alpha = float(os.path.basename(path).split("_")[1][:-2])
+                                 f'train/{args.model}/*/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p')
+    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
+    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
+    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
+    
+    for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions, paths_mod_specific_images):
+        print(path_agnostic)
+        hemi = os.path.dirname(path_agnostic).split("/")[-2]
+        subject = os.path.dirname(path_agnostic).split("/")[-4]
+        features = os.path.dirname(path_agnostic).split("/")[-5]
 
         scores = dict()
-        print(path)
-        for hemi in HEMIS:
+        scores_data = pickle.load(open(path_agnostic, 'rb'))
+        nan_locations = scores_data['nan_locations']
+        scores_hemi = scores_data['scores']
 
-            scores[hemi] = dict()
-            path_scores_hemi = path.replace('left', hemi)
-            if os.path.isfile(path_scores_hemi):
-                scores_data = pickle.load(open(path_scores_hemi, 'rb'))
-                nan_locations = scores_data['nan_locations']
-                scores_hemi = scores_data['scores']
+        for metric in BASE_METRICS:
+            score_name = metric.split("_")[1]
+            scores[score_name] = np.repeat(np.nan, nan_locations.shape)
+            scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_hemi])
 
-                for metric in BASE_METRICS:
-                    score_name = metric.split("_")[1]
-                    scores[hemi][score_name] = np.repeat(np.nan, nan_locations.shape)
-                    scores[hemi][score_name][~nan_locations] = np.array([score[metric] for score in scores_hemi])
+        # correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations)
+        print(hemi, {n: round(np.nanmean(score), 4) for n, score in scores.items()})
+        print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+        scores["mean(imgs,captions)"] = scores["overall"]
+        del scores["overall"]
+        scores["min(imgs,captions)"] = np.min(
+            (scores['images'], scores['captions']), axis=0)
 
-                # correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations)
-                print(hemi, {n: round(np.nanmean(score), 4) for n, score in scores[hemi].items()})
-                print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores[hemi].items()})
-                scores[hemi]["mean(imgs,captions)"] = scores[hemi]["overall"]
-                del scores[hemi]["overall"]
-                scores[hemi]["min(imgs,captions)"] = np.min(
-                    (scores[hemi]['images'], scores[hemi]['captions']), axis=0)
+        scores_mod_specific_captions = dict()
+        scores_hemi_captions = pickle.load(open(path_caps, 'rb'))['scores']
+        for metric in BASE_METRICS:
+            score_name = metric.split("_")[1]
+            scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+            scores_mod_specific_captions[score_name][~nan_locations] = np.array(
+                [score[metric] for score in scores_hemi_captions])
 
-                path_scores_hemi_captions = path_scores_hemi.replace('train/', 'train_captions/')
-                scores_mod_specific_captions = dict()
-                if os.path.isfile(path_scores_hemi_captions):
-                    scores_hemi_captions = pickle.load(open(path_scores_hemi_captions, 'rb'))['scores']
-                    for metric in BASE_METRICS:
-                        score_name = metric.split("_")[1]
-                        scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-                        scores_mod_specific_captions[score_name][~nan_locations] = np.array(
-                            [score[metric] for score in scores_hemi_captions])
+        scores_mod_specific_images = dict()
+        scores_hemi_images = pickle.load(open(path_imgs, 'rb'))['scores']
+        for metric in BASE_METRICS:
+            score_name = metric.split("_")[1]
+            scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+            scores_mod_specific_images[score_name][~nan_locations] = np.array(
+                [score[metric] for score in scores_hemi_images])
 
-                path_scores_hemi_images = path_scores_hemi.replace('train/', 'train_images/')
-                scores_mod_specific_images = dict()
-                if os.path.isfile(path_scores_hemi_images):
-                    scores_hemi_images = pickle.load(open(path_scores_hemi_images, 'rb'))['scores']
-                    for metric in BASE_METRICS:
-                        score_name = metric.split("_")[1]
-                        scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-                        scores_mod_specific_images[score_name][~nan_locations] = np.array(
-                            [score[metric] for score in scores_hemi_images])
-
-                if len(scores_mod_specific_captions) > 0 and len(scores_mod_specific_images) > 0:
-                    scores[hemi]['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
-                                                                          zip(scores[hemi]['images'],
-                                                                              scores[hemi]['captions'],
-                                                                              scores_mod_specific_images['images'],
+        if len(scores_mod_specific_captions) > 0 and len(scores_mod_specific_images) > 0:
+            scores['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
+                                                                  zip(scores['images'],
+                                                                      scores['captions'],
+                                                                      scores_mod_specific_images['images'],
+                                                                      scores_mod_specific_captions[
+                                                                          'captions'])])
+            scores['captions_agno - captions_specific'] = np.array([ac - sc for ai, ac, si, sc in
+                                                                          zip(scores['images'],
+                                                                              scores['captions'],
+                                                                              scores_mod_specific_images[
+                                                                                  'images'],
                                                                               scores_mod_specific_captions[
                                                                                   'captions'])])
-                    scores[hemi]['captions_agno - captions_specific'] = np.array([ac - sc for ai, ac, si, sc in
-                                                                                  zip(scores[hemi]['images'],
-                                                                                      scores[hemi]['captions'],
-                                                                                      scores_mod_specific_images[
-                                                                                          'images'],
-                                                                                      scores_mod_specific_captions[
-                                                                                          'captions'])])
 
-                    # scores[hemi]['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
-                    #                                                               zip(scores[hemi]['images'],
-                    #                                                                   scores[hemi]['captions'],
-                    #                                                                   scores_mod_specific_captions[
-                    #                                                                       'images'],
-                    #                                                                   scores_mod_specific_images[
-                    #                                                                       'captions'])])
-                    # scores[hemi]['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
-                    #                                                                       zip(scores[hemi][
-                    #                                                                               'images'],
-                    #                                                                           scores[hemi][
-                    #                                                                               'captions'],
-                    #                                                                           scores_mod_specific_captions[
-                    #                                                                               'images'],
-                    #                                                                           scores_mod_specific_images[
-                    #                                                                               'captions'])])
+            # scores['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
+            #                                                               zip(scores['images'],
+            #                                                                   scores['captions'],
+            #                                                                   scores_mod_specific_captions[
+            #                                                                       'images'],
+            #                                                                   scores_mod_specific_images[
+            #                                                                       'captions'])])
+            # scores['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
+            #                                                                       zip(scores[
+            #                                                                               'images'],
+            #                                                                           scores[
+            #                                                                               'captions'],
+            #                                                                           scores_mod_specific_captions[
+            #                                                                               'images'],
+            #                                                                           scores_mod_specific_images[
+            #                                                                               'captions'])])
 
-        add_to_all_scores(all_scores, scores)
+        add_to_all_scores(all_scores, scores, hemi)
 
         print("")
 
-        all_subjects.add(subject)
-        scores["subject"] = subject
+        if subject not in per_subject_scores.keys():
+            per_subject_scores[subject] = dict()
+        per_subject_scores[subject][hemi] = scores
 
-        per_subject_scores.append(scores)
+        null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
+        null_distribution = pickle.load(open(os.path.join(path_agnostic, null_distribution_file_name), 'rb'))
+        print("len(null_distribution): ", len(null_distribution))
 
     all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
     print(f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
@@ -184,12 +176,6 @@ def run(args):
     num_subjects = len(all_subjects)
     print(f"Calculating t-values for {num_subjects} subjects.")
     for hemi in HEMIS:
-        for path in results_paths:
-            results_dir = os.path.dirname(path)
-            null_distribution_file_name = f"alpha_{str(int(alpha))}_null_distribution.p"
-            null_distribution = pickle.load(open(os.path.join(results_dir, null_distribution_file_name), 'rb'))
-            # TODO
-
         for score_name in all_scores[hemi].keys():
             popmean = CHANCE_VALUES[score_name]
             enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
@@ -313,7 +299,7 @@ def run(args):
                    'imgs_agno - imgs_specific',
                    'captions_agno - captions_specific']
         print("\n\nCreating per-subject plots..")
-        for scores in tqdm(per_subject_scores):
+        for subject, scores in tqdm(per_subject_scores.items()):
             fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
             subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -380,7 +366,7 @@ def run(args):
                         else:
                             axes[i * 2 + j].axis('off')
 
-            title = f"{args.model}_{args.mode}_{scores['subject']}"
+            title = f"{args.model}_{args.mode}_{subject}"
             # fig.suptitle(title)
             # fig.tight_layout()
             fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
