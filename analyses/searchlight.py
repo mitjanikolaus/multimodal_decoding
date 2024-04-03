@@ -3,6 +3,7 @@ import sys
 import time
 import warnings
 
+import joblib
 import numpy as np
 from joblib import Parallel, delayed
 from nilearn import datasets
@@ -442,18 +443,16 @@ def run(args):
                             print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-                            results_dict["distances"] = distances
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
                             print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
                             print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
-
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
                         model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                         pairwise_acc_scorers = {name: make_scorer(measure, greater_is_better=True) for name, measure
-                                                in zip(["overall", "captions", "images"],
-                                                       [pairwise_acc, pairwise_acc_captions, pairwise_acc_images])}
+                                                in zip(["captions", "images"],
+                                                       [pairwise_acc_captions, pairwise_acc_images])}
                         cv = [(train_ids, test_ids)]
 
                         start = time.time()
@@ -462,8 +461,11 @@ def run(args):
                                                      print_interval=500, save_estimators=args.save_estimators)
                         end = time.time()
                         print(f"Searchlight time: {int(end - start)}s")
-                        test_scores = [score["test_overall"] for score in scores]
-                        print(f"Mean score: {np.mean(test_scores):.2f} | Max score: {np.max(test_scores):.2f}")
+                        test_scores_caps = [score["test_captions"] for score in scores]
+                        print(f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
+
+                        test_scores_imgs = [score["test_images"] for score in scores]
+                        print(f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
 
                         results_dict["scores"] = scores
                         pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
@@ -471,8 +473,8 @@ def run(args):
                         if args.save_estimators:
                             assert len(scores[0]["estimator"]) == 1
                             estimators = [score["estimator"][0] for score in scores]
-                            estimators_file_name = results_file_name.replace(".p", "_estimators.p")
-                            pickle.dump(estimators, open(os.path.join(results_dir, estimators_file_name), 'wb'))
+                            estimators_file_name = results_file_name.replace(".p", "_estimators.joblib")
+                            joblib.dump(estimators, os.path.join(results_dir, estimators_file_name), 'wb')
 
 
 def get_results_dir(args, features, hemi, model_name, subject, training_mode):
