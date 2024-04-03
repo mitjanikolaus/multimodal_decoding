@@ -26,7 +26,7 @@ VIEWS = ["lateral", "medial", "ventral"]
 
 HEMIS = ['left', 'right']
 
-BASE_METRICS = ["test_captions", "test_images"] #"test_overall",
+BASE_METRICS = ["test_captions", "test_images"]
 CHANCE_VALUES = {"captions": 0.5,
                  "images": 0.5,
                  "mean(imgs,captions)": 0.5,
@@ -74,56 +74,36 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
     # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
-    print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
-    print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-    # scores["mean(imgs,captions)"] = scores["overall"]
-    # del scores["overall"]
     scores["min(imgs,captions)"] = np.min((scores['images'], scores['captions']), axis=0)
 
-    scores_mod_specific_captions = dict()
+    scores_specific_captions = dict()
     for metric in BASE_METRICS:
         score_name = metric.split("_")[1]
-        scores_mod_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_mod_specific_captions[score_name][~nan_locations] = np.array(
+        scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_specific_captions[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_captions])
 
-    scores_mod_specific_images = dict()
+    scores_specific_images = dict()
     for metric in BASE_METRICS:
         score_name = metric.split("_")[1]
-        scores_mod_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_mod_specific_images[score_name][~nan_locations] = np.array(
+        scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_specific_images[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_images])
 
-    scores['imgs_agno - imgs_specific'] = np.array([ai - si for ai, ac, si, sc in
-                                                    zip(scores['images'],
-                                                        scores['captions'],
-                                                        scores_mod_specific_images['images'],
-                                                        scores_mod_specific_captions[
-                                                            'captions'])])
-    scores['captions_agno - captions_specific'] = np.array([ac - sc for ai, ac, si, sc in
-                                                            zip(scores['images'],
-                                                                scores['captions'],
-                                                                scores_mod_specific_images[
-                                                                    'images'],
-                                                                scores_mod_specific_captions[
-                                                                    'captions'])])
-
-    # scores['imgs_agno - imgs_specific (cross)'] = np.array([ai - si for ai, ac, si, sc in
-    #                                                               zip(scores['images'],
-    #                                                                   scores['captions'],
-    #                                                                   scores_mod_specific_captions[
-    #                                                                       'images'],
-    #                                                                   scores_mod_specific_images[
-    #                                                                       'captions'])])
-    # scores['captions_agno - captions_specific (cross)'] = np.array([ac - sc for ai, ac, si, sc in
-    #                                                                       zip(scores[
-    #                                                                               'images'],
-    #                                                                           scores[
-    #                                                                               'captions'],
-    #                                                                           scores_mod_specific_captions[
-    #                                                                               'images'],
-    #                                                                           scores_mod_specific_images[
-    #                                                                               'captions'])])
+    scores['imgs_agno - imgs_specific'] = np.array(
+        [ai - si for ai, ac, si, sc in
+         zip(scores['images'],
+             scores['captions'],
+             scores_specific_images['images'],
+             scores_specific_captions['captions'])]
+    )
+    scores['captions_agno - captions_specific'] = np.array(
+        [ac - sc for ai, ac, si, sc in
+         zip(scores['images'],
+             scores['captions'],
+             scores_specific_images['images'],
+             scores_specific_captions['captions'])]
+    )
 
     return scores
 
@@ -156,6 +136,8 @@ def run(args):
 
         nan_locations = results_agnostic['nan_locations']
         scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
+        print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
+        print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
         add_to_all_scores(all_scores, scores, hemi)
 
         print("")
@@ -174,9 +156,11 @@ def run(args):
         null_distribution_captions = pickle.load(
             open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
 
-        for distr, distr_caps, distr_imgs in tqdm(zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images)):
+        for distr, distr_caps, distr_imgs in tqdm(
+                zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images)):
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             add_to_all_scores(all_scores_null_distr, scores, hemi)
+            print(len(all_scores_null_distr['left']['images']))
 
         # print("len(null_distribution): ", len(null_distribution))
         # print("len(null_distribution)[0]: ", len(null_distribution[0]))
