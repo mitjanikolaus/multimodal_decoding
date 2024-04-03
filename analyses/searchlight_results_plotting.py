@@ -167,6 +167,7 @@ def run(args):
     # calc averages and t-values
     num_subjects = len(per_subject_scores)
     print(f"Calculating t-values for {num_subjects} subjects.")
+    all_scores_averaged = all_scores
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
             popmean = CHANCE_VALUES[score_name]
@@ -178,7 +179,7 @@ def run(args):
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
-                all_scores[hemi][score_name] = np.nanmean(all_scores[hemi][score_name], axis=1)
+                all_scores_averaged[hemi][score_name] = np.nanmean(all_scores[hemi][score_name], axis=1)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -236,12 +237,11 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
-    # plot group-level avg scores
     metrics = ["captions", "images",
                'imgs_agno - imgs_specific',
                'captions_agno - captions_specific']
-
-    scores = all_scores
+    print(f"plotting group-level avg scores.")
+    scores = all_scores_averaged
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)

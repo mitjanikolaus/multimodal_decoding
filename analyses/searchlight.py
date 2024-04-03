@@ -451,12 +451,14 @@ def run(args):
                             print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
+                            results_dict["distances"] = distances
                             print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
                             print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
                             print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
+                        results_dict["adjacency"] = adjacency
                         model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                         pairwise_acc_scorers = {name: make_scorer(measure, greater_is_better=True) for name, measure
                                                 in zip(["captions", "images"],
