@@ -119,6 +119,7 @@ def run(args):
                             )
                             for id in range(DEFAULT_N_JOBS)
                         )
+                        all_scores = np.concatenate(all_scores)
                         results_file_name = f"alpha_{args.l2_regularization_alpha}_null_distribution.p"
                         pickle.dump(all_scores, open(os.path.join(results_dir, results_file_name), 'wb'))
 
