@@ -99,8 +99,8 @@ def run(args):
                                 np.random.shuffle(latents[:NUM_TEST_STIMULI // 2])
                                 np.random.shuffle(latents[NUM_TEST_STIMULI // 2:])
                                 scores = [
-                                    {"captions": pairwise_acc_captions(latents, predictions[i], normalize=False),
-                                     "images": pairwise_acc_images(latents, predictions[i], normalize=False)}
+                                    {"test_captions": pairwise_acc_captions(latents, predictions[i], normalize=False),
+                                     "test_images": pairwise_acc_images(latents, predictions[i], normalize=False)}
                                     for i in range(len(predictions))
                                 ]
                                 results.append(scores)
