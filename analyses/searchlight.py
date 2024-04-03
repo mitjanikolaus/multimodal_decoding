@@ -3,7 +3,6 @@ import sys
 import time
 import warnings
 
-import joblib
 import numpy as np
 from joblib import Parallel, delayed
 from nilearn import datasets
@@ -191,6 +190,7 @@ def custom_cross_val(
 
 def custom_group_iter_search_light(
         list_rows,
+        list_indices,
         estimator,
         X,
         y,
@@ -200,7 +200,7 @@ def custom_group_iter_search_light(
         thread_id,
         total,
         print_interval=500,
-        save_estimators=False,
+        estimators_dir=None,
 ):
     """Perform grouped iterations of search_light.
 
@@ -248,10 +248,14 @@ def custom_group_iter_search_light(
     """
     results = []
     t0 = time.time()
-    for i, row in enumerate(list_rows):
-        kwargs = {"scoring": scoring, "groups": groups, "save_estimators": save_estimators}
+    for (i, row), list_i in zip(enumerate(list_rows), list_indices):
+        kwargs = {"scoring": scoring, "groups": groups, "save_estimators": True if estimators_dir is not None else False}
         cv_results = custom_cross_val(estimator, X[:, row], y, cv=cv, n_jobs=1, verbose=0, **kwargs)
-        results.append({key: np.mean(res) if isinstance(res, np.ndarray) else res for key, res in cv_results.items()})
+        if estimators_dir is not None:
+            assert len(cv_results["estimator"]) == 1
+            estimator = cv_results['estimator'][0]
+            pickle.dump(estimator, open(os.path.join(estimators_dir, f"{list_i}.p"), "wb"))
+        results.append({key: np.mean(res) for key, res in cv_results.items() if isinstance(res, np.ndarray)})
         if print_interval > 0:
             if i % print_interval == 0:
                 # If there is only one job, progress information is fixed
@@ -279,7 +283,7 @@ def custom_search_light(
         n_jobs=-1,
         verbose=0,
         print_interval=500,
-        save_estimators=False,
+        estimators_dir=None,
 ):
     """Compute a search_light.
 
@@ -329,16 +333,17 @@ def custom_search_light(
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
                 [A[i] for i in list_i],
+                list_i,
                 estimator,
                 X,
                 y,
                 groups,
                 scoring,
                 cv,
-                thread_id + 1,
+                thread_id,
                 len(A),
                 print_interval,
-                save_estimators,
+                estimators_dir,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -423,6 +428,9 @@ def run(args):
                         X = np.concatenate((train_fmri_hemi, test_fmri[hemi]))
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
+                        estimators_dir = os.path.join(results_dir, "estimators")
+                        os.makedirs(estimators_dir, exist_ok=True)
+
                         results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
                         nan_locations = np.isnan(X[0])
@@ -458,7 +466,7 @@ def run(args):
                         start = time.time()
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, cv=cv,
                                                      n_jobs=args.n_jobs, scoring=pairwise_acc_scorers, verbose=1,
-                                                     print_interval=500, save_estimators=args.save_estimators)
+                                                     print_interval=500, estimators_dir=estimators_dir if args.save_estimators else None)
                         end = time.time()
                         print(f"Searchlight time: {int(end - start)}s")
                         test_scores_caps = [score["test_captions"] for score in scores]
@@ -469,12 +477,6 @@ def run(args):
 
                         results_dict["scores"] = scores
                         pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
-
-                        if args.save_estimators:
-                            assert len(scores[0]["estimator"]) == 1
-                            estimators = [score["estimator"][0] for score in scores]
-                            estimators_file_name = results_file_name.replace(".p", "_estimators.joblib")
-                            joblib.dump(estimators, os.path.join(results_dir, estimators_file_name), 'wb')
 
 
 def get_results_dir(args, features, hemi, model_name, subject, training_mode):
