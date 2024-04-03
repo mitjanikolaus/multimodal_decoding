@@ -172,11 +172,11 @@ def run(args):
         null_distribution_agnostic = np.concatenate(null_distribution_agnostic)  # TODO update
 
         null_distribution_captions = pickle.load(
-            open(os.path.join(os.path.dirname(paths_mod_specific_captions), null_distribution_file_name), 'rb'))
+            open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
         null_distribution_captions = np.concatenate(null_distribution_captions)  # TODO update
 
         null_distribution_images = pickle.load(
-            open(os.path.join(os.path.dirname(paths_mod_specific_images), null_distribution_file_name), 'rb'))
+            open(os.path.join(os.path.dirname(path_imgs), null_distribution_file_name), 'rb'))
         null_distribution_images = np.concatenate(null_distribution_images)  # TODO update
 
         for distr, distr_caps, distr_imgs in zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images):
