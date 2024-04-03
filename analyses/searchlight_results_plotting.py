@@ -168,6 +168,7 @@ def run(args):
 
         print("len(null_distribution): ", len(null_distribution))
         print(null_distribution[0])
+        print(len(null_distribution[0]))
         null_distr_captions = [n["captions"] for n in null_distribution]
         print(f"mean caps: {np.mean(null_distr_captions)}")
         null_distr_imgs = [n["images"] for n in null_distribution]
