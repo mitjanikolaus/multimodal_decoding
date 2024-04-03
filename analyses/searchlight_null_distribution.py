@@ -69,8 +69,6 @@ def run(args):
                         print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
-                        estimators_file_name = f"alpha_{args.l2_regularization_alpha}_estimators.p"
-                        estimators = pickle.load(open(os.path.join(results_dir, estimators_file_name), 'rb'))
 
                         X = test_fmri[hemi]
                         nan_locations = np.isnan(X[0])
@@ -90,8 +88,14 @@ def run(args):
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
-                        preds = [estimator.predict(X[:, adj]) for estimator, adj in zip(estimators, adjacency)]
-                        preds = [Normalize(pred.mean(axis=0), pred.std(axis=0))(pred) for pred in tqdm(preds)]
+                        all_preds = []
+                        print("generating test set predictions")
+                        for i, adj in tqdm(enumerate(adjacency)):
+                            estimator_file = os.path.join(results_dir, "estimators", f"{i}.p")
+                            estimator = pickle.load(open(estimator_file, "rb"))
+                            preds = estimator.predict(X[:, adj])
+                            preds = Normalize(preds.mean(axis=0), preds.std(axis=0))(preds)
+                            all_preds.append(preds)
 
                         def shuffle_and_calc_scores(latents, predictions, id, n_iters, print_interval=10):
                             results = []
@@ -113,7 +117,7 @@ def run(args):
                         all_scores = Parallel(n_jobs=DEFAULT_N_JOBS)(
                             delayed(shuffle_and_calc_scores)(
                                 test_data_latents.copy(),
-                                preds.copy(),
+                                all_preds.copy(),
                                 id,
                                 n_iters_per_thread,
                             )
