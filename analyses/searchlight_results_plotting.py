@@ -164,7 +164,7 @@ def run(args):
 
         null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
         null_distribution = pickle.load(open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
-        print("len(null_distribution): ", len(null_distribution))
+        print("len(null_distribution): ", len(np.concatenate(null_distribution)))
 
     all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
     print(f"\n\nOverall mean: {np.nanmean(all_scores_all_subjects):.2f} (stddev: {np.nanstd(all_scores_all_subjects):.2f})")
