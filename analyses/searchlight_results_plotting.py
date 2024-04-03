@@ -165,7 +165,7 @@ def run(args):
         per_subject_scores[subject][hemi] = scores
 
         null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
-        null_distribution = pickle.load(open(os.path.join(path_agnostic, null_distribution_file_name), 'rb'))
+        null_distribution = pickle.load(open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
         print("len(null_distribution): ", len(null_distribution))
 
     all_scores_all_subjects = np.concatenate([all_scores[hemi]["mean(imgs,captions)"] for hemi in HEMIS], axis=1)
