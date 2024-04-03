@@ -162,8 +162,6 @@ def run(args):
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             add_to_all_scores(all_scores_null_distr, scores, hemi)
 
-        print(len(all_scores_null_distr['left']['images'][0]))
-
     # calc averages and t-values
     num_subjects = len(per_subject_scores)
     print(f"Calculating t-values for {num_subjects} subjects.")
@@ -186,6 +184,9 @@ def run(args):
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
                 (t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']),
                 axis=0)
+
+    # calc clusters
+
 
     print("plotting (t-values) threshold 0.824")
     metrics = ['imgs_agno - imgs_specific',
