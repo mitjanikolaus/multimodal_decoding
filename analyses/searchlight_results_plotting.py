@@ -70,7 +70,6 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
 
 def run(args):
     per_subject_scores = dict()
-    all_subjects = set()
     features = None
     all_scores = {hemi: dict() for hemi in HEMIS}
     t_values = {hemi: dict() for hemi in HEMIS}
@@ -88,7 +87,6 @@ def run(args):
         print(path_agnostic)
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
-        features = os.path.dirname(path_agnostic).split("/")[-5]
 
         scores = dict()
         scores_data = pickle.load(open(path_agnostic, 'rb'))
@@ -101,8 +99,8 @@ def run(args):
             scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_hemi])
 
         # correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations)
-        print(hemi, {n: round(np.nanmean(score), 4) for n, score in scores.items()})
-        print(hemi, {f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+        print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
+        print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
         scores["mean(imgs,captions)"] = scores["overall"]
         del scores["overall"]
         scores["min(imgs,captions)"] = np.min(
@@ -173,7 +171,7 @@ def run(args):
     print(f"Overall max: {np.nanmax(all_scores_all_subjects):.2f}")
 
     # calc averages and t-values
-    num_subjects = len(all_subjects)
+    num_subjects = len(per_subject_scores)
     print(f"Calculating t-values for {num_subjects} subjects.")
     for hemi in HEMIS:
         for score_name in all_scores[hemi].keys():
