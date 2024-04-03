@@ -160,7 +160,7 @@ def run(args):
                 zip(null_distribution_agnostic, null_distribution_captions, null_distribution_images)):
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             add_to_all_scores(all_scores_null_distr, scores, hemi)
-            print(len(all_scores_null_distr['left']['images']))
+            print(len(all_scores_null_distr['left']['images'][0]))
 
         # print("len(null_distribution): ", len(null_distribution))
         # print("len(null_distribution)[0]: ", len(null_distribution[0]))
