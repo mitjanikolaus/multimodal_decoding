@@ -22,7 +22,7 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, pairwise_accuracy
+    get_default_features, pairwise_accuracy, Normalize
 
 from utils import VISION_MEAN_FEAT_KEY, IDS_IMAGES_TEST, SURFACE_LEVEL_FMRI_DIR
 
@@ -36,156 +36,34 @@ IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
 
 
-def custom_cross_val(
+def train_and_test(
         estimator,
         X,
         y=None,
         *,
-        groups=None,
-        scoring=None,
-        cv=None,
-        n_jobs=None,
-        verbose=0,
-        fit_params=None,
-        pre_dispatch="2*n_jobs",
-        error_score=np.nan,
-        save_estimators=False,
+        train_ids,
+        test_ids,
+        predictions_dir=None,
+        list_i=None,
 ):
-    """Evaluate a score by cross-validation.
+    X_train = X[train_ids]
+    X_test = X[test_ids]
+    y_train = y[train_ids]
+    y_test = y[test_ids]
+    estimator.fit(X_train, y_train)
 
-    Read more in the :ref:`User Guide <cross_validation>`.
+    y_pred = estimator.predict(X_test)
+    y_pred_normalized = Normalize(y_pred.mean(axis=0), y_pred.std(axis=0))(y_pred)
 
-    Parameters
-    ----------
-    estimator : estimator object implementing 'fit'
-        The object to use to fit the data.
+    if predictions_dir is not None:
+        pickle.dump(y_pred_normalized, open(os.path.join(predictions_dir, f"{list_i}.p"), "wb"))
 
-    X : array-like of shape (n_samples, n_features)
-        The data to fit. Can be for example a list, or an array.
+    scores = {
+        "captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
+        "images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False)
+    }
 
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs), \
-            default=None
-        The target variable to try to predict in the case of
-        supervised learning.
-
-    groups : array-like of shape (n_samples,), default=None
-        Group labels for the samples used while splitting the dataset into
-        train/test set. Only used in conjunction with a "Group" :term:`cv`
-        instance (e.g., :class:`GroupKFold`).
-
-    scoring : str or callable, default=None
-        A str (see model evaluation documentation) or
-        a scorer callable object / function with signature
-        ``scorer(estimator, X, y)`` which should return only
-        a single value.
-
-        Similar to :func:`cross_validate`
-        but only a single metric is permitted.
-
-        If `None`, the estimator's default scorer (if available) is used.
-
-    cv : int, cross-validation generator or an iterable, default=None
-        Determines the cross-validation splitting strategy.
-        Possible inputs for cv are:
-
-        - `None`, to use the default 5-fold cross validation,
-        - int, to specify the number of folds in a `(Stratified)KFold`,
-        - :term:`CV splitter`,
-        - An iterable that generates (train, test) splits as arrays of indices.
-
-        For `int`/`None` inputs, if the estimator is a classifier and `y` is
-        either binary or multiclass, :class:`StratifiedKFold` is used. In all
-        other cases, :class:`KFold` is used. These splitters are instantiated
-        with `shuffle=False` so the splits will be the same across calls.
-
-        Refer :ref:`User Guide <cross_validation>` for the various
-        cross-validation strategies that can be used here.
-
-        .. versionchanged:: 0.22
-            `cv` default value if `None` changed from 3-fold to 5-fold.
-
-    n_jobs : int, default=None
-        Number of jobs to run in parallel. Training the estimator and computing
-        the score are parallelized over the cross-validation splits.
-        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
-        ``-1`` means using all processors. See :term:`Glossary <n_jobs>`
-        for more details.
-
-    verbose : int, default=0
-        The verbosity level.
-
-    fit_params : dict, default=None
-        Parameters to pass to the fit method of the estimator.
-
-    pre_dispatch : int or str, default='2*n_jobs'
-        Controls the number of jobs that get dispatched during parallel
-        execution. Reducing this number can be useful to avoid an
-        explosion of memory consumption when more jobs get dispatched
-        than CPUs can process. This parameter can be:
-
-            - ``None``, in which case all the jobs are immediately
-              created and spawned. Use this for lightweight and
-              fast-running jobs, to avoid delays due to on-demand
-              spawning of the jobs
-
-            - An int, giving the exact number of total jobs that are
-              spawned
-
-            - A str, giving an expression as a function of n_jobs,
-              as in '2*n_jobs'
-
-    error_score : 'raise' or numeric, default=np.nan
-        Value to assign to the score if an error occurs in estimator fitting.
-        If set to 'raise', the error is raised.
-        If a numeric value is given, FitFailedWarning is raised.
-
-        .. versionadded:: 0.20
-
-    Returns
-    -------
-    scores : ndarray of float of shape=(len(list(cv)),)
-        Array of scores of the estimator for each run of the cross validation.
-
-    See Also
-    --------
-    cross_validate : To run cross-validation on multiple metrics and also to
-        return train scores, fit times and score times.
-
-    cross_val_predict : Get predictions from each split of cross-validation for
-        diagnostic purposes.
-
-    sklearn.metrics.make_scorer : Make a scorer from a performance metric or
-        loss function.
-
-    Examples
-    --------
-    >>> from sklearn import datasets, linear_model
-    >>> from sklearn.model_selection import cross_val_score
-    >>> diabetes = datasets.load_diabetes()
-    >>> X = diabetes.data[:150]
-    >>> y = diabetes.target[:150]
-    >>> lasso = linear_model.Lasso()
-    >>> print(cross_val_score(lasso, X, y, cv=3))
-    [0.3315057  0.08022103 0.03531816]
-    """
-    # To ensure multimetric format is not supported
-    # scorer = check_scoring(estimator, scoring=scoring)
-
-    cv_results = cross_validate(
-        estimator=estimator,
-        X=X,
-        y=y,
-        groups=groups,
-        scoring=scoring,
-        cv=cv,
-        n_jobs=n_jobs,
-        verbose=verbose,
-        fit_params=fit_params,
-        pre_dispatch=pre_dispatch,
-        error_score=error_score,
-        return_estimator=save_estimators,
-    )
-    return cv_results
+    return scores
 
 
 def custom_group_iter_search_light(
@@ -194,68 +72,19 @@ def custom_group_iter_search_light(
         estimator,
         X,
         y,
-        groups,
-        scoring,
-        cv,
+        train_ids,
+        test_ids,
         thread_id,
         total,
         print_interval=500,
-        estimators_dir=None,
+        predictions_dir=None,
 ):
-    """Perform grouped iterations of search_light.
-
-    Parameters
-    ----------
-    list_rows : array of arrays of int
-        adjacency rows. For a voxel with index i in X, list_rows[i] is the list
-        of neighboring voxels indices (in X).
-
-    estimator : estimator object implementing 'fit'
-        object to use to fit the data
-
-    X : array-like of shape at least 2D
-        data to fit.
-
-    y : array-like
-        target variable to predict.
-
-    groups : array-like, optional
-        group label for each sample for cross validation.
-
-    scoring : string or callable, optional
-        Scoring strategy to use. See the scikit-learn documentation.
-        If callable, takes as arguments the fitted estimator, the
-        test data (X_test) and the test target (y_test) if y is
-        not None.
-
-    cv : cross-validation generator, optional
-        A cross-validation generator. If None, a 3-fold cross validation is
-        used or 3-fold stratified cross-validation when y is supplied.
-
-    thread_id : int
-        process id, used for display.
-
-    total : int
-        Total number of voxels, used for display
-
-    print_interval : int, default=500
-        The interval for printing progress information.
-
-    Returns
-    -------
-    par_scores : numpy.ndarray
-        score for each voxel. dtype: float64.
-    """
     results = []
     t0 = time.time()
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
-        kwargs = {"scoring": scoring, "groups": groups, "save_estimators": True if estimators_dir is not None else False}
-        cv_results = custom_cross_val(estimator, X[:, row], y, cv=cv, n_jobs=1, verbose=0, **kwargs)
-        if estimators_dir is not None:
-            assert len(cv_results["estimator"]) == 1
-            estimator = cv_results['estimator'][0]
-            pickle.dump(estimator, open(os.path.join(estimators_dir, f"{list_i}.p"), "wb"))
-        results.append({key: np.mean(res) for key, res in cv_results.items() if isinstance(res, np.ndarray)})
+        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
+                                predictions_dir=predictions_dir, list_i=list_i)
+        results.append(scores)
         if print_interval > 0:
             if i % print_interval == 0:
                 # If there is only one job, progress information is fixed
@@ -267,7 +96,7 @@ def custom_group_iter_search_light(
                 remaining = (100.0 - percent) / max(0.01, percent) * dt
                 sys.stderr.write(
                     f"Job #{thread_id}, processed {i}/{len(list_rows)} voxels "
-                    f"({percent:0.2f}%, {round(remaining/60)} minutes remaining){crlf}"
+                    f"({percent:0.2f}%, {round(remaining / 60)} minutes remaining){crlf}"
                 )
     return results
 
@@ -277,56 +106,13 @@ def custom_search_light(
         y,
         estimator,
         A,
-        groups=None,
-        scoring=None,
-        cv=None,
+        train_ids,
+        test_ids,
         n_jobs=-1,
         verbose=0,
         print_interval=500,
-        estimators_dir=None,
+        predictions_dir=None,
 ):
-    """Compute a search_light.
-
-    Parameters
-    ----------
-    X : array-like of shape at least 2D
-        data to fit.
-
-    y : array-like
-        target variable to predict.
-
-    estimator : estimator object implementing 'fit'
-        object to use to fit the data
-
-    A : scipy sparse matrix.
-        adjacency matrix. Defines for each feature the neigbhoring features
-        following a given structure of the data.
-
-    groups : array-like, optional, (default None)
-        group label for each sample for cross validation.
-
-        .. note::
-            This will have no effect for scikit learn < 0.18
-
-    scoring : string or callable, optional
-        The scoring strategy to use. See the scikit-learn documentation
-        for possible values.
-        If callable, it takes as arguments the fitted estimator, the
-        test data (X_test) and the test target (y_test) if y is
-        not None.
-
-    cv : cross-validation generator, optional
-        A cross-validation generator. If None, a 3-fold cross
-        validation is used or 3-fold stratified cross-validation
-        when y is supplied.
-    %(n_jobs_all)s
-    %(verbose0)s
-
-    Returns
-    -------
-    scores : array-like of shape (number of rows in A)
-        search_light scores
-    """
     group_iter = GroupIterator(len(A), n_jobs)
     with warnings.catch_warnings():  # might not converge
         warnings.simplefilter("ignore", ConvergenceWarning)
@@ -337,13 +123,12 @@ def custom_search_light(
                 estimator,
                 X,
                 y,
-                groups,
-                scoring,
-                cv,
+                train_ids,
+                test_ids,
                 thread_id,
                 len(A),
                 print_interval,
-                estimators_dir,
+                predictions_dir,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -351,11 +136,13 @@ def custom_search_light(
 
 
 def pairwise_acc_captions(latents, predictions, normalize=True):
-    return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION], normalize=normalize)
+    return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION],
+                             normalize=normalize)
 
 
 def pairwise_acc_images(latents, predictions, normalize=True):
-    return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE], normalize=normalize)
+    return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE],
+                             normalize=normalize)
 
 
 def pairwise_acc(latents, predictions):
@@ -379,7 +166,8 @@ def run(args):
         }
 
         train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
-        train_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
+        train_stim_types = pickle.load(
+            open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
 
         test_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_test.p"), 'rb'))
         test_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_test.p"), 'rb'))
@@ -428,8 +216,8 @@ def run(args):
                         X = np.concatenate((train_fmri_hemi, test_fmri[hemi]))
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
-                        estimators_dir = os.path.join(results_dir, "estimators")
-                        os.makedirs(estimators_dir, exist_ok=True)
+                        predictions_dir = os.path.join(results_dir, "test_set_predictions")
+                        os.makedirs(predictions_dir, exist_ok=True)
 
                         results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
@@ -445,10 +233,13 @@ def run(args):
                         results_dict = {}
                         results_dict["nan_locations"] = nan_locations
                         if args.radius is not None:
-                            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+                            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
+                                         nn.fit(coords).radius_neighbors_graph(coords).toarray()]
                             n_neighbors = [len(adj) for adj in adjacency]
                             results_dict["n_neighbors"] = n_neighbors
-                            print(f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} (max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
+                            print(
+                                f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} "
+                                f"(max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
                         elif args.n_neighbors is not None:
                             distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
                             results_dict["distances"] = distances
@@ -460,22 +251,20 @@ def run(args):
 
                         results_dict["adjacency"] = adjacency
                         model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
-                        pairwise_acc_scorers = {name: make_scorer(measure, greater_is_better=True) for name, measure
-                                                in zip(["captions", "images"],
-                                                       [pairwise_acc_captions, pairwise_acc_images])}
-                        cv = [(train_ids, test_ids)]
-
                         start = time.time()
-                        scores = custom_search_light(X, latents, estimator=model, A=adjacency, cv=cv,
-                                                     n_jobs=args.n_jobs, scoring=pairwise_acc_scorers, verbose=1,
-                                                     print_interval=500, estimators_dir=estimators_dir if args.save_estimators else None)
+                        scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
+                                                     test_ids=test_ids, n_jobs=args.n_jobs, verbose=1,
+                                                     print_interval=500,
+                                                     predictions_dir=predictions_dir if args.save_predictions else None)
                         end = time.time()
                         print(f"Searchlight time: {int(end - start)}s")
                         test_scores_caps = [score["test_captions"] for score in scores]
-                        print(f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
+                        print(
+                            f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
 
                         test_scores_imgs = [score["test_images"] for score in scores]
-                        print(f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
+                        print(
+                            f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
 
                         results_dict["scores"] = scores
                         pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
@@ -518,7 +307,7 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
 
-    parser.add_argument("--save-estimators", default=False, action="store_true")
+    parser.add_argument("--save-predictions", default=False, action="store_true")
 
     return parser.parse_args()
 
