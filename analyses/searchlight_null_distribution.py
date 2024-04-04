@@ -1,21 +1,14 @@
 import argparse
 import glob
 
-import joblib
 import numpy as np
 from joblib import Parallel, delayed
-from nilearn import datasets
-from nilearn.surface import surface
-
-from sklearn import neighbors
 import os
 import pickle
 
-from tqdm import tqdm
-
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, Normalize
+    get_default_features
 from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get_results_dir, \
     NUM_TEST_STIMULI
 
@@ -57,7 +50,6 @@ def run(args):
                                                               "test",
                                                               nn_latent_transform=nn_latent_transform)
 
-                    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
                         predictions_dir = os.path.join(results_dir, "test_set_predictions")
