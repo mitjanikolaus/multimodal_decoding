@@ -12,11 +12,9 @@ from nilearn.surface import surface
 from sklearn import neighbors
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import Ridge
-from sklearn.metrics import make_scorer
 import os
 import pickle
 
-from sklearn.model_selection import cross_validate
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -59,8 +57,8 @@ def train_and_test(
         pickle.dump(y_pred_normalized, open(os.path.join(predictions_dir, f"{list_i}.p"), "wb"))
 
     scores = {
-        "captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
-        "images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False)
+        "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
+        "test_images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False)
     }
 
     return scores
