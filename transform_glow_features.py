@@ -91,3 +91,9 @@ if __name__ == "__main__":
         all_feats[id] = {"lingual_feature": feat_l}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/bge.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+    all_feats = dict()
+    for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
+        all_feats[id] = {"lingual_feature": feat_l, "visual_feature_mean": feat_v}
+    path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/resnet-and-bge.p")
+    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)

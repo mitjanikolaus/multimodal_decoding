@@ -181,17 +181,17 @@ def get_roi_mask(roi_mask_name, ref_img):
 
 
 def get_default_features(model_name):
-    if model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
+    if (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
+            "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
+        "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower")
+          or model_name.startswith("glow") or model_name.startswith("resnet-and-bge")):
+        features = CONCAT_FEATS
+    elif model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
             "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral") or model_name.startswith(
             "bge"):
         features = LANG_FEATS_ONLY
     elif model_name.startswith("resnet") or model_name.startswith("vit") or model_name.startswith("dino"):
         features = VISION_FEATS_ONLY
-    elif (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
-            "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower")
-          or model_name.startswith("glow")):
-        features = CONCAT_FEATS
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
 
