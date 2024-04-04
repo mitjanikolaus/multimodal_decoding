@@ -91,6 +91,7 @@ def run(args):
 
                         predictions_dir = os.path.join(results_dir, "test_set_predictions")
                         pred_paths = sorted(list(glob.glob(os.path.join(predictions_dir, "*.p"))))
+                        assert int(os.path.basename(pred_paths[-1])[:-2]) == len(pred_paths) - 1
                         print(f"Calculating null distribution for {len(pred_paths)} locations")
 
                         def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
