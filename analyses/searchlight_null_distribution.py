@@ -19,7 +19,6 @@ from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR
 
-
 DEFAULT_N_JOBS = 2
 
 
@@ -51,11 +50,11 @@ def run(args):
                           f"MODEL: {model_name} | FEATURES: {features}")
 
                     _, nn_latent_transform = get_nn_latent_data(model_name, features,
-                                                                                 args.vision_features,
-                                                                                 train_stim_ids,
-                                                                                 train_stim_types,
-                                                                                 subject,
-                                                                                 training_mode)
+                                                                args.vision_features,
+                                                                train_stim_ids,
+                                                                train_stim_types,
+                                                                subject,
+                                                                training_mode)
                     test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
                                                               test_stim_ids,
                                                               test_stim_types,
@@ -88,25 +87,33 @@ def run(args):
                         else:
                             raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
-                        all_preds = []
                         print("generating test set predictions")
+                        predictions_dir = os.path.join(results_dir, "test_set_predictions")
+                        os.makedirs(predictions_dir, exist_ok=True)
+                        pred_paths = []
                         for i, adj in tqdm(enumerate(adjacency), total=len(adjacency)):
                             estimator_file = os.path.join(results_dir, "estimators", f"{i}.p")
                             estimator = pickle.load(open(estimator_file, "rb"))
                             preds = estimator.predict(X[:, adj])
                             preds = Normalize(preds.mean(axis=0), preds.std(axis=0))(preds)
-                            all_preds.append(preds)
+                            prediction_path = os.path.join(predictions_dir, f"{i}.p")
+                            pickle.dump(preds, open(prediction_path, "wb"))
+                            pred_paths.append(prediction_path)
 
-                        def shuffle_and_calc_scores(latents, predictions, id, n_iters, print_interval=10):
+                        def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
                             results = []
                             for iter in range(n_iters):
                                 np.random.shuffle(latents[:NUM_TEST_STIMULI // 2])
                                 np.random.shuffle(latents[NUM_TEST_STIMULI // 2:])
-                                scores = [
-                                    {"test_captions": pairwise_acc_captions(latents, predictions[i], normalize=False),
-                                     "test_images": pairwise_acc_images(latents, predictions[i], normalize=False)}
-                                    for i in range(len(predictions))
-                                ]
+                                scores = []
+                                for path in pred_paths:
+                                    preds = pickle.load(path)
+                                    scores.append(
+                                        {
+                                            "test_captions": pairwise_acc_captions(latents, preds, normalize=False),
+                                            "test_images": pairwise_acc_images(latents, preds, normalize=False)
+                                        }
+                                    )
                                 results.append(scores)
                                 if iter % print_interval == 0:
                                     print(f"Thread {id}: finished {iter}/{n_iters}")
@@ -117,7 +124,7 @@ def run(args):
                         all_scores = Parallel(n_jobs=DEFAULT_N_JOBS)(
                             delayed(shuffle_and_calc_scores)(
                                 test_data_latents.copy(),
-                                all_preds.copy(),
+                                pred_paths.copy(),
                                 id,
                                 n_iters_per_thread,
                             )
