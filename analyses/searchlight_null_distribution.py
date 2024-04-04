@@ -1,5 +1,6 @@
 import argparse
 
+import joblib
 import numpy as np
 from joblib import Parallel, delayed
 from nilearn import datasets
@@ -96,8 +97,8 @@ def run(args):
                             estimator = pickle.load(open(estimator_file, "rb"))
                             preds = estimator.predict(X[:, adj])
                             preds = Normalize(preds.mean(axis=0), preds.std(axis=0))(preds)
-                            prediction_path = os.path.join(predictions_dir, f"{i}.p")
-                            pickle.dump(preds, open(prediction_path, "wb"))
+                            prediction_path = os.path.join(predictions_dir, f"{i}.joblib")
+                            joblib.dump(preds, prediction_path)
                             pred_paths.append(prediction_path)
 
                         def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
