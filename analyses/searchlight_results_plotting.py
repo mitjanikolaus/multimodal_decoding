@@ -8,8 +8,10 @@ import os
 from glob import glob
 import pickle
 
+from nilearn.surface import surface
 from scipy import stats
 from scipy.stats import pearsonr
+from sklearn import neighbors
 from tqdm import tqdm
 import seaborn as sns
 
@@ -22,6 +24,11 @@ SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight
 COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
+
+DEFAULT_T_VALUE_THRESHOLD = 0.824
+DEFAULT_MAX_CLUSTER_DISTANCE = 1    # 1mm
+DEFAULT_MIN_CLUSTER_SIZE = 20
+
 VIEWS = ["lateral", "medial", "ventral"]
 
 HEMIS = ['left', 'right']
@@ -123,6 +130,20 @@ def run(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
+    adjacency_matrices = dict()
+    for hemi in HEMIS:
+        adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", args.resolution, "adjacency.p")
+        if not os.path.isfile(adj_path):
+            os.makedirs(os.path.dirname(adj_path), exist_ok=True)
+            fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+            coords, _ = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+            nn = neighbors.NearestNeighbors(radius=args.max_cluster_distance)
+            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
+                         nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+            adjacency_matrices[hemi] = adjacency
+        else:
+            adjacency_matrices[hemi] = pickle.load(open(adj_path, 'rb'))
+
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
         print(path_agnostic)
@@ -167,7 +188,7 @@ def run(args):
     print(f"Calculating t-values for {num_subjects} subjects.")
     all_scores_averaged = all_scores
     for hemi in HEMIS:
-        for score_name in all_scores[hemi].keys():
+        for score_name in tqdm(all_scores[hemi].keys()):
             popmean = CHANCE_VALUES[score_name]
             enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
             t_values[hemi][score_name] = np.array([
@@ -186,9 +207,36 @@ def run(args):
                 axis=0)
 
     # calc clusters
+    clusters = dict()
+    for hemi in HEMIS:
+        scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        scores_thresholded = scores > args.t_value_threshold
+        adj = adjacency_matrices[hemi]
+
+        clusters[hemi] = []
+        start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+        while len(start_locations) > 0:
+            idx = start_locations[0]
+            cluster = {idx}
+            checked = {idx}
+
+            def expand_neighbors(start_idx):
+                neighbors = adj[start_idx]
+                for neighbor in neighbors:
+                    if not neighbor in checked:
+                        checked.add(neighbor)
+                        if scores_thresholded[neighbor]:
+                            cluster.add(neighbor)
+                            expand_neighbors(neighbor)
+
+            expand_neighbors(idx)
+            for id in cluster:
+                start_locations.remove(id)
+            if len(cluster) >= args.min_cluster_size:
+                clusters[hemi].append(cluster)
 
 
-    print("plotting (t-values) threshold 0.824")
+    print(f"plotting (t-values) threshold {args.t_value_threshold}")
     metrics = ['imgs_agno - imgs_specific',
                'captions_agno - captions_specific',
                METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -219,7 +267,7 @@ def run(args):
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         axes=axes[i * 2 + j],
                         colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=0.824 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 2.015,  # p < 0.05
+                        threshold=args.t_value_threshold if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 2.015,
                         vmax=cbar_max,
                         vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
                         cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
@@ -228,7 +276,7 @@ def run(args):
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
                 else:
                     axes[i * 2 + j].axis('off')
-    title = f"{args.model}_{args.mode}_group_level_t_values_tresh_0.824"
+    title = f"{args.model}_{args.mode}_group_level_t_values_tresh_{args.t_value_threshold}"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
@@ -380,6 +428,10 @@ def get_args():
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_100')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
+
+    parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
+    parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
+    parser.add_argument("--min-cluster-size", type=int, default=DEFAULT_MIN_CLUSTER_SIZE)
 
     return parser.parse_args()
 
