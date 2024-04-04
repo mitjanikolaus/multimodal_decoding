@@ -14,7 +14,7 @@ from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR
 
-DEFAULT_N_JOBS = 2
+DEFAULT_N_JOBS = 10
 
 
 def run(args):
