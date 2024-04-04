@@ -54,7 +54,7 @@ def train_and_test(
     y_pred_normalized = Normalize(y_pred.mean(axis=0), y_pred.std(axis=0))(y_pred)
 
     if predictions_dir is not None:
-        pickle.dump(y_pred_normalized, open(os.path.join(predictions_dir, f"{list_i}.p"), "wb"))
+        pickle.dump(y_pred_normalized, open(os.path.join(predictions_dir, f"{list_i:010d}.p"), "wb"))
 
     scores = {
         "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),

@@ -1,4 +1,5 @@
 import argparse
+import glob
 
 import joblib
 import numpy as np
@@ -25,12 +26,12 @@ DEFAULT_N_JOBS = 2
 
 def run(args):
     for subject in args.subjects:
-        test_fmri = {
-            "left": pickle.load(
-                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb')),
-            "right": pickle.load(
-                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb')),
-        }
+        # test_fmri = {
+        #     "left": pickle.load(
+        #         open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb')),
+        #     "right": pickle.load(
+        #         open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb')),
+        # }
 
         train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
         train_stim_types = pickle.load(
@@ -65,41 +66,32 @@ def run(args):
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
-                        print("Hemisphere: ", hemi)
-                        print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
+                        # print("Hemisphere: ", hemi)
+                        # print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
 
-                        X = test_fmri[hemi]
-                        nan_locations = np.isnan(X[0])
-                        assert np.all(nan_locations == np.isnan(X[-1]))
-                        X = X[:, ~nan_locations]
+                        # X = test_fmri[hemi]
+                        # nan_locations = np.isnan(X[0])
+                        # assert np.all(nan_locations == np.isnan(X[-1]))
+                        # X = X[:, ~nan_locations]
+                        #
+                        # infl_mesh = fsaverage[f"infl_{hemi}"]
+                        # coords, _ = surface.load_surf_mesh(infl_mesh)
+                        # coords = coords[~nan_locations]
+                        #
+                        # nn = neighbors.NearestNeighbors(radius=args.radius)
+                        # if args.radius is not None:
+                        #     adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
+                        #                  nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+                        # elif args.n_neighbors is not None:
+                        #     distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
+                        # else:
+                        #     raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
-                        infl_mesh = fsaverage[f"infl_{hemi}"]
-                        coords, _ = surface.load_surf_mesh(infl_mesh)
-                        coords = coords[~nan_locations]
-
-                        nn = neighbors.NearestNeighbors(radius=args.radius)
-                        if args.radius is not None:
-                            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
-                                         nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-                        elif args.n_neighbors is not None:
-                            distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-                        else:
-                            raise RuntimeError("Need to set either radius or n_neighbors arg!")
-
-                        print("generating test set predictions")
                         predictions_dir = os.path.join(results_dir, "test_set_predictions")
-                        os.makedirs(predictions_dir, exist_ok=True)
-                        pred_paths = []
-                        for i, adj in tqdm(enumerate(adjacency), total=len(adjacency)):
-                            estimator_file = os.path.join(results_dir, "estimators", f"{i}.p")
-                            estimator = pickle.load(open(estimator_file, "rb"))
-                            preds = estimator.predict(X[:, adj])
-                            preds = Normalize(preds.mean(axis=0), preds.std(axis=0))(preds)
-                            prediction_path = os.path.join(predictions_dir, f"{i}.joblib")
-                            joblib.dump(preds, prediction_path)
-                            pred_paths.append(prediction_path)
+                        pred_paths = sorted(list(glob.glob(os.path.join(predictions_dir, "*.p"))))
+                        print(f"Calculating null distribution for {len(pred_paths)} locations")
 
                         def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
                             results = []
