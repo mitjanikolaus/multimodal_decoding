@@ -26,13 +26,6 @@ DEFAULT_N_JOBS = 2
 
 def run(args):
     for subject in args.subjects:
-        # test_fmri = {
-        #     "left": pickle.load(
-        #         open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb')),
-        #     "right": pickle.load(
-        #         open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb')),
-        # }
-
         train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
         train_stim_types = pickle.load(
             open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
@@ -66,29 +59,7 @@ def run(args):
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
-                        # print("Hemisphere: ", hemi)
-                        # print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
-
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
-
-                        # X = test_fmri[hemi]
-                        # nan_locations = np.isnan(X[0])
-                        # assert np.all(nan_locations == np.isnan(X[-1]))
-                        # X = X[:, ~nan_locations]
-                        #
-                        # infl_mesh = fsaverage[f"infl_{hemi}"]
-                        # coords, _ = surface.load_surf_mesh(infl_mesh)
-                        # coords = coords[~nan_locations]
-                        #
-                        # nn = neighbors.NearestNeighbors(radius=args.radius)
-                        # if args.radius is not None:
-                        #     adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
-                        #                  nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-                        # elif args.n_neighbors is not None:
-                        #     distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-                        # else:
-                        #     raise RuntimeError("Need to set either radius or n_neighbors arg!")
-
                         predictions_dir = os.path.join(results_dir, "test_set_predictions")
                         pred_paths = sorted(list(glob.glob(os.path.join(predictions_dir, "*.p"))))
                         assert int(os.path.basename(pred_paths[-1])[:-2]) == len(pred_paths) - 1
@@ -97,11 +68,12 @@ def run(args):
                         def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
                             results = []
                             for iter in range(n_iters):
+                                # shuffle indices for captions and images separately
                                 np.random.shuffle(latents[:NUM_TEST_STIMULI // 2])
                                 np.random.shuffle(latents[NUM_TEST_STIMULI // 2:])
                                 scores = []
                                 for path in pred_paths:
-                                    preds = pickle.load(path)
+                                    preds = pickle.load(open(path, "rb"))
                                     scores.append(
                                         {
                                             "test_captions": pairwise_acc_captions(latents, preds, normalize=False),
