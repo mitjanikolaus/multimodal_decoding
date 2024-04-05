@@ -17,6 +17,10 @@ import seaborn as sns
 
 from utils import RESULTS_DIR
 
+METRIC_CAPTIONS = 'captions'
+METRIC_IMAGES = 'images'
+METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
+METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
@@ -26,7 +30,7 @@ COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 
 DEFAULT_T_VALUE_THRESHOLD = 0.824
-DEFAULT_MAX_CLUSTER_DISTANCE = 1    # 1mm
+DEFAULT_MAX_CLUSTER_DISTANCE = 1  # 1mm
 DEFAULT_MIN_CLUSTER_SIZE = 20
 
 VIEWS = ["lateral", "medial", "ventral"]
@@ -34,17 +38,13 @@ VIEWS = ["lateral", "medial", "ventral"]
 HEMIS = ['left', 'right']
 
 BASE_METRICS = ["test_captions", "test_images"]
-CHANCE_VALUES = {"captions": 0.5,
-                 "images": 0.5,
-                 "mean(imgs,captions)": 0.5,
-                 "min(imgs,captions)": 0.5,
-                 'imgs_agno - imgs_specific': 0,
-                 'captions_agno - captions_specific': 0,
-                 'imgs_agno - imgs_specific (cross)': 0,
-                 'captions_agno - captions_specific (cross)': 0,
-                 'mean(captions_agno - captions_specific, imgs_agno - imgs_specific)': 0,
-                 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)': 0,
-                 }
+CHANCE_VALUES = {
+    METRIC_CAPTIONS: 0.5,
+    METRIC_IMAGES: 0.5,
+    METRIC_DIFF_IMAGES: 0,
+    METRIC_DIFF_CAPTIONS: 0,
+    METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
+}
 
 
 def add_to_all_scores(all_scores, scores, hemi):
@@ -81,7 +81,6 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
     # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
-    scores["min(imgs,captions)"] = np.min((scores['images'], scores['captions']), axis=0)
 
     scores_specific_captions = dict()
     for metric in BASE_METRICS:
@@ -97,19 +96,19 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores_specific_images[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_images])
 
-    scores['imgs_agno - imgs_specific'] = np.array(
+    scores[METRIC_DIFF_IMAGES] = np.array(
         [ai - si for ai, ac, si, sc in
-         zip(scores['images'],
-             scores['captions'],
-             scores_specific_images['images'],
-             scores_specific_captions['captions'])]
+         zip(scores[METRIC_IMAGES],
+             scores[METRIC_CAPTIONS],
+             scores_specific_images[METRIC_IMAGES],
+             scores_specific_captions[METRIC_CAPTIONS])]
     )
-    scores['captions_agno - captions_specific'] = np.array(
+    scores[METRIC_DIFF_CAPTIONS] = np.array(
         [ac - sc for ai, ac, si, sc in
-         zip(scores['images'],
-             scores['captions'],
-             scores_specific_images['images'],
-             scores_specific_captions['captions'])]
+         zip(scores[METRIC_IMAGES],
+             scores[METRIC_CAPTIONS],
+             scores_specific_images[METRIC_IMAGES],
+             scores_specific_captions[METRIC_CAPTIONS])]
     )
 
     return scores
@@ -118,9 +117,8 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
 def run(args):
     per_subject_scores = dict()
     all_scores = {hemi: dict() for hemi in HEMIS}
-    t_values = {hemi: dict() for hemi in HEMIS}
 
-    all_scores_null_distr = {hemi: dict() for hemi in HEMIS}
+    all_scores_null_distr = []
     alpha = 1
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
@@ -177,88 +175,93 @@ def run(args):
         null_distribution_captions = pickle.load(
             open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
 
-        for distr, distr_caps, distr_imgs in zip(null_distribution_agnostic,
-                                                 null_distribution_captions,
-                                                 null_distribution_images):
+        for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
+                                                                null_distribution_captions,
+                                                                null_distribution_images)):
+            if len(all_scores_null_distr) <= i:
+                all_scores_null_distr.append({hemi: dict() for hemi in HEMIS})
+            scores_null_distr = all_scores_null_distr[i]
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-            add_to_all_scores(all_scores_null_distr, scores, hemi)
+            add_to_all_scores(scores_null_distr, scores, hemi)
 
-    # calc averages and t-values
-    num_subjects = len(per_subject_scores)
-    print(f"Calculating t-values for {num_subjects} subjects.")
-    all_scores_averaged = all_scores
-    for hemi in HEMIS:
-        for score_name in tqdm(all_scores[hemi].keys()):
-            popmean = CHANCE_VALUES[score_name]
-            enough_data = [(~np.isnan(x)).sum() == num_subjects for x in all_scores[hemi][score_name]]
-            t_values[hemi][score_name] = np.array([
-                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                in
-                zip(all_scores[hemi][score_name], enough_data)])
+    def calc_t_values(scores, num_subjects):
+        t_values = {hemi: dict() for hemi in HEMIS}
+        for hemi in HEMIS:
+            for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+                data = scores[hemi][score_name]
+                popmean = CHANCE_VALUES[score_name]
+                enough_data = [(~np.isnan(x)).sum() == num_subjects for x in data]
+                t_values[hemi][score_name] = np.array([
+                    stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+                    in zip(data, enough_data)]
+                )
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
-                all_scores_averaged[hemi][score_name] = np.nanmean(all_scores[hemi][score_name], axis=1)
+                t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+                    (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
+                    axis=0)
+        return t_values
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                (t_values[hemi]['captions_agno - captions_specific'], t_values[hemi]['imgs_agno - imgs_specific']),
-                axis=0)
+    num_subjects = len(per_subject_scores)
+    print(f"Calculating t-values for {num_subjects} subjects.")
+    t_values = calc_t_values(all_scores, num_subjects)
 
-    # calc clusters
-    clusters = dict()
-    for hemi in HEMIS:
-        scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-        scores_thresholded = scores > args.t_value_threshold
-        adj = adjacency_matrices[hemi]
+    print(f"Calculating t-values for {num_subjects} subjects: null distribution")
+    t_values_null_distribution = [calc_t_values(t_vals, num_subjects) for t_vals in tqdm(all_scores_null_distr)]
 
-        clusters[hemi] = []
-        start_locations = list(np.argwhere(scores_thresholded)[:, 0])
-        while len(start_locations) > 0:
-            idx = start_locations[0]
-            cluster = {idx}
-            checked = {idx}
+    def calc_clusters(t_values):
+        clusters = {hemi: [] for hemi in HEMIS}
+        for hemi in HEMIS:
+            scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+            scores_thresholded = scores > args.t_value_threshold
+            adj = adjacency_matrices[hemi]
 
-            def expand_neighbors(start_idx):
-                neighbors = adj[start_idx]
-                for neighbor in neighbors:
-                    if not neighbor in checked:
-                        checked.add(neighbor)
-                        if scores_thresholded[neighbor]:
-                            cluster.add(neighbor)
-                            expand_neighbors(neighbor)
+            start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+            while len(start_locations) > 0:
+                idx = start_locations[0]
+                cluster = {idx}
+                checked = {idx}
 
-            expand_neighbors(idx)
-            for id in cluster:
-                start_locations.remove(id)
-            if len(cluster) >= args.min_cluster_size:
-                clusters[hemi].append(cluster)
+                def expand_neighbors(start_idx):
+                    neighbors = adj[start_idx]
+                    for neighbor in neighbors:
+                        if not neighbor in checked:
+                            checked.add(neighbor)
+                            if scores_thresholded[neighbor]:
+                                cluster.add(neighbor)
+                                expand_neighbors(neighbor)
 
+                expand_neighbors(idx)
+                for id in cluster:
+                    start_locations.remove(id)
+                if len(cluster) >= args.min_cluster_size:
+                    clusters[hemi].append(cluster)
+        return clusters
+
+    clusters = calc_clusters(t_values)
+
+    print(f"Calculating clusters for null distribution")
+    clusters_null_distribution = [calc_clusters(t_vals) for t_vals in tqdm(t_values_null_distribution)]
 
     print(f"plotting (t-values) threshold {args.t_value_threshold}")
-    metrics = ['imgs_agno - imgs_specific',
-               'captions_agno - captions_specific',
+    metrics = [METRIC_DIFF_IMAGES,
+               METRIC_DIFF_CAPTIONS,
                METRIC_MIN_DIFF_BOTH_MODALITIES]
-    scores = t_values
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
         cbar_max = None
-        cbar_min = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(['left', 'right']):
-                if metric in scores[hemi].keys():
-                    scores_hemi = scores[hemi][metric]
+                if metric in t_values[hemi].keys():
+                    scores_hemi = t_values[hemi][metric]
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
                         cbar_max = min(np.nanmax(scores_hemi), 99)
-                        cbar_min = max(np.nanmin(scores_hemi), -99)
-
                     plotting.plot_surf_stat_map(
                         infl_mesh,
                         scores_hemi,
@@ -286,11 +289,10 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
-    metrics = ["captions", "images",
-               'imgs_agno - imgs_specific',
-               'captions_agno - captions_specific']
+    metrics = [METRIC_CAPTIONS, METRIC_IMAGES,
+               METRIC_DIFF_IMAGES,
+               METRIC_DIFF_CAPTIONS]
     print(f"plotting group-level avg scores.")
-    scores = all_scores_averaged
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -298,19 +300,20 @@ def run(args):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
         cbar_max = None
-        cbar_min = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(['left', 'right']):
-                if metric in scores[hemi].keys():
-                    scores_hemi = scores[hemi][metric]
+                if metric in all_scores[hemi].keys():
+                    scores_hemi = all_scores[hemi][metric]
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", category=RuntimeWarning)
+                        scores_hemi_averaged = np.nanmean(scores_hemi, axis=1)
                     infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max is None:
-                        cbar_max = min(np.nanmax(scores_hemi), 99)
-                        cbar_min = np.nanmin(scores_hemi)
+                        cbar_max = min(np.nanmax(scores_hemi_averaged), 99)
 
                     plotting.plot_surf_stat_map(
                         infl_mesh,
-                        scores_hemi,
+                        scores_hemi_averaged,
                         hemi=hemi,
                         view=view,
                         bg_map=fsaverage[f"sulc_{hemi}"],
@@ -328,8 +331,6 @@ def run(args):
                     axes[i * 2 + j].axis('off')
 
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
-    # fig.suptitle(title)
-    # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
@@ -339,9 +340,9 @@ def run(args):
 
     if args.per_subject_plots:
         # per-subject plots
-        metrics = ["captions", "images", "min(imgs,captions)",
-                   'imgs_agno - imgs_specific',
-                   'captions_agno - captions_specific']
+        metrics = [METRIC_CAPTIONS, METRIC_IMAGES,
+                   METRIC_DIFF_IMAGES,
+                   METRIC_DIFF_CAPTIONS]
         print("\n\nCreating per-subject plots..")
         for subject, scores in tqdm(per_subject_scores.items()):
             fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
