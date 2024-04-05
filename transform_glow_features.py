@@ -70,6 +70,22 @@ if __name__ == "__main__":
 
     assert len(caption_indices) == len(stimuli_ids)
 
+    feats_l = np.load(os.path.expanduser("~/Downloads/gw_features_tr+cont/t_gw.npy"))[caption_indices]
+    feats_v = np.load(os.path.expanduser("~/Downloads/gw_features_tr+cont/v_gw.npy"))[::5]
+    all_feats = dict()
+    for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
+        all_feats[id] = {"visual_feature_mean": feat_v, "lingual_feature": feat_l}
+    path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/glow-transl-contrastive.p")
+    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+    feats_l = np.load(os.path.expanduser("~/Downloads/gw_features_cont/t_gw.npy"))[caption_indices]
+    feats_v = np.load(os.path.expanduser("~/Downloads/gw_features_cont/v_gw.npy"))[::5]
+    all_feats = dict()
+    for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
+        all_feats[id] = {"visual_feature_mean": feat_v, "lingual_feature": feat_l}
+    path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/glow-contrastive.p")
+    pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
     feats_l = np.load(os.path.expanduser("~/Downloads/gw_features/t_gw.npy"))[caption_indices]
     feats_v = np.load(os.path.expanduser("~/Downloads/gw_features/v_gw.npy"))[::5]
     all_feats = dict()
