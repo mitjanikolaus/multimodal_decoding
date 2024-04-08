@@ -1,5 +1,6 @@
 import argparse
 import warnings
+import random
 
 import numpy as np
 from nilearn import datasets, plotting
@@ -15,7 +16,7 @@ from sklearn import neighbors
 from tqdm import tqdm
 import seaborn as sns
 
-from utils import RESULTS_DIR
+from utils import RESULTS_DIR, SUBJECTS
 
 METRIC_CAPTIONS = 'captions'
 METRIC_IMAGES = 'images'
@@ -38,6 +39,7 @@ VIEWS = ["lateral", "medial", "ventral"]
 HEMIS = ['left', 'right']
 
 BASE_METRICS = ["test_captions", "test_images"]
+TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 CHANCE_VALUES = {
     METRIC_CAPTIONS: 0.5,
     METRIC_IMAGES: 0.5,
@@ -45,15 +47,6 @@ CHANCE_VALUES = {
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
 }
-
-
-def add_to_all_scores(all_scores, scores, hemi):
-    for score_name in scores.keys():
-        if score_name not in all_scores[hemi]:
-            all_scores[hemi][score_name] = scores[score_name].reshape(-1, 1)
-        else:
-            all_scores[hemi][score_name] = np.concatenate(
-                (scores[score_name].reshape(-1, 1), all_scores[hemi][score_name]), axis=1)
 
 
 def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
@@ -115,9 +108,7 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
 
 
 def run(args):
-    per_subject_scores = dict()
-    all_scores = {hemi: dict() for hemi in HEMIS}
-
+    per_subject_scores = {subj: dict() for subj in SUBJECTS}
     all_scores_null_distr = []
     alpha = 1
     features = "concat"
@@ -158,13 +149,9 @@ def run(args):
         scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
         print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
         print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-        add_to_all_scores(all_scores, scores, hemi)
 
-        print("")
-
-        if subject not in per_subject_scores.keys():
-            per_subject_scores[subject] = dict()
         per_subject_scores[subject][hemi] = scores
+        print("")
 
         null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
         null_distribution_agnostic = pickle.load(
@@ -180,21 +167,20 @@ def run(args):
                                                                 null_distribution_captions,
                                                                 null_distribution_images)):
             if len(all_scores_null_distr) <= i:
-                all_scores_null_distr.append({hemi: dict() for hemi in HEMIS})
-            scores_null_distr = all_scores_null_distr[i]
+                all_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-            add_to_all_scores(scores_null_distr, scores, hemi)
+            all_scores_null_distr[i][subject][hemi] = scores
 
-    def calc_t_values(scores, num_subjects):
+    def calc_t_values(per_subject_scores):
         t_values = {hemi: dict() for hemi in HEMIS}
         for hemi in HEMIS:
             for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-                data = scores[hemi][score_name]
+                data = np.array([per_subject_scores[subj][hemi][score_name] for subj in SUBJECTS])
                 popmean = CHANCE_VALUES[score_name]
-                enough_data = [(~np.isnan(x)).sum() == num_subjects for x in data]
+                enough_data = np.isnan(data).sum(axis=0) == 0
                 t_values[hemi][score_name] = np.array([
                     stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                    in zip(data, enough_data)]
+                    in zip(data.T, enough_data)]
                 )
 
             with warnings.catch_warnings():
@@ -204,15 +190,37 @@ def run(args):
                     axis=0)
         return t_values
 
-    num_subjects = len(per_subject_scores)
-    print(f"Calculating t-values for {num_subjects} subjects.")
-    t_values = calc_t_values(all_scores, num_subjects)
+    print(f"Calculating t-values.")
+    t_values = calc_t_values(per_subject_scores)
+
+    def calc_t_values_null_distr(per_subject_scores, n_iter=100000):
+        all_t_vals = []
+        for i in tqdm(range(n_iter)):
+            t_values = {hemi: dict() for hemi in HEMIS}
+            for hemi in HEMIS:
+                for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+                    random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
+                    data = np.array([per_subject_scores[idx][subj][hemi][score_name] for idx, subj in zip(random_idx, SUBJECTS)])
+                    popmean = CHANCE_VALUES[score_name]
+                    enough_data = np.isnan(data).sum(axis=0) == 0
+                    t_values[hemi][score_name] = np.array([
+                        stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+                        in zip(data.T, enough_data)]
+                    )
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+                        (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
+                        axis=0)
+            all_t_vals.append(t_values)
+        return all_t_vals
 
     t_values_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode, "null_distribution.p")
     if not os.path.isfile(t_values_null_distribution_path):
         os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
-        print(f"Calculating t-values for {num_subjects} subjects: null distribution")
-        t_values_null_distribution = [calc_t_values(t_vals, num_subjects) for t_vals in tqdm(all_scores_null_distr)]
+        print(f"Calculating t-values: null distribution")
+        t_values_null_distribution = calc_t_values_null_distr(all_scores_null_distr)
         pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
@@ -269,7 +277,7 @@ def run(args):
     p_values_cluster = occ_part_of_cluster.copy()
     for hemi in HEMIS:
         p_values_cluster[hemi][cluster_maps[hemi] == 0] = 0
-        p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10(occ_part_of_cluster[hemi][cluster_maps[hemi] > 0] / n_null_distr_samples)
+        p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10((occ_part_of_cluster[hemi][cluster_maps[hemi] > 0] + 1) / (n_null_distr_samples))
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
