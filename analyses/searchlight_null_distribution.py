@@ -85,9 +85,9 @@ def run(args):
                                 test_data_latents.copy(),
                                 pred_paths.copy(),
                                 id,
-                                n_iters_per_thread.copy(),
+                                n_iters_per_thread,
                             )
-                            for id in range(DEFAULT_N_JOBS)
+                            for id in range(args.n_jobs)
                         )
                         all_scores = np.concatenate(all_scores)
                         results_file_name = f"alpha_{args.l2_regularization_alpha}_null_distribution.p"
