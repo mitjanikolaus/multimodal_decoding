@@ -81,8 +81,8 @@ def run(args):
 
                             return results
 
-                        n_iters_per_thread = args.n_iterations // DEFAULT_N_JOBS
-                        all_scores = Parallel(n_jobs=DEFAULT_N_JOBS)(
+                        n_iters_per_thread = args.n_iterations // args.n_jobs
+                        all_scores = Parallel(n_jobs=args.n_jobs)(
                             delayed(shuffle_and_calc_scores)(
                                 test_data_latents.copy(),
                                 pred_paths.copy(),
