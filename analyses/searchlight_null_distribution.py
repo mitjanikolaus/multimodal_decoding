@@ -6,6 +6,8 @@ from joblib import Parallel, delayed
 import os
 import pickle
 
+from tqdm import tqdm
+
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
     get_default_features
@@ -65,7 +67,7 @@ def run(args):
                                 np.random.shuffle(latents[:NUM_TEST_STIMULI // 2])
                                 np.random.shuffle(latents[NUM_TEST_STIMULI // 2:])
                                 scores = []
-                                for path in pred_paths:
+                                for path in tqdm(pred_paths):
                                     preds = pickle.load(open(path, "rb"))
                                     scores.append(
                                         {
