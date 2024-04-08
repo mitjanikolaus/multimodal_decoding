@@ -31,7 +31,7 @@ COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 
 DEFAULT_T_VALUE_THRESHOLD = 0.824
 DEFAULT_MAX_CLUSTER_DISTANCE = 1  # 1mm
-DEFAULT_MIN_CLUSTER_SIZE = 20
+DEFAULT_MIN_CLUSTER_T_VALUE = 20 * DEFAULT_T_VALUE_THRESHOLD
 
 VIEWS = ["lateral", "medial", "ventral"]
 
@@ -235,14 +235,26 @@ def run(args):
                 expand_neighbors(idx)
                 for id in cluster:
                     start_locations.remove(id)
-                if len(cluster) >= args.min_cluster_size:
+                t_value_cluster = np.sum(scores[list(cluster)])
+                if t_value_cluster >= args.min_cluster_t_value:
                     clusters[hemi].append(cluster)
         return clusters
+
 
     clusters = calc_clusters(t_values)
 
     print(f"Calculating clusters for null distribution")
     clusters_null_distribution = [calc_clusters(t_vals) for t_vals in tqdm(t_values_null_distribution)]
+
+    # for each location, calculate how often it's part of a cluster
+    prob_part_of_cluster = {
+        hemi: np.zeros_like(scores[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, scores in t_values.items()
+    }
+    for cluster_distr in clusters_null_distribution:
+        for hemi in HEMIS:
+            cluster_distr_hemi = cluster_distr[hemi]
+            for cluster in cluster_distr_hemi:
+                np.add.at(prob_part_of_cluster[hemi], list(cluster), 1)
 
     print(f"plotting (t-values) threshold {args.t_value_threshold}")
     metrics = [METRIC_DIFF_IMAGES,
@@ -432,7 +444,7 @@ def get_args():
 
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
     parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
-    parser.add_argument("--min-cluster-size", type=int, default=DEFAULT_MIN_CLUSTER_SIZE)
+    parser.add_argument("--min-cluster-t-value", type=int, default=DEFAULT_MIN_CLUSTER_T_VALUE)
 
     return parser.parse_args()
 
