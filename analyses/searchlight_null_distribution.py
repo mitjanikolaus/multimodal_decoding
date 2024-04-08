@@ -67,7 +67,10 @@ def run(args):
                                 np.random.shuffle(latents[:NUM_TEST_STIMULI // 2])
                                 np.random.shuffle(latents[NUM_TEST_STIMULI // 2:])
                                 scores = []
-                                for path in tqdm(pred_paths):
+                                path_iterator = pred_paths
+                                if id == 0:
+                                    path_iterator = tqdm(pred_paths)
+                                for path in path_iterator:
                                     preds = pickle.load(open(path, "rb"))
                                     scores.append(
                                         {
