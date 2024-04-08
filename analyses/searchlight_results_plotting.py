@@ -120,9 +120,10 @@ def run(args):
 
     all_scores_null_distr = []
     alpha = 1
+    features = "concat"
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{args.model}/*/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p')
+                                 f'train/{args.model}/{features}/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p')
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
     paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
@@ -207,17 +208,25 @@ def run(args):
     print(f"Calculating t-values for {num_subjects} subjects.")
     t_values = calc_t_values(all_scores, num_subjects)
 
-    print(f"Calculating t-values for {num_subjects} subjects: null distribution")
-    t_values_null_distribution = [calc_t_values(t_vals, num_subjects) for t_vals in tqdm(all_scores_null_distr)]
+    t_values_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode, "null_distribution.p")
+    if not os.path.isfile(t_values_null_distribution_path):
+        os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
+        print(f"Calculating t-values for {num_subjects} subjects: null distribution")
+        t_values_null_distribution = [calc_t_values(t_vals, num_subjects) for t_vals in tqdm(all_scores_null_distr)]
+        pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
+    else:
+        t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
     def calc_clusters(t_values):
         clusters = {hemi: [] for hemi in HEMIS}
+        cluster_maps = dict()
         for hemi in HEMIS:
             scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
             scores_thresholded = scores > args.t_value_threshold
             adj = adjacency_matrices[hemi]
 
             start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+            cluster_maps[hemi] = np.zeros_like(scores)
             while len(start_locations) > 0:
                 idx = start_locations[0]
                 cluster = {idx}
@@ -238,28 +247,106 @@ def run(args):
                 t_value_cluster = np.sum(scores[list(cluster)])
                 if t_value_cluster >= args.min_cluster_t_value:
                     clusters[hemi].append(cluster)
-        return clusters
+                    cluster_maps[hemi][list(cluster)] = t_value_cluster
+        return clusters, cluster_maps
 
 
-    clusters = calc_clusters(t_values)
+    clusters, cluster_maps = calc_clusters(t_values)
 
     print(f"Calculating clusters for null distribution")
     clusters_null_distribution = [calc_clusters(t_vals) for t_vals in tqdm(t_values_null_distribution)]
 
     # for each location, calculate how often it's part of a cluster
-    prob_part_of_cluster = {
+    occ_part_of_cluster = {
         hemi: np.zeros_like(scores[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, scores in t_values.items()
     }
-    for cluster_distr in clusters_null_distribution:
+    for cluster_distr, cluster_distr_maps in clusters_null_distribution:
         for hemi in HEMIS:
-            cluster_distr_hemi = cluster_distr[hemi]
-            for cluster in cluster_distr_hemi:
-                np.add.at(prob_part_of_cluster[hemi], list(cluster), 1)
+            cluster_distr_map_hemi = cluster_distr_maps[hemi]
+            np.add.at(occ_part_of_cluster[hemi], np.argwhere(cluster_distr_map_hemi > 0)[:, 0], 1)
+
+    n_null_distr_samples = len(all_scores_null_distr)
+    p_values_cluster = occ_part_of_cluster.copy()
+    for hemi in HEMIS:
+        p_values_cluster[hemi][cluster_maps[hemi] == 0] = 0
+        p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10(occ_part_of_cluster[hemi][cluster_maps[hemi] > 0] / n_null_distr_samples)
+
+    print(f"plotting (p-values)")
+    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
+    fig = plt.figure(figsize=(5 * len(VIEWS), 2))
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+    axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+    cbar_max = None
+    for i, view in enumerate(VIEWS):
+        for j, hemi in enumerate(['left', 'right']):
+            scores_hemi = p_values_cluster[hemi]
+            infl_mesh = fsaverage[f"infl_{hemi}"]
+            if cbar_max is None:
+                cbar_max = min(np.nanmax(scores_hemi), 99)
+                print(cbar_max)
+            plotting.plot_surf_stat_map(
+                infl_mesh,
+                scores_hemi,
+                hemi=hemi,
+                view=view,
+                bg_map=fsaverage[f"sulc_{hemi}"],
+                axes=axes[i * 2 + j],
+                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                threshold=1,
+                vmax=cbar_max,
+                vmin=0,
+                cmap="hot",
+                symmetric_cbar=False,
+            )
+            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+    title = f"{args.model}_{args.mode}_group_level_-log10_p_values"
+    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    title += f"_alpha_{str(alpha)}"
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
+    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"plotting (cluster t-values)")
+    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
+    fig = plt.figure(figsize=(5 * len(VIEWS), 2))
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+    axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+    cbar_max = None
+    for i, view in enumerate(VIEWS):
+        for j, hemi in enumerate(['left', 'right']):
+            scores_hemi = cluster_maps[hemi]
+            infl_mesh = fsaverage[f"infl_{hemi}"]
+            if cbar_max is None:
+                cbar_max = min(np.nanmax(scores_hemi), 99)
+            plotting.plot_surf_stat_map(
+                infl_mesh,
+                scores_hemi,
+                hemi=hemi,
+                view=view,
+                bg_map=fsaverage[f"sulc_{hemi}"],
+                axes=axes[i * 2 + j],
+                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                threshold=args.min_cluster_t_value,
+                vmax=cbar_max,
+                vmin=0,
+                cmap="hot",
+                symmetric_cbar=False,
+            )
+            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+    title = f"{args.model}_{args.mode}_group_level_cluster_t_values"
+    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    title += f"_alpha_{str(alpha)}"
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
+    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+    plt.close()
+
 
     print(f"plotting (t-values) threshold {args.t_value_threshold}")
-    metrics = [METRIC_DIFF_IMAGES,
-               METRIC_DIFF_CAPTIONS,
-               METRIC_MIN_DIFF_BOTH_MODALITIES]
+    metrics = [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_MIN_DIFF_BOTH_MODALITIES]
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
