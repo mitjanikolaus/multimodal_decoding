@@ -85,7 +85,7 @@ def run(args):
                                 test_data_latents.copy(),
                                 pred_paths.copy(),
                                 id,
-                                n_iters_per_thread,
+                                n_iters_per_thread.copy(),
                             )
                             for id in range(DEFAULT_N_JOBS)
                         )
