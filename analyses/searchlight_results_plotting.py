@@ -1,4 +1,5 @@
 import argparse
+import copy
 import warnings
 import random
 
@@ -11,7 +12,7 @@ import pickle
 
 from nilearn.surface import surface
 from scipy import stats
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, false_discovery_control
 from sklearn import neighbors
 from tqdm import tqdm
 import seaborn as sns
@@ -33,6 +34,7 @@ COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 DEFAULT_T_VALUE_THRESHOLD = 0.824
 DEFAULT_MAX_CLUSTER_DISTANCE = 1  # 1mm
 DEFAULT_MIN_CLUSTER_T_VALUE = 20 * DEFAULT_T_VALUE_THRESHOLD
+DEFAULT_MIN_CLUSTER_SIZE = 10
 
 VIEWS = ["lateral", "medial", "ventral"]
 
@@ -193,9 +195,18 @@ def run(args):
     print(f"Calculating t-values.")
     t_values = calc_t_values(per_subject_scores)
 
+    # avg_values = {hemi: dict() for hemi in HEMIS}
+    # for hemi in HEMIS:
+    #     for metric in TEST_METRICS:
+    #         avg_values[hemi][metric] = np.mean([ps[hemi][metric] for ps in per_subject_scores.values()], axis=0)
+    #
+    #     avg_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+    #         (avg_values[hemi][METRIC_DIFF_CAPTIONS], avg_values[hemi][METRIC_DIFF_IMAGES]),
+    #         axis=0)
+
     def calc_t_values_null_distr(per_subject_scores, n_iter=100000):
         all_t_vals = []
-        for i in tqdm(range(n_iter)):
+        for _ in tqdm(range(n_iter)):
             t_values = {hemi: dict() for hemi in HEMIS}
             for hemi in HEMIS:
                 for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
@@ -215,6 +226,44 @@ def run(args):
                         axis=0)
             all_t_vals.append(t_values)
         return all_t_vals
+
+    # def create_avg_maps_null_distr(per_subject_scores, n_iter=150):  # TODO 100,000
+    #     all_avg_maps = []
+    #     for _ in tqdm(range(n_iter)):
+    #         avg_maps = {hemi: dict() for hemi in HEMIS}
+    #         for hemi in HEMIS:
+    #             for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+    #                 random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
+    #                 data = np.array(
+    #                     [per_subject_scores[idx][subj][hemi][score_name] for idx, subj in zip(random_idx, SUBJECTS)]).T
+    #                 # group_maps[hemi][score_name] = data
+    #                 avg_maps[hemi][score_name] = data.mean(axis=1)
+    #
+    #             with warnings.catch_warnings():
+    #                 warnings.simplefilter("ignore", category=RuntimeWarning)
+    #                 avg_maps[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+    #                     (avg_maps[hemi][METRIC_DIFF_CAPTIONS], avg_maps[hemi][METRIC_DIFF_IMAGES]),
+    #                     axis=0)
+    #         all_avg_maps.append(avg_maps)
+    #     return all_avg_maps
+    #
+    # print("calculating avg values")
+    # avg_maps_null_distribution = create_avg_maps_null_distr(all_scores_null_distr)
+    #
+    # avg_maps_null_distribution_thresholded = [{hemi: dict() for hemi in HEMIS} for _ in
+    #                                           range(len(avg_maps_null_distribution))]
+    #
+    # avg_values_thresholded = {hemi: dict() for hemi in HEMIS}
+    # for hemi in HEMIS:
+    #     mean_values = np.stack([avg_maps_null_distribution[i][hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] for i in
+    #                             range(len(avg_maps_null_distribution))])
+    #     thresholds = [sorted(np.abs(v))[-100] for v in mean_values.T]
+    #     avg_values_thresholded[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.abs(
+    #         avg_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) > thresholds
+    #
+    #     for map, map_thresholded in zip(avg_maps_null_distribution, avg_maps_null_distribution_thresholded):
+    #         map_thresholded[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.abs(
+    #             map[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) > thresholds
 
     t_values_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode, "null_distribution.p")
     if not os.path.isfile(t_values_null_distribution_path):
@@ -256,28 +305,71 @@ def run(args):
                 if t_value_cluster >= args.min_cluster_t_value:
                     clusters[hemi].append(cluster)
                     cluster_maps[hemi][list(cluster)] = t_value_cluster
+
+            # fill non-cluster locations with their single t-values
+            cluster_maps[hemi][cluster_maps[hemi] == 0] = scores[cluster_maps[hemi] == 0]
         return clusters, cluster_maps
 
+    # def calc_clusters(thresholded_values):
+    #     clusters = {hemi: [] for hemi in HEMIS}
+    #     cluster_maps = dict()
+    #     for hemi in HEMIS:
+    #         scores_thresholded = thresholded_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+    #         adj = adjacency_matrices[hemi]
+    #
+    #         start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+    #         cluster_maps[hemi] = np.zeros_like(scores_thresholded)
+    #         while len(start_locations) > 0:
+    #             idx = start_locations[0]
+    #             cluster = {idx}
+    #             checked = {idx}
+    #
+    #             def expand_neighbors(start_idx):
+    #                 neighbors = adj[start_idx]
+    #                 for neighbor in neighbors:
+    #                     if not neighbor in checked:
+    #                         checked.add(neighbor)
+    #                         if scores_thresholded[neighbor]:
+    #                             cluster.add(neighbor)
+    #                             expand_neighbors(neighbor)
+    #
+    #             expand_neighbors(idx)
+    #             for id in cluster:
+    #                 start_locations.remove(id)
+    #             if len(cluster) >= args.min_cluster_size:
+    #                 clusters[hemi].append(cluster)
+    #                 cluster_maps[hemi][list(cluster)] = 1
+    #     return clusters, cluster_maps
+
+    # clusters, cluster_maps = calc_clusters(avg_values_thresholded)
 
     clusters, cluster_maps = calc_clusters(t_values)
 
     print(f"Calculating clusters for null distribution")
-    clusters_null_distribution = [calc_clusters(t_vals) for t_vals in tqdm(t_values_null_distribution)]
+    clusters_null_distribution = [calc_clusters(vals) for vals in tqdm(t_values_null_distribution)]
 
-    # for each location, calculate how often it's part of a cluster
+    # clusters_null_distribution = [calc_clusters(vals) for vals in tqdm(avg_maps_null_distribution_thresholded)]
+    #
+    # for each location, calculate how often the random data leads to a larger t-value
     occ_part_of_cluster = {
-        hemi: np.zeros_like(scores[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, scores in t_values.items()
+        hemi: np.zeros(shape=(scores[METRIC_MIN_DIFF_BOTH_MODALITIES].shape[0])) for hemi, scores in
+        t_values.items()
     }
-    for cluster_distr, cluster_distr_maps in clusters_null_distribution:
+    for _, cluster_distr_maps in clusters_null_distribution:
         for hemi in HEMIS:
             cluster_distr_map_hemi = cluster_distr_maps[hemi]
-            np.add.at(occ_part_of_cluster[hemi], np.argwhere(cluster_distr_map_hemi > 0)[:, 0], 1)
+            np.add.at(occ_part_of_cluster[hemi],
+                      np.argwhere((cluster_distr_map_hemi >= cluster_maps[hemi]))[:, 0], 1) #(cluster_maps[hemi] > 0) &
 
-    n_null_distr_samples = len(all_scores_null_distr)
-    p_values_cluster = occ_part_of_cluster.copy()
+    n_null_distr_samples = len(clusters_null_distribution)
+    p_values_cluster = copy.deepcopy(occ_part_of_cluster)
     for hemi in HEMIS:
-        p_values_cluster[hemi][cluster_maps[hemi] == 0] = 0
-        p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10((occ_part_of_cluster[hemi][cluster_maps[hemi] > 0] + 1) / (n_null_distr_samples))
+        # p_values_cluster[hemi][cluster_maps[hemi] == 0] = 0
+        p_values_cluster[hemi][np.isnan(cluster_maps[hemi])] = np.nan
+        # p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10(false_discovery_control((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1), method='by'))
+        p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1))
+
+
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
@@ -287,7 +379,7 @@ def run(args):
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
     cbar_max = None
     for i, view in enumerate(VIEWS):
-        for j, hemi in enumerate(['left', 'right']):
+        for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values_cluster[hemi]
             infl_mesh = fsaverage[f"infl_{hemi}"]
             if cbar_max is None:
@@ -324,7 +416,7 @@ def run(args):
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
     cbar_max = None
     for i, view in enumerate(VIEWS):
-        for j, hemi in enumerate(['left', 'right']):
+        for j, hemi in enumerate(HEMIS):
             scores_hemi = cluster_maps[hemi]
             infl_mesh = fsaverage[f"infl_{hemi}"]
             if cbar_max is None:
@@ -352,7 +444,6 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
-
     print(f"plotting (t-values) threshold {args.t_value_threshold}")
     metrics = [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_MIN_DIFF_BOTH_MODALITIES]
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
@@ -363,7 +454,7 @@ def run(args):
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
         cbar_max = None
         for i, view in enumerate(VIEWS):
-            for j, hemi in enumerate(['left', 'right']):
+            for j, hemi in enumerate(HEMIS):
                 if metric in t_values[hemi].keys():
                     scores_hemi = t_values[hemi][metric]
                     infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -396,9 +487,7 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
-    metrics = [METRIC_CAPTIONS, METRIC_IMAGES,
-               METRIC_DIFF_IMAGES,
-               METRIC_DIFF_CAPTIONS]
+    metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
     print(f"plotting group-level avg scores.")
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
@@ -409,34 +498,29 @@ def run(args):
         cbar_max = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(['left', 'right']):
-                if metric in all_scores[hemi].keys():
-                    scores_hemi = all_scores[hemi][metric]
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=RuntimeWarning)
-                        scores_hemi_averaged = np.nanmean(scores_hemi, axis=1)
-                    infl_mesh = fsaverage[f"infl_{hemi}"]
-                    if cbar_max is None:
-                        cbar_max = min(np.nanmax(scores_hemi_averaged), 99)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    score_hemi_avgd = np.mean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+                infl_mesh = fsaverage[f"infl_{hemi}"]
+                if cbar_max is None:
+                    cbar_max = min(np.nanmax(score_hemi_avgd), 99)
 
-                    plotting.plot_surf_stat_map(
-                        infl_mesh,
-                        scores_hemi_averaged,
-                        hemi=hemi,
-                        view=view,
-                        bg_map=fsaverage[f"sulc_{hemi}"],
-                        axes=axes[i * 2 + j],
-                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
-                                                                metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                        vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
-                        vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
-                        cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
-                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
-                    )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-                else:
-                    axes[i * 2 + j].axis('off')
-
+                plotting.plot_surf_stat_map(
+                    infl_mesh,
+                    score_hemi_avgd,
+                    hemi=hemi,
+                    view=view,
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    axes=axes[i * 2 + j],
+                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                    threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
+                                                            metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                    vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
+                    vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
+                    cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
+                    symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                )
+                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
@@ -446,10 +530,7 @@ def run(args):
     plt.close()
 
     if args.per_subject_plots:
-        # per-subject plots
-        metrics = [METRIC_CAPTIONS, METRIC_IMAGES,
-                   METRIC_DIFF_IMAGES,
-                   METRIC_DIFF_CAPTIONS]
+        metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
         print("\n\nCreating per-subject plots..")
         for subject, scores in tqdm(per_subject_scores.items()):
             fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
@@ -540,6 +621,7 @@ def get_args():
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
     parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     parser.add_argument("--min-cluster-t-value", type=int, default=DEFAULT_MIN_CLUSTER_T_VALUE)
+    parser.add_argument("--min-cluster-size", type=int, default=DEFAULT_MIN_CLUSTER_SIZE)
 
     return parser.parse_args()
 
