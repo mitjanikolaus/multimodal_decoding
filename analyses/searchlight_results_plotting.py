@@ -34,7 +34,7 @@ COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 DEFAULT_T_VALUE_THRESHOLD = 0.824
 DEFAULT_MAX_CLUSTER_DISTANCE = 1  # 1mm
 DEFAULT_MIN_CLUSTER_T_VALUE = 20 * DEFAULT_T_VALUE_THRESHOLD
-DEFAULT_MIN_CLUSTER_SIZE = 10
+DEFAULT_CLUSTER_SIZE = 10
 
 VIEWS = ["lateral", "medial", "ventral"]
 
@@ -122,16 +122,30 @@ def run(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
+    # adjacency_matrices = dict()
+    # for hemi in HEMIS:
+    #     adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", args.resolution, "adjacency.p")
+    #     if not os.path.isfile(adj_path):
+    #         os.makedirs(os.path.dirname(adj_path), exist_ok=True)
+    #         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    #         coords, _ = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+    #         nn = neighbors.NearestNeighbors(radius=args.max_cluster_distance)
+    #         adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
+    #                      nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+    #         adjacency_matrices[hemi] = adjacency
+    #     else:
+    #         adjacency_matrices[hemi] = pickle.load(open(adj_path, 'rb'))
+
     adjacency_matrices = dict()
     for hemi in HEMIS:
-        adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", args.resolution, "adjacency.p")
+        adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", args.resolution, f"adjacency_cluster_size_{args.cluster_size}.p")
         if not os.path.isfile(adj_path):
+            print("creating adjacency matrices for cluster size", args.cluster_size)
             os.makedirs(os.path.dirname(adj_path), exist_ok=True)
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
             coords, _ = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-            nn = neighbors.NearestNeighbors(radius=args.max_cluster_distance)
-            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
-                         nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+            nn = neighbors.NearestNeighbors()
+            distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.cluster_size-1)
             adjacency_matrices[hemi] = adjacency
         else:
             adjacency_matrices[hemi] = pickle.load(open(adj_path, 'rb'))
@@ -275,42 +289,82 @@ def run(args):
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
     def calc_clusters(t_values):
-        clusters = {hemi: [] for hemi in HEMIS}
+        # clusters = {hemi: [] for hemi in HEMIS}
         cluster_maps = dict()
         for hemi in HEMIS:
             scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-            scores_thresholded = scores > args.t_value_threshold
+            scores_thresholded = scores.copy()
+            scores_thresholded[scores < args.t_value_threshold] = 0
             adj = adjacency_matrices[hemi]
 
-            start_locations = list(np.argwhere(scores_thresholded)[:, 0])
-            cluster_maps[hemi] = np.zeros_like(scores)
-            while len(start_locations) > 0:
-                idx = start_locations[0]
-                cluster = {idx}
-                checked = {idx}
-
-                def expand_neighbors(start_idx):
-                    neighbors = adj[start_idx]
-                    for neighbor in neighbors:
-                        if not neighbor in checked:
-                            checked.add(neighbor)
-                            if scores_thresholded[neighbor]:
-                                cluster.add(neighbor)
-                                expand_neighbors(neighbor)
-
-                expand_neighbors(idx)
-                for id in cluster:
-                    start_locations.remove(id)
-                t_value_cluster = np.sum(scores[list(cluster)])
-                if t_value_cluster >= args.min_cluster_t_value:
-                    clusters[hemi].append(cluster)
-                    cluster_maps[hemi][list(cluster)] = t_value_cluster
+            # start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+            # cluster_maps[hemi] = np.zeros_like(scores)
+            # while len(start_locations) > 0:
+            #     idx = start_locations[0]
+            #     cluster = {idx}
+            #     checked = {idx}
+            #
+            #     def expand_neighbors(start_idx):
+            #         neighbors = adj[start_idx]
+            #         for neighbor in neighbors:
+            #             if not neighbor in checked:
+            #                 checked.add(neighbor)
+            #                 if scores_thresholded[neighbor]:
+            #                     cluster.add(neighbor)
+            #                     expand_neighbors(neighbor)
+            #
+            #     expand_neighbors(idx)
+            #     for id in cluster:
+            #         start_locations.remove(id)
+            t_values_cluster = np.array([np.nansum(scores[a]) for a in adj])
+            t_values_cluster_thresholded = t_values_cluster.copy()
+            t_values_cluster_thresholded[t_values_cluster < args.min_cluster_t_value] = 0
+            cluster_maps[hemi] = t_values_cluster
+            # if t_value_cluster >= args.min_cluster_t_value:
+            #     clusters[hemi].append(cluster)
+            #     cluster_maps[hemi][list(cluster)] = t_value_cluster
 
             # fill non-cluster locations with their single t-values
-            cluster_maps[hemi][cluster_maps[hemi] == 0] = scores[cluster_maps[hemi] == 0]
-        return clusters, cluster_maps
+            # cluster_maps[hemi][cluster_maps[hemi] == 0] = scores[cluster_maps[hemi] == 0]
+        return cluster_maps
 
-    # def calc_clusters(thresholded_values):
+    # def calc_variable_clusters(t_values):
+    #     clusters = {hemi: [] for hemi in HEMIS}
+    #     cluster_maps = dict()
+    #     for hemi in HEMIS:
+    #         scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+    #         scores_thresholded = scores > args.t_value_threshold
+    #         adj = adjacency_matrices[hemi]
+    #
+    #         start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+    #         cluster_maps[hemi] = np.zeros_like(scores)
+    #         while len(start_locations) > 0:
+    #             idx = start_locations[0]
+    #             cluster = {idx}
+    #             checked = {idx}
+    #
+    #             def expand_neighbors(start_idx):
+    #                 neighbors = adj[start_idx]
+    #                 for neighbor in neighbors:
+    #                     if not neighbor in checked:
+    #                         checked.add(neighbor)
+    #                         if scores_thresholded[neighbor]:
+    #                             cluster.add(neighbor)
+    #                             expand_neighbors(neighbor)
+    #
+    #             expand_neighbors(idx)
+    #             for id in cluster:
+    #                 start_locations.remove(id)
+    #             t_value_cluster = np.sum(scores[list(cluster)])
+    #             if t_value_cluster >= args.min_cluster_t_value:
+    #                 clusters[hemi].append(cluster)
+    #                 cluster_maps[hemi][list(cluster)] = t_value_cluster
+    #
+    #         # fill non-cluster locations with their single t-values
+    #         cluster_maps[hemi][cluster_maps[hemi] == 0] = scores[cluster_maps[hemi] == 0]
+    #     return clusters, cluster_maps
+
+    # def calc_variable_clusters(thresholded_values):
     #     clusters = {hemi: [] for hemi in HEMIS}
     #     cluster_maps = dict()
     #     for hemi in HEMIS:
@@ -343,7 +397,7 @@ def run(args):
 
     # clusters, cluster_maps = calc_clusters(avg_values_thresholded)
 
-    clusters, cluster_maps = calc_clusters(t_values)
+    cluster_maps = calc_clusters(t_values)
 
     print(f"Calculating clusters for null distribution")
     clusters_null_distribution = [calc_clusters(vals) for vals in tqdm(t_values_null_distribution)]
@@ -355,7 +409,7 @@ def run(args):
         hemi: np.zeros(shape=(scores[METRIC_MIN_DIFF_BOTH_MODALITIES].shape[0])) for hemi, scores in
         t_values.items()
     }
-    for _, cluster_distr_maps in clusters_null_distribution:
+    for cluster_distr_maps in clusters_null_distribution:
         for hemi in HEMIS:
             cluster_distr_map_hemi = cluster_distr_maps[hemi]
             np.add.at(occ_part_of_cluster[hemi],
@@ -621,7 +675,8 @@ def get_args():
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
     parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     parser.add_argument("--min-cluster-t-value", type=int, default=DEFAULT_MIN_CLUSTER_T_VALUE)
-    parser.add_argument("--min-cluster-size", type=int, default=DEFAULT_MIN_CLUSTER_SIZE)
+
+    parser.add_argument("--cluster-size", type=int, default=DEFAULT_CLUSTER_SIZE)
 
     return parser.parse_args()
 
