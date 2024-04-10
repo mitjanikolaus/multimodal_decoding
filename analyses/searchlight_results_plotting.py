@@ -191,11 +191,12 @@ def run(args):
     def calc_t_values(per_subject_scores):
         t_values = {hemi: dict() for hemi in HEMIS}
         for hemi in HEMIS:
+            t_vals = dict()
             for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
                 data = np.array([per_subject_scores[subj][hemi][score_name] for subj in SUBJECTS])
                 popmean = CHANCE_VALUES[score_name]
                 enough_data = np.isnan(data).sum(axis=0) == 0
-                t_values[hemi][score_name] = np.array([
+                t_vals[score_name] = np.array([
                     stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
                     in zip(data.T, enough_data)]
                 )
@@ -203,7 +204,7 @@ def run(args):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                    (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
+                    (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
                     axis=0)
         return t_values
 
