@@ -152,29 +152,70 @@ def create_null_distribution(args):
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             all_scores_null_distr[i][subject][hemi] = scores
 
-    def calc_t_values_null_distr(per_subject_scores, n_iter=100000):
-        all_t_vals = []
-        for _ in tqdm(range(n_iter)):
-            t_values = {hemi: dict() for hemi in HEMIS}
-            for hemi in HEMIS:
-                for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-                    random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
-                    data = np.array(
-                        [per_subject_scores[idx][subj][hemi][score_name] for idx, subj in
-                         zip(random_idx, SUBJECTS)])
-                    popmean = CHANCE_VALUES[score_name]
-                    enough_data = np.isnan(data).sum(axis=0) == 0
-                    t_values[hemi][score_name] = np.array([
-                        stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                        in zip(data.T, enough_data)]
-                    )
+    def calc_t_values_null_distr(per_subject_scores):
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                        (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
-                        axis=0)
-            all_t_vals.append(t_values)
+        def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_thread):
+            thread_t_vals = []
+            iterator = tqdm(range(n_iters_per_thread)) if proc_id == 0 else range(n_iters_per_thread)
+            for _ in iterator:
+                t_values = {hemi: dict() for hemi in HEMIS}
+                for hemi in HEMIS:
+                    t_vals = dict()
+
+                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+                        random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
+                        data = np.array(
+                            [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                             zip(random_idx, SUBJECTS)])
+                        popmean = CHANCE_VALUES[metric]
+                        enough_data = np.isnan(data).sum(axis=0) == 0
+                        t_vals[metric] = np.array([
+                            stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+                            in zip(data.T, enough_data)]
+                        )
+
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", category=RuntimeWarning)
+                        t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+                            (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
+                            axis=0)
+                thread_t_vals.append(t_values)
+            return thread_t_vals
+
+
+        n_iters_per_thread = args.n_permutations_group_level // args.n_jobs
+        all_t_vals = Parallel(n_jobs=args.n_jobs)(
+            delayed(shuffle_and_calc_t_values)(
+                per_subject_scores.copy(),
+                id,
+                n_iters_per_thread,
+            )
+            for id in range(args.n_jobs)
+        )
+        all_t_vals = np.concatenate(all_t_vals)
+
+        # all_t_vals = []
+        # for _ in tqdm(range(args.n_permutations_group_level)):
+        #     t_values = {hemi: dict() for hemi in HEMIS}
+        #     for hemi in HEMIS:
+        #         for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+        #             random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
+        #             data = np.array(
+        #                 [per_subject_scores[idx][subj][hemi][score_name] for idx, subj in
+        #                  zip(random_idx, SUBJECTS)])
+        #             popmean = CHANCE_VALUES[score_name]
+        #             enough_data = np.isnan(data).sum(axis=0) == 0
+        #             t_values[hemi][score_name] = np.array([
+        #                 stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+        #                 in zip(data.T, enough_data)]
+        #             )
+        #
+        #         with warnings.catch_warnings():
+        #             warnings.simplefilter("ignore", category=RuntimeWarning)
+        #             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+        #                 (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
+        #                 axis=0)
+        #     all_t_vals.append(t_values)
         return all_t_vals
 
     t_values_null_distribution_path = os.path.join(
@@ -231,6 +272,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
 
+    parser.add_argument("--n-permutations-group-level", type=int, default=100000)
     parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
 
