@@ -341,7 +341,8 @@ def run(args):
         print(f"{hemi} Largest cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:20])
         print(f"{hemi} Largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:20])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
-            p_value = 1 - np.argwhere(max_cluster_t_value_distr > t_val)[0] / len(clusters_null_distribution)
+            value_indices = np.argwhere(max_cluster_t_value_distr > t_val)
+            p_value = 1 - value_indices[0] / (len(clusters_null_distribution) + 1) if len(value_indices) > 0 else 1 - len(clusters_null_distribution) / (len(clusters_null_distribution) + 1)
             p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
         # p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10(false_discovery_control((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1), method='bh'))
         # p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1))
