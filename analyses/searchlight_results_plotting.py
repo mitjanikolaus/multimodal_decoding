@@ -183,6 +183,27 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
         return max_cluster_size, cluster_t_values
 
 
+def calc_t_values(per_subject_scores):
+    t_values = {hemi: dict() for hemi in HEMIS}
+    for hemi in HEMIS:
+        t_vals = dict()
+        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+            data = np.array([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS])
+            popmean = CHANCE_VALUES[metric]
+            enough_data = np.isnan(data).sum(axis=0) == 0
+            t_vals[metric] = np.array([
+                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+                in zip(data.T, enough_data)]
+            )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+                (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
+                axis=0)
+    return t_values
+
+
 def run(args):
     per_subject_scores = {subj: dict() for subj in SUBJECTS}
     # all_scores_null_distr = []
@@ -234,26 +255,6 @@ def run(args):
         #         all_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
         #     scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
         #     all_scores_null_distr[i][subject][hemi] = scores
-
-    def calc_t_values(per_subject_scores):
-        t_values = {hemi: dict() for hemi in HEMIS}
-        for hemi in HEMIS:
-            t_vals = dict()
-            for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-                data = np.array([per_subject_scores[subj][hemi][score_name] for subj in SUBJECTS])
-                popmean = CHANCE_VALUES[score_name]
-                enough_data = np.isnan(data).sum(axis=0) == 0
-                t_vals[score_name] = np.array([
-                    stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                    in zip(data.T, enough_data)]
-                )
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=RuntimeWarning)
-                t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                    (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
-                    axis=0)
-        return t_values
 
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode,
                                  "t_values.p")
