@@ -338,8 +338,8 @@ def run(args):
 
     p_values_cluster = copy.deepcopy(cluster_maps)
     for hemi in HEMIS:
-        print(f"{hemi} Found cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True))
-        print(f"{hemi} Found cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True))
+        print(f"{hemi} Largest cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:20])
+        print(f"{hemi} Largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:20])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
             p_value = 1 - np.argwhere(max_cluster_t_value_distr > t_val)[0] / len(clusters_null_distribution)
             p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
