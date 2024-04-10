@@ -90,7 +90,7 @@ def create_permutation_scores(args):
 
                         return results
 
-                    n_iters_per_thread = args.n_iterations // args.n_jobs
+                    n_iters_per_thread = args.n_permutations_per_subject // args.n_jobs
                     all_scores = Parallel(n_jobs=args.n_jobs)(
                         delayed(shuffle_and_calc_scores)(
                             test_data_latents.copy(),
@@ -226,7 +226,7 @@ def get_args():
     parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
-    parser.add_argument("--n-iterations", type=int, default=100)
+    parser.add_argument("--n-permutations-per-subject", type=int, default=100)
 
     parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
