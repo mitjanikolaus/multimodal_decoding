@@ -206,7 +206,6 @@ def calc_t_values(per_subject_scores):
 
 def run(args):
     per_subject_scores = {subj: dict() for subj in SUBJECTS}
-    # all_scores_null_distr = []
     alpha = 1
     features = "concat"
 
@@ -237,24 +236,6 @@ def run(args):
 
         per_subject_scores[subject][hemi] = scores
         print("")
-
-        # null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
-        # null_distribution_agnostic = pickle.load(
-        #     open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
-        #
-        # null_distribution_images = pickle.load(
-        #     open(os.path.join(os.path.dirname(path_imgs), null_distribution_file_name), 'rb'))
-        #
-        # null_distribution_captions = pickle.load(
-        #     open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
-        #
-        # for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
-        #                                                         null_distribution_captions,
-        #                                                         null_distribution_images)):
-        #     if len(all_scores_null_distr) <= i:
-        #         all_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-        #     scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-        #     all_scores_null_distr[i][subject][hemi] = scores
 
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode,
                                  "t_values.p")
@@ -341,15 +322,26 @@ def run(args):
                                                    args.mode, filename)
     clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
 
-    max_cluster_size_distr = np.array(sorted([max_size for max_size, _ in clusters_null_distribution]))
-    significance_cutoff = np.quantile(max_cluster_size_distr, 0.95)
-    print("cluster size significance cutoff for p<0.05: ", significance_cutoff)
+    max_cluster_size_distr = sorted([max_size for max_size, _ in clusters_null_distribution])
+    significance_cutoff_size = np.quantile(max_cluster_size_distr, 0.95)
+    print("cluster size significance cutoff for p<0.05: ", significance_cutoff_size)
+
+    max_cluster_t_value_distr = sorted([
+        np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
+    ])
+    # max_cluster_t_value_distr = sorted([
+    #     np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
+    # ])
+    # max_cluster_t_value_distr = np.concatenate([c['left'] + c['right'] for _, c in clusters_null_distribution])
+    significance_cutoff = np.quantile(max_cluster_t_value_distr, 0.95)
+    print("cluster t-value significance cutoff for p<0.05: ", significance_cutoff)
 
     p_values_cluster = copy.deepcopy(cluster_maps)
     for hemi in HEMIS:
         print("Found cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True))
-        for cluster in clusters[hemi]:
-            p_value = 1 - np.argwhere(max_cluster_size_distr > len(cluster))[0] / len(max_cluster_size_distr)
+        print("Found cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True))
+        for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
+            p_value = 1 - np.argwhere(max_cluster_t_value_distr > t_val)[0] / len(clusters_null_distribution)
             p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
         # p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10(false_discovery_control((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1), method='bh'))
         # p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1))
