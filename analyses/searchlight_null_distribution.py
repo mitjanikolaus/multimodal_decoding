@@ -177,9 +177,11 @@ def create_null_distribution(args):
             all_t_vals.append(t_values)
         return all_t_vals
 
-    t_values_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", model, features,
-                                                   args.resolution,
-                                                   mode, "t_values_null_distribution.p")
+    t_values_null_distribution_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", model, features,
+        args.resolution,
+        mode, f"t_values_null_distribution.p"
+    )
     if not os.path.isfile(t_values_null_distribution_path):
         os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
         print(f"Calculating t-values: null distribution")
@@ -188,9 +190,10 @@ def create_null_distribution(args):
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
+    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}_max_dist_{args.max_cluster_distance}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", model, features,
                                                    args.resolution,
-                                                   mode, "clusters_null_distribution.p")
+                                                   mode, filename)
     if not os.path.isfile(clusters_null_distribution_path):
         os.makedirs(os.path.dirname(clusters_null_distribution_path), exist_ok=True)
         print(f"Calculating clusters for null distribution")
