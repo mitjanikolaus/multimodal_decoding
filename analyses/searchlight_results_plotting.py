@@ -17,15 +17,14 @@ from sklearn import neighbors
 from tqdm import tqdm
 import seaborn as sns
 
-from utils import RESULTS_DIR, SUBJECTS
+from analyses.searchlight import SEARCHLIGHT_OUT_DIR
+from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 METRIC_CAPTIONS = 'captions'
 METRIC_IMAGES = 'images'
 METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
-
-SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
 
 COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
@@ -37,8 +36,6 @@ DEFAULT_MIN_CLUSTER_T_VALUE = 20 * DEFAULT_T_VALUE_THRESHOLD
 DEFAULT_CLUSTER_SIZE = 10
 
 VIEWS = ["lateral", "medial", "ventral"]
-
-HEMIS = ['left', 'right']
 
 BASE_METRICS = ["test_captions", "test_images"]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
@@ -109,32 +106,22 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     return scores
 
 
-def run(args):
-    per_subject_scores = {subj: dict() for subj in SUBJECTS}
-    all_scores_null_distr = []
-    alpha = 1
-    features = "concat"
-
-    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{args.model}/{features}/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p')
-    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
-    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
-
-    adjacency_matrices = dict()
-    for hemi in HEMIS:
-        adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", args.resolution, "adjacency.p")
-        if not os.path.isfile(adj_path):
+def get_adj_matrices(resolution, max_cluster_distance):
+    adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", resolution,
+                            f"adjacency_max_dist_{max_cluster_distance}.p")
+    if not os.path.isfile(adj_path):
+        adjacency_matrices = dict()
+        for hemi in HEMIS:
             os.makedirs(os.path.dirname(adj_path), exist_ok=True)
-            fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+            fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
             coords, _ = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-            nn = neighbors.NearestNeighbors(radius=args.max_cluster_distance)
+            nn = neighbors.NearestNeighbors(radius=max_cluster_distance)
             adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
                          nn.fit(coords).radius_neighbors_graph(coords).toarray()]
             adjacency_matrices[hemi] = adjacency
-        else:
-            adjacency_matrices[hemi] = pickle.load(open(adj_path, 'rb'))
+        pickle.dump(adjacency_matrices, open(adj_path, "wb"))
+    else:
+        adjacency_matrices = pickle.load(open(adj_path, 'rb'))
 
     # adjacency matrices for fixed cluster size:
     # adjacency_matrices = dict()
@@ -148,8 +135,68 @@ def run(args):
     #         nn = neighbors.NearestNeighbors()
     #         distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.cluster_size-1)
     #         adjacency_matrices[hemi] = adjacency
-    #     else:
-    #         adjacency_matrices[hemi] = pickle.load(open(adj_path, 'rb'))
+
+    return adjacency_matrices
+
+
+def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold, return_clusters=False):
+    clusters = {hemi: [] for hemi in HEMIS}
+    cluster_t_values = {hemi: [] for hemi in HEMIS}
+    cluster_maps = dict()
+    for hemi in HEMIS:
+        scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        scores_thresholded = scores > t_value_threshold
+        adj = adjacency_matrices[hemi]
+
+        start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+        cluster_maps[hemi] = np.zeros_like(scores)
+        while len(start_locations) > 0:
+            idx = start_locations[0]
+            cluster = {idx}
+            checked = {idx}
+
+            def expand_neighbors(start_idx):
+                neighbors = adj[start_idx]
+                for neighbor in neighbors:
+                    if not neighbor in checked:
+                        checked.add(neighbor)
+                        if scores_thresholded[neighbor]:
+                            cluster.add(neighbor)
+                            expand_neighbors(neighbor)
+
+            expand_neighbors(idx)
+            for id in cluster:
+                start_locations.remove(id)
+            t_value_cluster = np.sum(scores[list(cluster)])
+            cluster_t_values[hemi].append(t_value_cluster)
+            clusters[hemi].append(cluster)
+            cluster_maps[hemi][list(cluster)] = scores[list(cluster)]
+
+        # fill non-cluster locations with zeros
+        cluster_maps[hemi][cluster_maps[hemi] == 0] = 0
+
+    cluster_sizes = [len(c) for hemi in HEMIS for c in clusters[hemi]]
+    max_cluster_size = np.max(cluster_sizes) if len(cluster_sizes) > 0 else 0
+    if return_clusters:
+        return clusters, cluster_maps, max_cluster_size, cluster_t_values
+    else:
+        return max_cluster_size, cluster_t_values
+
+
+def run(args):
+    per_subject_scores = {subj: dict() for subj in SUBJECTS}
+    # all_scores_null_distr = []
+    alpha = 1
+    features = "concat"
+
+    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
+                                 f'train/{args.model}/{features}/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p')
+    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
+    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
+    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
+
+    adjacency_matrices = get_adj_matrices(args.resolution, args.max_cluster_distance)
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
@@ -170,23 +217,23 @@ def run(args):
         per_subject_scores[subject][hemi] = scores
         print("")
 
-        null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
-        null_distribution_agnostic = pickle.load(
-            open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
-
-        null_distribution_images = pickle.load(
-            open(os.path.join(os.path.dirname(path_imgs), null_distribution_file_name), 'rb'))
-
-        null_distribution_captions = pickle.load(
-            open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
-
-        for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
-                                                                null_distribution_captions,
-                                                                null_distribution_images)):
-            if len(all_scores_null_distr) <= i:
-                all_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-            all_scores_null_distr[i][subject][hemi] = scores
+        # null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
+        # null_distribution_agnostic = pickle.load(
+        #     open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
+        #
+        # null_distribution_images = pickle.load(
+        #     open(os.path.join(os.path.dirname(path_imgs), null_distribution_file_name), 'rb'))
+        #
+        # null_distribution_captions = pickle.load(
+        #     open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
+        #
+        # for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
+        #                                                         null_distribution_captions,
+        #                                                         null_distribution_images)):
+        #     if len(all_scores_null_distr) <= i:
+        #         all_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
+        #     scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+        #     all_scores_null_distr[i][subject][hemi] = scores
 
     def calc_t_values(per_subject_scores):
         t_values = {hemi: dict() for hemi in HEMIS}
@@ -208,7 +255,8 @@ def run(args):
                     axis=0)
         return t_values
 
-    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode, "t_values.p")
+    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode,
+                                 "t_values.p")
     if not os.path.isfile(t_values_path):
         os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         print(f"Calculating t-values")
@@ -226,29 +274,6 @@ def run(args):
     #     avg_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
     #         (avg_values[hemi][METRIC_DIFF_CAPTIONS], avg_values[hemi][METRIC_DIFF_IMAGES]),
     #         axis=0)
-
-    def calc_t_values_null_distr(per_subject_scores, n_iter=100000):
-        all_t_vals = []
-        for _ in tqdm(range(n_iter)):
-            t_values = {hemi: dict() for hemi in HEMIS}
-            for hemi in HEMIS:
-                for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-                    random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
-                    data = np.array([per_subject_scores[idx][subj][hemi][score_name] for idx, subj in zip(random_idx, SUBJECTS)])
-                    popmean = CHANCE_VALUES[score_name]
-                    enough_data = np.isnan(data).sum(axis=0) == 0
-                    t_values[hemi][score_name] = np.array([
-                        stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                        in zip(data.T, enough_data)]
-                    )
-
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                        (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
-                        axis=0)
-            all_t_vals.append(t_values)
-        return all_t_vals
 
     # def create_avg_maps_null_distr(per_subject_scores, n_iter=150):  # TODO 100,000
     #     all_avg_maps = []
@@ -288,14 +313,6 @@ def run(args):
     #         map_thresholded[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.abs(
     #             map[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) > thresholds
 
-    t_values_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode, "t_values_null_distribution.p")
-    if not os.path.isfile(t_values_null_distribution_path):
-        os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
-        print(f"Calculating t-values: null distribution")
-        t_values_null_distribution = calc_t_values_null_distr(all_scores_null_distr)
-        pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
-    else:
-        t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
     # def calc_clusters_fixed_size(t_values):
     #     cluster_maps = dict()
@@ -311,64 +328,15 @@ def run(args):
     #         cluster_maps[hemi] = t_values_cluster
     #     return cluster_maps
 
-    def calc_clusters_variable_size(t_values, return_clusters=False):
-        clusters = {hemi: [] for hemi in HEMIS}
-        cluster_t_values = {hemi: [] for hemi in HEMIS}
-        cluster_maps = dict()
-        for hemi in HEMIS:
-            scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-            scores_thresholded = scores > args.t_value_threshold
-            adj = adjacency_matrices[hemi]
-
-            start_locations = list(np.argwhere(scores_thresholded)[:, 0])
-            cluster_maps[hemi] = np.zeros_like(scores)
-            while len(start_locations) > 0:
-                idx = start_locations[0]
-                cluster = {idx}
-                checked = {idx}
-
-                def expand_neighbors(start_idx):
-                    neighbors = adj[start_idx]
-                    for neighbor in neighbors:
-                        if not neighbor in checked:
-                            checked.add(neighbor)
-                            if scores_thresholded[neighbor]:
-                                cluster.add(neighbor)
-                                expand_neighbors(neighbor)
-
-                expand_neighbors(idx)
-                for id in cluster:
-                    start_locations.remove(id)
-                t_value_cluster = np.sum(scores[list(cluster)])
-                cluster_t_values[hemi].append(t_value_cluster)
-                clusters[hemi].append(cluster)
-                cluster_maps[hemi][list(cluster)] = scores[list(cluster)]
-
-            # fill non-cluster locations with zeros
-            cluster_maps[hemi][cluster_maps[hemi] == 0] = 0
-
-        cluster_sizes = [len(c) for hemi in HEMIS for c in clusters[hemi]]
-        max_cluster_size = np.max(cluster_sizes) if len(cluster_sizes) > 0 else 0
-        if return_clusters:
-            return clusters, cluster_maps, max_cluster_size, cluster_t_values
-        else:
-            return max_cluster_size, cluster_t_values
-
     print("calculating clusters..")
-    clusters, cluster_maps, max_cluster_size, cluster_t_values = calc_clusters_variable_size(t_values, return_clusters=True)
+    clusters, cluster_maps, max_cluster_size, cluster_t_values = calc_clusters_variable_size(t_values,
+                                                                                             adjacency_matrices,
+                                                                                             args.t_value_threshold,
+                                                                                             return_clusters=True)
 
-    clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution, args.mode, "clusters_null_distribution.p")
-    if not os.path.isfile(clusters_null_distribution_path):
-        os.makedirs(os.path.dirname(clusters_null_distribution_path), exist_ok=True)
-        print(f"Calculating clusters for null distribution")
-        clusters_null_distribution = [calc_clusters_variable_size(vals) for vals in tqdm(t_values_null_distribution)]
-
-        pickle.dump(clusters_null_distribution, open(clusters_null_distribution_path, 'wb'))
-    else:
-        clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
-
-    # clusters_null_distribution = [calc_clusters(vals) for vals in tqdm(avg_maps_null_distribution_thresholded)]
-    #
+    clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution,
+                                                   args.mode, "clusters_null_distribution.p")
+    clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
 
     max_cluster_size_distr = np.array(sorted([max_size for max_size, _ in clusters_null_distribution]))
     significance_cutoff = np.quantile(max_cluster_size_distr, 0.95)
@@ -401,10 +369,6 @@ def run(args):
     #     p_values_cluster[hemi][np.isnan(cluster_maps[hemi])] = np.nan
     #     p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10(false_discovery_control((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1), method='bh'))
     #     # p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1))
-
-
-
-
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES

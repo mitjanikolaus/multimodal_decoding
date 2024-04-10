@@ -16,6 +16,7 @@ SURFACE_LEVEL_FMRI_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
+HEMIS = ['left', 'right']
 
 PCA_NUM_COMPONENTS = 768
 

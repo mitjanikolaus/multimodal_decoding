@@ -268,14 +268,18 @@ def run(args):
                         pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
 
 
+def mode_from_args(args):
+    if args.radius is not None:
+        return f"radius_{args.radius}"
+    else:
+        return f"n_neighbors_{args.n_neighbors}"
+
+
 def get_results_dir(args, features, hemi, model_name, subject, training_mode):
     results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features,
                                subject,
                                args.resolution, hemi)
-    if args.radius is not None:
-        results_dir = os.path.join(results_dir, f"radius_{args.radius}")
-    else:
-        results_dir = os.path.join(results_dir, f"n_neighbors_{args.n_neighbors}")
+    results_dir = os.path.join(results_dir, mode_from_args(args))
     os.makedirs(results_dir, exist_ok=True)
     return results_dir
 
