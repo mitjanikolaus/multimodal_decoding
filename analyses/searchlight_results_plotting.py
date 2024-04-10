@@ -335,8 +335,10 @@ def run(args):
                                                                                              args.t_value_threshold,
                                                                                              return_clusters=True)
 
-    clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features, args.resolution,
-                                                   args.mode, "clusters_null_distribution.p")
+    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}_max_dist_{args.max_cluster_distance}.p"
+    clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
+                                                   args.resolution,
+                                                   args.mode, filename)
     clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
 
     max_cluster_size_distr = np.array(sorted([max_size for max_size, _ in clusters_null_distribution]))
