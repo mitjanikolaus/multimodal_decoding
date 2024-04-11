@@ -329,11 +329,11 @@ def run(args):
     # max_cluster_t_value_distr = sorted([
     #     np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
     # ])
-    max_cluster_t_value_distr = sorted([
+    mean_cluster_t_value_distr = sorted([
         np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
     ])
     # max_cluster_t_value_distr = np.concatenate([c['left'] + c['right'] for _, c in clusters_null_distribution])
-    significance_cutoff = np.quantile(max_cluster_t_value_distr, 0.95)
+    significance_cutoff = np.quantile(mean_cluster_t_value_distr, 0.95)
     print(f"cluster t-value significance cutoff for p<0.05 ({len(clusters_null_distribution)} permutations): {significance_cutoff}")
 
     p_values_cluster = copy.deepcopy(cluster_maps)
@@ -341,12 +341,22 @@ def run(args):
         print(f"{hemi} hemi largest cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:10])
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
-            value_indices = np.argwhere(max_cluster_t_value_distr > t_val)
+            value_indices = np.argwhere(mean_cluster_t_value_distr > t_val)
             p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
             p_values_cluster[hemi][list(cluster)] = p_value
             # p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
 
-        p_values_cluster[hemi][p_values_cluster[hemi] > 0] = -np.log10(false_discovery_control(p_values_cluster[hemi][p_values_cluster[hemi] > 0], method='by'))
+    # FDR corrrection:
+    p_values_left = p_values_cluster['left'][p_values_cluster['left'] > 0]
+    p_values_right = p_values_cluster['right'][p_values_cluster['right'] > 0]
+    all_p_values = np.concatenate((p_values_left, p_values_right))
+    all_p_values_corrected = false_discovery_control(all_p_values, method='by')  # 'by' for non-independent p-values
+    p_values_cluster['left'][p_values_cluster['left'] > 0] = all_p_values_corrected[:len(p_values_left)]
+    p_values_cluster['right'][p_values_cluster['right'] > 0] = all_p_values_corrected[len(p_values_left):]
+
+    # transform to plottable magnitudes:
+    p_values_cluster['left'][p_values_cluster['left'] > 0] = -np.log10(p_values_cluster['left'][p_values_cluster['left'] > 0])
+    p_values_cluster['right'][p_values_cluster['right'] > 0] = -np.log10(p_values_cluster['right'][p_values_cluster['right'] > 0])
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
@@ -370,7 +380,7 @@ def run(args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1,
+                threshold=1.3,  # -log10(0.05) ~ 1.3
                 vmax=cbar_max,
                 vmin=0,
                 cmap="bwr",
