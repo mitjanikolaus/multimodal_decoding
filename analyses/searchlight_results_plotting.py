@@ -349,7 +349,7 @@ def run(args):
     p_values_left = p_values_cluster['left'][p_values_cluster['left'] > 0]
     p_values_right = p_values_cluster['right'][p_values_cluster['right'] > 0]
     all_p_values = np.concatenate((p_values_left, p_values_right))
-    all_p_values_corrected = false_discovery_control(all_p_values, method='by')  # 'by' for non-independent p-values
+    all_p_values_corrected = false_discovery_control(all_p_values, method='bh')
     p_values_cluster['left'][p_values_cluster['left'] > 0] = all_p_values_corrected[:len(p_values_left)]
     p_values_cluster['right'][p_values_cluster['right'] > 0] = all_p_values_corrected[len(p_values_left):]
 
