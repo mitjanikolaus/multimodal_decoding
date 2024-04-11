@@ -10,7 +10,9 @@ import os
 from glob import glob
 import pickle
 
-from nilearn.surface import surface
+from nilearn.experimental.surface import SurfaceMasker, SurfaceImage, load_fsaverage
+from nilearn.surface import surface, load_surface
+from nilearn.mass_univariate._utils import calculate_tfce
 from scipy import stats
 from scipy.stats import pearsonr, false_discovery_control
 from sklearn import neighbors
@@ -248,6 +250,26 @@ def run(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
+    data = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+    fsaverage = load_fsaverage(mesh_name=args.resolution)
+    # pial_mesh = fsaverage[f"pial_{hemi}"]
+
+    # surf_data = load_surface((pial_mesh, data))
+    # mesh = {
+    #     "left": fsaverage[f"pial_left"],
+    #     "right": fsaverage[f"pial_right"],
+    # }
+    data = {
+        "left_hemisphere": t_values["left"][METRIC_MIN_DIFF_BOTH_MODALITIES],
+        "right_hemisphere": t_values["right"][METRIC_MIN_DIFF_BOTH_MODALITIES],
+    }
+    surf_img = SurfaceImage(mesh=fsaverage["pial"], data=data)
+
+    masker = SurfaceMasker()
+    masked_data = masker.fit_transform(surf_img)
+    print(f"Masked data shape: {masked_data.shape}")
+    # masker.inverse_transform(surf_img)
+
     # avg_values = {hemi: dict() for hemi in HEMIS}
     # for hemi in HEMIS:
     #     for metric in TEST_METRICS:
@@ -345,7 +367,7 @@ def run(args):
             p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
             p_values_cluster[hemi][list(cluster)] = p_value
 
-    # FDR corrrection:
+    # FDR correction:
     p_values_left = p_values_cluster['left'][p_values_cluster['left'] > 0]
     p_values_right = p_values_cluster['right'][p_values_cluster['right'] > 0]
     all_p_values = np.concatenate((p_values_left, p_values_right))
