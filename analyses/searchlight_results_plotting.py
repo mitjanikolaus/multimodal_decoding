@@ -167,7 +167,7 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
             expand_neighbors(idx)
             for id in cluster:
                 start_locations.remove(id)
-            t_value_cluster = np.sum(scores[list(cluster)])
+            t_value_cluster = np.sum(scores[list(cluster)] - t_value_threshold)
             cluster_t_values[hemi].append(t_value_cluster)
             clusters[hemi].append(cluster)
             cluster_maps[hemi][list(cluster)] = scores[list(cluster)]
@@ -257,7 +257,7 @@ def run(args):
     #         (avg_values[hemi][METRIC_DIFF_CAPTIONS], avg_values[hemi][METRIC_DIFF_IMAGES]),
     #         axis=0)
 
-    # def create_avg_maps_null_distr(per_subject_scores, n_iter=150):  # TODO 100,000
+    # def create_avg_maps_null_distr(per_subject_scores, n_iter=100000):
     #     all_avg_maps = []
     #     for _ in tqdm(range(n_iter)):
     #         avg_maps = {hemi: dict() for hemi in HEMIS}
@@ -342,7 +342,7 @@ def run(args):
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
             value_indices = np.argwhere(max_cluster_t_value_distr > t_val)
-            p_value = 1 - value_indices[0] / (len(clusters_null_distribution) + 1) if len(value_indices) > 0 else 1 - len(clusters_null_distribution) / (len(clusters_null_distribution) + 1)
+            p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
             p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
         # p_values_cluster[hemi][cluster_maps[hemi] > 0] = -np.log10(false_discovery_control((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1), method='bh'))
         # p_values_cluster[hemi][~np.isnan(cluster_maps[hemi])] = -np.log10((occ_part_of_cluster[hemi][~np.isnan(cluster_maps[hemi])] + 1) / (n_null_distr_samples + 1))
