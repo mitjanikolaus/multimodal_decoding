@@ -346,7 +346,7 @@ def run(args):
             p_values_cluster[hemi][list(cluster)] = p_value
             # p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
 
-        p_values_cluster[hemi][p_values_cluster[hemi] > 0] =  -np.log10(false_discovery_control(p_values_cluster[hemi][p_values_cluster[hemi] > 0], method='by'))
+        p_values_cluster[hemi][p_values_cluster[hemi] > 0] = -np.log10(false_discovery_control(p_values_cluster[hemi][p_values_cluster[hemi] > 0], method='by'))
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
