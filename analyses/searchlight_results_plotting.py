@@ -344,7 +344,6 @@ def run(args):
             value_indices = np.argwhere(mean_cluster_t_value_distr > t_val)
             p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
             p_values_cluster[hemi][list(cluster)] = p_value
-            # p_values_cluster[hemi][list(cluster)] = -np.log10(p_value)
 
     # FDR corrrection:
     p_values_left = p_values_cluster['left'][p_values_cluster['left'] > 0]
