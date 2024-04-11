@@ -326,15 +326,15 @@ def run(args):
     significance_cutoff_size = np.quantile(max_cluster_size_distr, 0.95)
     print("cluster size significance cutoff for p<0.05: ", significance_cutoff_size)
 
-    # max_cluster_t_value_distr = sorted([
-    #     np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
-    # ])
     max_cluster_t_value_distr = sorted([
-        np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
+        np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
     ])
+    # max_cluster_t_value_distr = sorted([
+    #     np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
+    # ])
     # max_cluster_t_value_distr = np.concatenate([c['left'] + c['right'] for _, c in clusters_null_distribution])
     significance_cutoff = np.quantile(max_cluster_t_value_distr, 0.95)
-    print("cluster t-value significance cutoff for p<0.05: ", significance_cutoff)
+    print(f"cluster t-value significance cutoff for p<0.05 ({len(clusters_null_distribution)} permutations): {significance_cutoff}")
 
     p_values_cluster = copy.deepcopy(cluster_maps)
     for hemi in HEMIS:
