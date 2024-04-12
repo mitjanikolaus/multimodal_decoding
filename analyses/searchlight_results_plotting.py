@@ -177,12 +177,10 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
         # fill non-cluster locations with zeros
         cluster_maps[hemi][cluster_maps[hemi] == 0] = 0
 
-    cluster_sizes = [len(c) for hemi in HEMIS for c in clusters[hemi]]
-    max_cluster_size = np.max(cluster_sizes) if len(cluster_sizes) > 0 else 0
     if return_clusters:
-        return clusters, cluster_maps, max_cluster_size, cluster_t_values
+        return clusters, cluster_maps, cluster_t_values
     else:
-        return max_cluster_size, cluster_t_values
+        return cluster_t_values
 
 
 def calc_t_values(per_subject_scores):
@@ -271,24 +269,22 @@ def run(args):
     # # masker.inverse_transform(surf_img)
 
     print("calculating clusters..")
-    clusters, cluster_maps, max_cluster_size, cluster_t_values = calc_clusters_variable_size(t_values,
-                                                                                             adjacency_matrices,
-                                                                                             args.t_value_threshold,
-                                                                                             return_clusters=True)
+    clusters, cluster_maps, cluster_t_values = calc_clusters_variable_size(t_values,
+                                                                           adjacency_matrices,
+                                                                           args.t_value_threshold,
+                                                                           return_clusters=True)
 
     filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}_max_dist_{args.max_cluster_distance}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
                                                    args.resolution,
                                                    args.mode, filename)
     clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
-
-    max_cluster_size_distr = sorted([max_size for max_size, _ in clusters_null_distribution])
-    significance_cutoff_size = np.quantile(max_cluster_size_distr, 0.95)
-    print("cluster size significance cutoff for p<0.05: ", significance_cutoff_size)
+    if isinstance(clusters_null_distribution[0], tuple):
+        clusters_null_distribution = [c[1] for c in clusters_null_distribution]
 
     max_cluster_t_value_distr = {
         hemi: sorted([
-            np.max(c[hemi]) if len(c[hemi]) > 0 else 0 for _, c in clusters_null_distribution
+            np.max(c[hemi]) if len(c[hemi]) > 0 else 0 for c in clusters_null_distribution
         ]) for hemi in HEMIS
     }
 
