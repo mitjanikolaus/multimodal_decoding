@@ -157,19 +157,19 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
             cluster = {idx}
             checked = {idx}
 
-            def expand_neighbors(start_idx):
+            def expand_neighbors(start_idx, adj):
                 neighbors = adj[start_idx]
                 for neighbor in neighbors:
                     if not neighbor in checked:
                         checked.add(neighbor)
                         if scores_thresholded[neighbor]:
                             cluster.add(neighbor)
-                            expand_neighbors(neighbor)
+                            expand_neighbors(neighbor, adj)
 
-            expand_neighbors(idx)
+            expand_neighbors(idx, adj)
             for id in cluster:
                 start_locations.remove(id)
-            t_value_cluster = np.sum(scores[list(cluster)])     #- t_value_threshold)
+            t_value_cluster = np.sum(scores[list(cluster)])  # - t_value_threshold)
             cluster_t_values[hemi].append(t_value_cluster)
             clusters[hemi].append(cluster)
             cluster_maps[hemi][list(cluster)] = scores[list(cluster)]
@@ -317,7 +317,6 @@ def run(args):
     #         map_thresholded[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.abs(
     #             map[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) > thresholds
 
-
     # def calc_clusters_fixed_size(t_values):
     #     cluster_maps = dict()
     #     for hemi in HEMIS:
@@ -348,23 +347,26 @@ def run(args):
     significance_cutoff_size = np.quantile(max_cluster_size_distr, 0.95)
     print("cluster size significance cutoff for p<0.05: ", significance_cutoff_size)
 
-    max_cluster_t_value_distr = sorted([
-        np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
-    ])
-    # mean_cluster_t_value_distr = sorted([
-    #     np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
-    # ])
-    # max_cluster_t_value_distr = np.concatenate([c['left'] + c['right'] for _, c in clusters_null_distribution])
-    significance_cutoff = np.quantile(max_cluster_t_value_distr, 0.95)
-    print(f"cluster t-value significance cutoff for p<0.05 ({len(clusters_null_distribution)} permutations): {significance_cutoff}")
+    max_cluster_t_value_distr = {
+        hemi: sorted([
+            np.max(c[hemi]) if len(c[hemi]) > 0 else 0 for _, c in clusters_null_distribution
+        ]) for hemi in HEMIS
+    }
+
+    significance_cutoffs = {hemi: np.quantile(max_cluster_t_value_distr[hemi], 0.95) for hemi in HEMIS}
+    print(f"{len(clusters_null_distribution)} permutations")
+    print(f"cluster t-value significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
+    print(f"cluster t-value significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
     p_values_cluster = copy.deepcopy(cluster_maps)
     for hemi in HEMIS:
-        print(f"{hemi} hemi largest cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:10])
+        print(f"{hemi} hemi largest cluster sizes: ",
+              sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:10])
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
-            value_indices = np.argwhere(max_cluster_t_value_distr > t_val)
-            p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
+            value_indices = np.argwhere(max_cluster_t_value_distr[hemi] > t_val)
+            p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (
+                    len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
             p_values_cluster[hemi][list(cluster)] = p_value
 
     # FDR correction:
@@ -376,8 +378,10 @@ def run(args):
     # p_values_cluster['right'][p_values_cluster['right'] > 0] = all_p_values_corrected[len(p_values_left):]
 
     # transform to plottable magnitudes:
-    p_values_cluster['left'][p_values_cluster['left'] > 0] = -np.log10(p_values_cluster['left'][p_values_cluster['left'] > 0])
-    p_values_cluster['right'][p_values_cluster['right'] > 0] = -np.log10(p_values_cluster['right'][p_values_cluster['right'] > 0])
+    p_values_cluster['left'][p_values_cluster['left'] > 0] = -np.log10(
+        p_values_cluster['left'][p_values_cluster['left'] > 0])
+    p_values_cluster['right'][p_values_cluster['right'] > 0] = -np.log10(
+        p_values_cluster['right'][p_values_cluster['right'] > 0])
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
