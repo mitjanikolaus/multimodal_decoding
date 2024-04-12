@@ -169,7 +169,7 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
             expand_neighbors(idx)
             for id in cluster:
                 start_locations.remove(id)
-            t_value_cluster = np.sum(scores[list(cluster)] - t_value_threshold)
+            t_value_cluster = np.sum(scores[list(cluster)])     #- t_value_threshold)
             cluster_t_values[hemi].append(t_value_cluster)
             clusters[hemi].append(cluster)
             cluster_maps[hemi][list(cluster)] = scores[list(cluster)]
