@@ -270,67 +270,6 @@ def run(args):
     # print(f"Masked data shape: {masked_data.shape}")
     # # masker.inverse_transform(surf_img)
 
-    # avg_values = {hemi: dict() for hemi in HEMIS}
-    # for hemi in HEMIS:
-    #     for metric in TEST_METRICS:
-    #         avg_values[hemi][metric] = np.mean([ps[hemi][metric] for ps in per_subject_scores.values()], axis=0)
-    #
-    #     avg_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-    #         (avg_values[hemi][METRIC_DIFF_CAPTIONS], avg_values[hemi][METRIC_DIFF_IMAGES]),
-    #         axis=0)
-
-    # def create_avg_maps_null_distr(per_subject_scores, n_iter=100000):
-    #     all_avg_maps = []
-    #     for _ in tqdm(range(n_iter)):
-    #         avg_maps = {hemi: dict() for hemi in HEMIS}
-    #         for hemi in HEMIS:
-    #             for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-    #                 random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
-    #                 data = np.array(
-    #                     [per_subject_scores[idx][subj][hemi][score_name] for idx, subj in zip(random_idx, SUBJECTS)]).T
-    #                 # group_maps[hemi][score_name] = data
-    #                 avg_maps[hemi][score_name] = data.mean(axis=1)
-    #
-    #             with warnings.catch_warnings():
-    #                 warnings.simplefilter("ignore", category=RuntimeWarning)
-    #                 avg_maps[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-    #                     (avg_maps[hemi][METRIC_DIFF_CAPTIONS], avg_maps[hemi][METRIC_DIFF_IMAGES]),
-    #                     axis=0)
-    #         all_avg_maps.append(avg_maps)
-    #     return all_avg_maps
-    #
-    # print("calculating avg values")
-    # avg_maps_null_distribution = create_avg_maps_null_distr(all_scores_null_distr)
-    #
-    # avg_maps_null_distribution_thresholded = [{hemi: dict() for hemi in HEMIS} for _ in
-    #                                           range(len(avg_maps_null_distribution))]
-    #
-    # avg_values_thresholded = {hemi: dict() for hemi in HEMIS}
-    # for hemi in HEMIS:
-    #     mean_values = np.stack([avg_maps_null_distribution[i][hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] for i in
-    #                             range(len(avg_maps_null_distribution))])
-    #     thresholds = [sorted(np.abs(v))[-100] for v in mean_values.T]
-    #     avg_values_thresholded[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.abs(
-    #         avg_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) > thresholds
-    #
-    #     for map, map_thresholded in zip(avg_maps_null_distribution, avg_maps_null_distribution_thresholded):
-    #         map_thresholded[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.abs(
-    #             map[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) > thresholds
-
-    # def calc_clusters_fixed_size(t_values):
-    #     cluster_maps = dict()
-    #     for hemi in HEMIS:
-    #         scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-    #         scores_thresholded = scores.copy()
-    #         scores_thresholded[scores < args.t_value_threshold] = 0
-    #         adj = adjacency_matrices[hemi]
-    #
-    #         t_values_cluster = np.array([np.nansum(scores[a]) for a in adj])
-    #         t_values_cluster_thresholded = t_values_cluster.copy()
-    #         t_values_cluster_thresholded[t_values_cluster < args.min_cluster_t_value] = 0
-    #         cluster_maps[hemi] = t_values_cluster
-    #     return cluster_maps
-
     print("calculating clusters..")
     clusters, cluster_maps, max_cluster_size, cluster_t_values = calc_clusters_variable_size(t_values,
                                                                                              adjacency_matrices,
