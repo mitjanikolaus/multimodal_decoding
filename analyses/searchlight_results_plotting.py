@@ -293,7 +293,7 @@ def run(args):
     print(f"cluster t-value significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
     print(f"cluster t-value significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
-    p_values_cluster = copy.deepcopy(cluster_maps)
+    p_values_cluster = {hemi: np.zeros_like(map) for hemi, map in cluster_maps.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
