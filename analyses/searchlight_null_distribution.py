@@ -272,7 +272,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
 
-    parser.add_argument("--n-permutations-group-level", type=int, default=100000)
+    parser.add_argument("--n-permutations-group-level", type=int, default=10000)
     parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
 
