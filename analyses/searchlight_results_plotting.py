@@ -295,8 +295,6 @@ def run(args):
 
     p_values_cluster = copy.deepcopy(cluster_maps)
     for hemi in HEMIS:
-        print(f"{hemi} hemi largest cluster sizes: ",
-              sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:10])
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
             value_indices = np.argwhere(max_cluster_t_value_distr[hemi] > t_val)
