@@ -250,25 +250,25 @@ def run(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    data = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-    fsaverage = load_fsaverage(mesh_name=args.resolution)
-    # pial_mesh = fsaverage[f"pial_{hemi}"]
-
-    # surf_data = load_surface((pial_mesh, data))
-    # mesh = {
-    #     "left": fsaverage[f"pial_left"],
-    #     "right": fsaverage[f"pial_right"],
+    # data = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+    # fsaverage = load_fsaverage(mesh_name=args.resolution)
+    # # pial_mesh = fsaverage[f"pial_{hemi}"]
+    #
+    # # surf_data = load_surface((pial_mesh, data))
+    # # mesh = {
+    # #     "left": fsaverage[f"pial_left"],
+    # #     "right": fsaverage[f"pial_right"],
+    # # }
+    # data = {
+    #     "left_hemisphere": t_values["left"][METRIC_MIN_DIFF_BOTH_MODALITIES],
+    #     "right_hemisphere": t_values["right"][METRIC_MIN_DIFF_BOTH_MODALITIES],
     # }
-    data = {
-        "left_hemisphere": t_values["left"][METRIC_MIN_DIFF_BOTH_MODALITIES],
-        "right_hemisphere": t_values["right"][METRIC_MIN_DIFF_BOTH_MODALITIES],
-    }
-    surf_img = SurfaceImage(mesh=fsaverage["pial"], data=data)
-
-    masker = SurfaceMasker()
-    masked_data = masker.fit_transform(surf_img)
-    print(f"Masked data shape: {masked_data.shape}")
-    # masker.inverse_transform(surf_img)
+    # surf_img = SurfaceImage(mesh=fsaverage["pial"], data=data)
+    #
+    # masker = SurfaceMasker()
+    # masked_data = masker.fit_transform(surf_img)
+    # print(f"Masked data shape: {masked_data.shape}")
+    # # masker.inverse_transform(surf_img)
 
     # avg_values = {hemi: dict() for hemi in HEMIS}
     # for hemi in HEMIS:
@@ -348,14 +348,14 @@ def run(args):
     significance_cutoff_size = np.quantile(max_cluster_size_distr, 0.95)
     print("cluster size significance cutoff for p<0.05: ", significance_cutoff_size)
 
-    # max_cluster_t_value_distr = sorted([
-    #     np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
-    # ])
-    mean_cluster_t_value_distr = sorted([
-        np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
+    max_cluster_t_value_distr = sorted([
+        np.max(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
     ])
+    # mean_cluster_t_value_distr = sorted([
+    #     np.mean(c['left'] + c['right']) if len(c['left'] + c['right']) > 0 else 0 for _, c in clusters_null_distribution
+    # ])
     # max_cluster_t_value_distr = np.concatenate([c['left'] + c['right'] for _, c in clusters_null_distribution])
-    significance_cutoff = np.quantile(mean_cluster_t_value_distr, 0.95)
+    significance_cutoff = np.quantile(max_cluster_t_value_distr, 0.95)
     print(f"cluster t-value significance cutoff for p<0.05 ({len(clusters_null_distribution)} permutations): {significance_cutoff}")
 
     p_values_cluster = copy.deepcopy(cluster_maps)
@@ -363,17 +363,17 @@ def run(args):
         print(f"{hemi} hemi largest cluster sizes: ", sorted([len(cluster) for cluster in clusters[hemi]], reverse=True)[:10])
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
-            value_indices = np.argwhere(mean_cluster_t_value_distr > t_val)
+            value_indices = np.argwhere(max_cluster_t_value_distr > t_val)
             p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
             p_values_cluster[hemi][list(cluster)] = p_value
 
     # FDR correction:
-    p_values_left = p_values_cluster['left'][p_values_cluster['left'] > 0]
-    p_values_right = p_values_cluster['right'][p_values_cluster['right'] > 0]
-    all_p_values = np.concatenate((p_values_left, p_values_right))
-    all_p_values_corrected = false_discovery_control(all_p_values, method='bh')
-    p_values_cluster['left'][p_values_cluster['left'] > 0] = all_p_values_corrected[:len(p_values_left)]
-    p_values_cluster['right'][p_values_cluster['right'] > 0] = all_p_values_corrected[len(p_values_left):]
+    # p_values_left = p_values_cluster['left'][p_values_cluster['left'] > 0]
+    # p_values_right = p_values_cluster['right'][p_values_cluster['right'] > 0]
+    # all_p_values = np.concatenate((p_values_left, p_values_right))
+    # all_p_values_corrected = false_discovery_control(all_p_values, method='bh')
+    # p_values_cluster['left'][p_values_cluster['left'] > 0] = all_p_values_corrected[:len(p_values_left)]
+    # p_values_cluster['right'][p_values_cluster['right'] > 0] = all_p_values_corrected[len(p_values_left):]
 
     # transform to plottable magnitudes:
     p_values_cluster['left'][p_values_cluster['left'] > 0] = -np.log10(p_values_cluster['left'][p_values_cluster['left'] > 0])
