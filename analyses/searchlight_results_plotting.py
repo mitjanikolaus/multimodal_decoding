@@ -274,10 +274,9 @@ def smooth_surface_data(surface, surf_data,
 
     # Add in the diagonal.
     matrix.setdiag(center_weight)
-    # Run the iteratioons of smooothing.
-    n = len(surf_data)
+    # Run the iterations of smooothing.
     data = surf_data
-    for ii in range(iterations):
+    for _ in range(iterations):
         data = matrix.dot(data)
     # Convert back into numpy array.
     data = np.reshape(np.asarray(data), np.shape(surf_data))
@@ -456,6 +455,15 @@ def run(args):
     # masked_data = masker.fit_transform(surf_img)
     # print(f"Masked data shape: {masked_data.shape}")
     # # masker.inverse_transform(surf_img)
+
+    print("smoothing")
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    for hemi in HEMIS:
+        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+        t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
+            np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
+        t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][
+            METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
 
     print("calculating clusters..")
     clusters, cluster_maps, cluster_t_values = calc_clusters_variable_size(t_values,

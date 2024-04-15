@@ -19,7 +19,7 @@ from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get
     NUM_TEST_STIMULI, SEARCHLIGHT_OUT_DIR, mode_from_args
 from analyses.searchlight_results_plotting import METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CHANCE_VALUES, \
     METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters_variable_size, \
-    DEFAULT_T_VALUE_THRESHOLD
+    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS, SUBJECTS
 
@@ -182,9 +182,6 @@ def create_null_distribution(args):
                             (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
                             axis=0)
 
-                    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-                    # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-                    # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])
                 thread_t_vals.append(t_values)
             return thread_t_vals
 
@@ -236,6 +233,25 @@ def create_null_distribution(args):
         pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
+
+    print("smoothing")
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    for hemi in HEMIS:
+        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+        for t_values in tqdm(t_values_null_distribution):
+            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
+                np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
+            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
+
+            # from nilearn import plotting
+            # plotting.plot_surf_stat_map(
+            #     surface_infl,
+            #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+            #     hemi=hemi,
+            #     view="lateral",
+            #     bg_map=fsaverage[f"sulc_{hemi}"],
+            #     colorbar=True,
+            # )
 
     filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", model, features,
