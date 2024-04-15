@@ -108,7 +108,7 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
 
 
 
-def compute_adjacency_matrix(surface, values='ones', dtype=None):
+def compute_adjacency_matrix(surface, values='ones'):
     """Computes the adjacency matrix for a surface.
     The adjacency matrix is a matrix with one row and one column for each vertex
     such that the value of a cell `(u,v)` in the matrix is 1 if nodes `u` and
@@ -142,7 +142,7 @@ def compute_adjacency_matrix(surface, values='ones', dtype=None):
         neighbors = np.unique([e[0] if e[1] == loc else e[1] for e in edges if loc in e])
 
         if values == 'len' or values == 'invlen':
-            lengths = [np.sqrt(np.sum(coords[loc] - coords[n]) ** 2) for n in neighbors]
+            lengths = [np.sqrt(np.sum((coords[loc] - coords[n]) ** 2)) for n in neighbors]
             if values == 'invlen':
                 lengths = 1 / np.array(lengths)
         elif values == 'ones':
