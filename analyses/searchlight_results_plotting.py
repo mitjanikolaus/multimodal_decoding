@@ -11,7 +11,7 @@ from glob import glob
 import pickle
 
 from nilearn.experimental.surface import SurfaceMasker, SurfaceImage, load_fsaverage
-from nilearn.surface import surface, load_surface
+from nilearn.surface import surface, load_surface, load_surf_mesh
 from nilearn.mass_univariate._utils import calculate_tfce
 from scipy import stats
 from scipy.stats import pearsonr, false_discovery_control
@@ -33,7 +33,6 @@ COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 
 DEFAULT_T_VALUE_THRESHOLD = 0.824
-DEFAULT_MAX_CLUSTER_DISTANCE = 1  # 1mm
 DEFAULT_MIN_CLUSTER_T_VALUE = 20 * DEFAULT_T_VALUE_THRESHOLD
 DEFAULT_CLUSTER_SIZE = 10
 
@@ -108,35 +107,220 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     return scores
 
 
-def get_adj_matrices(resolution, max_cluster_distance):
-    adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", resolution,
-                            f"adjacency_max_dist_{max_cluster_distance}.p")
+
+def compute_adjacency_matrix(surface, values='ones', dtype=None):
+    """Computes the adjacency matrix for a surface.
+    The adjacency matrix is a matrix with one row and one column for each vertex
+    such that the value of a cell `(u,v)` in the matrix is 1 if nodes `u` and
+    `v` are adjacent and 0 otherwise.
+    Parameters
+    ----------
+    surface : Surface-like
+        The surface whose adjacency matrix is to be computed.
+    values : { 'len' | 'invlen' | 'ones'}, optional
+        If `values` is `'ones'` (the default), then the returned matrix
+        contains uniform values in the cells representing edges. If the value is
+        `'len'` then the cells contain the edge length of the represented
+        edge. If the value is `'invlen'`, then the inverse of the distances
+        are returned.
+    dtype : numpy dtype-like or None, optional
+        The dtype that should be used for the returned sparse matrix.
+    Returns
+    -------
+    matrix : scipy.sparse.csr_matrix
+        A sparse matrix representing the edge relationships in `surface`.
+    """
+    from scipy.sparse import csr_matrix
+    n = surface.coordinates.shape[0]
+    edges = np.vstack([surface.faces[:, [0, 1]],
+                       surface.faces[:, [0, 2]],
+                       surface.faces[:, [1, 2]]])
+
+    coords = surface.coordinates
+    matrix = np.zeros((n, n))
+    for loc in tqdm(range(n)):
+        neighbors = np.unique([e[0] if e[1] == loc else e[1] for e in edges if loc in e])
+
+        if values == 'len' or values == 'invlen':
+            lengths = [np.sqrt(np.sum(coords[loc] - coords[n]) ** 2) for n in neighbors]
+            if values == 'invlen':
+                lengths = 1 / np.array(lengths)
+        elif values == 'ones':
+            lengths = np.ones_like(neighbors)
+        else:
+            raise ValueError(f"unrecognized values argument: {values}")
+
+        matrix[loc, neighbors] = lengths
+
+    return csr_matrix(matrix)
+
+
+def _compute_vertex_neighborhoods(surface):
+    """For each vertex, compute the neighborhood.
+    The neighborhood is  defined as all the vertices that are connected by a
+    face.
+
+    Parameters
+    ----------
+    surface : Surface-like
+        The surface whose vertex neighborhoods are to be computed.
+
+    Returns
+    -------
+    neighbors : list
+        A list of all the vertices that are connected to each vertex
+    """
+    from scipy.sparse import find
+    matrix = compute_adjacency_matrix(surface)
+    return [find(row)[1] for row in matrix]
+
+
+def smooth_surface_data(surface, surf_data,
+                        iterations=1,
+                        distance_weights=False,
+                        vertex_weights=None,
+                        return_vertex_weights=False,
+                        center_surround_knob=0,
+                        match='sum'):
+    """Smooth values along the surface.
+
+    Parameters
+    ----------
+    surface : Surface-like
+        The surface on which the data `surf_data` are to be smoothed.
+    surf_data : array-like
+        The array of values at each vertex that is being smoothed. This may
+        either be a vector of length `n` or a matrix with `n` rows.  In the case
+        of fMRI data, `n` could be the number of timepoints. Each column is
+        smoothed independently.
+    iterations : :obj:`int`, optional
+        The number of times to repeat the smoothing operation (it must be a positive value).
+        Defaults to 1
+    distance_weights : :obj:`bool`, optional
+        Whether to add distance-based weighting to the smoothing. With such
+        weights, the value calculated for each vertex at each iteration is the
+        weighted sum of neighboring vertices where the weight on each neighbor
+        is the inverses of the distances to it.
+    vertex_weights : array-like or None, optional
+        A vector of weights, one per vertex. These weights are normalized and
+        applied to the smoothing after the application of center-surround
+        weights.
+    return_vector_weights : :obj:`bool`, optional
+        If `True` then `(smoothed_data, smoothed_vertex_weights)` are returned.
+        The default is `False`.
+    center_surround_knob : :obj:`float`, optional
+        The relative weighting of the center and the surround in each iteration
+        of the smoothing. If the value of the knob is `k`, then the total weight
+        of vertices that are neighbors of a given vertex (the vertex's surround)
+        is `2**k` times the weight of the vertex itself (the center). A value of
+        0 (the default) means that, in each smoothing iteration, each vertex is
+        updated with the average of its value and the average value of its
+        neighbors. A value of `-inf` results in no smoothing because the entire
+        weight is on the center, so each vertex is updated with its own value. A
+        value of `inf` results in each vertex being updated with the average of
+        its neighbors without including its own value.
+    match : { 'sum' | 'mean' | 'var' | 'dist' | None }, optional
+        What properties of the input data should be matched in the output data.
+        `None` indicates that the smoothed output should be
+        returned without transformation. If the value is `'sum'`, then the
+        output is rescaled to have the same sum as `surf_data`. If the value is
+        `'mean'`, then the output is shifted to match the mean of the input. If
+        the value is `'var'` or `'std'`, then the variance of the output is
+        matched. Finally, if the value is `'dist'`, then the mean and the
+        variance are matched. Default is `'sum'`
+
+    Returns
+    -------
+    surf_data_smooth : array
+        The array of smoothed values at each vertex.
+    Examples
+    -------
+    >>> from nilearn import datasets, surface, plotting
+    >>> fsaverage = datasets.fetch_surf_fsaverage('fsaverage')
+    >>> white_left = surface.load_surf_mesh(fsaverage.white_left)
+    >>> curv = surface.load_surf_data(fsaverage.curv_left)
+    >>> curv_smooth = surface.smooth_surface_data(surface=white_left, surf_data=curv, iterations=50)
+    >>> plotting.plot_surf(white_left, surf_map = curv_smooth)
+    """
+    from scipy.sparse import diags
+    # First, calculate the center and surround weights for the
+    # center-surround knob.
+    center_weight = 1 / (1 + np.exp2(-center_surround_knob))
+    surround_weight = 1 - center_weight
+    if surround_weight == 0:
+        # There's nothing to do in this case.
+        return np.array(surf_data)
+    # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
+    values = 'invlen' if distance_weights else 'ones'
+    matrix = compute_adjacency_matrix(surface, values=values)
+
+    # If there are vertex weights, get them ready.
+    if vertex_weights:
+        w = np.array(vertex_weights)
+        w /= np.sum(w)
+    else:
+        w = np.ones(matrix.shape[0])
+    # We need to normalize the matrix columns, and we can do this now by
+    # normalizing everything but the diagonal to the surround weight, then
+    # adding the center weight along the diagonal.
+    colsums = matrix.sum(axis=1)
+    colsums = np.asarray(colsums).flatten()
+    matrix = matrix.multiply(surround_weight / colsums[:, None])
+
+    # Add in the diagonal.
+    matrix.setdiag(center_weight)
+    # Run the iteratioons of smooothing.
+    n = len(surf_data)
+    data = surf_data
+    for ii in range(iterations):
+        data = matrix.dot(data)
+    # Convert back into numpy array.
+    data = np.reshape(np.asarray(data), np.shape(surf_data))
+    # Rescale it if needed.
+    if match == 'sum':
+        sum0 = np.nansum(surf_data, axis=0)
+        sum1 = np.nansum(data, axis=0)
+        data = data * (sum0 / sum1)
+    elif match == 'mean':
+        mu0 = np.nansum(surf_data, axis=0)
+        mu1 = np.nansum(data, axis=0)
+        data = data + (mu0 - mu1)
+    elif match in ('var', 'std', 'variance', 'stddev', 'sd'):
+        std0 = np.nanstd(surf_data, axis=0)
+        std1 = np.nanstd(data, axis=0)
+        mu1 = np.nanmean(data, axis=0)
+        data = (data - mu1) * (std0 / std1) + mu1
+    elif match in ('dist', 'meanvar', 'meanstd', 'meansd'):
+        std0 = np.nanstd(surf_data, axis=0)
+        std1 = np.nanstd(data, axis=0)
+        mu0 = np.nanmean(surf_data, axis=0)
+        mu1 = np.nanmean(data, axis=0)
+        data = (data - mu1) * (std0 / std1) + mu0
+    elif match is not None:
+        raise ValueError(f"invalid match argument: {match}")
+    if return_vertex_weights:
+        w /= np.sum(w)
+        return (data, w)
+    else:
+        return data
+
+
+def get_adj_matrices(resolution):
+    adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", resolution, "adjacency.p")
     if not os.path.isfile(adj_path):
+        print("Computing adjacency matrices.")
         adjacency_matrices = dict()
         for hemi in HEMIS:
             os.makedirs(os.path.dirname(adj_path), exist_ok=True)
             fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-            coords, _ = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-            nn = neighbors.NearestNeighbors(radius=max_cluster_distance)
-            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
-                         nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-            adjacency_matrices[hemi] = adjacency
-        pickle.dump(adjacency_matrices, open(adj_path, "wb"))
+            surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+
+            adjacency_matrix = compute_adjacency_matrix(surface_infl, values='len')
+
+            adjacency_matrices[hemi] = adjacency_matrix
+        pickle.dump(adjacency_matrices, open(adj_path, 'wb'))
     else:
         adjacency_matrices = pickle.load(open(adj_path, 'rb'))
-
-    # adjacency matrices for fixed cluster size:
-    # adjacency_matrices = dict()
-    # for hemi in HEMIS:
-    #     adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", args.resolution, f"adjacency_cluster_size_{args.cluster_size}.p")
-    #     if not os.path.isfile(adj_path):
-    #         print("creating adjacency matrices for cluster size", args.cluster_size)
-    #         os.makedirs(os.path.dirname(adj_path), exist_ok=True)
-    #         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    #         coords, _ = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-    #         nn = neighbors.NearestNeighbors()
-    #         distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.cluster_size-1)
-    #         adjacency_matrices[hemi] = adjacency
 
     return adjacency_matrices
 
@@ -158,7 +342,7 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
             checked = {idx}
 
             def expand_neighbors(start_idx, adj):
-                neighbors = adj[start_idx]
+                neighbors = np.argwhere(adj[start_idx] > 0)[:, 1]
                 for neighbor in neighbors:
                     if not neighbor in checked:
                         checked.add(neighbor)
@@ -216,7 +400,7 @@ def run(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
-    adjacency_matrices = get_adj_matrices(args.resolution, args.max_cluster_distance)
+    adjacency_matrices = get_adj_matrices(args.resolution)
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
@@ -274,7 +458,7 @@ def run(args):
                                                                            args.t_value_threshold,
                                                                            return_clusters=True)
 
-    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}_max_dist_{args.max_cluster_distance}.p"
+    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
                                                    args.resolution,
                                                    args.mode, filename)
@@ -556,7 +740,6 @@ def get_args():
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
-    parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     # parser.add_argument("--min-cluster-t-value", type=int, default=DEFAULT_MIN_CLUSTER_T_VALUE)
 
     # parser.add_argument("--cluster-size", type=int, default=DEFAULT_CLUSTER_SIZE)

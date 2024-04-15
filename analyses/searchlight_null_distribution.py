@@ -7,6 +7,8 @@ from joblib import Parallel, delayed
 import os
 import pickle
 
+from nilearn import datasets
+from nilearn.surface import load_surf_mesh, surface
 from scipy import stats
 from tqdm import tqdm
 
@@ -17,7 +19,7 @@ from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get
     NUM_TEST_STIMULI, SEARCHLIGHT_OUT_DIR, mode_from_args
 from analyses.searchlight_results_plotting import METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CHANCE_VALUES, \
     METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters_variable_size, \
-    DEFAULT_MAX_CLUSTER_DISTANCE, DEFAULT_T_VALUE_THRESHOLD
+    DEFAULT_T_VALUE_THRESHOLD
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS, SUBJECTS
 
@@ -123,7 +125,7 @@ def create_null_distribution(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
-    adjacency_matrices = get_adj_matrices(args.resolution, args.max_cluster_distance)
+    adjacency_matrices = get_adj_matrices(args.resolution)
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
@@ -179,6 +181,10 @@ def create_null_distribution(args):
                         t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
                             (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
                             axis=0)
+
+                    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+                    # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+                    # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])
                 thread_t_vals.append(t_values)
             return thread_t_vals
 
@@ -231,7 +237,7 @@ def create_null_distribution(args):
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
-    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}_max_dist_{args.max_cluster_distance}.p"
+    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", model, features,
                                                    args.resolution,
                                                    mode, filename)
@@ -273,7 +279,6 @@ def get_args():
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
 
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
-    parser.add_argument("--max-cluster-distance", type=float, default=DEFAULT_MAX_CLUSTER_DISTANCE)
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
 
     return parser.parse_args()
