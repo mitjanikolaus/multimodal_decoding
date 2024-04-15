@@ -460,8 +460,8 @@ def run(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     for hemi in HEMIS:
         surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
-            np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
+        # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
+        #     np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
         t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][
             METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
 

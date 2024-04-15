@@ -239,8 +239,8 @@ def create_null_distribution(args):
     for hemi in HEMIS:
         surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
         for t_values in tqdm(t_values_null_distribution):
-            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
-                np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
+            # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
+            #     np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
 
             # from nilearn import plotting
