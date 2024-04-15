@@ -14,6 +14,7 @@ from nilearn.experimental.surface import SurfaceMasker, SurfaceImage, load_fsave
 from nilearn.surface import surface, load_surface, load_surf_mesh
 from nilearn.mass_univariate._utils import calculate_tfce
 from scipy import stats
+from scipy.sparse import csr_matrix
 from scipy.stats import pearsonr, false_discovery_control
 from sklearn import neighbors
 from tqdm import tqdm
@@ -117,11 +118,11 @@ def compute_adjacency_matrix(surface, values='ones'):
     ----------
     surface : Surface-like
         The surface whose adjacency matrix is to be computed.
-    values : { 'len' | 'invlen' | 'ones'}, optional
+    values : { 'euclidean' | 'inveuclidean' | 'ones'}, optional
         If `values` is `'ones'` (the default), then the returned matrix
         contains uniform values in the cells representing edges. If the value is
-        `'len'` then the cells contain the edge length of the represented
-        edge. If the value is `'invlen'`, then the inverse of the distances
+        `'euclidean'` then the cells contain the edge length of the represented
+        edge. If the value is `'inveuclidean'`, then the inverse of the distances
         are returned.
     dtype : numpy dtype-like or None, optional
         The dtype that should be used for the returned sparse matrix.
@@ -130,29 +131,33 @@ def compute_adjacency_matrix(surface, values='ones'):
     matrix : scipy.sparse.csr_matrix
         A sparse matrix representing the edge relationships in `surface`.
     """
-    from scipy.sparse import csr_matrix
     n = surface.coordinates.shape[0]
     edges = np.vstack([surface.faces[:, [0, 1]],
                        surface.faces[:, [0, 2]],
                        surface.faces[:, [1, 2]]])
 
-    coords = surface.coordinates
-    matrix = np.zeros((n, n))
-    for loc in tqdm(range(n)):
-        neighbors = np.unique([e[0] if e[1] == loc else e[1] for e in edges if loc in e])
-
-        if values == 'len' or values == 'invlen':
-            lengths = [np.sqrt(np.sum((coords[loc] - coords[n]) ** 2)) for n in neighbors]
-            if values == 'invlen':
-                lengths = 1 / np.array(lengths)
-        elif values == 'ones':
-            lengths = np.ones_like(neighbors)
-        else:
-            raise ValueError(f"unrecognized values argument: {values}")
-
-        matrix[loc, neighbors] = lengths
-
-    return csr_matrix(matrix)
+    bigcol = edges[:, 0] > edges[:, 1]
+    lilcol = ~bigcol
+    edges = np.concatenate([edges[bigcol, 0] + edges[bigcol, 1] * n,
+                            edges[lilcol, 1] + edges[lilcol, 0] * n])
+    edges = np.unique(edges)
+    (u, v) = (edges // n, edges % n)
+    # Calculate distances between pairs. We use this as a weighting to make sure that
+    # smoothing takes into account the distance between each vertex neighbor
+    if values == 'euclidean' or values == 'inveuclidean':
+        coords = surface.coordinates
+        edge_lens = np.sqrt(np.sum((coords[u, :] - coords[v, :]) ** 2, axis=1))
+        if values == 'inveuclidean':
+            edge_lens = 1 / edge_lens
+    elif values == 'ones':
+        edge_lens = np.ones(edges.shape)
+    else:
+        raise ValueError(f"unrecognized values argument: {values}")
+    # We can now make a sparse matrix.
+    ee = np.concatenate([edge_lens, edge_lens])
+    uv = np.concatenate([u, v])
+    vu = np.concatenate([v, u])
+    return csr_matrix((ee, (uv, vu)), shape=(n, n))
 
 
 def _compute_vertex_neighborhoods(surface):
@@ -251,7 +256,7 @@ def smooth_surface_data(surface, surf_data,
         # There's nothing to do in this case.
         return np.array(surf_data)
     # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
-    values = 'invlen' if distance_weights else 'ones'
+    values = 'inveuclidean' if distance_weights else 'ones'
     matrix = compute_adjacency_matrix(surface, values=values)
 
     # If there are vertex weights, get them ready.
@@ -315,7 +320,7 @@ def get_adj_matrices(resolution):
             fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
             surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
 
-            adjacency_matrix = compute_adjacency_matrix(surface_infl, values='len')
+            adjacency_matrix = compute_adjacency_matrix(surface_infl, values='euclidean')
 
             adjacency_matrices[hemi] = adjacency_matrix
         pickle.dump(adjacency_matrices, open(adj_path, 'wb'))
