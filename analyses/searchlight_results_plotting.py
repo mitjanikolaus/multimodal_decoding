@@ -330,9 +330,23 @@ def get_adj_matrices(resolution):
     return adjacency_matrices
 
 
+def get_edge_lengths_dict(resolution, hemi):
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+    surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+
+    edges = np.vstack([surface_infl.faces[:, [0, 1]],
+                       surface_infl.faces[:, [0, 2]],
+                       surface_infl.faces[:, [1, 2]]])
+
+    edges = np.array([(e0, e1) if e0 < e1 else (e1, e0) for e0, e1 in edges])
+    coords = surface_infl.coordinates
+    lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
+    edge_lengths_dict = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
+    return edge_lengths_dict
+
+
 def calc_tfce_values(t_values, adjacency_matrices, resolution, h=2, e=1, dh="auto"):
     tfce_values = dict()
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
     for hemi in HEMIS:
         values = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
         max_score = np.nanmax(values)
@@ -340,25 +354,11 @@ def calc_tfce_values(t_values, adjacency_matrices, resolution, h=2, e=1, dh="aut
 
         score_threshs = np.arange(step, max_score + step, step)
 
-        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-
-        edges = np.vstack([surface_infl.faces[:, [0, 1]],
-                           surface_infl.faces[:, [0, 2]],
-                           surface_infl.faces[:, [1, 2]]])
-
-        edges = np.unique(edges, axis=0)
-        coords = surface_infl.coordinates
-        lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
-        edge_lengths_dict = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
-        edge_lengths_dict.update({(e[1], e[0]): l for e, l in zip(edges, lengths)})
-
         tfce_values[hemi] = {METRIC_MIN_DIFF_BOTH_MODALITIES: np.zeros_like(values)}
+        edge_lengths_dict = get_edge_lengths_dict(resolution, hemi)
 
         for score_thresh in score_threshs:
-            # values[values < score_thresh] = 0
-            # print("remaining: ", np.sum(values > 0))
-
-            clusters_dict = calc_clusters(values, adjacency_matrices[hemi],
+            clusters_dict = calc_clusters(values,
                                           score_thresh,
                                           edge_lengths_dict,
                                           return_clusters=True,
@@ -372,7 +372,9 @@ def calc_tfce_values(t_values, adjacency_matrices, resolution, h=2, e=1, dh="aut
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
                 tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += step * cluster_tfce
 
-        from nilearn import plotting
+        # from nilearn import plotting
+        # fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+        # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
         # plotting.plot_surf_stat_map(
         #     surface_infl,
         #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
@@ -384,57 +386,103 @@ def calc_tfce_values(t_values, adjacency_matrices, resolution, h=2, e=1, dh="aut
     return tfce_values
 
 
-def calc_clusters(scores, adj, t_value_threshold, edge_lengths=None, return_clusters=False,
+def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=False,
                   return_cluster_edge_lengths=False, return_agg_t_values=True, min_cluster_size=1):
-    clusters = []
-    cluster_t_values = []
-    cluster_edge_lengths = []
-    scores_thresholded = scores > t_value_threshold
+    cluster_nodes = dict()
+    cluster_edge_lengths = dict()
 
-    start_locations = list(np.argwhere(scores_thresholded)[:, 0])
-    # cluster_maps = np.zeros_like(scores)
-    while len(start_locations) > 0:
-        idx = start_locations[0]
-        cluster = {idx}
-        c_edge_lengths = []
-        checked = {idx}
+    # Filter edges for edges that are connecting nodes with score above threshold
+    edge_lengths = {e: l for e, l in edge_lengths.items() if (scores[e[0]] > threshold) and (scores[e[1]] > threshold)}
 
-        def expand_neighbors(start_idx, adj):
-            neighbors = np.argwhere(adj[start_idx] > 0)[:, 1]
-            for neighbor in neighbors:
-                if not neighbor in checked:
-                    checked.add(neighbor)
-                    if scores_thresholded[neighbor]:
-                        cluster.add(neighbor)
-                        if return_cluster_edge_lengths:
-                            c_edge_lengths.append(edge_lengths[(start_idx, neighbor)])
-                        expand_neighbors(neighbor, adj)
+    node_to_cluster = dict()
 
-        expand_neighbors(idx, adj)
-        for id in cluster:
-            start_locations.remove(id)
+    next_cluster_id = 0
+    for (n0, n1), length in edge_lengths.items():
+        if n0 in node_to_cluster.keys() or n1 in node_to_cluster.keys():
+            if n0 in node_to_cluster.keys() and n1 in node_to_cluster.keys():
+                cluster_1_id, cluster_2_id = sorted([node_to_cluster[n0], node_to_cluster[n1]])
+                if cluster_1_id == cluster_2_id:
+                    cluster_edge_lengths[cluster_1_id] += length
+                    continue
 
-        if len(cluster) > min_cluster_size:
-            if return_agg_t_values:
-                t_value_cluster = np.sum(scores[list(cluster)])
-                cluster_t_values.append(t_value_cluster)
-            if return_clusters:
-                clusters.append(cluster)
-            if return_cluster_edge_lengths:
-                cluster_edge_lengths.append(np.sum(c_edge_lengths))
+                # merge 2 clusters
+                for node in cluster_nodes[cluster_2_id]:
+                    node_to_cluster[node] = cluster_1_id
+                cluster_nodes[cluster_1_id] = cluster_nodes[cluster_1_id] | cluster_nodes[cluster_2_id]
+                cluster_edge_lengths[cluster_1_id] += cluster_edge_lengths[cluster_2_id]
+                del cluster_nodes[cluster_2_id]
+                del cluster_edge_lengths[cluster_2_id]
+                continue
+
+            elif n0 in node_to_cluster.keys():
+                cluster_id = node_to_cluster[n0]
+            else:
+                cluster_id = node_to_cluster[n1]
+        else:
+            cluster_id = next_cluster_id
+            next_cluster_id = next_cluster_id + 1
+            cluster_nodes[cluster_id] = set()
+            cluster_edge_lengths[cluster_id] = 0
+
+        node_to_cluster[n0] = cluster_id
+        node_to_cluster[n1] = cluster_id
+        cluster_nodes[cluster_id] = cluster_nodes[cluster_id] | {n0, n1}
+        cluster_edge_lengths[cluster_id] += length
+
+    result_dict = dict()
+    if return_clusters:
+        result_dict['clusters'] = list(cluster_nodes.values())
+    if return_agg_t_values:
+        cluster_t_values = [sum(scores[n] for n in cluster) for cluster in cluster_nodes.values()]
+        result_dict['agg_t_values'] = cluster_t_values
+    if return_cluster_edge_lengths:
+        result_dict['cluster_edge_lengths'] = list(cluster_edge_lengths.values())
+    return result_dict
+
+    # start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+    # # cluster_maps = np.zeros_like(scores)
+    # while len(start_locations) > 0:
+    #     idx = start_locations[0]
+    #     cluster = {idx}
+    #     c_edge_lengths = []
+    #     checked = {idx}
+    #
+    #     def expand_neighbors(start_idx, adj):
+    #         neighbors = np.argwhere(adj[start_idx] > 0)[:, 1]
+    #         for neighbor in neighbors:
+    #             if not neighbor in checked:
+    #                 checked.add(neighbor)
+    #                 if scores_thresholded[neighbor]:
+    #                     cluster.add(neighbor)
+    #                     if return_cluster_edge_lengths:
+    #                         c_edge_lengths.append(edge_lengths[(start_idx, neighbor)])
+    #                     expand_neighbors(neighbor, adj)
+    #
+    #     expand_neighbors(idx, adj)
+    #     for id in cluster:
+    #         start_locations.remove(id)
+    #
+    #     if len(cluster) > min_cluster_size:
+    #         if return_agg_t_values:
+    #             t_value_cluster = np.sum(scores[list(cluster)])
+    #             cluster_t_values.append(t_value_cluster)
+    #         if return_clusters:
+    #             cluster_nodes.append(cluster)
+    #         if return_cluster_edge_lengths:
+    #             cluster_edge_lengths.append(np.sum(c_edge_lengths))
         # cluster_maps[list(cluster)] = scores[list(cluster)]
 
     # fill non-cluster locations with zeros
     # cluster_maps[cluster_maps == 0] = 0
-
-    result_dict = dict()
-    if return_clusters:
-        result_dict['clusters'] = clusters
-    if return_agg_t_values:
-        result_dict['agg_t_values'] = cluster_t_values
-    if return_cluster_edge_lengths:
-        result_dict['cluster_edge_lengths'] = cluster_edge_lengths
-    return result_dict
+    #
+    # result_dict = dict()
+    # if return_clusters:
+    #     result_dict['clusters'] = cluster_nodes
+    # if return_agg_t_values:
+    #     result_dict['agg_t_values'] = cluster_t_values
+    # if return_cluster_edge_lengths:
+    #     result_dict['cluster_edge_lengths'] = cluster_edge_lengths
+    # return result_dict
 
 
 def calc_image_t_values(data, popmean):
@@ -554,10 +602,12 @@ def run(args):
     print(f"calculating clusters for threshold t>{args.t_value_threshold}")
     clusters, cluster_t_values = dict(), dict()
     for hemi in HEMIS:
+        edge_lengths_dict = get_edge_lengths_dict(args.resolution, hemi)
+
         clusters_dict = calc_clusters(
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-            adjacency_matrices[hemi],
             args.t_value_threshold,
+            edge_lengths_dict,
             return_clusters=True
         )
         clusters[hemi] = clusters_dict["clusters"]
