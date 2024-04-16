@@ -18,8 +18,8 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
 from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get_results_dir, \
     NUM_TEST_STIMULI, SEARCHLIGHT_OUT_DIR, mode_from_args
 from analyses.searchlight_results_plotting import METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CHANCE_VALUES, \
-    METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters_variable_size, \
-    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data, calc_image_t_values
+    METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters, \
+    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data, calc_image_t_values, calc_tfce_values
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS, SUBJECTS
 
@@ -170,6 +170,8 @@ def create_null_distribution(args):
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(random_idx, SUBJECTS)])
                         popmean = CHANCE_VALUES[metric]
+                        # if np.sum(np.isnan(calc_image_t_values(data, popmean))) > 50:
+                        #     print("grefwe")
                         t_vals[metric] = calc_image_t_values(data, popmean)
 
                     with warnings.catch_warnings():
@@ -253,16 +255,38 @@ def create_null_distribution(args):
     else:
         smooth_t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
 
+    if args.tfce:
+        tfce_values_null_distribution_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", model, features,
+            args.resolution,
+            mode, f"tfce_values_null_distribution.p"
+        )
+        if not os.path.isfile(tfce_values_null_distribution_path):
+            print(f"Calculating tfce values")
+            tfce_values = [
+                calc_tfce_values(vals, adjacency_matrices, args.resolution) for vals in
+                tqdm(smooth_t_values_null_distribution)
+            ]
+            pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
+        else:
+            tfce_values = pickle.load(open(tfce_values_null_distribution_path, 'rb'))
+
+        smooth_t_values_null_distribution = tfce_values
+
     clusters_null_distribution_path = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", model, features,
         args.resolution,
-        mode, f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
+        mode, f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
     )
     if not os.path.isfile(clusters_null_distribution_path):
-        os.makedirs(os.path.dirname(clusters_null_distribution_path), exist_ok=True)
-        print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold}")
+        print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold})")
         clusters_null_distribution = [
-            calc_clusters_variable_size(vals, adjacency_matrices, args.t_value_threshold) for vals in
+            {
+                hemi: calc_clusters(vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+                                    adjacency_matrices[hemi],
+                                    args.t_value_threshold,
+                                    return_agg_t_values=True)["agg_t_values"] for
+                hemi in HEMIS} for vals in
             tqdm(smooth_t_values_null_distribution)
         ]
 
@@ -297,6 +321,8 @@ def get_args():
 
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
+
+    parser.add_argument("--tfce", action="store_true")
 
     return parser.parse_args()
 

@@ -12,7 +12,6 @@ import pickle
 
 from nilearn.experimental.surface import SurfaceMasker, SurfaceImage, load_fsaverage
 from nilearn.surface import surface, load_surface, load_surf_mesh
-from nilearn.mass_univariate._utils import calculate_tfce
 from scipy import stats
 from scipy.sparse import csr_matrix
 from scipy.stats import pearsonr, false_discovery_control
@@ -106,7 +105,6 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     )
 
     return scores
-
 
 
 def compute_adjacency_matrix(surface, values='ones'):
@@ -332,50 +330,115 @@ def get_adj_matrices(resolution):
     return adjacency_matrices
 
 
-def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold, return_clusters=False):
-    clusters = {hemi: [] for hemi in HEMIS}
-    cluster_t_values = {hemi: [] for hemi in HEMIS}
-    cluster_maps = dict()
+def calc_tfce_values(t_values, adjacency_matrices, resolution, h=2, e=1, dh="auto"):
+    tfce_values = dict()
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
     for hemi in HEMIS:
-        scores = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-        scores_thresholded = scores > t_value_threshold
-        adj = adjacency_matrices[hemi]
+        values = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        max_score = np.nanmax(values)
+        step = max_score / 100 if dh == "auto" else dh
 
-        start_locations = list(np.argwhere(scores_thresholded)[:, 0])
-        cluster_maps[hemi] = np.zeros_like(scores)
-        while len(start_locations) > 0:
-            idx = start_locations[0]
-            cluster = {idx}
-            checked = {idx}
+        score_threshs = np.arange(step, max_score + step, step)
 
-            def expand_neighbors(start_idx, adj):
-                neighbors = np.argwhere(adj[start_idx] > 0)[:, 1]
-                for neighbor in neighbors:
-                    if not neighbor in checked:
-                        checked.add(neighbor)
-                        if scores_thresholded[neighbor]:
-                            cluster.add(neighbor)
-                            expand_neighbors(neighbor, adj)
+        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
 
-            expand_neighbors(idx, adj)
-            for id in cluster:
-                start_locations.remove(id)
-            t_value_cluster = np.sum(scores[list(cluster)])  # - t_value_threshold)
-            cluster_t_values[hemi].append(t_value_cluster)
-            clusters[hemi].append(cluster)
-            cluster_maps[hemi][list(cluster)] = scores[list(cluster)]
+        edges = np.vstack([surface_infl.faces[:, [0, 1]],
+                           surface_infl.faces[:, [0, 2]],
+                           surface_infl.faces[:, [1, 2]]])
 
-        # fill non-cluster locations with zeros
-        cluster_maps[hemi][cluster_maps[hemi] == 0] = 0
+        edges = np.unique(edges, axis=0)
+        coords = surface_infl.coordinates
+        lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
+        edge_lengths_dict = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
+        edge_lengths_dict.update({(e[1], e[0]): l for e, l in zip(edges, lengths)})
 
+        tfce_values[hemi] = {METRIC_MIN_DIFF_BOTH_MODALITIES: np.zeros_like(values)}
+
+        for score_thresh in score_threshs:
+            # values[values < score_thresh] = 0
+            # print("remaining: ", np.sum(values > 0))
+
+            clusters_dict = calc_clusters(values, adjacency_matrices[hemi],
+                                          score_thresh,
+                                          edge_lengths_dict,
+                                          return_clusters=True,
+                                          return_cluster_edge_lengths=True,
+                                          return_agg_t_values=False,
+                                          min_cluster_size=2)
+            clusters = clusters_dict["clusters"]
+            cluster_extends = np.array(clusters_dict["cluster_edge_lengths"])
+
+            cluster_tfces = (cluster_extends ** e) * (score_thresh ** h)
+            for cluster, cluster_tfce in zip(clusters, cluster_tfces):
+                tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += step * cluster_tfce
+
+        from nilearn import plotting
+        # plotting.plot_surf_stat_map(
+        #     surface_infl,
+        #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+        #     hemi=hemi,
+        #     view="lateral",
+        #     bg_map=fsaverage[f"sulc_{hemi}"],
+        #     colorbar=True,
+        # )
+    return tfce_values
+
+
+def calc_clusters(scores, adj, t_value_threshold, edge_lengths=None, return_clusters=False,
+                  return_cluster_edge_lengths=False, return_agg_t_values=True, min_cluster_size=1):
+    clusters = []
+    cluster_t_values = []
+    cluster_edge_lengths = []
+    scores_thresholded = scores > t_value_threshold
+
+    start_locations = list(np.argwhere(scores_thresholded)[:, 0])
+    # cluster_maps = np.zeros_like(scores)
+    while len(start_locations) > 0:
+        idx = start_locations[0]
+        cluster = {idx}
+        c_edge_lengths = []
+        checked = {idx}
+
+        def expand_neighbors(start_idx, adj):
+            neighbors = np.argwhere(adj[start_idx] > 0)[:, 1]
+            for neighbor in neighbors:
+                if not neighbor in checked:
+                    checked.add(neighbor)
+                    if scores_thresholded[neighbor]:
+                        cluster.add(neighbor)
+                        if return_cluster_edge_lengths:
+                            c_edge_lengths.append(edge_lengths[(start_idx, neighbor)])
+                        expand_neighbors(neighbor, adj)
+
+        expand_neighbors(idx, adj)
+        for id in cluster:
+            start_locations.remove(id)
+
+        if len(cluster) > min_cluster_size:
+            if return_agg_t_values:
+                t_value_cluster = np.sum(scores[list(cluster)])
+                cluster_t_values.append(t_value_cluster)
+            if return_clusters:
+                clusters.append(cluster)
+            if return_cluster_edge_lengths:
+                cluster_edge_lengths.append(np.sum(c_edge_lengths))
+        # cluster_maps[list(cluster)] = scores[list(cluster)]
+
+    # fill non-cluster locations with zeros
+    # cluster_maps[cluster_maps == 0] = 0
+
+    result_dict = dict()
     if return_clusters:
-        return clusters, cluster_maps, cluster_t_values
-    else:
-        return cluster_t_values
+        result_dict['clusters'] = clusters
+    if return_agg_t_values:
+        result_dict['agg_t_values'] = cluster_t_values
+    if return_cluster_edge_lengths:
+        result_dict['cluster_edge_lengths'] = cluster_edge_lengths
+    return result_dict
 
 
 def calc_image_t_values(data, popmean):
-    enough_data = (~np.isnan(data)).sum(axis=0) > 1    # at least 2 datapoints
+    enough_data = (~np.isnan(data)).sum(axis=0) > 2  # at least 3 datapoints
     return np.array([
         stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
         in zip(data.T, enough_data)]
@@ -463,8 +526,6 @@ def run(args):
     # print(f"Masked data shape: {masked_data.shape}")
     # # masker.inverse_transform(surf_img)
 
-
-
     # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
     #
@@ -485,13 +546,24 @@ def run(args):
         t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][
             METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
 
-    print("calculating clusters..")
-    clusters, cluster_maps, cluster_t_values = calc_clusters_variable_size(t_values,
-                                                                           adjacency_matrices,
-                                                                           args.t_value_threshold,
-                                                                           return_clusters=True)
+    if args.tfce:
+        print("calculating tfce..")
+        tfce_values = calc_tfce_values(t_values, adjacency_matrices, args.resolution)
+        t_values = tfce_values
 
-    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
+    print(f"calculating clusters for threshold t>{args.t_value_threshold}")
+    clusters, cluster_t_values = dict(), dict()
+    for hemi in HEMIS:
+        clusters_dict = calc_clusters(
+            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+            adjacency_matrices[hemi],
+            args.t_value_threshold,
+            return_clusters=True
+        )
+        clusters[hemi] = clusters_dict["clusters"]
+        cluster_t_values[hemi] = clusters_dict["agg_t_values"]
+
+    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
                                                    args.resolution,
                                                    args.mode, filename)
@@ -510,7 +582,7 @@ def run(args):
     print(f"cluster t-value significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
     print(f"cluster t-value significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
-    p_values_cluster = {hemi: np.zeros_like(map) for hemi, map in cluster_maps.items()}
+    p_values_cluster = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
         for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
@@ -555,42 +627,6 @@ def run(args):
             )
             axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
     title = f"{args.model}_{args.mode}_group_level_-log10_p_values"
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    title += f"_alpha_{str(alpha)}"
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
-
-    print(f"plotting (cluster t-values)")
-    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
-    fig = plt.figure(figsize=(5 * len(VIEWS), 2))
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-    axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-    cbar_max = None
-    for i, view in enumerate(VIEWS):
-        for j, hemi in enumerate(HEMIS):
-            scores_hemi = cluster_maps[hemi]
-            infl_mesh = fsaverage[f"infl_{hemi}"]
-            if cbar_max is None:
-                cbar_max = min(np.nanmax(scores_hemi), 99)
-            plotting.plot_surf_stat_map(
-                infl_mesh,
-                scores_hemi,
-                hemi=hemi,
-                view=view,
-                bg_map=fsaverage[f"sulc_{hemi}"],
-                axes=axes[i * 2 + j],
-                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=args.t_value_threshold,
-                vmax=cbar_max,
-                vmin=0,
-                cmap="hot",
-                symmetric_cbar=False,
-            )
-            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_group_level_cluster_t_values"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     title += f"_alpha_{str(alpha)}"
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
@@ -773,9 +809,8 @@ def get_args():
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
-    # parser.add_argument("--min-cluster-t-value", type=int, default=DEFAULT_MIN_CLUSTER_T_VALUE)
 
-    # parser.add_argument("--cluster-size", type=int, default=DEFAULT_CLUSTER_SIZE)
+    parser.add_argument("--tfce", action="store_true")
 
     return parser.parse_args()
 
