@@ -19,7 +19,7 @@ from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get
     NUM_TEST_STIMULI, SEARCHLIGHT_OUT_DIR, mode_from_args
 from analyses.searchlight_results_plotting import METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CHANCE_VALUES, \
     METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters, \
-    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data, calc_image_t_values, calc_tfce_values
+    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data, calc_image_t_values, calc_tfce_values, get_edge_lengths_dict
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS, SUBJECTS
 
@@ -280,11 +280,12 @@ def create_null_distribution(args):
     )
     if not os.path.isfile(clusters_null_distribution_path):
         print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold})")
+        edge_length_dicts = {hemi: get_edge_lengths_dict(args.resolution, hemi) for hemi in HEMIS}
         clusters_null_distribution = [
             {
                 hemi: calc_clusters(vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-                                    adjacency_matrices[hemi],
                                     args.t_value_threshold,
+                                    edge_length_dicts[hemi],
                                     return_agg_t_values=True)["agg_t_values"] for
                 hemi in HEMIS} for vals in
             tqdm(smooth_t_values_null_distribution)
