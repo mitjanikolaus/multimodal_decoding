@@ -238,20 +238,29 @@ def create_null_distribution(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     for hemi in HEMIS:
         surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        for t_values in tqdm(t_values_null_distribution):
-            # t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][
-            #     np.isnan(t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES])] = 0
-            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
+        def smooth_t_values(t_values, proc_id, surface):
+            smooth_t_vals = []
+            iterator = tqdm(t_values) if proc_id == 0 else t_values
+            for t_vals in iterator:
+                for hemi in HEMIS:
+                    t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface, t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
+                smooth_t_vals.append(t_vals)
+            return smooth_t_vals
 
-            # from nilearn import plotting
-            # plotting.plot_surf_stat_map(
-            #     surface_infl,
-            #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-            #     hemi=hemi,
-            #     view="lateral",
-            #     bg_map=fsaverage[f"sulc_{hemi}"],
-            #     colorbar=True,
-            # )
+        if len(t_values_null_distribution) % args.n_jobs != 0:
+            warnings.warn(f"{len(t_values_null_distribution)} is not a multiple of {args.n_jobs} (n-jobs)")
+        n_per_thread = len(t_values_null_distribution) // args.n_jobs
+
+        all_t_vals = Parallel(n_jobs=args.n_jobs)(
+            delayed(smooth_t_values)(
+                t_values_null_distribution[id*n_per_thread:(id+1)*n_per_thread],
+                id,
+                surface_infl,
+            )
+            for id in range(args.n_jobs)
+        )
+        t_values_null_distribution = np.concatenate(all_t_vals)
+
 
     filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
     clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", model, features,
