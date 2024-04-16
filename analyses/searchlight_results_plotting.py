@@ -374,6 +374,14 @@ def calc_clusters_variable_size(t_values, adjacency_matrices, t_value_threshold,
         return cluster_t_values
 
 
+def calc_image_t_values(data, popmean):
+    enough_data = (~np.isnan(data)).sum(axis=0) > 1    # at least 2 datapoints
+    return np.array([
+        stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
+        in zip(data.T, enough_data)]
+    )
+
+
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
@@ -381,11 +389,7 @@ def calc_t_values(per_subject_scores):
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS])
             popmean = CHANCE_VALUES[metric]
-            enough_data = np.isnan(data).sum(axis=0) == 0
-            t_vals[metric] = np.array([
-                stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                in zip(data.T, enough_data)]
-            )
+            t_vals[metric] = calc_image_t_values(data, popmean)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -458,6 +462,21 @@ def run(args):
     # masked_data = masker.fit_transform(surf_img)
     # print(f"Masked data shape: {masked_data.shape}")
     # # masker.inverse_transform(surf_img)
+
+
+
+    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+    #
+    # from nilearn import plotting
+    # plotting.plot_surf_stat_map(
+    #     surface_infl,
+    #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+    #     hemi=hemi,
+    #     view="lateral",
+    #     bg_map=fsaverage[f"sulc_{hemi}"],
+    #     colorbar=True,
+    # )
 
     print("smoothing")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)

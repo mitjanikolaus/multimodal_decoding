@@ -19,7 +19,7 @@ from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get
     NUM_TEST_STIMULI, SEARCHLIGHT_OUT_DIR, mode_from_args
 from analyses.searchlight_results_plotting import METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CHANCE_VALUES, \
     METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters_variable_size, \
-    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data
+    DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data, calc_image_t_values
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS, SUBJECTS
 
@@ -170,11 +170,7 @@ def create_null_distribution(args):
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(random_idx, SUBJECTS)])
                         popmean = CHANCE_VALUES[metric]
-                        enough_data = np.isnan(data).sum(axis=0) == 0
-                        t_vals[metric] = np.array([
-                            stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-                            in zip(data.T, enough_data)]
-                        )
+                        t_vals[metric] = calc_image_t_values(data, popmean)
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -184,7 +180,6 @@ def create_null_distribution(args):
 
                 thread_t_vals.append(t_values)
             return thread_t_vals
-
 
         n_iters_per_thread = args.n_permutations_group_level // args.n_jobs
         all_t_vals = Parallel(n_jobs=args.n_jobs)(
@@ -197,28 +192,6 @@ def create_null_distribution(args):
         )
         all_t_vals = np.concatenate(all_t_vals)
 
-        # all_t_vals = []
-        # for _ in tqdm(range(args.n_permutations_group_level)):
-        #     t_values = {hemi: dict() for hemi in HEMIS}
-        #     for hemi in HEMIS:
-        #         for score_name in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-        #             random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
-        #             data = np.array(
-        #                 [per_subject_scores[idx][subj][hemi][score_name] for idx, subj in
-        #                  zip(random_idx, SUBJECTS)])
-        #             popmean = CHANCE_VALUES[score_name]
-        #             enough_data = np.isnan(data).sum(axis=0) == 0
-        #             t_values[hemi][score_name] = np.array([
-        #                 stats.ttest_1samp(x, popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-        #                 in zip(data.T, enough_data)]
-        #             )
-        #
-        #         with warnings.catch_warnings():
-        #             warnings.simplefilter("ignore", category=RuntimeWarning)
-        #             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-        #                 (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
-        #                 axis=0)
-        #     all_t_vals.append(t_values)
         return all_t_vals
 
     t_values_null_distribution_path = os.path.join(
@@ -234,17 +207,34 @@ def create_null_distribution(args):
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
-    print("smoothing")
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    for hemi in HEMIS:
-        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        def smooth_t_values(t_values, proc_id, surface):
+    smooth_t_values_null_distribution_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", model, features,
+        args.resolution,
+        mode, f"t_values_null_distribution_smoothed.p"
+    )
+    if not os.path.isfile(smooth_t_values_null_distribution_path):
+        print("smoothing")
+
+        def smooth_t_values(t_values, proc_id):
             smooth_t_vals = []
+            fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
             iterator = tqdm(t_values) if proc_id == 0 else t_values
             for t_vals in iterator:
                 for hemi in HEMIS:
-                    t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface, t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
+                    surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+                    t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_vals[hemi][
+                        METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
                 smooth_t_vals.append(t_vals)
+
+                # from nilearn import plotting
+                # plotting.plot_surf_stat_map(
+                #     surface_mesh,
+                #     t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+                #     hemi=hemi,
+                #     view="lateral",
+                #     bg_map=fsaverage[f"sulc_{hemi}"],
+                #     colorbar=True,
+                # )
             return smooth_t_vals
 
         if len(t_values_null_distribution) % args.n_jobs != 0:
@@ -253,25 +243,27 @@ def create_null_distribution(args):
 
         all_t_vals = Parallel(n_jobs=args.n_jobs)(
             delayed(smooth_t_values)(
-                t_values_null_distribution[id*n_per_thread:(id+1)*n_per_thread],
+                t_values_null_distribution[id * n_per_thread:(id + 1) * n_per_thread],
                 id,
-                surface_infl,
             )
             for id in range(args.n_jobs)
         )
-        t_values_null_distribution = np.concatenate(all_t_vals)
+        smooth_t_values_null_distribution = np.concatenate(all_t_vals)
+        pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
+    else:
+        smooth_t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
 
-
-    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
-    clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", model, features,
-                                                   args.resolution,
-                                                   mode, filename)
+    clusters_null_distribution_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", model, features,
+        args.resolution,
+        mode, f"clusters_null_distribution_t_thresh_{args.t_value_threshold}.p"
+    )
     if not os.path.isfile(clusters_null_distribution_path):
         os.makedirs(os.path.dirname(clusters_null_distribution_path), exist_ok=True)
-        print(f"Calculating clusters for null distribution")
+        print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold}")
         clusters_null_distribution = [
             calc_clusters_variable_size(vals, adjacency_matrices, args.t_value_threshold) for vals in
-            tqdm(t_values_null_distribution)
+            tqdm(smooth_t_values_null_distribution)
         ]
 
         pickle.dump(clusters_null_distribution, open(clusters_null_distribution_path, 'wb'))
