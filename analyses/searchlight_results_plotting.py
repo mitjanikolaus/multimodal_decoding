@@ -275,7 +275,7 @@ def smooth_surface_data(surface, surf_data,
     # Run the iterations of smoothing.
     data = surf_data
     for _ in range(iterations):
-        data[np.isneginf(data)] = 1e-8 # numerical stability
+        data[np.isneginf(data)] = 1e-8  # numerical stability
         if np.sum(np.isnan(data)) > 0:
             data[~np.isnan(data)] = matrix.A[~np.isnan(data)][:, ~np.isnan(data)].dot(data[~np.isnan(data)])
         else:
