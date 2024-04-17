@@ -8,8 +8,7 @@ import os
 import pickle
 
 from nilearn import datasets
-from nilearn.surface import load_surf_mesh, surface
-from scipy import stats
+from nilearn.surface import surface
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
@@ -18,7 +17,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
 from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get_results_dir, \
     NUM_TEST_STIMULI, SEARCHLIGHT_OUT_DIR, mode_from_args
 from analyses.searchlight_results_plotting import METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CHANCE_VALUES, \
-    METRIC_MIN_DIFF_BOTH_MODALITIES, get_adj_matrices, process_scores, calc_clusters, \
+    METRIC_MIN_DIFF_BOTH_MODALITIES, process_scores, calc_clusters, \
     DEFAULT_T_VALUE_THRESHOLD, smooth_surface_data, calc_image_t_values, calc_tfce_values, get_edge_lengths_dict
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS, SUBJECTS
