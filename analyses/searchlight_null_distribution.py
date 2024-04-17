@@ -1,4 +1,5 @@
 import argparse
+import math
 from glob import glob
 import warnings
 
@@ -87,17 +88,18 @@ def create_permutation_scores(args):
                                 )
                             results.append(scores)
                             if iter % print_interval == 0:
-                                print(f"Thread {id}: finished {iter}/{n_iters}")
+                                print(f"Job {id}: finished {iter}/{n_iters}")
 
                         return results
 
-                    n_iters_per_thread = args.n_permutations_per_subject // args.n_jobs
+                    n_iters_per_job = math.ceil(args.n_permutations_per_subject / args.n_jobs)
+                    n_iters_last_job = (n_iters_per_job * args.n_jobs) - args.n_permutations_per_subject
                     all_scores = Parallel(n_jobs=args.n_jobs)(
                         delayed(shuffle_and_calc_scores)(
                             test_data_latents.copy(),
                             pred_paths.copy(),
                             id,
-                            n_iters_per_thread,
+                            n_iters_per_job if not id == args.n_jobs - 1 else n_iters_last_job,
                         )
                         for id in range(args.n_jobs)
                     )
@@ -153,9 +155,9 @@ def create_null_distribution(args):
 
     def calc_t_values_null_distr(per_subject_scores):
 
-        def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_thread):
-            thread_t_vals = []
-            iterator = tqdm(range(n_iters_per_thread)) if proc_id == 0 else range(n_iters_per_thread)
+        def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
+            job_t_vals = []
+            iterator = tqdm(range(n_iters_per_job)) if proc_id == 0 else range(n_iters_per_job)
             for _ in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
@@ -177,15 +179,15 @@ def create_null_distribution(args):
                             (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
                             axis=0)
 
-                thread_t_vals.append(t_values)
-            return thread_t_vals
+                job_t_vals.append(t_values)
+            return job_t_vals
 
-        n_iters_per_thread = args.n_permutations_group_level // args.n_jobs
+        n_iters_per_job = args.n_permutations_group_level // args.n_jobs
         all_t_vals = Parallel(n_jobs=args.n_jobs)(
             delayed(shuffle_and_calc_t_values)(
                 per_subject_scores.copy(),
                 id,
-                n_iters_per_thread,
+                n_iters_per_job,
             )
             for id in range(args.n_jobs)
         )
@@ -224,30 +226,18 @@ def create_null_distribution(args):
                     t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_vals[hemi][
                         METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
                 smooth_t_vals.append(t_vals)
-
-                # from nilearn import plotting
-                # plotting.plot_surf_stat_map(
-                #     surface_mesh,
-                #     t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-                #     hemi=hemi,
-                #     view="lateral",
-                #     bg_map=fsaverage[f"sulc_{hemi}"],
-                #     colorbar=True,
-                # )
             return smooth_t_vals
 
-        if len(t_values_null_distribution) % args.n_jobs != 0:
-            warnings.warn(f"{len(t_values_null_distribution)} is not a multiple of {args.n_jobs} (n-jobs)")
-        n_per_thread = len(t_values_null_distribution) // args.n_jobs
+        n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
 
-        all_t_vals = Parallel(n_jobs=args.n_jobs)(
+        all_smooth_t_vals = Parallel(n_jobs=args.n_jobs)(
             delayed(smooth_t_values)(
-                t_values_null_distribution[id * n_per_thread:(id + 1) * n_per_thread],
+                t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
                 id,
             )
             for id in range(args.n_jobs)
         )
-        smooth_t_values_null_distribution = np.concatenate(all_t_vals)
+        smooth_t_values_null_distribution = np.concatenate(all_smooth_t_vals)
         pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
     else:
         smooth_t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
@@ -260,10 +250,25 @@ def create_null_distribution(args):
         )
         if not os.path.isfile(tfce_values_null_distribution_path):
             print(f"Calculating tfce values")
-            tfce_values = [
-                calc_tfce_values(vals, args.resolution) for vals in
-                tqdm(smooth_t_values_null_distribution)
-            ]
+
+            def tfce_values_job(t_values, proc_id):
+                iterator = tqdm(t_values) if proc_id == 0 else t_values
+                tfce_values = [
+                    calc_tfce_values(vals, args.resolution) for vals in
+                    iterator
+                ]
+                return tfce_values
+
+            n_per_job = math.ceil(len(smooth_t_values_null_distribution) / args.n_jobs)
+            tfce_values = Parallel(n_jobs=args.n_jobs)(
+                delayed(tfce_values_job)(
+                    smooth_t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                    id,
+                )
+                for id in range(args.n_jobs)
+            )
+            tfce_values = np.concatenate(tfce_values)
+
             pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
         else:
             tfce_values = pickle.load(open(tfce_values_null_distribution_path, 'rb'))
