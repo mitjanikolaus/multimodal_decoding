@@ -558,8 +558,10 @@ def run(args):
     smooth_t_values = copy.deepcopy(t_values)
     for hemi in HEMIS:
         surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][
-            METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
+        smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(
+            surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None,
+            iterations=args.smoothing_iterations
+        )
 
     test_statistic = smooth_t_values
     if args.tfce:
@@ -608,7 +610,7 @@ def run(args):
     null_distribution_test_statistic_file = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, features,
         args.resolution,
-        args.mode, f"t_values_null_distribution_smoothed.p"
+        args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
     )
     if args.tfce:
         null_distribution_test_statistic_file = os.path.join(
@@ -619,7 +621,8 @@ def run(args):
     null_distribution_test_statistic = pickle.load(open(null_distribution_test_statistic_file, 'rb'))
 
     max_test_statistic_distr = {
-        hemi: sorted([np.nanmax(n[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) for n in null_distribution_test_statistic]) for hemi in HEMIS
+        hemi: sorted([np.nanmax(n[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) for n in null_distribution_test_statistic])
+        for hemi in HEMIS
     }
 
     significance_cutoffs = {hemi: np.quantile(max_test_statistic_distr[hemi], 0.95) for hemi in HEMIS}
@@ -632,7 +635,8 @@ def run(args):
     p_values_cluster = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in
                         t_values.items()}
     for hemi in HEMIS:
-        print(f"{hemi} hemi largest test statistic values: ", sorted([t for t in test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
+        print(f"{hemi} hemi largest test statistic values: ",
+              sorted([t for t in test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
         for vertex in np.argwhere(test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] > 0)[:, 0]:
             test_stat = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
             value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
@@ -861,6 +865,8 @@ def get_args():
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
+
+    parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce", action="store_true")
 

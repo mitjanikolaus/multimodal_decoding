@@ -208,39 +208,46 @@ def create_null_distribution(args):
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
-    smooth_t_values_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", model, features,
-        args.resolution,
-        mode, f"t_values_null_distribution_smoothed.p"
-    )
-    if not os.path.isfile(smooth_t_values_null_distribution_path):
-        print("smoothing")
-
-        def smooth_t_values(t_values, proc_id):
-            smooth_t_vals = []
-            fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-            iterator = tqdm(t_values) if proc_id == 0 else t_values
-            for t_vals in iterator:
-                for hemi in HEMIS:
-                    surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-                    t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_vals[hemi][
-                        METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
-                smooth_t_vals.append(t_vals)
-            return smooth_t_vals
-
-        n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
-
-        all_smooth_t_vals = Parallel(n_jobs=args.n_jobs)(
-            delayed(smooth_t_values)(
-                t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
-                id,
-            )
-            for id in range(args.n_jobs)
+    if args.smoothing_iterations > 0:
+        smooth_t_values_null_distribution_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", model, features,
+            args.resolution,
+            mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
         )
-        smooth_t_values_null_distribution = np.concatenate(all_smooth_t_vals)
-        pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
-    else:
-        smooth_t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
+        if not os.path.isfile(smooth_t_values_null_distribution_path):
+            print("smoothing")
+
+            def smooth_t_values(t_values, proc_id):
+                smooth_t_vals = []
+                fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+                iterator = tqdm(t_values) if proc_id == 0 else t_values
+                for t_vals in iterator:
+                    for hemi in HEMIS:
+                        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+                        smoothed = smooth_surface_data(
+                            surface_infl,
+                            t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+                            distance_weights=True,
+                            match=None,
+                            iterations=args.smoothing_iterations
+                        )
+                        t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smoothed
+                    smooth_t_vals.append(t_vals)
+                return smooth_t_vals
+
+            n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
+
+            all_smooth_t_vals = Parallel(n_jobs=args.n_jobs)(
+                delayed(smooth_t_values)(
+                    t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                    id,
+                )
+                for id in range(args.n_jobs)
+            )
+            t_values_null_distribution = np.concatenate(all_smooth_t_vals)
+            pickle.dump(t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
+        else:
+            t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
 
     if args.tfce:
         tfce_values_null_distribution_path = os.path.join(
@@ -259,10 +266,10 @@ def create_null_distribution(args):
                 ]
                 return tfce_values
 
-            n_per_job = math.ceil(len(smooth_t_values_null_distribution) / args.n_jobs)
+            n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
             tfce_values = Parallel(n_jobs=args.n_jobs)(
                 delayed(tfce_values_job)(
-                    smooth_t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                    t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
                     id,
                 )
                 for id in range(args.n_jobs)
@@ -324,6 +331,8 @@ def get_args():
 
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
     parser.add_argument("--t-value-threshold", type=float, default=DEFAULT_T_VALUE_THRESHOLD)
+
+    parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce", action="store_true")
 
