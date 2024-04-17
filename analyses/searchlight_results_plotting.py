@@ -378,20 +378,6 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
                 tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += cluster_tfce
 
-        # t_values_pos = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-        # t_values_pos[t_values_pos < 0] = 0
-        # from nilearn import plotting
-        # fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-        # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        # plotting.plot_surf_stat_map(
-        #     surface_infl,
-        #     t_values_pos,
-        #     hemi=hemi,
-        #     view="lateral",
-        #     bg_map=fsaverage[f"sulc_{hemi}"],
-        #     colorbar=True,
-        #     symmetric_cbar=True,
-        # )
     return tfce_values
 
 
@@ -676,7 +662,7 @@ def run(args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1.3,  # -log10(0.05) ~ 1.3
+                threshold=0.5,  # -log10(0.05) ~ 1.3
                 vmax=cbar_max,
                 vmin=0,
                 cmap="bwr",
