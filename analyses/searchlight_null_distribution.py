@@ -125,8 +125,6 @@ def create_null_distribution(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
-    adjacency_matrices = get_adj_matrices(args.resolution)
-
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
         print(path_agnostic)
@@ -264,7 +262,7 @@ def create_null_distribution(args):
         if not os.path.isfile(tfce_values_null_distribution_path):
             print(f"Calculating tfce values")
             tfce_values = [
-                calc_tfce_values(vals, adjacency_matrices, args.resolution) for vals in
+                calc_tfce_values(vals, args.resolution) for vals in
                 tqdm(smooth_t_values_null_distribution)
             ]
             pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))

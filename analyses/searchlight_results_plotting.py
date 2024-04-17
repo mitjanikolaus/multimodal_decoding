@@ -310,24 +310,24 @@ def smooth_surface_data(surface, surf_data,
         return data
 
 
-def get_adj_matrices(resolution):
-    adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", resolution, "adjacency.p")
-    if not os.path.isfile(adj_path):
-        print("Computing adjacency matrices.")
-        adjacency_matrices = dict()
-        for hemi in HEMIS:
-            os.makedirs(os.path.dirname(adj_path), exist_ok=True)
-            fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-            surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-
-            adjacency_matrix = compute_adjacency_matrix(surface_infl, values='euclidean')
-
-            adjacency_matrices[hemi] = adjacency_matrix
-        pickle.dump(adjacency_matrices, open(adj_path, 'wb'))
-    else:
-        adjacency_matrices = pickle.load(open(adj_path, 'rb'))
-
-    return adjacency_matrices
+# def get_adj_matrices(resolution):
+#     adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", resolution, "adjacency.p")
+#     if not os.path.isfile(adj_path):
+#         print("Computing adjacency matrices.")
+#         adjacency_matrices = dict()
+#         for hemi in HEMIS:
+#             os.makedirs(os.path.dirname(adj_path), exist_ok=True)
+#             fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+#             surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+#
+#             adjacency_matrix = compute_adjacency_matrix(surface_infl, values='euclidean')
+#
+#             adjacency_matrices[hemi] = adjacency_matrix
+#         pickle.dump(adjacency_matrices, open(adj_path, 'wb'))
+#     else:
+#         adjacency_matrices = pickle.load(open(adj_path, 'rb'))
+#
+#     return adjacency_matrices
 
 
 def get_edge_lengths_dict(resolution, hemi):
@@ -345,12 +345,17 @@ def get_edge_lengths_dict(resolution, hemi):
     return edge_lengths_dict
 
 
-def calc_tfce_values(t_values, adjacency_matrices, resolution, h=2, e=1, dh="auto"):
+def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
     tfce_values = dict()
     for hemi in HEMIS:
         values = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
         max_score = np.nanmax(values)
+        if np.isnan(max_score) or np.isinf(max_score):
+            print("encountered NaN or Inf in t-values while calculating tfce values")
+            return t_values
+
         step = max_score / 100 if dh == "auto" else dh
+
 
         score_threshs = np.arange(step, max_score + step, step)
 
@@ -522,8 +527,6 @@ def run(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
-    adjacency_matrices = get_adj_matrices(args.resolution)
-
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
         print(path_agnostic)
@@ -596,7 +599,7 @@ def run(args):
 
     if args.tfce:
         print("calculating tfce..")
-        tfce_values = calc_tfce_values(t_values, adjacency_matrices, args.resolution)
+        tfce_values = calc_tfce_values(t_values, args.resolution)
         t_values = tfce_values
 
     print(f"calculating clusters for threshold t>{args.t_value_threshold}")
