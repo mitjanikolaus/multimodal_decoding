@@ -358,7 +358,6 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
 
         step = max_score / 100 if dh == "auto" else dh
 
-
         score_threshs = np.arange(step, max_score + step, step)
 
         tfce_values[hemi] = {METRIC_MIN_DIFF_BOTH_MODALITIES: np.zeros_like(values)}
@@ -375,20 +374,23 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
             clusters = clusters_dict["clusters"]
             cluster_extends = np.array(clusters_dict["cluster_edge_lengths"])
 
-            cluster_tfces = (cluster_extends ** e) * (score_thresh ** h)
+            cluster_tfces = (cluster_extends ** e) * (step ** h)
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
-                tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += step * cluster_tfce
+                tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += cluster_tfce
 
+        # t_values_pos = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        # t_values_pos[t_values_pos < 0] = 0
         # from nilearn import plotting
         # fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
         # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
         # plotting.plot_surf_stat_map(
         #     surface_infl,
-        #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+        #     t_values_pos,
         #     hemi=hemi,
         #     view="lateral",
         #     bg_map=fsaverage[f"sulc_{hemi}"],
         #     colorbar=True,
+        #     symmetric_cbar=True,
         # )
     return tfce_values
 
