@@ -638,7 +638,7 @@ def run(args):
             value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
             p_value = 1 - value_indices[0] / len(null_distribution_test_statistic) if len(value_indices) > 0 else 1 - (
                     len(null_distribution_test_statistic) - 1) / (len(null_distribution_test_statistic))
-            p_values_cluster[hemi][vertex] = p_value
+            p_values_cluster[hemi][vertex] = p_value.item()
 
     print(f"smallest p value (left): {np.min(p_values_cluster['left'][p_values_cluster['left'] > 0]):.4f}")
     print(f"smallest p value (right): {np.min(p_values_cluster['right'][p_values_cluster['right'] > 0]):.4f}")
