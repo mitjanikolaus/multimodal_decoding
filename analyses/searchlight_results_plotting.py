@@ -272,9 +272,10 @@ def smooth_surface_data(surface, surf_data,
 
     # Add in the diagonal.
     matrix.setdiag(center_weight)
-    # Run the iterations of smooothing.
+    # Run the iterations of smoothing.
     data = surf_data
     for _ in range(iterations):
+        data[np.isneginf(data)] = 1e-8 # numerical stability
         if np.sum(np.isnan(data)) > 0:
             data[~np.isnan(data)] = matrix.A[~np.isnan(data)][:, ~np.isnan(data)].dot(data[~np.isnan(data)])
         else:
@@ -352,7 +353,8 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
         max_score = np.nanmax(values)
         if np.isnan(max_score) or np.isinf(max_score):
             print("encountered NaN or Inf in t-values while calculating tfce values")
-            return t_values
+            tfce_values[hemi] = t_values[hemi]
+            continue
 
         step = max_score / 100 if dh == "auto" else dh
 
