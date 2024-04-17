@@ -553,20 +553,22 @@ def run(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    print("smoothing")
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    smooth_t_values = copy.deepcopy(t_values)
-    for hemi in HEMIS:
-        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(
-            surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None,
-            iterations=args.smoothing_iterations
-        )
+    test_statistic = t_values
+    if args.smoothing_iterations > 0:
+        print("smoothing")
+        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+        smooth_t_values = copy.deepcopy(t_values)
+        for hemi in HEMIS:
+            surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+            smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(
+                surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None,
+                iterations=args.smoothing_iterations
+            )
+        test_statistic = smooth_t_values
 
-    test_statistic = smooth_t_values
     if args.tfce:
         print("calculating tfce..")
-        tfce_values = calc_tfce_values(smooth_t_values, args.resolution)
+        tfce_values = calc_tfce_values(test_statistic, args.resolution)
 
         # hemi='left'
         # t_values_pos = smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
