@@ -275,25 +275,25 @@ def create_null_distribution(args):
 
         smooth_t_values_null_distribution = tfce_values
 
-    clusters_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", model, features,
-        args.resolution,
-        mode, f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
-    )
-    if not os.path.isfile(clusters_null_distribution_path):
-        print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold})")
-        edge_length_dicts = {hemi: get_edge_lengths_dict(args.resolution, hemi) for hemi in HEMIS}
-        clusters_null_distribution = [
-            {
-                hemi: calc_clusters(vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-                                    args.t_value_threshold,
-                                    edge_length_dicts[hemi],
-                                    return_agg_t_values=True)["agg_t_values"] for
-                hemi in HEMIS} for vals in
-            tqdm(smooth_t_values_null_distribution)
-        ]
-
-        pickle.dump(clusters_null_distribution, open(clusters_null_distribution_path, 'wb'))
+    # clusters_null_distribution_path = os.path.join(
+    #     SEARCHLIGHT_OUT_DIR, "train", model, features,
+    #     args.resolution,
+    #     mode, f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
+    # )
+    # if not os.path.isfile(clusters_null_distribution_path):
+    #     print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold})")
+    #     edge_length_dicts = {hemi: get_edge_lengths_dict(args.resolution, hemi) for hemi in HEMIS}
+    #     clusters_null_distribution = [
+    #         {
+    #             hemi: calc_clusters(vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+    #                                 args.t_value_threshold,
+    #                                 edge_length_dicts[hemi],
+    #                                 return_agg_t_values=True)["agg_t_values"] for
+    #             hemi in HEMIS} for vals in
+    #         tqdm(smooth_t_values_null_distribution)
+    #     ]
+    #
+    #     pickle.dump(clusters_null_distribution, open(clusters_null_distribution_path, 'wb'))
 
 
 def get_args():

@@ -369,8 +369,7 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
                                           edge_lengths_dict,
                                           return_clusters=True,
                                           return_cluster_edge_lengths=True,
-                                          return_agg_t_values=False,
-                                          min_cluster_size=2)
+                                          )
             clusters = clusters_dict["clusters"]
             cluster_extends = np.array(clusters_dict["cluster_edge_lengths"])
 
@@ -381,8 +380,9 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
     return tfce_values
 
 
-def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=False,
-                  return_cluster_edge_lengths=False, return_agg_t_values=True, min_cluster_size=1):
+def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
+                  return_cluster_edge_lengths=False, return_agg_t_values=False,
+                  return_cluster_map=False):
     cluster_nodes = dict()
     cluster_edge_lengths = dict()
 
@@ -427,6 +427,12 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=False,
     result_dict = dict()
     if return_clusters:
         result_dict['clusters'] = list(cluster_nodes.values())
+    if return_cluster_map:
+        cluster_map = np.zeros_like(scores)
+        for cluster in cluster_nodes.values():
+            cluster_t_value = sum(scores[n] for n in cluster)
+            cluster_map[list(cluster)] = cluster_t_value
+        result_dict['cluster_map'] = cluster_map
     if return_agg_t_values:
         cluster_t_values = [sum(scores[n] for n in cluster) for cluster in cluster_nodes.values()]
         result_dict['agg_t_values'] = cluster_t_values
@@ -465,7 +471,7 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=False,
     #             cluster_nodes.append(cluster)
     #         if return_cluster_edge_lengths:
     #             cluster_edge_lengths.append(np.sum(c_edge_lengths))
-        # cluster_maps[list(cluster)] = scores[list(cluster)]
+    # cluster_maps[list(cluster)] = scores[list(cluster)]
 
     # fill non-cluster locations with zeros
     # cluster_maps[cluster_maps == 0] = 0
@@ -547,92 +553,95 @@ def run(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    # data = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
-    # fsaverage = load_fsaverage(mesh_name=args.resolution)
-    # # pial_mesh = fsaverage[f"pial_{hemi}"]
-    #
-    # # surf_data = load_surface((pial_mesh, data))
-    # # mesh = {
-    # #     "left": fsaverage[f"pial_left"],
-    # #     "right": fsaverage[f"pial_right"],
-    # # }
-    # data = {
-    #     "left_hemisphere": t_values["left"][METRIC_MIN_DIFF_BOTH_MODALITIES],
-    #     "right_hemisphere": t_values["right"][METRIC_MIN_DIFF_BOTH_MODALITIES],
-    # }
-    # surf_img = SurfaceImage(mesh=fsaverage["pial"], data=data)
-    #
-    # masker = SurfaceMasker()
-    # masked_data = masker.fit_transform(surf_img)
-    # print(f"Masked data shape: {masked_data.shape}")
-    # # masker.inverse_transform(surf_img)
-
-    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-    #
-    # from nilearn import plotting
-    # plotting.plot_surf_stat_map(
-    #     surface_infl,
-    #     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-    #     hemi=hemi,
-    #     view="lateral",
-    #     bg_map=fsaverage[f"sulc_{hemi}"],
-    #     colorbar=True,
-    # )
-
     print("smoothing")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    smooth_t_values = copy.deepcopy(t_values)
     for hemi in HEMIS:
         surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][
+        smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(surface_infl, t_values[hemi][
             METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None)
 
+    test_statistic = smooth_t_values
     if args.tfce:
         print("calculating tfce..")
-        tfce_values = calc_tfce_values(t_values, args.resolution)
-        t_values = tfce_values
+        tfce_values = calc_tfce_values(smooth_t_values, args.resolution)
 
-    print(f"calculating clusters for threshold t>{args.t_value_threshold}")
-    clusters, cluster_t_values = dict(), dict()
-    for hemi in HEMIS:
-        edge_lengths_dict = get_edge_lengths_dict(args.resolution, hemi)
+        # hemi='left'
+        # t_values_pos = smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        # t_values_pos[t_values_pos < 0] = 0
+        # t_values_pos[t_values_pos > 0] = 1
+        # from nilearn import plotting
+        # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+        # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+        # plotting.plot_surf_stat_map(
+        #     surface_infl,
+        #     t_values_pos,
+        #     hemi=hemi,
+        #     view="lateral",
+        #     bg_map=fsaverage[f"sulc_{hemi}"],
+        #     colorbar=True,
+        #     symmetric_cbar=True,
+        # )
 
-        clusters_dict = calc_clusters(
-            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-            args.t_value_threshold,
-            edge_lengths_dict,
-            return_clusters=True
+        test_statistic = tfce_values
+
+    # print(f"calculating clusters for threshold t>{args.t_value_threshold}")
+    # clusters, cluster_t_values = dict(), dict()
+    # for hemi in HEMIS:
+    #     edge_lengths_dict = get_edge_lengths_dict(args.resolution, hemi)
+    #
+    #     clusters_dict = calc_clusters(
+    #         smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+    #         args.t_value_threshold,
+    #         edge_lengths_dict,
+    #         return_clusters=True
+    #     )
+    #     clusters[hemi] = clusters_dict["clusters"]
+    #     cluster_t_values[hemi] = clusters_dict["agg_t_values"]
+
+    # filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
+    # clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
+    #                                                args.resolution,
+    #                                                args.mode, filename)
+    # clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
+
+    null_distribution_test_statistic_file = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, features,
+        args.resolution,
+        args.mode, f"t_values_null_distribution_smoothed.p"
+    )
+    if args.tfce:
+        null_distribution_test_statistic_file = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, features,
+            args.resolution,
+            args.mode, f"tfce_values_null_distribution.p"
         )
-        clusters[hemi] = clusters_dict["clusters"]
-        cluster_t_values[hemi] = clusters_dict["agg_t_values"]
+    null_distribution_test_statistic = pickle.load(open(null_distribution_test_statistic_file, 'rb'))
 
-    filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
-    clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
-                                                   args.resolution,
-                                                   args.mode, filename)
-    clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
-    if isinstance(clusters_null_distribution[0], tuple):
-        clusters_null_distribution = [c[1] for c in clusters_null_distribution]
-
-    max_cluster_t_value_distr = {
-        hemi: sorted([
-            np.max(c[hemi]) if len(c[hemi]) > 0 else 0 for c in clusters_null_distribution
-        ]) for hemi in HEMIS
+    max_test_statistic_distr = {
+        hemi: sorted([np.nanmax(n[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) for n in null_distribution_test_statistic]) for hemi in HEMIS
     }
 
-    significance_cutoffs = {hemi: np.quantile(max_cluster_t_value_distr[hemi], 0.95) for hemi in HEMIS}
-    print(f"{len(clusters_null_distribution)} permutations")
+    significance_cutoffs = {hemi: np.quantile(max_test_statistic_distr[hemi], 0.95) for hemi in HEMIS}
+    print(f"{len(null_distribution_test_statistic)} permutations")
     print(f"cluster t-value significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
     print(f"cluster t-value significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
-    p_values_cluster = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in t_values.items()}
+    np.nanmax(test_statistic['left'][METRIC_MIN_DIFF_BOTH_MODALITIES])
+
+    p_values_cluster = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in
+                        t_values.items()}
     for hemi in HEMIS:
-        print(f"{hemi} hemi largest cluster t-values: ", sorted([t for t in cluster_t_values[hemi]], reverse=True)[:10])
-        for cluster, t_val in zip(clusters[hemi], cluster_t_values[hemi]):
-            value_indices = np.argwhere(max_cluster_t_value_distr[hemi] > t_val)
-            p_value = 1 - value_indices[0] / len(clusters_null_distribution) if len(value_indices) > 0 else 1 - (
-                    len(clusters_null_distribution) - 1) / (len(clusters_null_distribution))
-            p_values_cluster[hemi][list(cluster)] = p_value
+        print(f"{hemi} hemi largest test statistic values: ", sorted([t for t in test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
+        for vertex in np.argwhere(test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] > 0)[:, 0]:
+            test_stat = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
+            value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
+            p_value = 1 - value_indices[0] / len(null_distribution_test_statistic) if len(value_indices) > 0 else 1 - (
+                    len(null_distribution_test_statistic) - 1) / (len(null_distribution_test_statistic))
+            p_values_cluster[hemi][vertex] = p_value
+
+    print(f"smallest p value (left): {np.min(p_values_cluster['left'][p_values_cluster['left'] > 0]):.4f}")
+    print(f"smallest p value (right): {np.min(p_values_cluster['right'][p_values_cluster['right'] > 0]):.4f}")
 
     # transform to plottable magnitudes:
     p_values_cluster['left'][p_values_cluster['left'] > 0] = -np.log10(
@@ -653,7 +662,7 @@ def run(args):
             infl_mesh = fsaverage[f"infl_{hemi}"]
             if cbar_max is None:
                 cbar_max = min(np.nanmax(scores_hemi), 99)
-                print(cbar_max)
+                print("cbar max: ", cbar_max)
             plotting.plot_surf_stat_map(
                 infl_mesh,
                 scores_hemi,
