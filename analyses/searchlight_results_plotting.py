@@ -373,12 +373,20 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
                                           return_cluster_edge_lengths=True,
                                           )
             clusters = clusters_dict["clusters"]
-            cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
-            # cluster_extents = np.array([len(c) for c in clusters])
+            # cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
+            cluster_extents = np.array([len(c) for c in clusters])
 
             cluster_tfces = (cluster_extents ** e) * (step ** h)
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
                 tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += cluster_tfce
+
+            # increase tfce values for nodes out of clusters
+            nodes_in_clusters = [n for c in clusters for n in c]
+            single_nodes_above_thresh = [
+                n for n, v in enumerate(values) if (n not in nodes_in_clusters) and (v > score_thresh)
+            ]
+            single_node_tfce = (1 ** e) * (step ** h)
+            tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][single_nodes_above_thresh] += single_node_tfce
 
     return tfce_values
 
@@ -390,7 +398,9 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     cluster_edge_lengths = dict()
 
     # Filter edges for edges that are connecting nodes with score above threshold
-    edge_lengths = {e: l for e, l in edge_lengths.items() if (scores[e[0]] > threshold) and (scores[e[1]] > threshold)}
+    edge_lengths = {
+        e: l for e, l in edge_lengths.items() if (scores[e[0]] >= threshold) and (scores[e[1]] >= threshold)
+    }
 
     node_to_cluster = dict()
 
