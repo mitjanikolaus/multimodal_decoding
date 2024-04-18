@@ -1069,7 +1069,6 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
-
     return parser.parse_args()
 
 
