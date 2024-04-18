@@ -356,7 +356,7 @@ def get_edge_lengths_dicts(resolution, max_dist="max"):
             connected = [(x1, x2) for x1, x2 in np.argwhere(all_dists < max_dist) if not (x1 == x2) and (x1 < x2)]
             edge_lengths_dicts[hemi] = {e: all_dists[e] for e in connected}
 
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         pickle.dump(edge_lengths_dicts, open(path, 'wb'))
     else:
         edge_lengths_dicts = pickle.load(open(path, 'rb'))
