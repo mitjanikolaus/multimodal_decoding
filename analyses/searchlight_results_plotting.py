@@ -570,7 +570,7 @@ def run(args):
 
     if args.tfce:
         print("calculating tfce..")
-        tfce_values = calc_tfce_values(test_statistic, args.resolution)
+        tfce_values = calc_tfce_values(test_statistic, args.resolution, h=args.tfce_h, e=args.tfce_e)
 
         # hemi='left'
         # t_values_pos = smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -620,7 +620,8 @@ def run(args):
         null_distribution_test_statistic_file = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
             args.resolution,
-            args.mode, f"tfce_values_null_distribution.p"
+            args.mode,
+            f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
         )
     null_distribution_test_statistic = pickle.load(open(null_distribution_test_statistic_file, 'rb'))
 
@@ -998,7 +999,8 @@ def create_null_distribution(args):
         tfce_values_null_distribution_path = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
             args.resolution,
-            args.mode, f"tfce_values_null_distribution.p"
+            args.mode,
+            f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
         )
         if not os.path.isfile(tfce_values_null_distribution_path):
             print(f"Calculating tfce values for null distribution")
@@ -1006,7 +1008,7 @@ def create_null_distribution(args):
             def tfce_values_job(t_values, proc_id):
                 iterator = tqdm(t_values) if proc_id == 0 else t_values
                 tfce_values = [
-                    calc_tfce_values(vals, args.resolution) for vals in
+                    calc_tfce_values(vals, args.resolution, h=args.tfce_h, e=args.tfce_e) for vals in
                     iterator
                 ]
                 return tfce_values
@@ -1063,8 +1065,8 @@ def get_args():
     parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce", action="store_true")
-    parser.add_argument("--tfce-h", type=int, default=0)
-    parser.add_argument("--tfce-e", type=int, default=0)
+    parser.add_argument("--tfce-h", type=int, default=2)
+    parser.add_argument("--tfce-e", type=int, default=1)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
