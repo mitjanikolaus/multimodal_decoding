@@ -611,8 +611,6 @@ def run(args):
     #                                                args.mode, filename)
     # clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
 
-
-
     if args.tfce:
         null_distribution_test_statistic_file = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
