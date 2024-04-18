@@ -14,6 +14,7 @@ import pickle
 from nilearn.surface import surface
 from scipy import stats
 from scipy.sparse import csr_matrix
+from scipy.spatial.distance import cdist
 from scipy.stats import pearsonr
 from tqdm import tqdm
 import seaborn as sns
@@ -333,20 +334,33 @@ def smooth_surface_data(surface, surf_data,
 #     return adjacency_matrices
 
 
-def get_edge_lengths_dicts(resolution):
-    edge_lengths_dicts = dict()
-    for hemi in HEMIS:
+def get_edge_lengths_dicts(resolution, max_dist="max"):
+    path = os.path.join(SEARCHLIGHT_OUT_DIR, "edge_lengths", resolution, f"edge_lengths_{max_dist}.p")
+    if not os.path.isfile(path):
+        edge_lengths_dicts = dict()
         fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+        surface_infl = {hemi: surface.load_surf_mesh(fsaverage[f"infl_{hemi}"]) for hemi in HEMIS}
 
-        edges = np.vstack([surface_infl.faces[:, [0, 1]],
-                           surface_infl.faces[:, [0, 2]],
-                           surface_infl.faces[:, [1, 2]]])
+        for hemi in HEMIS:
+            coords = surface_infl[hemi].coordinates
 
-        edges = np.array([(e0, e1) if e0 < e1 else (e1, e0) for e0, e1 in edges])
-        coords = surface_infl.coordinates
-        lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
-        edge_lengths_dicts[hemi] = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
+            edges = np.vstack([surface_infl[hemi].faces[:, [0, 1]],
+                               surface_infl[hemi].faces[:, [0, 2]],
+                               surface_infl[hemi].faces[:, [1, 2]]])
+            edges = np.array([(e0, e1) if e0 < e1 else (e1, e0) for e0, e1 in edges])
+            lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
+            max_dist = lengths.mean() if max_dist == "mean" else lengths.max()
+            print(f"{hemi} hemi max dist for connectivity: {max_dist}")
+
+            all_dists = cdist(coords, coords, metric="euclidean")
+            connected = [(x1, x2) for x1, x2 in np.argwhere(all_dists < max_dist) if not (x1 == x2) and (x1 < x2)]
+            edge_lengths_dicts[hemi] = {e: all_dists[e] for e in connected}
+
+        pickle.dump(edge_lengths_dicts, open(path, 'wb'))
+    else:
+        edge_lengths_dicts = pickle.load(open(path, 'rb'))
+    # cross_hemi_dists = cdist(surface_infl['left'].coordinates, surface_infl['right'].coordinates, metric="euclidean")
+    # np.argwhere(cross_hemi_dists < 20)
     return edge_lengths_dicts
 
 
