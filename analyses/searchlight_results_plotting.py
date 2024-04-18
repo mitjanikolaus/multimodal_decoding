@@ -611,11 +611,8 @@ def run(args):
     #                                                args.mode, filename)
     # clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
 
-    null_distribution_test_statistic_file = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
-    )
+
+
     if args.tfce:
         null_distribution_test_statistic_file = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
@@ -623,6 +620,20 @@ def run(args):
             args.mode,
             f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
         )
+    else:
+        if args.smoothing_iterations > 0:
+            null_distribution_test_statistic_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+                args.resolution,
+                args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
+            )
+        else:
+            null_distribution_test_statistic_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+                args.resolution,
+                args.mode, f"t_values_null_distribution.p"
+            )
+
     null_distribution_test_statistic = pickle.load(open(null_distribution_test_statistic_file, 'rb'))
 
     max_test_statistic_distr = {
