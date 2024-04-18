@@ -1029,8 +1029,8 @@ def get_args():
     parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce", action="store_true")
-    parser.add_argument("--tfce-h", type=int, default=2)
-    parser.add_argument("--tfce-e", type=int, default=1)
+    parser.add_argument("--tfce-h", type=float, default=2)
+    parser.add_argument("--tfce-e", type=float, default=1)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
