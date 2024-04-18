@@ -375,7 +375,7 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
                                           edge_lengths_dicts[hemi],
                                           return_clusters=True,
                                           return_cluster_edge_lengths=True,
-                                          max_edge_distance=10,
+                                          max_edge_distance=15,
                                           )
             clusters = clusters_dict["clusters"]
             cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
