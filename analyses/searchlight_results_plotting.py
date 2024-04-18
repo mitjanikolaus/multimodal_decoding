@@ -591,26 +591,6 @@ def run(args):
 
         test_statistic = tfce_values
 
-    # print(f"calculating clusters for threshold t>{args.t_value_threshold}")
-    # clusters, cluster_t_values = dict(), dict()
-    # for hemi in HEMIS:
-    #     edge_lengths_dict = get_edge_lengths_dict(args.resolution, hemi)
-    #
-    #     clusters_dict = calc_clusters(
-    #         smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-    #         args.t_value_threshold,
-    #         edge_lengths_dict,
-    #         return_clusters=True
-    #     )
-    #     clusters[hemi] = clusters_dict["clusters"]
-    #     cluster_t_values[hemi] = clusters_dict["agg_t_values"]
-
-    # filename = f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
-    # clusters_null_distribution_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, features,
-    #                                                args.resolution,
-    #                                                args.mode, filename)
-    # clusters_null_distribution = pickle.load(open(clusters_null_distribution_path, 'rb'))
-
     if args.tfce:
         null_distribution_test_statistic_file = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
@@ -870,14 +850,13 @@ def run(args):
             plt.close()
 
 
-def create_null_distribution(args):
-    all_scores_null_distr = []
+def calc_t_values_null_distr():
     alpha = args.l2_regularization_alpha
-
     results_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
         f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p'
     )
+    per_subject_scores_null_distr = []
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
     paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
@@ -885,7 +864,7 @@ def create_null_distribution(args):
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
-        # print(path_agnostic)
+        print('loading: ', path_agnostic)
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
@@ -905,60 +884,60 @@ def create_null_distribution(args):
         for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
                                                                 null_distribution_captions,
                                                                 null_distribution_images)):
-            if len(all_scores_null_distr) <= i:
-                all_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
+            if len(per_subject_scores_null_distr) <= i:
+                per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-            all_scores_null_distr[i][subject][hemi] = scores
+            per_subject_scores_null_distr[i][subject][hemi] = scores
 
-    def calc_t_values_null_distr(per_subject_scores):
+    def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
+        job_t_vals = []
+        iterator = tqdm(range(n_iters_per_job)) if proc_id == 0 else range(n_iters_per_job)
+        for _ in iterator:
+            t_values = {hemi: dict() for hemi in HEMIS}
+            for hemi in HEMIS:
+                t_vals = dict()
 
-        def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
-            job_t_vals = []
-            iterator = tqdm(range(n_iters_per_job)) if proc_id == 0 else range(n_iters_per_job)
-            for _ in iterator:
-                t_values = {hemi: dict() for hemi in HEMIS}
-                for hemi in HEMIS:
-                    t_vals = dict()
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+                    random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
+                    data = np.array(
+                        [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                         zip(random_idx, SUBJECTS)])
+                    popmean = CHANCE_VALUES[metric]
+                    t_vals[metric] = calc_image_t_values(data, popmean)
 
-                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-                        random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
-                        data = np.array(
-                            [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                             zip(random_idx, SUBJECTS)])
-                        popmean = CHANCE_VALUES[metric]
-                        t_vals[metric] = calc_image_t_values(data, popmean)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
+                        (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
+                        axis=0)
 
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=RuntimeWarning)
-                        t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                            (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
-                            axis=0)
+            job_t_vals.append(t_values)
+        return job_t_vals
 
-                job_t_vals.append(t_values)
-            return job_t_vals
-
-        n_iters_per_job = args.n_permutations_group_level // args.n_jobs
-        all_t_vals = Parallel(n_jobs=args.n_jobs)(
-            delayed(shuffle_and_calc_t_values)(
-                per_subject_scores.copy(),
-                id,
-                n_iters_per_job,
-            )
-            for id in range(args.n_jobs)
+    n_iters_per_job = args.n_permutations_group_level // args.n_jobs
+    all_t_vals = Parallel(n_jobs=args.n_jobs)(
+        delayed(shuffle_and_calc_t_values)(
+            per_subject_scores_null_distr.copy(),
+            id,
+            n_iters_per_job,
         )
-        all_t_vals = np.concatenate(all_t_vals)
+        for id in range(args.n_jobs)
+    )
+    all_t_vals = np.concatenate(all_t_vals)
 
-        return all_t_vals
+    return all_t_vals
 
+
+def create_null_distribution(args):
     t_values_null_distribution_path = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
         args.mode, f"t_values_null_distribution.p"
     )
     if not os.path.isfile(t_values_null_distribution_path):
-        os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
         print(f"Calculating t-values: null distribution")
-        t_values_null_distribution = calc_t_values_null_distr(all_scores_null_distr)
+        t_values_null_distribution = calc_t_values_null_distr()
+        os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
         pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
     else:
         t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
@@ -1033,29 +1012,6 @@ def create_null_distribution(args):
             tfce_values = np.concatenate(tfce_values)
 
             pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
-        # else:
-        #     tfce_values = pickle.load(open(tfce_values_null_distribution_path, 'rb'))
-
-        # smooth_t_values_null_distribution = tfce_values
-    # clusters_null_distribution_path = os.path.join(
-    #     SEARCHLIGHT_OUT_DIR, "train", model, args.features,
-    #     args.resolution,
-    #     mode, f"clusters_null_distribution_t_thresh_{args.t_value_threshold}{'_tfce' if args.tfce else ''}.p"
-    # )
-    # if not os.path.isfile(clusters_null_distribution_path):
-    #     print(f"Calculating clusters for null distribution (t-value threshold: {args.t_value_threshold})")
-    #     edge_length_dicts = {hemi: get_edge_lengths_dict(args.resolution, hemi) for hemi in HEMIS}
-    #     clusters_null_distribution = [
-    #         {
-    #             hemi: calc_clusters(vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-    #                                 args.t_value_threshold,
-    #                                 edge_length_dicts[hemi],
-    #                                 return_agg_t_values=True)["agg_t_values"] for
-    #             hemi in HEMIS} for vals in
-    #         tqdm(smooth_t_values_null_distribution)
-    #     ]
-    #
-    #     pickle.dump(clusters_null_distribution, open(clusters_null_distribution_path, 'wb'))
 
 
 def get_args():
