@@ -22,7 +22,6 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-
 DEFAULT_N_JOBS = 10
 
 METRIC_CAPTIONS = 'captions'
