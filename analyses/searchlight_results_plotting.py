@@ -571,6 +571,7 @@ def run(args):
     if args.tfce:
         print("calculating tfce..")
         tfce_values = calc_tfce_values(test_statistic, args.resolution, h=args.tfce_h, e=args.tfce_e)
+        test_statistic = tfce_values
 
         # hemi='left'
         # t_values_pos = smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -588,8 +589,6 @@ def run(args):
         #     colorbar=True,
         #     symmetric_cbar=True,
         # )
-
-        test_statistic = tfce_values
 
     if args.tfce:
         null_distribution_test_statistic_file = os.path.join(
@@ -612,6 +611,7 @@ def run(args):
                 args.mode, f"t_values_null_distribution.p"
             )
 
+    print("loading null distribution test statistic: ", null_distribution_test_statistic_file)
     null_distribution_test_statistic = pickle.load(open(null_distribution_test_statistic_file, 'rb'))
 
     max_test_statistic_distr = {
