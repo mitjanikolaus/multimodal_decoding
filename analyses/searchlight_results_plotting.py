@@ -375,7 +375,6 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
                                           edge_lengths_dicts[hemi],
                                           return_clusters=True,
                                           return_cluster_edge_lengths=True,
-                                          max_edge_distance=15,
                                           )
             clusters = clusters_dict["clusters"]
             cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
@@ -396,13 +395,13 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
                   return_cluster_edge_lengths=False, return_agg_t_values=False,
-                  return_cluster_map=False, max_edge_distance=math.inf):
+                  return_cluster_map=False):
     cluster_nodes = dict()
     cluster_edge_lengths = dict()
 
     # Filter edges for edges that are connecting nodes with score above threshold
     edge_lengths = {
-        e: l for e, l in edge_lengths.items() if (scores[e[0]] >= threshold) and (scores[e[1]] >= threshold) and (l < max_edge_distance)
+        e: l for e, l in edge_lengths.items() if (scores[e[0]] >= threshold) and (scores[e[1]] >= threshold)
     }
 
     node_to_cluster = dict()
@@ -587,7 +586,7 @@ def run(args):
         test_statistic = tfce_values
 
         # hemi='left'
-        # t_values_pos = smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        # t_values_pos = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES].copy()
         # t_values_pos[t_values_pos < 0] = 0
         # t_values_pos[t_values_pos > 0] = 1
         # from nilearn import plotting
