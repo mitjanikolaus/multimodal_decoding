@@ -363,7 +363,7 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
             continue
 
         step = max_score / 100 if dh == "auto" else dh
-        single_node_tfce = (1 ** e) * (step ** h)
+        # single_node_tfce = (1 ** e) * (step ** h)
 
         score_threshs = np.arange(step, max_score + step, step)
 
@@ -378,18 +378,18 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
                                           max_edge_distance=10,
                                           )
             clusters = clusters_dict["clusters"]
-            # cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
-            cluster_extents = np.array([len(c) for c in clusters])
+            cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
+            # cluster_extents = np.array([len(c) for c in clusters])
 
             cluster_tfces = (cluster_extents ** e) * (step ** h)
-            nodes_above_thresh_not_in_clusters = set(np.argwhere(values > score_thresh)[:, 0])
+            # nodes_above_thresh_not_in_clusters = set(np.argwhere(values > score_thresh)[:, 0])
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
                 tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += cluster_tfce
-                nodes_above_thresh_not_in_clusters = nodes_above_thresh_not_in_clusters.difference(cluster)
+                # nodes_above_thresh_not_in_clusters = nodes_above_thresh_not_in_clusters.difference(cluster)
 
             # increase tfce values for nodes out of clusters
-            if len(nodes_above_thresh_not_in_clusters) > 0:
-                tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(nodes_above_thresh_not_in_clusters)] += single_node_tfce
+            # if len(nodes_above_thresh_not_in_clusters) > 0:
+            #     tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(nodes_above_thresh_not_in_clusters)] += single_node_tfce
 
     return tfce_values
 
