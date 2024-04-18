@@ -381,7 +381,7 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
             cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
             # cluster_extents = np.array([len(c) for c in clusters])
 
-            cluster_tfces = (cluster_extents ** e) * (score_thresh ** h)
+            cluster_tfces = (cluster_extents ** e) * (score_thresh ** h) * step
             # nodes_above_thresh_not_in_clusters = set(np.argwhere(values > score_thresh)[:, 0])
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
                 tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += cluster_tfce
