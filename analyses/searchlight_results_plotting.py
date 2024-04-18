@@ -1020,6 +1020,9 @@ def create_null_distribution(args):
         if not os.path.isfile(tfce_values_null_distribution_path):
             print(f"Calculating tfce values for null distribution")
 
+            # call this once to cache result before parallel jobs start
+            get_edge_lengths_dicts(args.resolution)
+
             def tfce_values_job(t_values, proc_id):
                 iterator = tqdm(t_values) if proc_id == 0 else t_values
                 tfce_values = [
