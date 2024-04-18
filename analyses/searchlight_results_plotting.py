@@ -333,23 +333,27 @@ def smooth_surface_data(surface, surf_data,
 #     return adjacency_matrices
 
 
-def get_edge_lengths_dict(resolution, hemi):
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-    surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+def get_edge_lengths_dicts(resolution):
+    edge_lengths_dicts = dict()
+    for hemi in HEMIS:
+        fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
 
-    edges = np.vstack([surface_infl.faces[:, [0, 1]],
-                       surface_infl.faces[:, [0, 2]],
-                       surface_infl.faces[:, [1, 2]]])
+        edges = np.vstack([surface_infl.faces[:, [0, 1]],
+                           surface_infl.faces[:, [0, 2]],
+                           surface_infl.faces[:, [1, 2]]])
 
-    edges = np.array([(e0, e1) if e0 < e1 else (e1, e0) for e0, e1 in edges])
-    coords = surface_infl.coordinates
-    lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
-    edge_lengths_dict = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
-    return edge_lengths_dict
+        edges = np.array([(e0, e1) if e0 < e1 else (e1, e0) for e0, e1 in edges])
+        coords = surface_infl.coordinates
+        lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
+        edge_lengths_dicts[hemi] = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
+    return edge_lengths_dicts
 
 
 def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
     tfce_values = dict()
+    edge_lengths_dicts = get_edge_lengths_dicts(resolution)
+
     for hemi in HEMIS:
         values = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
         max_score = np.nanmax(values)
@@ -364,14 +368,14 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
         score_threshs = np.arange(step, max_score + step, step)
 
         tfce_values[hemi] = {METRIC_MIN_DIFF_BOTH_MODALITIES: np.zeros_like(values)}
-        edge_lengths_dict = get_edge_lengths_dict(resolution, hemi)
 
         for score_thresh in score_threshs:
             clusters_dict = calc_clusters(values,
                                           score_thresh,
-                                          edge_lengths_dict,
+                                          edge_lengths_dicts[hemi],
                                           return_clusters=True,
                                           return_cluster_edge_lengths=True,
+                                          max_edge_distance=10,
                                           )
             clusters = clusters_dict["clusters"]
             # cluster_extents = np.array(clusters_dict["cluster_edge_lengths"])
@@ -392,13 +396,13 @@ def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
                   return_cluster_edge_lengths=False, return_agg_t_values=False,
-                  return_cluster_map=False):
+                  return_cluster_map=False, max_edge_distance=math.inf):
     cluster_nodes = dict()
     cluster_edge_lengths = dict()
 
     # Filter edges for edges that are connecting nodes with score above threshold
     edge_lengths = {
-        e: l for e, l in edge_lengths.items() if (scores[e[0]] >= threshold) and (scores[e[1]] >= threshold)
+        e: l for e, l in edge_lengths.items() if (scores[e[0]] >= threshold) and (scores[e[1]] >= threshold) and (l < max_edge_distance)
     }
 
     node_to_cluster = dict()
