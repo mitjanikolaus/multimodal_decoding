@@ -527,7 +527,7 @@ def run(args):
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
-        # print(path_agnostic)
+        print("loading: ", path_agnostic)
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
@@ -540,9 +540,9 @@ def run(args):
         scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
         # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
         # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+        # print("")
 
         per_subject_scores[subject][hemi] = scores
-        # print("")
 
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
