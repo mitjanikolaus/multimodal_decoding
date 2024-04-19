@@ -31,10 +31,10 @@ AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
 MULTIMODAL_FEATS = 'multi'
-UNIMODAL_FEATS = 'unimodal'
+MATCHED_FEATS = 'matched'
 FEATS_SELECT_DEFAULT = 'default'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS,
-                               UNIMODAL_FEATS, FEATS_SELECT_DEFAULT]
+                               MATCHED_FEATS, FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS]
@@ -220,10 +220,10 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
-    if mode == "train_captions":
+    if mode.endswith("_captions"):
         stim_ids = stim_ids[stim_types == 'caption']
         stim_types = stim_types[stim_types == 'caption']
-    elif mode == "train_images":
+    elif mode.endswith("_images"):
         stim_ids = stim_ids[stim_types == 'image']
         stim_types = stim_types[stim_types == 'image']
 
@@ -243,7 +243,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
                 (latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
         elif features == MULTIMODAL_FEATS:
             feats = latent_vectors[stim_id][MULTIMODAL_FEAT_KEY]
-        elif features == UNIMODAL_FEATS:
+        elif features == MATCHED_FEATS:
             if stim_type == 'caption':
                 feats = latent_vectors[stim_id][LANG_FEAT_KEY]
             elif stim_type == 'image':
