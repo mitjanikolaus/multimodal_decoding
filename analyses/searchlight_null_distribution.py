@@ -11,20 +11,15 @@ from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features
-from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get_results_dir, \
-    NUM_TEST_STIMULI
-from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR
+    get_default_features, load_latents_transform
+from analyses.searchlight import pairwise_acc_captions, pairwise_acc_images, get_results_dir
+from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, NUM_TEST_STIMULI
 
 DEFAULT_N_JOBS = 10
 
 
 def create_permutation_scores(args):
     for subject in args.subjects:
-        train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
-        train_stim_types = pickle.load(
-            open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
-
         test_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_test.p"), 'rb'))
         test_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_test.p"), 'rb'))
 
@@ -38,12 +33,10 @@ def create_permutation_scores(args):
             print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                   f"MODEL: {model_name} | FEATURES: {features}")
 
-            _, nn_latent_transform = get_nn_latent_data(model_name, features,
-                                                        args.vision_features,
-                                                        train_stim_ids,
-                                                        train_stim_types,
-                                                        subject,
-                                                        training_mode)
+            nn_latent_transform = load_latents_transform(
+                subject, model_name, features, args.vision_features, training_mode
+            )
+
             test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
                                                       test_stim_ids,
                                                       test_stim_types,

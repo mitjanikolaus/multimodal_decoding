@@ -45,7 +45,9 @@ DEFAULT_N_PRE_DISPATCH = 5
 
 DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
-TRAIN_MODE_CHOICES = ["train", "train_captions", "train_images"]
+MOD_SPECIFIC_IMAGES = "train_images"
+MOD_SPECIFIC_CAPTIONS = "train_captions"
+TRAIN_MODE_CHOICES = ["train", MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
@@ -257,23 +259,34 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
     nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
 
     if nn_latent_transform is None:
-        mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
-        model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
-        model_std_mean_path = os.path.join(mean_std_dir, model_std_mean_name)
+        model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode)
         if not os.path.exists(model_std_mean_path) or recompute_std_mean:
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
-            os.makedirs(mean_std_dir, exist_ok=True)
+            os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
 
             mean_std = {'mean': nn_latent_vectors.mean(axis=0),
                         'std': nn_latent_vectors.std(axis=0)}
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
-        model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
-        nn_latent_transform = Normalize(model_mean_std['mean'], model_mean_std['std'])
+        nn_latent_transform = load_latents_transform(subject, model_name, features, vision_features_mode, mode)
 
     nn_latent_vectors = np.array([nn_latent_transform(v) for v in nn_latent_vectors])
 
     return nn_latent_vectors, nn_latent_transform
+
+
+def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode):
+    mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
+    model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
+    return os.path.join(mean_std_dir, model_std_mean_name)
+
+
+def load_latents_transform(subject, model_name, features, vision_features_mode, mode):
+    model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode)
+    model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
+    nn_latent_transform = Normalize(model_mean_std['mean'], model_mean_std['std'])
+
+    return nn_latent_transform
 
 
 def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
@@ -327,26 +340,37 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
         fmri_betas[idx] = sample.copy()
 
     if fmri_betas_transform is None:
-        mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
-        bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
-        if mask is not None:
-            bold_std_mean_name += f'_mask_{roi_mask_name}'
-        bold_std_mean_path = os.path.join(mean_std_dir, bold_std_mean_name)
+        bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, roi_mask_name)
 
         if not os.path.exists(bold_std_mean_path) or recompute_std_mean:
             print(f"Calculating mean and std of BOLD Signals for mode {mode} with mask {roi_mask_name}")
-            os.makedirs(mean_std_dir, exist_ok=True)
+            os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
 
             mean_std = {'mean': fmri_betas.mean(axis=0),
                         'std': fmri_betas.std(axis=0)}
             pickle.dump(mean_std, open(bold_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
-        bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
-        fmri_betas_transform = Normalize(bold_mean_std['mean'], bold_mean_std['std'])
+        fmri_betas_transform = load_fmri_betas_transform(subject, mode, roi_mask_name)
 
     fmri_betas = np.array([fmri_betas_transform(v) for v in fmri_betas])
 
     return fmri_betas, stim_ids, stim_types, fmri_betas_transform
+
+
+def get_fmri_betas_mean_std_path(subject, mode, roi_mask_name):
+    mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
+    bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
+    if roi_mask_name is not None:
+        bold_std_mean_name += f'_mask_{roi_mask_name}'
+    return os.path.join(mean_std_dir, bold_std_mean_name)
+
+
+def load_fmri_betas_transform(subject, mode, roi_mask_name=None):
+    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, roi_mask_name)
+
+    bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
+    fmri_betas_transform = Normalize(bold_mean_std['mean'], bold_mean_std['std'])
+    return fmri_betas_transform
 
 
 class Normalize:
@@ -576,7 +600,7 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
 
-    parser.add_argument("--models", type=str, nargs='+', default=['CLIP'])
+    parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
