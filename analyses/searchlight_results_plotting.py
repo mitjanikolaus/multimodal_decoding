@@ -334,7 +334,7 @@ def smooth_surface_data(surface, surf_data,
 #     return adjacency_matrices
 
 
-def get_edge_lengths_dicts(resolution, max_dist="max"):
+def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
     path = os.path.join(SEARCHLIGHT_OUT_DIR, "edge_lengths", resolution, f"edge_lengths_{max_dist}.p")
     if not os.path.isfile(path):
         edge_lengths_dicts = dict()
@@ -365,9 +365,25 @@ def get_edge_lengths_dicts(resolution, max_dist="max"):
     return edge_lengths_dicts
 
 
-def calc_tfce_values(t_values, resolution, h=2, e=1, dh="auto"):
+def get_edge_lengths_dicts_based_on_edges(resolution):
+    edge_lengths_dicts = dict()
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
+    surface_infl = {hemi: surface.load_surf_mesh(fsaverage[f"infl_{hemi}"]) for hemi in HEMIS}
+    for hemi in HEMIS:
+        coords = surface_infl[hemi].coordinates
+
+        edges = np.vstack([surface_infl[hemi].faces[:, [0, 1]],
+                           surface_infl[hemi].faces[:, [0, 2]],
+                           surface_infl[hemi].faces[:, [1, 2]]])
+        edges = np.array([(e0, e1) if e0 < e1 else (e1, e0) for e0, e1 in edges])
+        lengths = np.sqrt(np.sum((coords[edges[:, 0]] - coords[edges[:, 1]]) ** 2, axis=1))
+        edge_lengths_dicts[hemi] = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
+
+    return edge_lengths_dicts
+
+
+def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto"):
     tfce_values = dict()
-    edge_lengths_dicts = get_edge_lengths_dicts(resolution)
 
     for hemi in HEMIS:
         values = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
@@ -597,7 +613,8 @@ def run(args):
 
     if args.tfce:
         print("calculating tfce..")
-        tfce_values = calc_tfce_values(test_statistic, args.resolution, h=args.tfce_h, e=args.tfce_e)
+        edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+        tfce_values = calc_tfce_values(test_statistic, edge_lengths, h=args.tfce_h, e=args.tfce_e)
         test_statistic = tfce_values
 
         # hemi='left'
@@ -1020,13 +1037,12 @@ def create_null_distribution(args):
         if not os.path.isfile(tfce_values_null_distribution_path):
             print(f"Calculating tfce values for null distribution")
 
-            # call this once to cache result before parallel jobs start
-            get_edge_lengths_dicts(args.resolution)
+            edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
 
-            def tfce_values_job(t_values, proc_id):
+            def tfce_values_job(t_values, edge_lengths, proc_id):
                 iterator = tqdm(t_values) if proc_id == 0 else t_values
                 tfce_values = [
-                    calc_tfce_values(vals, args.resolution, h=args.tfce_h, e=args.tfce_e) for vals in
+                    calc_tfce_values(vals, edge_lengths, h=args.tfce_h, e=args.tfce_e) for vals in
                     iterator
                 ]
                 return tfce_values
@@ -1035,6 +1051,7 @@ def create_null_distribution(args):
             tfce_values = Parallel(n_jobs=args.n_jobs)(
                 delayed(tfce_values_job)(
                     t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                    edge_lengths.copy(),
                     id,
                 )
                 for id in range(args.n_jobs)
