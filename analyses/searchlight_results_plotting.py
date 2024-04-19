@@ -710,7 +710,7 @@ def run(args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=0.5,  # -log10(0.05) ~ 1.3
+                threshold=1.3,  # -log10(0.05) ~ 1.3
                 vmax=cbar_max,
                 vmin=0,
                 cmap="bwr",
