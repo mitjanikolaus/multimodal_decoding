@@ -31,9 +31,10 @@ AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
 MULTIMODAL_FEATS = 'multi'
+UNIMODAL_FEATS = 'unimodal'
 FEATS_SELECT_DEFAULT = 'default'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS,
-                               FEATS_SELECT_DEFAULT]
+                               UNIMODAL_FEATS, FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS]
@@ -199,6 +200,20 @@ def get_default_features(model_name):
     return features
 
 
+def get_vision_feats(latent_vectors, stim_id, vision_features_mode):
+    if vision_features_mode == VISION_MEAN_FEAT_KEY:
+        vision_feats = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
+    elif vision_features_mode == VISION_CLS_FEAT_KEY:
+        vision_feats = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
+    elif vision_features_mode == VISION_CONCAT_FEATS:
+        vision_feats_mean = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
+        vision_feats_cls = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
+        vision_feats = np.concatenate((vision_feats_mean, vision_feats_cls))
+    else:
+        raise RuntimeError("Unknown vision feature combination choice: ", vision_features_mode)
+    return vision_feats
+
+
 def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, stim_types, subject, mode,
                        nn_latent_transform=None,
                        recompute_std_mean=False):
@@ -207,34 +222,35 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
 
     if mode == "train_captions":
         stim_ids = stim_ids[stim_types == 'caption']
+        stim_types = stim_types[stim_types == 'caption']
     elif mode == "train_images":
         stim_ids = stim_ids[stim_types == 'image']
+        stim_types = stim_types[stim_types == 'image']
 
     nn_latent_vectors = []
-    for stim_id in stim_ids:
-        if not features in [LANG_FEATS_ONLY, MULTIMODAL_FEATS]:
-            if vision_features_mode == VISION_MEAN_FEAT_KEY:
-                vision_feats = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
-            elif vision_features_mode == VISION_CLS_FEAT_KEY:
-                vision_feats = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
-            elif vision_features_mode == VISION_CONCAT_FEATS:
-                vision_feats_mean = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
-                vision_feats_cls = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
-                vision_feats = np.concatenate((vision_feats_mean, vision_feats_cls))
-            else:
-                raise RuntimeError("Unknown vision feature combination choice: ", vision_features_mode)
+    for stim_id, stim_type in zip(stim_ids, stim_types):
         if features == VISION_FEATS_ONLY:
-            feats = vision_feats
+            feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
         elif features == LANG_FEATS_ONLY:
             feats = latent_vectors[stim_id][LANG_FEAT_KEY]
         elif features == AVG_FEATS:
+            vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
             feats = np.stack((latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
             feats = feats.mean(axis=0)
         elif features == CONCAT_FEATS:
+            vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
             feats = np.concatenate(
                 (latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
         elif features == MULTIMODAL_FEATS:
             feats = latent_vectors[stim_id][MULTIMODAL_FEAT_KEY]
+        elif features == UNIMODAL_FEATS:
+            if stim_type == 'caption':
+                feats = latent_vectors[stim_id][LANG_FEAT_KEY]
+            elif stim_type == 'image':
+                vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
+                feats = vision_feats
+            else:
+                raise RuntimeError(f"Unknown stim type: {stim_type}")
         else:
             raise RuntimeError(f"Unknown feature selection/combination method: {features}")
         nn_latent_vectors.append(feats)
