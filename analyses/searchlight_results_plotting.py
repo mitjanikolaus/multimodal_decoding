@@ -675,8 +675,10 @@ def run(args):
         for vertex in np.argwhere(test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] > 0)[:, 0]:
             test_stat = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
             value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
-            p_value = 1 - value_indices[0].item() / len(null_distribution_test_statistic) if len(value_indices) > 0 else 1 - (
-                    len(null_distribution_test_statistic) - 1) / (len(null_distribution_test_statistic))
+            if len(value_indices) > 0:
+                p_value = 1 - value_indices[0].item() / len(null_distribution_test_statistic)
+            else:
+                p_value = 1 - (len(null_distribution_test_statistic) - 1) / (len(null_distribution_test_statistic))
             p_values_cluster[hemi][vertex] = p_value
 
     print(f"smallest p value (left): {np.min(p_values_cluster['left'][p_values_cluster['left'] > 0]):.4f}")
