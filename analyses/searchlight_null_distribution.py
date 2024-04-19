@@ -86,7 +86,10 @@ def create_permutation_scores(args):
                         return results
 
                     n_iters_per_job = math.ceil(args.n_permutations_per_subject / args.n_jobs)
-                    n_iters_last_job = (n_iters_per_job * args.n_jobs) - args.n_permutations_per_subject
+                    n_iters_last_job = n_iters_per_job
+                    if args.n_permutations_per_subject % args.n_jobs != 0:
+                        n_iters_last_job = args.n_permutations_per_subject - (n_iters_per_job * args.n_jobs)
+                    print(f"n iters per job: {n_iters_per_job} (last job: {n_iters_last_job})")
                     all_scores = Parallel(n_jobs=args.n_jobs)(
                         delayed(shuffle_and_calc_scores)(
                             test_data_latents.copy(),
