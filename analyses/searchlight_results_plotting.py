@@ -394,8 +394,6 @@ def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto"):
             continue
 
         step = max_score / 100 if dh == "auto" else dh
-        single_node_tfce = (1 ** e) * (step ** h)
-
         score_threshs = np.arange(step, max_score + step, step)
 
         tfce_values[hemi] = {METRIC_MIN_DIFF_BOTH_MODALITIES: np.zeros_like(values)}
@@ -419,6 +417,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto"):
 
             # increase tfce values for nodes out of clusters
             if len(nodes_above_thresh_not_in_clusters) > 0:
+                single_node_tfce = (1 ** e) * (score_thresh ** h) * step
                 tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(nodes_above_thresh_not_in_clusters)] += single_node_tfce
 
     return tfce_values
