@@ -22,14 +22,10 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
     get_default_features, pairwise_accuracy, Normalize
 
-from utils import VISION_MEAN_FEAT_KEY, IDS_IMAGES_TEST, SURFACE_LEVEL_FMRI_DIR
+from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, \
+    IDS_TEST_STIM
 
 DEFAULT_N_JOBS = 10
-
-NUM_TEST_STIMULI = 140
-INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
-INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
-IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
 

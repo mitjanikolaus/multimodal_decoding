@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
@@ -18,7 +19,6 @@ TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/"
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
 
-PCA_NUM_COMPONENTS = 768
 
 VISION_MEAN_FEAT_KEY = "visual_feature_mean"
 VISION_CLS_FEAT_KEY = "visual_feature_cls"
@@ -182,3 +182,8 @@ IDS_IMAGES_TEST = [3862,
                    560282,
                    567627,
                    573980]
+
+NUM_TEST_STIMULI = len(IDS_IMAGES_TEST)
+INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
+INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
+IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
