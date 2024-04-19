@@ -181,9 +181,8 @@ def _compute_vertex_neighborhoods(surface):
     return [find(row)[1] for row in matrix]
 
 
-def smooth_surface_data(surface, surf_data,
+def smooth_surface_data(matrix, surf_data,
                         iterations=1,
-                        distance_weights=False,
                         vertex_weights=None,
                         return_vertex_weights=False,
                         center_surround_knob=0,
@@ -256,9 +255,6 @@ def smooth_surface_data(surface, surf_data,
     if surround_weight == 0:
         # There's nothing to do in this case.
         return np.array(surf_data)
-    # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
-    values = 'inveuclidean' if distance_weights else 'ones'
-    matrix = compute_adjacency_matrix(surface, values=values)
 
     # If there are vertex weights, get them ready.
     if vertex_weights:
@@ -604,8 +600,12 @@ def run(args):
         smooth_t_values = copy.deepcopy(t_values)
         for hemi in HEMIS:
             surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+            # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
+            distance_weights = True
+            values = 'inveuclidean' if distance_weights else 'ones'
+            adj_matrix = compute_adjacency_matrix(surface_infl, values=values)
             smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(
-                surface_infl, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], distance_weights=True, match=None,
+                adj_matrix, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], match=None,
                 iterations=args.smoothing_iterations
             )
         test_statistic = smooth_t_values
@@ -999,14 +999,17 @@ def create_null_distribution(args):
             def smooth_t_values(t_values, proc_id):
                 smooth_t_vals = []
                 fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+                surface_infl = {hemi: surface.load_surf_mesh(fsaverage[f"infl_{hemi}"]) for hemi in HEMIS}
+                # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
+                distance_weights = True
+                values = 'inveuclidean' if distance_weights else 'ones'
+                adj_matrices = {hemi: compute_adjacency_matrix(surface_infl[hemi], values=values) for hemi in HEMIS}
                 iterator = tqdm(t_values) if proc_id == 0 else t_values
                 for t_vals in iterator:
                     for hemi in HEMIS:
-                        surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
                         smoothed = smooth_surface_data(
-                            surface_infl,
+                            adj_matrices[hemi],
                             t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
-                            distance_weights=True,
                             match=None,
                             iterations=args.smoothing_iterations
                         )
