@@ -446,7 +446,7 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def calculate_eval_metrics(results, fmri_betas):
+def calculate_eval_metrics(results):
     # take equally sized subsets of samples for captions and images
     stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption']
     stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != 'caption']
@@ -460,10 +460,6 @@ def calculate_eval_metrics(results, fmri_betas):
     latents_image = results["latents"][results["stimulus_types"] != 'caption']
     val_latents = np.concatenate((latents_caption, latents_image))
 
-    # fmri_betas_caption = fmri_betas[results["stimulus_types"] == 'caption']
-    # fmri_betas_image = fmri_betas[results["stimulus_types"] != 'caption']
-    # fmri_betas = np.concatenate((fmri_betas_caption, fmri_betas_image))
-
     for metric in DISTANCE_METRICS:
         acc = pairwise_accuracy(val_latents, val_predictions, val_ids, metric)
         results[f"acc_{metric}"] = acc
@@ -472,10 +468,6 @@ def calculate_eval_metrics(results, fmri_betas):
         acc_images = pairwise_accuracy(latents_image, predictions_image, stimulus_ids_image, metric)
         results[f"acc_{metric}_captions"] = acc_captions
         results[f"acc_{metric}_images"] = acc_images
-
-    # results['rsa'] = calc_rsa(fmri_betas, val_latents)
-    # results['rsa_images'] = calc_rsa_images(fmri_betas, val_latents, results["stimulus_types"])
-    # results['rsa_captions'] = calc_rsa_captions(fmri_betas, val_latents, results["stimulus_types"])
 
     return results
 
@@ -563,7 +555,7 @@ def run(args):
                                         "stimulus_types": test_stim_types,
                                         "predictions": test_predicted_latents,
                                         "latents": test_data_latents}
-                        test_results = calculate_eval_metrics(test_results, test_fmri_betas)
+                        test_results = calculate_eval_metrics(test_results)
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
                               f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
                               f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}")
