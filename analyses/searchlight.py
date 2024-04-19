@@ -58,7 +58,8 @@ def train_and_test(
 
     scores = {
         "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
-        "test_images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False)
+        "test_images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False),
+        "test": pairwise_acc(y_test, y_pred_normalized, normalize=False)
     }
 
     return scores
@@ -143,8 +144,8 @@ def pairwise_acc_images(latents, predictions, normalize=True):
                              normalize=normalize)
 
 
-def pairwise_acc(latents, predictions):
-    return pairwise_accuracy(latents, predictions, IDS_TEST_STIM)
+def pairwise_acc(latents, predictions, normalize=True):
+    return pairwise_accuracy(latents, predictions, IDS_TEST_STIM, normalize=normalize)
 
 
 def run(args):
