@@ -664,10 +664,8 @@ def run(args):
 
     significance_cutoffs = {hemi: np.quantile(max_test_statistic_distr[hemi], 0.95) for hemi in HEMIS}
     print(f"{len(null_distribution_test_statistic)} permutations")
-    print(f"cluster t-value significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
-    print(f"cluster t-value significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
-
-    np.nanmax(test_statistic['left'][METRIC_MIN_DIFF_BOTH_MODALITIES])
+    print(f"cluster test statistic significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
+    print(f"cluster test statistic significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
     p_values_cluster = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in
                         t_values.items()}
