@@ -47,7 +47,7 @@ def create_permutation_scores(args):
             for hemi in args.hemis:
                 results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
                 results_file_name = f"alpha_{args.l2_regularization_alpha}_null_distribution.p"
-                if not os.path.isfile(os.path.join(results_dir, results_file_name)):
+                if not os.path.isfile(os.path.join(results_dir, results_file_name)) or args.overwrite:
                     predictions_dir = os.path.join(results_dir, "test_set_predictions")
                     pred_paths = sorted(list(glob(os.path.join(predictions_dir, "*.p"))))
                     print(f"Calculating permutation scores for {len(pred_paths)} locations")
@@ -133,6 +133,8 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
+
+    parser.add_argument("--overwrite", action="store_true", default=False)
 
     return parser.parse_args()
 
