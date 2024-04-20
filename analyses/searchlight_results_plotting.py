@@ -36,39 +36,7 @@ def run(args):
     p_values['left'] = 1 - p_values['left']
     p_values['right'] = 1 - p_values['right']
 
-    print(f"plotting (p-values)")
-    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
-    fig = plt.figure(figsize=(5 * len(VIEWS), 2))
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    fig.suptitle(f'{metric}: 1-(p_value)', x=0, horizontalalignment="left")
-    axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-    cbar_max = 1
-    cbar_min = 0.9
-    for i, view in enumerate(VIEWS):
-        for j, hemi in enumerate(HEMIS):
-            scores_hemi = p_values[hemi]
-            infl_mesh = fsaverage[f"infl_{hemi}"]
-            plotting.plot_surf_stat_map(
-                infl_mesh,
-                scores_hemi,
-                hemi=hemi,
-                view=view,
-                bg_map=fsaverage[f"sulc_{hemi}"],
-                axes=axes[i * 2 + j],
-                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1-0.05,
-                vmax=cbar_max,
-                vmin=cbar_min,
-                cmap="hot",
-                symmetric_cbar=False,
-            )
-            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_group_level_p_values"
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
 
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
@@ -113,6 +81,42 @@ def run(args):
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
+
+
+    print(f"plotting (p-values)")
+    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
+    fig = plt.figure(figsize=(5 * len(VIEWS), 2))
+    fig.suptitle(f'{metric}: 1-(p_value)', x=0, horizontalalignment="left")
+    axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+    cbar_max = 1
+    cbar_min = 0.9
+    for i, view in enumerate(VIEWS):
+        for j, hemi in enumerate(HEMIS):
+            scores_hemi = p_values[hemi]
+            infl_mesh = fsaverage[f"infl_{hemi}"]
+            plotting.plot_surf_stat_map(
+                infl_mesh,
+                scores_hemi,
+                hemi=hemi,
+                view=view,
+                bg_map=fsaverage[f"sulc_{hemi}"],
+                axes=axes[i * 2 + j],
+                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                threshold=1-0.05,
+                vmax=cbar_max,
+                vmin=cbar_min,
+                cmap="hot",
+                symmetric_cbar=False,
+            )
+            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+    title = f"{args.model}_{args.mode}_group_level_p_values"
+    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
+    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+    plt.close()
+
+
 
     per_subject_scores = load_per_subject_scores(args.model, args.features, args.resolution, args.mode,
                                                  args.l2_regularization_alpha)
