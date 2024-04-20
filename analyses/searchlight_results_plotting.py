@@ -38,8 +38,8 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
             for j, hemi in enumerate(HEMIS):
                 scores_hemi = values[hemi][metric]
                 infl_mesh = fsaverage[f"infl_{hemi}"]
-                if (cbar_max[stat_name] is None) and (cbar_max['t-values'] is not None):
-                    if stat_name == "t-values-smoothed":
+                if cbar_max[stat_name] is None:
+                    if (stat_name == "t-values-smoothed") and (cbar_max['t-values'] is not None):
                         cbar_max[stat_name] = cbar_max['t-values']
                     else:
                         cbar_max[stat_name] = np.nanmax(scores_hemi)
