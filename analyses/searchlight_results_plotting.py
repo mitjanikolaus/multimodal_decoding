@@ -32,10 +32,13 @@ def run(args):
     p_values['left'][p_values['left'] == 0] = np.nan
     p_values['right'][p_values['right'] == 0] = np.nan
 
+    p_values['left'] *= -1
+    p_values['right'] *= -1
+
     # manually set plotting threshold for p-values
-    significance_threshold = 0.05
-    p_values['left'][p_values['left'] > significance_threshold] = np.nan
-    p_values['right'][p_values['right'] > significance_threshold] = np.nan
+    # significance_threshold = 0.05
+    # p_values['left'][p_values['left'] > significance_threshold] = np.nan
+    # p_values['right'][p_values['right'] > significance_threshold] = np.nan
 
     # p_values['left'][p_values['left'] > 0] = -np.log10(p_values['left'][p_values['left'] > 0])
     # p_values['right'][p_values['right'] > 0] = -np.log10(p_values['right'][p_values['right'] > 0])
@@ -46,8 +49,8 @@ def run(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-    # cbar_max = 1
-    cbar_min = 0
+    cbar_max = 0
+    cbar_min = 1
     for i, view in enumerate(VIEWS):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
@@ -63,7 +66,8 @@ def run(args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                vmax=significance_threshold,
+                threshold=0.05,
+                vmax=cbar_max,
                 vmin=cbar_min,
                 cmap="red_transparent",
                 symmetric_cbar=False,
