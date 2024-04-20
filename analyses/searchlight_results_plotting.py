@@ -34,8 +34,8 @@ def run(args):
 
     # manually set plotting threshold for p-values
     significance_threshold = 0.05
-    p_values['left'][p_values['left'] > significance_threshold] = np.nan
-    p_values['right'][p_values['right'] > significance_threshold] = np.nan
+    # p_values['left'][p_values['left'] > significance_threshold] = np.nan
+    # p_values['right'][p_values['right'] > significance_threshold] = np.nan
 
     # p_values['left'][p_values['left'] > 0] = -np.log10(p_values['left'][p_values['left'] > 0])
     # p_values['right'][p_values['right'] > 0] = -np.log10(p_values['right'][p_values['right'] > 0])
@@ -46,15 +46,15 @@ def run(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-    cbar_max = 1
+    # cbar_max = 1
     cbar_min = 0
     for i, view in enumerate(VIEWS):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
             infl_mesh = fsaverage[f"infl_{hemi}"]
-            if cbar_max is None:
-                cbar_max = min(np.nanmax(scores_hemi), 99)
-                print("cbar max: ", cbar_max)
+            # if cbar_max is None:
+            #     cbar_max = min(np.nanmax(scores_hemi), 99)
+            #     print("cbar max: ", cbar_max)
             plotting.plot_surf_stat_map(
                 infl_mesh,
                 scores_hemi,
@@ -63,7 +63,7 @@ def run(args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                vmax=cbar_max,
+                vmax=significance_threshold,
                 vmin=cbar_min,
                 cmap="red_transparent",
                 symmetric_cbar=False,
