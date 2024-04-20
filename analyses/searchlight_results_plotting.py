@@ -30,16 +30,19 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
-    for subfig, (stat_name, test_statistic) in zip(subfigs, test_statistics.items()):
+    cbar_max = {stat: None for stat in test_statistics.keys()}
+    for subfig, (stat_name, values) in zip(subfigs, test_statistics.items()):
         subfig.suptitle(f'{metric} {stat_name}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-        cbar_max = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(HEMIS):
-                scores_hemi = test_statistic[hemi][metric]
+                scores_hemi = values[hemi][metric]
                 infl_mesh = fsaverage[f"infl_{hemi}"]
-                if cbar_max is None:
-                    cbar_max = np.nanmax(scores_hemi)
+                if cbar_max[stat_name] is None and cbar_max['t-values'] is not None:
+                    if stat_name == "t-values-smoothed":
+                        cbar_max = cbar_max['t-values']
+                    else:
+                        cbar_max = np.nanmax(scores_hemi)
                 threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH
                 plotting.plot_surf_stat_map(
                     infl_mesh,
