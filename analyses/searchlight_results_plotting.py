@@ -40,7 +40,7 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = np.nanmax(scores_hemi)
-                threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH,
+                threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     scores_hemi,
