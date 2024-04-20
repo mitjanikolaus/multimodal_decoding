@@ -90,7 +90,7 @@ def run(args):
                 scores_hemi = test_statistic[hemi][metric]
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
-                    cbar_max = np.nanmax(scores_hemi)
+                    cbar_max = min(np.nanmax(scores_hemi), 99)
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     scores_hemi,
