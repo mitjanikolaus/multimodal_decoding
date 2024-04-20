@@ -32,7 +32,6 @@ def run(args):
     # transform to plottable magnitudes:
     p_values['left'][p_values['left'] == 0] = np.nan
     p_values['right'][p_values['right'] == 0] = np.nan
-
     p_values['left'] = 1 - p_values['left']
     p_values['right'] = 1 - p_values['right']
 
