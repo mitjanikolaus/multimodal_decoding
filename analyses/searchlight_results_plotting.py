@@ -244,6 +244,8 @@ def get_args():
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
+    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
+
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_100')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
