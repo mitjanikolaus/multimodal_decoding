@@ -81,7 +81,7 @@ def run(args):
     )
     null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
-    for i in range(3):
+    for i in range(10):
         t_values = null_distribution_t_values[i]
         tfce_values = null_distribution_test_statistic[i]
         plot_test_statistics(t_values, tfce_values, args, filename_suffix=f"_null_distr_{i}")
