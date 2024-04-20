@@ -55,7 +55,7 @@ def plot_test_statistics(t_values, tfce_values, args, filename_suffix=""):
                     cmap="hot",
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_group_level_test_stats_{filename_suffix}"
+    title = f"{args.model}_{args.mode}_group_level_test_stats{filename_suffix}"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
