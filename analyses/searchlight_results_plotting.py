@@ -15,7 +15,7 @@ from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALI
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-VIEWS = ["lateral", "medial", "ventral"]
+VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 1
 COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.01
@@ -50,6 +50,7 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
                     hemi=hemi,
                     view=view,
                     bg_map=fsaverage[f"sulc_{hemi}"],
+                    bg_on_data=True,
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                     threshold=threshold,
@@ -110,6 +111,7 @@ def run(args):
                 hemi=hemi,
                 view=view,
                 bg_map=fsaverage[f"sulc_{hemi}"],
+                bg_on_data=True,
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                 threshold=1-0.05,
@@ -153,6 +155,7 @@ def run(args):
                     hemi=hemi,
                     view=view,
                     bg_map=fsaverage[f"sulc_{hemi}"],
+                    bg_on_data=True,
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                     threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
@@ -170,33 +173,34 @@ def run(args):
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
-    print("plotting test stats for null distribution examples")
-    t_values_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode, f"t_values_null_distribution.p"
-    )
-    null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
-    smooth_t_values_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
-    )
-    t_values_smooth_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
-    null_distribution_tfce_values_file = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode,
-        f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-    null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+    if args.null_distr_plots:
+        print("plotting test stats for null distribution examples")
+        t_values_null_distribution_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+            args.resolution,
+            args.mode, f"t_values_null_distribution.p"
+        )
+        null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
+        smooth_t_values_null_distribution_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+            args.resolution,
+            args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
+        )
+        t_values_smooth_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
+        null_distribution_tfce_values_file = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+            args.resolution,
+            args.mode,
+            f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+        )
+        null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
-    for i in range(10):
-        t_values = null_distribution_t_values[i]
-        t_values_smooth = t_values_smooth_null_distribution[i]
-        tfce_values = null_distribution_test_statistic[i]
-        test_statistics = {"t-values": t_values, "t-values-smoothed": t_values_smooth, "tfce-values": tfce_values}
-        plot_test_statistics(test_statistics, args, filename_suffix=f"_null_distr_{i}")
+        for i in range(10):
+            t_values = null_distribution_t_values[i]
+            t_values_smooth = t_values_smooth_null_distribution[i]
+            tfce_values = null_distribution_test_statistic[i]
+            test_statistics = {"t-values": t_values, "t-values-smoothed": t_values_smooth, "tfce-values": tfce_values}
+            plot_test_statistics(test_statistics, args, filename_suffix=f"_null_distr_{i}")
 
 
     if args.per_subject_plots:
@@ -252,6 +256,7 @@ def run(args):
                                 hemi=hemi,
                                 view=view,
                                 bg_map=fsaverage[f"sulc_{hemi}"],
+                                bg_on_data=True,
                                 axes=axes[i * 2 + j],
                                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                                 threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
@@ -291,6 +296,7 @@ def get_args():
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_100')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument("--null-distr-plots", default=False, action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--smoothing-iterations", type=int, default=0)
 
