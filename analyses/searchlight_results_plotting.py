@@ -58,7 +58,7 @@ def run(args):
                 threshold=1-0.05,
                 vmax=cbar_max,
                 vmin=cbar_min,
-                cmap="red_transparent",
+                cmap="hot",
                 symmetric_cbar=False,
             )
             axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
