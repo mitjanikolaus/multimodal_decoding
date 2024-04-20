@@ -564,6 +564,11 @@ def run(args):
                 iterations=args.smoothing_iterations
             )
         t_values = smooth_t_values
+        t_values_smooth_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
+                                     args.mode,
+                                     f"t_values_smoothed_{args.smoothing_iterations}.p")
+        pickle.dump(smooth_t_values, open(t_values_smooth_path, 'wb'))
+
 
     print("calculating tfce..")
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)

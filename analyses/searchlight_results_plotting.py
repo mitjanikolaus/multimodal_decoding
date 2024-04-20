@@ -24,11 +24,10 @@ DEFAULT_T_VALUE_THRESH = 0.824
 DEFAULT_TFCE_VAL_THRESH = 50
 
 
-def plot_test_statistics(t_values, tfce_values, args, filename_suffix=""):
-    print(f"plotting (t-values and tfce-values) {filename_suffix}")
+def plot_test_statistics(test_statistics, args, filename_suffix=""):
+    print(f"plotting test stats {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
-    test_statistics = {"t-values": t_values, "tfce-values": tfce_values}
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
     for subfig, (test_statistic_name, test_statistic) in zip(subfigs, test_statistics.items()):
@@ -69,10 +68,15 @@ def run(args):
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     t_values = pickle.load(open(t_values_path, 'rb'))
+    t_values_smooth_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
+                                        args.mode,
+                                        f"t_values_smoothed_{args.smoothing_iterations}.p")
+    t_values_smooth = pickle.load(open(t_values_smooth_path, 'rb'))
     tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
     tfce_values = pickle.load(open(tfce_values_path, 'rb'))
-    plot_test_statistics(t_values, tfce_values, args)
+    test_statistics = {"t-values": t_values, "t-values-smoothed": t_values_smooth, "tfce-values": tfce_values}
+    plot_test_statistics(test_statistics, args)
 
     print(f"plotting (p-values)")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -169,7 +173,12 @@ def run(args):
         args.mode, f"t_values_null_distribution.p"
     )
     null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
-
+    smooth_t_values_null_distribution_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        args.resolution,
+        args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
+    )
+    t_values_smooth_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
     null_distribution_tfce_values_file = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
@@ -180,8 +189,10 @@ def run(args):
 
     for i in range(10):
         t_values = null_distribution_t_values[i]
+        t_values_smooth = t_values_smooth_null_distribution[i]
         tfce_values = null_distribution_test_statistic[i]
-        plot_test_statistics(t_values, tfce_values, args, filename_suffix=f"_null_distr_{i}")
+        test_statistics = {"t-values": t_values, "t-values-smoothed": t_values_smooth, "tfce-values": tfce_values}
+        plot_test_statistics(test_statistics, args, filename_suffix=f"_null_distr_{i}")
 
 
     if args.per_subject_plots:
