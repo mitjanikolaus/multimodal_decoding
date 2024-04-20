@@ -35,14 +35,6 @@ def run(args):
     p_values['left'] = 1 - p_values['left']
     p_values['right'] = 1 - p_values['right']
 
-    # manually set plotting threshold for p-values
-    # significance_threshold = 0.05
-    # p_values['left'][p_values['left'] > significance_threshold] = np.nan
-    # p_values['right'][p_values['right'] > significance_threshold] = np.nan
-
-    # p_values['left'][p_values['left'] > 0] = -np.log10(p_values['left'][p_values['left'] > 0])
-    # p_values['right'][p_values['right'] > 0] = -np.log10(p_values['right'][p_values['right'] > 0])
-
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), 2))
@@ -50,14 +42,11 @@ def run(args):
     fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
     cbar_max = 1
-    cbar_min = 0
+    cbar_min = 0.9
     for i, view in enumerate(VIEWS):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
             infl_mesh = fsaverage[f"infl_{hemi}"]
-            # if cbar_max is None:
-            #     cbar_max = min(np.nanmax(scores_hemi), 99)
-            #     print("cbar max: ", cbar_max)
             plotting.plot_surf_stat_map(
                 infl_mesh,
                 scores_hemi,
