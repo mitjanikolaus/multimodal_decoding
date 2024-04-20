@@ -53,7 +53,7 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                     threshold=threshold,
-                    vmax=cbar_max,
+                    vmax=cbar_max[stat_name],
                     vmin=0,
                     cmap="hot",
                 )
