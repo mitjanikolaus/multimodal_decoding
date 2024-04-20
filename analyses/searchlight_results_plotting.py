@@ -66,27 +66,6 @@ def plot_test_statistics(t_values, tfce_values, args, filename_suffix=""):
 
 
 def run(args):
-    t_values_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode, f"t_values_null_distribution.p"
-    )
-    null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
-
-    null_distribution_tfce_values_file = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode,
-        f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-    null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-
-    for i in range(10):
-        t_values = null_distribution_t_values[i]
-        tfce_values = null_distribution_test_statistic[i]
-        plot_test_statistics(t_values, tfce_values, args, filename_suffix=f"_null_distr_{i}")
-
-
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     t_values = pickle.load(open(t_values_path, 'rb'))
@@ -182,6 +161,28 @@ def run(args):
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
+
+    print("plotting test stats for null distribution examples")
+    t_values_null_distribution_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        args.resolution,
+        args.mode, f"t_values_null_distribution.p"
+    )
+    null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
+
+    null_distribution_tfce_values_file = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        args.resolution,
+        args.mode,
+        f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
+    null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+
+    for i in range(10):
+        t_values = null_distribution_t_values[i]
+        tfce_values = null_distribution_test_statistic[i]
+        plot_test_statistics(t_values, tfce_values, args, filename_suffix=f"_null_distr_{i}")
+
 
     if args.per_subject_plots:
         metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
