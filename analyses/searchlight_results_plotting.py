@@ -40,9 +40,9 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max[stat_name] is None and cbar_max['t-values'] is not None:
                     if stat_name == "t-values-smoothed":
-                        cbar_max = cbar_max['t-values']
+                        cbar_max[stat_name] = cbar_max['t-values']
                     else:
-                        cbar_max = np.nanmax(scores_hemi)
+                        cbar_max[stat_name] = np.nanmax(scores_hemi)
                 threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH
                 plotting.plot_surf_stat_map(
                     infl_mesh,
