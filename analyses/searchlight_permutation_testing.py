@@ -549,7 +549,6 @@ def run(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    test_statistic = t_values
     if args.smoothing_iterations > 0:
         print("smoothing")
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -564,11 +563,15 @@ def run(args):
                 adj_matrix, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], match=None,
                 iterations=args.smoothing_iterations
             )
-        test_statistic = smooth_t_values
+        t_values = smooth_t_values
 
     print("calculating tfce..")
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-    test_statistic = calc_tfce_values(test_statistic, edge_lengths, h=args.tfce_h, e=args.tfce_e)
+    tfce_values = calc_tfce_values(t_values, edge_lengths, h=args.tfce_h, e=args.tfce_e)
+
+    tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+                                 f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    pickle.dump(tfce_values, open(tfce_values_path, "wb"))
 
     # hemi='left'
     # t_values_pos = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES].copy()
@@ -611,9 +614,9 @@ def run(args):
                 t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
-              sorted([t for t in test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
-        for vertex in np.argwhere(test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] > 0)[:, 0]:
-            test_stat = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
+              sorted([t for t in tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
+        for vertex in np.argwhere(tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] > 0)[:, 0]:
+            test_stat = tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
             value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
             if len(value_indices) > 0:
                 p_value = 1 - value_indices[0].item() / len(null_distribution_test_statistic)

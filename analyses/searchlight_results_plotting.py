@@ -72,41 +72,39 @@ def run(args):
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     t_values = pickle.load(open(t_values_path, 'rb'))
-
-    print(f"plotting (t-values) threshold {0.5}")
-    metrics = [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_MIN_DIFF_BOTH_MODALITIES]
-    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
-    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+    tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+                                 f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    tfce_values = pickle.load(open(tfce_values_path, 'rb'))
+    print(f"plotting (t-values and tfce-values)")
+    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
+    test_statistics = {"t-values": t_values, "tfce-values": tfce_values}
+    fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
+    subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    for subfig, metric in zip(subfigs, metrics):
-        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+    for subfig, (test_statistic_name, test_statistic) in zip(subfigs, test_statistics.items()):
+        subfig.suptitle(f'{metric} {test_statistic_name}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
         cbar_max = None
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(HEMIS):
-                if metric in t_values[hemi].keys():
-                    scores_hemi = t_values[hemi][metric]
-                    infl_mesh = fsaverage[f"infl_{hemi}"]
-                    if cbar_max is None:
-                        cbar_max = min(np.nanmax(scores_hemi), 99)
-                    plotting.plot_surf_stat_map(
-                        infl_mesh,
-                        scores_hemi,
-                        hemi=hemi,
-                        view=view,
-                        bg_map=fsaverage[f"sulc_{hemi}"],
-                        axes=axes[i * 2 + j],
-                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                        threshold=0.5 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else 2.015,
-                        vmax=cbar_max,
-                        vmin=0 if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else -cbar_max,
-                        cmap="hot" if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else "cold_hot",
-                        symmetric_cbar=False if metric == METRIC_MIN_DIFF_BOTH_MODALITIES else True,
-                    )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-                else:
-                    axes[i * 2 + j].axis('off')
-    title = f"{args.model}_{args.mode}_group_level_t_values_tresh_{0.5}"
+                scores_hemi = test_statistic[hemi][metric]
+                infl_mesh = fsaverage[f"infl_{hemi}"]
+                if cbar_max is None:
+                    cbar_max = min(np.nanmax(scores_hemi), 99)
+                plotting.plot_surf_stat_map(
+                    infl_mesh,
+                    scores_hemi,
+                    hemi=hemi,
+                    view=view,
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    axes=axes[i * 2 + j],
+                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                    vmax=cbar_max,
+                    vmin=0,
+                    cmap="black_red_r",
+                )
+                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+    title = f"{args.model}_{args.mode}_group_level_test_stats"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
