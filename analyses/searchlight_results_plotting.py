@@ -99,7 +99,7 @@ def run(args):
                     bg_map=fsaverage[f"sulc_{hemi}"],
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                    threshold=0.1,
+                    threshold=2.015,
                     vmax=cbar_max,
                     vmin=0,
                     cmap="black_red_r",
