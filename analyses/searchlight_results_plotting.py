@@ -20,7 +20,8 @@ COLORBAR_MAX = 0.85
 COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 
-DEFAULT_T_VALUE_THRESHOLD = 0.824
+DEFAULT_T_VALUE_THRESH = 0.824
+DEFAULT_TFCE_VAL_THRESH = 20
 
 
 def run(args):
@@ -80,7 +81,6 @@ def run(args):
     test_statistics = {"t-values": t_values, "tfce-values": tfce_values}
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     for subfig, (test_statistic_name, test_statistic) in zip(subfigs, test_statistics.items()):
         subfig.suptitle(f'{metric} {test_statistic_name}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
@@ -90,7 +90,7 @@ def run(args):
                 scores_hemi = test_statistic[hemi][metric]
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
-                    cbar_max = min(np.nanmax(scores_hemi), 99)
+                    cbar_max = np.nanmax(scores_hemi)
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     scores_hemi,
@@ -99,7 +99,7 @@ def run(args):
                     bg_map=fsaverage[f"sulc_{hemi}"],
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                    threshold=DEFAULT_T_VALUE_THRESHOLD,
+                    threshold=DEFAULT_T_VALUE_THRESH if test_statistic_name == "t-values" else DEFAULT_TFCE_VAL_THRESH,
                     vmax=cbar_max,
                     vmin=0,
                     cmap="hot",
@@ -120,7 +120,6 @@ def run(args):
     print(f"plotting group-level avg scores.")
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
