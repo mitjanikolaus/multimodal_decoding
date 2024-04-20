@@ -57,9 +57,20 @@ def create_permutation_scores(args):
                     def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
                         results = []
                         for iter in range(n_iters):
-                            # shuffle indices for captions and images separately
-                            np.random.shuffle(latents[:NUM_TEST_STIMULI // 2])
-                            np.random.shuffle(latents[NUM_TEST_STIMULI // 2:])
+                            def create_shuffled_indices():
+                                num_stim_one_mod = NUM_TEST_STIMULI // 2
+                                shuffleidx_mod_1 = np.random.choice(range(num_stim_one_mod), size=num_stim_one_mod,
+                                                                    replace=False)
+                                shuffleidx_mod_2 = np.random.choice(range(num_stim_one_mod, NUM_TEST_STIMULI),
+                                                                    size=num_stim_one_mod, replace=False)
+                                return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
+
+                            # shuffle indices for captions and images separately until all indices have changed
+                            shuffled_indices = create_shuffled_indices()
+                            while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
+                                shuffled_indices = create_shuffled_indices()
+
+                            latents_shuffled = latents[shuffled_indices]
                             scores = []
                             path_iterator = pred_paths
                             if id == 0:
@@ -68,8 +79,9 @@ def create_permutation_scores(args):
                                 preds = pickle.load(open(path, "rb"))
                                 scores.append(
                                     {
-                                        "test_captions": pairwise_acc_captions(latents, preds, normalize=False),
-                                        "test_images": pairwise_acc_images(latents, preds, normalize=False)
+                                        "test_captions": pairwise_acc_captions(latents_shuffled, preds,
+                                                                               normalize=False),
+                                        "test_images": pairwise_acc_images(latents_shuffled, preds, normalize=False)
                                     }
                                 )
                             results.append(scores)
