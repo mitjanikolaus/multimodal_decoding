@@ -102,7 +102,7 @@ def run(args):
                     threshold=DEFAULT_T_VALUE_THRESHOLD,
                     vmax=cbar_max,
                     vmin=0,
-                    cmap="red_transparent_full_alpha_range",
+                    cmap="hot",
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
     title = f"{args.model}_{args.mode}_group_level_test_stats"
