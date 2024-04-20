@@ -54,7 +54,7 @@ def create_permutation_scores(args):
                     last_idx = int(os.path.basename(pred_paths[-1])[:-2])
                     assert last_idx == len(pred_paths) - 1, last_idx
 
-                    def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=10):
+                    def shuffle_and_calc_scores(latents, pred_paths, id, n_iters, print_interval=1):
                         results = []
                         for iter in range(n_iters):
                             def create_shuffled_indices():
