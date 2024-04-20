@@ -30,8 +30,8 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
-    for subfig, (test_statistic_name, test_statistic) in zip(subfigs, test_statistics.items()):
-        subfig.suptitle(f'{metric} {test_statistic_name}', x=0, horizontalalignment="left")
+    for subfig, (stat_name, test_statistic) in zip(subfigs, test_statistics.items()):
+        subfig.suptitle(f'{metric} {stat_name}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
         cbar_max = None
         for i, view in enumerate(VIEWS):
@@ -40,6 +40,7 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = np.nanmax(scores_hemi)
+                threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH,
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     scores_hemi,
@@ -48,7 +49,7 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
                     bg_map=fsaverage[f"sulc_{hemi}"],
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                    threshold=DEFAULT_T_VALUE_THRESH if test_statistic_name == "t-values" else DEFAULT_TFCE_VAL_THRESH,
+                    threshold=threshold,
                     vmax=cbar_max,
                     vmin=0,
                     cmap="hot",
