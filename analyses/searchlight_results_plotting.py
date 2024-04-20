@@ -39,7 +39,7 @@ def run(args):
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), 2))
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+    fig.suptitle(f'{metric}: 1-(p_value)', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
     cbar_max = 1
     cbar_min = 0.9
