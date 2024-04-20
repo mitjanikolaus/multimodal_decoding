@@ -16,7 +16,7 @@ from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALI
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 VIEWS = ["lateral", "medial", "ventral"]
-COLORBAR_MAX = 0.85
+COLORBAR_MAX = 0.99
 COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.01
 
