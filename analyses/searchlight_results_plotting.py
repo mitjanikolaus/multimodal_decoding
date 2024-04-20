@@ -34,8 +34,8 @@ def run(args):
 
     # manually set plotting threshold for p-values
     significance_threshold = 0.05
-    # p_values['left'][p_values['left'] > significance_threshold] = np.nan
-    # p_values['right'][p_values['right'] > significance_threshold] = np.nan
+    p_values['left'][p_values['left'] > significance_threshold] = np.nan
+    p_values['right'][p_values['right'] > significance_threshold] = np.nan
 
     # p_values['left'][p_values['left'] > 0] = -np.log10(p_values['left'][p_values['left'] > 0])
     # p_values['right'][p_values['right'] > 0] = -np.log10(p_values['right'][p_values['right'] > 0])
