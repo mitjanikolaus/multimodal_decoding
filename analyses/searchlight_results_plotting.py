@@ -29,8 +29,16 @@ def run(args):
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
-    p_values['left'][p_values['left'] > 0] = -np.log10(p_values['left'][p_values['left'] > 0])
-    p_values['right'][p_values['right'] > 0] = -np.log10(p_values['right'][p_values['right'] > 0])
+    p_values['left'][p_values['left'] == 0] = np.nan
+    p_values['right'][p_values['right'] == 0] = np.nan
+
+    # manually set plotting threshold for p-values
+    significance_threshold = 0.05
+    p_values['left'][p_values['left'] > significance_threshold] = np.nan
+    p_values['right'][p_values['right'] > significance_threshold] = np.nan
+
+    # p_values['left'][p_values['left'] > 0] = -np.log10(p_values['left'][p_values['left'] > 0])
+    # p_values['right'][p_values['right'] > 0] = -np.log10(p_values['right'][p_values['right'] > 0])
 
     print(f"plotting (p-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
@@ -38,7 +46,8 @@ def run(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-    cbar_max = None
+    cbar_max = 1
+    cbar_min = 0
     for i, view in enumerate(VIEWS):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
@@ -54,14 +63,13 @@ def run(args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1.3,  # -log10(0.05) ~ 1.3
                 vmax=cbar_max,
-                vmin=0,
-                cmap="bwr",
+                vmin=cbar_min,
+                cmap="red_transparent",
                 symmetric_cbar=False,
             )
             axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_group_level_-log10_p_values"
+    title = f"{args.model}_{args.mode}_group_level_p_values"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
     os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
