@@ -590,23 +590,23 @@ def run(args):
     #     symmetric_cbar=True,
     # )
 
-    null_distribution_test_statistic_file = os.path.join(
+    null_distribution_tfce_values_file = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
         args.mode,
         f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
     )
 
-    print("loading null distribution test statistic: ", null_distribution_test_statistic_file)
-    null_distribution_test_statistic = pickle.load(open(null_distribution_test_statistic_file, 'rb'))
+    print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
+    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
     max_test_statistic_distr = {
-        hemi: sorted([np.nanmax(n[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) for n in null_distribution_test_statistic])
+        hemi: sorted([np.nanmax(n[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) for n in null_distribution_tfce_values])
         for hemi in HEMIS
     }
 
     significance_cutoffs = {hemi: np.quantile(max_test_statistic_distr[hemi], 0.95) for hemi in HEMIS}
-    print(f"{len(null_distribution_test_statistic)} permutations")
+    print(f"{len(null_distribution_tfce_values)} permutations")
     print(f"cluster test statistic significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
     print(f"cluster test statistic significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
@@ -619,9 +619,9 @@ def run(args):
             test_stat = tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
             value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
             if len(value_indices) > 0:
-                p_value = 1 - value_indices[0].item() / len(null_distribution_test_statistic)
+                p_value = 1 - value_indices[0].item() / len(null_distribution_tfce_values)
             else:
-                p_value = 1 - (len(null_distribution_test_statistic) - 1) / (len(null_distribution_test_statistic))
+                p_value = 1 - (len(null_distribution_tfce_values) - 1) / (len(null_distribution_tfce_values))
             p_values[hemi][vertex] = p_value
 
     print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.4f}")

@@ -24,26 +24,9 @@ DEFAULT_T_VALUE_THRESH = 0.824
 DEFAULT_TFCE_VAL_THRESH = 50
 
 
-def run(args):
-    p_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 f"p_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
-    p_values = pickle.load(open(p_values_path, "rb"))
-
-    # transform to plottable magnitudes:
-    p_values['left'][p_values['left'] == 0] = np.nan
-    p_values['right'][p_values['right'] == 0] = np.nan
-    p_values['left'] = 1 - p_values['left']
-    p_values['right'] = 1 - p_values['right']
-
+def plot_test_statistics(t_values, tfce_values, args, filename_suffix=""):
+    print(f"plotting (t-values and tfce-values) ({filename_suffix})")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-
-    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 "t_values.p")
-    t_values = pickle.load(open(t_values_path, 'rb'))
-    tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
-    tfce_values = pickle.load(open(tfce_values_path, 'rb'))
-    print(f"plotting (t-values and tfce-values)")
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     test_statistics = {"t-values": t_values, "tfce-values": tfce_values}
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
@@ -72,7 +55,7 @@ def run(args):
                     cmap="hot",
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_group_level_test_stats"
+    title = f"{args.model}_{args.mode}_group_level_test_stats_{filename_suffix}"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
@@ -82,7 +65,48 @@ def run(args):
     plt.close()
 
 
+def run(args):
+    t_values_null_distribution_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        args.resolution,
+        args.mode, f"t_values_null_distribution.p"
+    )
+    null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
+
+    null_distribution_tfce_values_file = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        args.resolution,
+        args.mode,
+        f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
+    null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+
+    for i in range(3):
+        t_values = null_distribution_t_values[i]
+        tfce_values = null_distribution_test_statistic[i]
+        plot_test_statistics(t_values, tfce_values, args, filename_suffix=f"_null_distr_{i}")
+
+
+    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+                                 "t_values.p")
+    t_values = pickle.load(open(t_values_path, 'rb'))
+    tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+                                 f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    tfce_values = pickle.load(open(tfce_values_path, 'rb'))
+    plot_test_statistics(t_values, tfce_values, args)
+
     print(f"plotting (p-values)")
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    p_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+                                 f"p_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    p_values = pickle.load(open(p_values_path, "rb"))
+
+    # transform to plottable magnitudes:
+    p_values['left'][p_values['left'] == 0] = np.nan
+    p_values['right'][p_values['right'] == 0] = np.nan
+    p_values['left'] = 1 - p_values['left']
+    p_values['right'] = 1 - p_values['right']
+
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), 2))
     fig.suptitle(f'{metric}: 1-(p_value)', x=0, horizontalalignment="left")
