@@ -25,7 +25,7 @@ DEFAULT_TFCE_VAL_THRESH = 50
 
 
 def plot_test_statistics(t_values, tfce_values, args, filename_suffix=""):
-    print(f"plotting (t-values and tfce-values) ({filename_suffix})")
+    print(f"plotting (t-values and tfce-values) {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     test_statistics = {"t-values": t_values, "tfce-values": tfce_values}
