@@ -50,7 +50,7 @@ def run(args):
     fig.suptitle(f'{metric}', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
     cbar_max = 0
-    cbar_min = 1
+    cbar_min = -1
     for i, view in enumerate(VIEWS):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
