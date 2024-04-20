@@ -31,14 +31,6 @@ METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
 
-COLORBAR_MAX = 0.85
-COLORBAR_THRESHOLD_MIN = 0.6
-COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
-
-DEFAULT_T_VALUE_THRESHOLD = 0.824
-DEFAULT_MIN_CLUSTER_T_VALUE = 20 * DEFAULT_T_VALUE_THRESHOLD
-DEFAULT_CLUSTER_SIZE = 10
-
 BASE_METRICS = ["test_captions", "test_images"]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 CHANCE_VALUES = {
@@ -486,51 +478,6 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
         result_dict['cluster_edge_lengths'] = list(cluster_edge_lengths.values())
     return result_dict
 
-    # start_locations = list(np.argwhere(scores_thresholded)[:, 0])
-    # # cluster_maps = np.zeros_like(scores)
-    # while len(start_locations) > 0:
-    #     idx = start_locations[0]
-    #     cluster = {idx}
-    #     c_edge_lengths = []
-    #     checked = {idx}
-    #
-    #     def expand_neighbors(start_idx, adj):
-    #         neighbors = np.argwhere(adj[start_idx] > 0)[:, 1]
-    #         for neighbor in neighbors:
-    #             if not neighbor in checked:
-    #                 checked.add(neighbor)
-    #                 if scores_thresholded[neighbor]:
-    #                     cluster.add(neighbor)
-    #                     if return_cluster_edge_lengths:
-    #                         c_edge_lengths.append(edge_lengths[(start_idx, neighbor)])
-    #                     expand_neighbors(neighbor, adj)
-    #
-    #     expand_neighbors(idx, adj)
-    #     for id in cluster:
-    #         start_locations.remove(id)
-    #
-    #     if len(cluster) > min_cluster_size:
-    #         if return_agg_t_values:
-    #             t_value_cluster = np.sum(scores[list(cluster)])
-    #             cluster_t_values.append(t_value_cluster)
-    #         if return_clusters:
-    #             cluster_nodes.append(cluster)
-    #         if return_cluster_edge_lengths:
-    #             cluster_edge_lengths.append(np.sum(c_edge_lengths))
-    # cluster_maps[list(cluster)] = scores[list(cluster)]
-
-    # fill non-cluster locations with zeros
-    # cluster_maps[cluster_maps == 0] = 0
-    #
-    # result_dict = dict()
-    # if return_clusters:
-    #     result_dict['clusters'] = cluster_nodes
-    # if return_agg_t_values:
-    #     result_dict['agg_t_values'] = cluster_t_values
-    # if return_cluster_edge_lengths:
-    #     result_dict['cluster_edge_lengths'] = cluster_edge_lengths
-    # return result_dict
-
 
 def calc_image_t_values(data, popmean):
     enough_data = (~np.isnan(data)).sum(axis=0) > 2  # at least 3 datapoints
@@ -557,12 +504,11 @@ def calc_t_values(per_subject_scores):
     return t_values
 
 
-def run(args):
+def load_per_subject_scores(model, features, resolution, mode, alpha):
     per_subject_scores = {subj: dict() for subj in SUBJECTS}
-    alpha = args.l2_regularization_alpha
 
     results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p')
+                                 f'train/{model}/{features}/*/{resolution}/*/{mode}/alpha_{str(alpha)}.p')
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
     paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
@@ -586,12 +532,17 @@ def run(args):
         # print("")
 
         per_subject_scores[subject][hemi] = scores
+    return per_subject_scores
 
+
+def run(args):
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     if not os.path.isfile(t_values_path):
         os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         print(f"Calculating t-values")
+        per_subject_scores = load_per_subject_scores(args.model, args.features, args.resolution, args.mode,
+                                                     args.l2_regularization_alpha)
         t_values = calc_t_values(per_subject_scores)
 
         pickle.dump(t_values, open(t_values_path, 'wb'))
@@ -619,22 +570,22 @@ def run(args):
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     test_statistic = calc_tfce_values(test_statistic, edge_lengths, h=args.tfce_h, e=args.tfce_e)
 
-        # hemi='left'
-        # t_values_pos = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES].copy()
-        # t_values_pos[t_values_pos < 0] = 0
-        # t_values_pos[t_values_pos > 0] = 1
-        # from nilearn import plotting
-        # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-        # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-        # plotting.plot_surf_stat_map(
-        #     surface_infl,
-        #     t_values_pos,
-        #     hemi=hemi,
-        #     view="lateral",
-        #     bg_map=fsaverage[f"sulc_{hemi}"],
-        #     colorbar=True,
-        #     symmetric_cbar=True,
-        # )
+    # hemi='left'
+    # t_values_pos = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES].copy()
+    # t_values_pos[t_values_pos < 0] = 0
+    # t_values_pos[t_values_pos > 0] = 1
+    # from nilearn import plotting
+    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
+    # plotting.plot_surf_stat_map(
+    #     surface_infl,
+    #     t_values_pos,
+    #     hemi=hemi,
+    #     view="lateral",
+    #     bg_map=fsaverage[f"sulc_{hemi}"],
+    #     colorbar=True,
+    #     symmetric_cbar=True,
+    # )
 
     null_distribution_test_statistic_file = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
@@ -657,7 +608,7 @@ def run(args):
     print(f"cluster test statistic significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
     p_values = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in
-                        t_values.items()}
+                t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
@@ -862,7 +813,6 @@ def get_args():
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_100')
-    parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--smoothing-iterations", type=int, default=0)
 
