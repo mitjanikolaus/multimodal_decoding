@@ -23,7 +23,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     get_default_features, pairwise_accuracy, Normalize
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, \
-    IDS_TEST_STIM
+    IDS_TEST_STIM, NUM_TEST_STIMULI
 
 DEFAULT_N_JOBS = 10
 
@@ -37,7 +37,8 @@ def train_and_test(
         *,
         train_ids,
         test_ids,
-        predictions_dir=None,
+        null_distr_dir=None,
+        random_seeds=None,
         list_i=None,
 ):
     X_train = X[train_ids]
@@ -49,8 +50,21 @@ def train_and_test(
     y_pred = estimator.predict(X_test)
     y_pred_normalized = Normalize(y_pred.mean(axis=0), y_pred.std(axis=0))(y_pred)
 
-    if predictions_dir is not None:
-        pickle.dump(y_pred_normalized, open(os.path.join(predictions_dir, f"{list_i:010d}.p"), "wb"))
+    if null_distr_dir is not None:
+        scores_null_distr = []
+        for seed in random_seeds:
+            shuffled_indices = create_shuffled_indices(seed)
+            y_test_shuffled = y_test[shuffled_indices]
+
+            scores_null_distr.append(
+                {
+                    "test_captions": pairwise_acc_captions(y_test_shuffled, y_pred_normalized, normalize=False),
+                    "test_images": pairwise_acc_images(y_test_shuffled, y_pred_normalized, normalize=False),
+                    "test": pairwise_acc(y_test_shuffled, y_pred_normalized, normalize=False),
+                }
+            )
+
+        pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
     scores = {
         "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
@@ -72,13 +86,14 @@ def custom_group_iter_search_light(
         thread_id,
         total,
         print_interval=500,
-        predictions_dir=None,
+        null_distr_dir=None,
+        random_seeds=None,
 ):
     results = []
     t0 = time.time()
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
         scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
-                                predictions_dir=predictions_dir, list_i=list_i)
+                                null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
         results.append(scores)
         if print_interval > 0:
             if i % print_interval == 0:
@@ -106,7 +121,8 @@ def custom_search_light(
         n_jobs=-1,
         verbose=0,
         print_interval=500,
-        predictions_dir=None,
+        null_distr_dir=None,
+        random_seeds=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
     with warnings.catch_warnings():  # might not converge
@@ -123,7 +139,8 @@ def custom_search_light(
                 thread_id,
                 len(A),
                 print_interval,
-                predictions_dir,
+                null_distr_dir,
+                random_seeds,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -142,6 +159,16 @@ def pairwise_acc_images(latents, predictions, normalize=True):
 
 def pairwise_acc(latents, predictions, normalize=True):
     return pairwise_accuracy(latents, predictions, IDS_TEST_STIM, normalize=normalize)
+
+
+def create_shuffled_indices(seed):
+    np.random.seed(seed)
+    num_stim_one_mod = NUM_TEST_STIMULI // 2
+    shuffleidx_mod_1 = np.random.choice(range(num_stim_one_mod), size=num_stim_one_mod,
+                                        replace=False)
+    shuffleidx_mod_2 = np.random.choice(range(num_stim_one_mod, NUM_TEST_STIMULI),
+                                        size=num_stim_one_mod, replace=False)
+    return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
 
 
 def run(args):
@@ -211,8 +238,6 @@ def run(args):
                         X = np.concatenate((train_fmri_hemi, test_fmri[hemi]))
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
-                        predictions_dir = os.path.join(results_dir, "test_set_predictions")
-                        os.makedirs(predictions_dir, exist_ok=True)
 
                         results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
@@ -247,10 +272,28 @@ def run(args):
                         results_dict["adjacency"] = adjacency
                         model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                         start = time.time()
+
+                        null_distr_dir = None
+                        random_seeds = None
+                        if args.create_null_distr:
+                            null_distr_dir = os.path.join(results_dir, "null_distr")
+                            os.makedirs(null_distr_dir, exist_ok=True)
+
+                            random_seeds = []
+                            for i in range(args.n_permutations_per_subject):
+                                # shuffle indices for captions and images separately until all indices have changed
+                                seed = 0
+                                shuffled_indices = create_shuffled_indices(seed)
+                                while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
+                                    seed += 1
+                                    shuffled_indices = create_shuffled_indices(seed)
+                                random_seeds.append(seed)
+
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
                                                      test_ids=test_ids, n_jobs=args.n_jobs, verbose=1,
                                                      print_interval=500,
-                                                     predictions_dir=predictions_dir if args.save_predictions else None)
+                                                     null_distr_dir=null_distr_dir,
+                                                     random_seeds=random_seeds)
                         end = time.time()
                         print(f"Searchlight time: {int(end - start)}s")
                         test_scores_caps = [score["test_captions"] for score in scores]
@@ -306,7 +349,8 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
 
-    parser.add_argument("--save-predictions", default=False, action="store_true")
+    parser.add_argument("--create-null-distr", default=False, action="store_true")
+    parser.add_argument("--n-permutations-per-subject", type=int, default=100)
 
     return parser.parse_args()
 
