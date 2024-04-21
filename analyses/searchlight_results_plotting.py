@@ -21,7 +21,7 @@ COLORBAR_THRESHOLD_MIN = 0.6
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.01
 
 DEFAULT_T_VALUE_THRESH = 0.824
-DEFAULT_TFCE_VAL_THRESH = 50
+DEFAULT_TFCE_VAL_THRESH = 10
 
 
 def plot_test_statistics(test_statistics, args, filename_suffix=""):
