@@ -659,15 +659,18 @@ def calc_t_values_null_distr():
         results_agnostic = pickle.load(open(path_agnostic, 'rb'))
         nan_locations = results_agnostic['nan_locations']
 
-        null_distribution_file_name = f"alpha_{str(alpha)}_null_distribution.p"
-        null_distribution_agnostic = pickle.load(
-            open(os.path.join(os.path.dirname(path_agnostic), null_distribution_file_name), 'rb'))
+        def load_null_distr_scores(base_path):
+            scores_dir = os.path.join(base_path, "null_distr")
+            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+            print(f"Found scores for {len(score_paths)} locations")
+            last_idx = int(os.path.basename(score_paths[-1])[:-2])
+            assert last_idx == len(score_paths) - 1, last_idx
+            scores = [pickle.load(open(score_path, "rb")) for score_path in score_paths]
+            return scores
 
-        null_distribution_images = pickle.load(
-            open(os.path.join(os.path.dirname(path_imgs), null_distribution_file_name), 'rb'))
-
-        null_distribution_captions = pickle.load(
-            open(os.path.join(os.path.dirname(path_caps), null_distribution_file_name), 'rb'))
+        null_distribution_agnostic = load_null_distr_scores(os.path.join(os.path.dirname(path_agnostic)))
+        null_distribution_images = load_null_distr_scores(os.path.join(os.path.dirname(path_imgs)))
+        null_distribution_captions = load_null_distr_scores(os.path.join(os.path.dirname(path_caps)))
 
         for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
                                                                 null_distribution_captions,
