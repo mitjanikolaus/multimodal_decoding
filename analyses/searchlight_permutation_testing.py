@@ -662,7 +662,6 @@ def calc_t_values_null_distr():
         def load_null_distr_scores(base_path):
             scores_dir = os.path.join(base_path, "null_distr")
             score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-            print(f"Found scores for {len(score_paths)} locations")
             last_idx = int(os.path.basename(score_paths[-1])[:-2])
             assert last_idx == len(score_paths) - 1, last_idx
             scores = [pickle.load(open(score_path, "rb")) for score_path in score_paths]
@@ -673,6 +672,7 @@ def calc_t_values_null_distr():
         null_distribution_captions = load_null_distr_scores(os.path.join(os.path.dirname(path_caps)))
 
         num_permutations = len(null_distribution_agnostic[0])
+        print("num permutations loaded: ", num_permutations)
         for i in range(num_permutations):
             distr = [null_distr[i] for null_distr in null_distribution_agnostic]
             distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
