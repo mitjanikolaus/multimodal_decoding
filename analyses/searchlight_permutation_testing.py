@@ -672,9 +672,11 @@ def calc_t_values_null_distr():
         null_distribution_images = load_null_distr_scores(os.path.join(os.path.dirname(path_imgs)))
         null_distribution_captions = load_null_distr_scores(os.path.join(os.path.dirname(path_caps)))
 
-        for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
-                                                                null_distribution_captions,
-                                                                null_distribution_images)):
+        num_permutations = len(null_distribution_agnostic[0])
+        for i in range(num_permutations):
+            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
+            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
+            distr_imgs =  [null_distr[i] for null_distr in null_distribution_images]
             if len(per_subject_scores_null_distr) <= i:
                 per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
