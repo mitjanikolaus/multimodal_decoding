@@ -105,7 +105,7 @@ def custom_group_iter_search_light(
                 # We use a max to avoid a division by zero
                 remaining = (100.0 - percent) / max(0.01, percent) * dt
                 sys.stderr.write(
-                    f"Job #{thread_id}, processed {i}/{len(list_rows)} voxels "
+                    f"Job #{thread_id}, processed {i}/{len(list_rows)} vertices "
                     f"({percent:0.2f}%, {round(remaining / 60)} minutes remaining){crlf}"
                 )
     return results
