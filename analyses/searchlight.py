@@ -292,7 +292,7 @@ def run(args):
 
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
                                                      test_ids=test_ids, n_jobs=args.n_jobs, verbose=1,
-                                                     print_interval=100,
+                                                     print_interval=500,
                                                      null_distr_dir=null_distr_dir,
                                                      random_seeds=random_seeds)
                         end = time.time()
