@@ -20,7 +20,7 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, pairwise_accuracy, Normalize
+    get_default_features, pairwise_accuracy, Normalize, load_latents_transform
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, \
     IDS_TEST_STIM, NUM_TEST_STIMULI
@@ -140,7 +140,7 @@ def custom_search_light(
                 len(A),
                 print_interval,
                 null_distr_dir,
-                random_seeds,
+                random_seeds.copy(),
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -280,18 +280,19 @@ def run(args):
                             os.makedirs(null_distr_dir, exist_ok=True)
 
                             random_seeds = []
-                            for i in range(args.n_permutations_per_subject):
+                            seed = 0
+                            for _ in range(args.n_permutations_per_subject):
                                 # shuffle indices for captions and images separately until all indices have changed
-                                seed = 0
                                 shuffled_indices = create_shuffled_indices(seed)
                                 while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
                                     seed += 1
                                     shuffled_indices = create_shuffled_indices(seed)
                                 random_seeds.append(seed)
+                                seed += 1
 
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
                                                      test_ids=test_ids, n_jobs=args.n_jobs, verbose=1,
-                                                     print_interval=500,
+                                                     print_interval=100,
                                                      null_distr_dir=null_distr_dir,
                                                      random_seeds=random_seeds)
                         end = time.time()
