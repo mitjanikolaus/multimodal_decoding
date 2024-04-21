@@ -90,12 +90,12 @@ def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions"
     data_training_mode_captions = data[data.training_mode == "captions"]
     data_training_mode_images = data[data.training_mode == "images"]
 
-    for m_feat in data_training_mode_full.model_feat.unique():
+    for m_feat in model_feat_order:
         length = len(data_training_mode_full[(data_training_mode_full.model_feat == m_feat) & (data_training_mode_full.metric == metrics[0])])
         expected_num_datapoints = len(SUBJECTS)
         if hue_variable != "features":
             expected_num_datapoints *= len(data[hue_variable].unique())
-        assert length == expected_num_datapoints, f"too long or short: {length} (expected: {expected_num_datapoints})"
+        assert length == expected_num_datapoints, f"too long or short: {length} (expected: {expected_num_datapoints}) (model_feat: {m_feat}"
 
     catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=model_feat_order, metrics=metrics, x_variable="model_feat", legend_title=legend_title, legend_bbox=legend_bbox, height=height, aspect=aspect,
                                                   hue_variable=hue_variable, row_variable=row_variable, row_order=row_order, col_variable=col_variable, hue_order=hue_order, palette=palette, ylim=ylim, noise_ceilings=noise_ceilings)
@@ -176,6 +176,19 @@ def load_results_data(distance_metrics = ["cosine"]):
 
     df["training_mode"] = df.training_mode.replace({"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
     df["mask"] = df["mask"].fillna("whole_brain")
+
+    # create modality-specific decoders with 'matched' features from existing results
+    multimodal_models = df[df.features == "vision+lang"].model.unique().tolist()
+
+    data_feat_concat_mod_specific_vision = df[(df.training_mode == "images") & (df.features == "vision") & (df.model.isin(multimodal_models))]
+    data_feat_matched_mod_specific_vision = data_feat_concat_mod_specific_vision.copy()
+    data_feat_matched_mod_specific_vision["features"] = "matched"
+    df = pd.concat((df, data_feat_matched_mod_specific_vision), ignore_index=True)
+    
+    data_feat_concat_mod_specific_lang = df[(df.training_mode == "captions") & (df.features == "lang") & (df.model.isin(multimodal_models))]
+    data_feat_matched_mod_specific_lang = data_feat_concat_mod_specific_lang.copy()
+    data_feat_matched_mod_specific_lang["features"] = "matched"
+    df = pd.concat((df, data_feat_matched_mod_specific_lang), ignore_index=True)
 
     df["model_feat"] = df.model + "_" + df.features
 
