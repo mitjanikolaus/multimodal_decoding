@@ -183,7 +183,7 @@ def run(args):
                                                  args.l2_regularization_alpha)
     plot_acc_scores(per_subject_scores, args, results_path)
 
-    if args.null_distr_plots:
+    if args.plot_null_distr:
         print("plotting acc maps for null distribution examples")
         per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
         for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
