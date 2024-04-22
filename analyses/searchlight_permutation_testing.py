@@ -719,7 +719,7 @@ def calc_t_values_null_distr():
     n_iters_per_job = math.ceil(args.n_permutations_group_level / args.n_jobs)
     n_iters_last_job = n_iters_per_job
     if args.n_permutations_group_level % args.n_jobs != 0:
-        n_iters_last_job = args.n_permutations_group_level - (n_iters_per_job * args.n_jobs)
+        n_iters_last_job = (n_iters_per_job * args.n_jobs) - args.n_permutations_group_level
     print(f"n iters per job: {n_iters_per_job} (last job: {n_iters_last_job})")
     all_t_vals = Parallel(n_jobs=args.n_jobs)(
         delayed(shuffle_and_calc_t_values)(
