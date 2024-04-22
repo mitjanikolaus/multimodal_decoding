@@ -36,6 +36,7 @@ METRIC_CODES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_DIFF_CAPTIONS: 1,
     METRIC_DIFF_IMAGES: 2,
+    METRIC_MIN_ALT: 3,
 }
 
 BASE_METRICS = ["test_captions", "test_images"]
