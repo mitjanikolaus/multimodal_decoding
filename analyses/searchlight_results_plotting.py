@@ -204,7 +204,7 @@ def run(args):
             if t_values_smooth_null_distribution is not None:
                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
             test_statistics["tfce-values"] = null_distribution_test_statistic[i]
-            plot_test_statistics(test_statistics, args, filename_suffix=f"_null_distr_{i}")
+            plot_test_statistics(test_statistics, args, results_path, filename_suffix=f"_null_distr_{i}")
 
     if args.per_subject_plots:
         metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
