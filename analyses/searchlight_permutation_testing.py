@@ -627,7 +627,7 @@ def run(args):
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
-def calc_t_values_null_distr():
+def load_null_distr_per_subject_scores(args):
     alpha = args.l2_regularization_alpha
     results_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
@@ -688,6 +688,11 @@ def calc_t_values_null_distr():
                     per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
                 scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
                 per_subject_scores_null_distr[i][subject][hemi] = scores
+    return per_subject_scores_null_distr
+
+
+def calc_t_values_null_distr(args):
+    per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
 
     def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
         job_t_vals = []
@@ -738,7 +743,7 @@ def create_null_distribution(args):
     )
     if not os.path.isfile(t_values_null_distribution_path):
         print(f"Calculating t-values: null distribution")
-        t_values_null_distribution = calc_t_values_null_distr()
+        t_values_null_distribution = calc_t_values_null_distr(args)
         os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
         pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
     else:

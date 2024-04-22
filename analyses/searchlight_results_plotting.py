@@ -12,7 +12,8 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_IMAGES, \
-    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES
+    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
+    load_null_distr_per_subject_scores
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -22,6 +23,8 @@ COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.01
 
 DEFAULT_T_VALUE_THRESH = 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
+
+PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 
 def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""):
@@ -61,6 +64,49 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
     title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats{filename_suffix}"
     # fig.suptitle(title)
     # fig.tight_layout()
+    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    results_searchlight = os.path.join(results_path, f"{title}.png")
+    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
+    print(f"plotting group-level avg scores. {filename_suffix}")
+    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+    for subfig, metric in zip(subfigs, metrics):
+        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+        cbar_max = None
+        for i, view in enumerate(VIEWS):
+            for j, hemi in enumerate(['left', 'right']):
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    score_hemi_avgd = np.mean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+                infl_mesh = fsaverage[f"infl_{hemi}"]
+                if cbar_max is None:
+                    cbar_max = min(np.nanmax(score_hemi_avgd), 99)
+
+                plotting.plot_surf_stat_map(
+                    infl_mesh,
+                    score_hemi_avgd,
+                    hemi=hemi,
+                    view=view,
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    bg_on_data=True,
+                    axes=axes[i * 2 + j],
+                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                    threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
+                                                            metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                    vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
+                    vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
+                    cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
+                    symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                )
+                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+    title = f"{args.model}_{args.mode}_pairwise_acc{filename_suffix}"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
@@ -135,47 +181,14 @@ def run(args):
 
     per_subject_scores = load_per_subject_scores(args.model, args.features, args.resolution, args.mode,
                                                  args.l2_regularization_alpha)
-    metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
-    print(f"plotting group-level avg scores.")
-    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
-    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    for subfig, metric in zip(subfigs, metrics):
-        subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-        cbar_max = None
-        for i, view in enumerate(VIEWS):
-            for j, hemi in enumerate(['left', 'right']):
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    score_hemi_avgd = np.mean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
-                infl_mesh = fsaverage[f"infl_{hemi}"]
-                if cbar_max is None:
-                    cbar_max = min(np.nanmax(score_hemi_avgd), 99)
-
-                plotting.plot_surf_stat_map(
-                    infl_mesh,
-                    score_hemi_avgd,
-                    hemi=hemi,
-                    view=view,
-                    bg_map=fsaverage[f"sulc_{hemi}"],
-                    bg_on_data=True,
-                    axes=axes[i * 2 + j],
-                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                    threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
-                                                            metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                    vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
-                    vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
-                    cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
-                    symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
-                )
-                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_pairwise_acc"
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(results_path, f"{title}.png")
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
+    plot_acc_scores(per_subject_scores, args, results_path)
 
     if args.null_distr_plots:
+        print("plotting acc maps for null distribution examples")
+        per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+        for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
+            plot_acc_scores(per_subject_scores_null_distr[i], args, results_path, filename_suffix=f"_null_distr_{i}")
+
         print("plotting test stats for null distribution examples")
         t_values_null_distribution_path = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
@@ -199,7 +212,7 @@ def run(args):
         )
         null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
-        for i in range(10):
+        for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
             test_statistics = {"t-values": null_distribution_t_values[i]}
             if t_values_smooth_null_distribution is not None:
                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
