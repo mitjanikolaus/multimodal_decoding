@@ -30,6 +30,7 @@ METRIC_IMAGES = 'images'
 METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
+METRIC_MIN_ALT = 'min_alternative'
 
 METRIC_CODES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
@@ -45,6 +46,7 @@ CHANCE_VALUES = {
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
+    METRIC_MIN_ALT: 0,
 }
 
 
@@ -496,7 +498,7 @@ def calc_image_t_values(data, popmean):
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
-        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS])
             popmean = CHANCE_VALUES[metric]
             t_values[hemi][metric] = calc_image_t_values(data, popmean)
@@ -506,6 +508,15 @@ def calc_t_values(per_subject_scores):
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
                 (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
                 axis=0)
+
+            t_values[hemi][METRIC_MIN_ALT] = np.nanmin(
+                (
+                    t_values[hemi][METRIC_DIFF_CAPTIONS],
+                    t_values[hemi][METRIC_DIFF_IMAGES],
+                    t_values[hemi][METRIC_IMAGES],
+                    t_values[hemi][METRIC_CAPTIONS]),
+                axis=0)
+
     return t_values
 
 
@@ -520,7 +531,7 @@ def load_per_subject_scores(model, features, resolution, mode, alpha):
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                   paths_mod_specific_images), total=len(paths_mod_agnostic)):
+                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
@@ -640,7 +651,7 @@ def load_null_distr_per_subject_scores(args):
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                   paths_mod_specific_images), total=len(paths_mod_agnostic)):
+                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
@@ -700,7 +711,7 @@ def calc_t_values_null_distr(args):
         for _ in iterator:
             t_values = {hemi: dict() for hemi in HEMIS}
             for hemi in HEMIS:
-                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
                     random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
                     data = np.array(
                         [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
@@ -712,6 +723,13 @@ def calc_t_values_null_distr(args):
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
                         (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
+                        axis=0)
+                    t_values[hemi][METRIC_MIN_ALT] = np.nanmin(
+                        (
+                            t_values[hemi][METRIC_DIFF_CAPTIONS],
+                            t_values[hemi][METRIC_DIFF_IMAGES],
+                            t_values[hemi][METRIC_IMAGES],
+                            t_values[hemi][METRIC_CAPTIONS]),
                         axis=0)
 
             job_t_vals.append(t_values)
