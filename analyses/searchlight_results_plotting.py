@@ -73,7 +73,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
 def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
-    print(f"plotting group-level avg scores. {filename_suffix}")
+    print(f"plotting acc scores. {filename_suffix}")
     fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     for subfig, metric in zip(subfigs, metrics):
