@@ -659,28 +659,48 @@ def calc_t_values_null_distr():
         results_agnostic = pickle.load(open(path_agnostic, 'rb'))
         nan_locations = results_agnostic['nan_locations']
 
-        def load_null_distr_scores(base_path):
-            scores_dir = os.path.join(base_path, "null_distr")
-            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-            last_idx = int(os.path.basename(score_paths[-1])[:-2])
-            assert last_idx == len(score_paths) - 1, last_idx
-            scores = [pickle.load(open(score_path, "rb")) for score_path in score_paths]
-            return scores
+        legacy_null_distr_filename = f"alpha_{str(alpha)}_null_distribution.p"
+        if os.path.exists(legacy_null_distr_filename):
+            print("loading null distribution files from legacy format..")
+            null_distribution_agnostic = pickle.load(
+                open(os.path.join(os.path.dirname(path_agnostic), legacy_null_distr_filename), 'rb'))
 
-        null_distribution_agnostic = load_null_distr_scores(os.path.join(os.path.dirname(path_agnostic)))
-        null_distribution_images = load_null_distr_scores(os.path.join(os.path.dirname(path_imgs)))
-        null_distribution_captions = load_null_distr_scores(os.path.join(os.path.dirname(path_caps)))
+            null_distribution_images = pickle.load(
+                open(os.path.join(os.path.dirname(path_imgs), legacy_null_distr_filename), 'rb'))
 
-        num_permutations = len(null_distribution_agnostic[0])
-        print("num permutations loaded: ", num_permutations)
-        for i in range(num_permutations):
-            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
-            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-            distr_imgs =  [null_distr[i] for null_distr in null_distribution_images]
-            if len(per_subject_scores_null_distr) <= i:
-                per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-            per_subject_scores_null_distr[i][subject][hemi] = scores
+            null_distribution_captions = pickle.load(
+                open(os.path.join(os.path.dirname(path_caps), legacy_null_distr_filename), 'rb'))
+
+            for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
+                                                                    null_distribution_captions,
+                                                                    null_distribution_images)):
+                if len(per_subject_scores_null_distr) <= i:
+                    per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
+                    scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+                    per_subject_scores_null_distr[i][subject][hemi] = scores
+        else:
+            def load_null_distr_scores(base_path):
+                scores_dir = os.path.join(base_path, "null_distr")
+                score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+                last_idx = int(os.path.basename(score_paths[-1])[:-2])
+                assert last_idx == len(score_paths) - 1, last_idx
+                scores = [pickle.load(open(score_path, "rb")) for score_path in score_paths]
+                return scores
+
+            null_distribution_agnostic = load_null_distr_scores(os.path.join(os.path.dirname(path_agnostic)))
+            null_distribution_images = load_null_distr_scores(os.path.join(os.path.dirname(path_imgs)))
+            null_distribution_captions = load_null_distr_scores(os.path.join(os.path.dirname(path_caps)))
+
+            num_permutations = len(null_distribution_agnostic[0])
+            print("num permutations loaded: ", num_permutations)
+            for i in range(num_permutations):
+                distr = [null_distr[i] for null_distr in null_distribution_agnostic]
+                distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
+                distr_imgs =  [null_distr[i] for null_distr in null_distribution_images]
+                if len(per_subject_scores_null_distr) <= i:
+                    per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
+                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+                per_subject_scores_null_distr[i][subject][hemi] = scores
 
     def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
         job_t_vals = []
