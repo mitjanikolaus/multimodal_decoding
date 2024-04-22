@@ -388,11 +388,11 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh="auto", 
             tfce_values[hemi] = {metric: np.zeros_like(values)}
             continue
 
-        step = max_score / 100 if dh == "auto" else dh
-        if max_score <= step:
+        if max_score <= 0:
             tfce_values[hemi] = {metric: np.zeros_like(values)}
             continue
 
+        step = max_score / 100 if dh == "auto" else dh
         score_threshs = np.arange(step, max_score + step, step)
 
         tfce_values[hemi] = {metric: np.zeros_like(values)}
