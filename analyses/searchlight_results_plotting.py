@@ -169,7 +169,7 @@ def run(args):
                     symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_pairwise_acc"
+    title = f"{args.model}_{args.mode}_pairwise_acc"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
     results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
