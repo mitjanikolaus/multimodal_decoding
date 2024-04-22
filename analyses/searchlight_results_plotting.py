@@ -28,6 +28,51 @@ PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 
 def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""):
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    if "t-values" in test_statistics:
+        t_values = test_statistics['t-values']
+        metrics = list(t_values['left'].keys())
+        print(f"plotting t values for {len(metrics)} metrics {filename_suffix}")
+        fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+        subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+        cbar_max = {metric: None for metric in metrics}
+        for subfig, metric in zip(subfigs, metrics):
+            subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
+            axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+            for i, view in enumerate(VIEWS):
+                for j, hemi in enumerate(HEMIS):
+                    scores_hemi = t_values[hemi][metric]
+                    infl_mesh = fsaverage[f"infl_{hemi}"]
+                    if cbar_max[metric] is None:
+                        cbar_max[metric] = np.nanmax(scores_hemi)
+                    threshold = DEFAULT_T_VALUE_THRESH
+                    plotting.plot_surf_stat_map(
+                        infl_mesh,
+                        scores_hemi,
+                        hemi=hemi,
+                        view=view,
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        bg_on_data=True,
+                        axes=axes[i * 2 + j],
+                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                        threshold=threshold,
+                        vmax=cbar_max[metric],
+                        vmin=0,
+                        cmap="hot",
+                    )
+                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+        title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats{filename_suffix}"
+        # fig.suptitle(title)
+        # fig.tight_layout()
+        fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+        results_searchlight = os.path.join(results_path, f"{title}.png")
+        plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+        plt.close()
+
+    # plot remaining test stats
+    test_statistics_filtered = test_statistics.copy()
+    del test_statistics_filtered['t-values']
+
     print(f"plotting test stats {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
@@ -61,7 +106,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
                     cmap="hot",
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats{filename_suffix}"
+    title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats2{filename_suffix}"
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
