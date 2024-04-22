@@ -681,7 +681,6 @@ def calc_t_values_null_distr():
             null_distribution_captions = load_null_distr_scores(os.path.dirname(path_caps))
 
             num_permutations = len(null_distribution_agnostic[0])
-            print("num permutations loaded: ", num_permutations)
             for i in range(num_permutations):
                 distr = [null_distr[i] for null_distr in null_distribution_agnostic]
                 distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
