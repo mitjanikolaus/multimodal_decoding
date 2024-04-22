@@ -13,7 +13,7 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
-    load_null_distr_per_subject_scores
+    load_null_distr_per_subject_scores, METRIC_MIN_ALT
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -319,7 +319,7 @@ def get_args():
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MIN_DIFF_BOTH_MODALITIES)
+    parser.add_argument("--metric", type=str, default=METRIC_MIN_ALT)
 
     return parser.parse_args()
 
