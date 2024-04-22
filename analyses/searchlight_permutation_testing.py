@@ -651,7 +651,7 @@ def calc_t_values_null_distr():
         nan_locations = results_agnostic['nan_locations']
 
         legacy_null_distr_filename = f"alpha_{str(alpha)}_null_distribution.p"
-        if os.path.exists(legacy_null_distr_filename):
+        if os.path.isfile(os.path.join(os.path.dirname(path_agnostic), legacy_null_distr_filename)):
             print("loading null distribution files from legacy format..")
             null_distribution_agnostic = pickle.load(
                 open(os.path.join(os.path.dirname(path_agnostic), legacy_null_distr_filename), 'rb'))
@@ -678,9 +678,9 @@ def calc_t_values_null_distr():
                 scores = [pickle.load(open(score_path, "rb")) for score_path in score_paths]
                 return scores
 
-            null_distribution_agnostic = load_null_distr_scores(os.path.join(os.path.dirname(path_agnostic)))
-            null_distribution_images = load_null_distr_scores(os.path.join(os.path.dirname(path_imgs)))
-            null_distribution_captions = load_null_distr_scores(os.path.join(os.path.dirname(path_caps)))
+            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(path_agnostic))
+            null_distribution_images = load_null_distr_scores(os.path.dirname(path_imgs))
+            null_distribution_captions = load_null_distr_scores(os.path.dirname(path_caps))
 
             num_permutations = len(null_distribution_agnostic[0])
             print("num permutations loaded: ", num_permutations)
