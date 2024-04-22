@@ -520,7 +520,7 @@ def load_per_subject_scores(model, features, resolution, mode, alpha):
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                   paths_mod_specific_images)):
+                                                   paths_mod_specific_images), total=len(paths_mod_agnostic)):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
@@ -640,7 +640,7 @@ def load_null_distr_per_subject_scores(args):
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                   paths_mod_specific_images)):
+                                                   paths_mod_specific_images), total=len(paths_mod_agnostic)):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
