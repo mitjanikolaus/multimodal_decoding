@@ -496,16 +496,15 @@ def calc_image_t_values(data, popmean):
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
-        t_vals = dict()
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS])
             popmean = CHANCE_VALUES[metric]
-            t_vals[metric] = calc_image_t_values(data, popmean)
+            t_values[hemi][metric] = calc_image_t_values(data, popmean)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
+                (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
                 axis=0)
     return t_values
 
