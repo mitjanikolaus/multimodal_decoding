@@ -311,7 +311,7 @@ def get_args():
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_100')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
-    parser.add_argument("--null-distr-plots", default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--smoothing-iterations", type=int, default=0)
 
