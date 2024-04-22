@@ -667,8 +667,8 @@ def calc_t_values_null_distr():
                                                                     null_distribution_images)):
                 if len(per_subject_scores_null_distr) <= i:
                     per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-                    scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-                    per_subject_scores_null_distr[i][subject][hemi] = scores
+                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+                per_subject_scores_null_distr[i][subject][hemi] = scores
         else:
             def load_null_distr_scores(base_path):
                 scores_dir = os.path.join(base_path, "null_distr")
