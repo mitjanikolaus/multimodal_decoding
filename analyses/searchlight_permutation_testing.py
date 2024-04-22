@@ -708,20 +708,18 @@ def calc_t_values_null_distr():
         for _ in iterator:
             t_values = {hemi: dict() for hemi in HEMIS}
             for hemi in HEMIS:
-                t_vals = dict()
-
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
                     random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
                     data = np.array(
                         [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                          zip(random_idx, SUBJECTS)])
                     popmean = CHANCE_VALUES[metric]
-                    t_vals[metric] = calc_image_t_values(data, popmean)
+                    t_values[hemi][metric] = calc_image_t_values(data, popmean)
 
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                        (t_vals[METRIC_DIFF_CAPTIONS], t_vals[METRIC_DIFF_IMAGES]),
+                        (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
                         axis=0)
 
             job_t_vals.append(t_values)
