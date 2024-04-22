@@ -377,7 +377,7 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
-def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh="auto", cluster_extents_measure="num_vertices"):
+def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices"):
     tfce_values = dict()
 
     for hemi in HEMIS:
