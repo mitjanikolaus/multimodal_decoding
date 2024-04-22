@@ -12,7 +12,7 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_IMAGES, \
-    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES
+    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -27,16 +27,15 @@ DEFAULT_TFCE_VAL_THRESH = 10
 def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""):
     print(f"plotting test stats {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
     cbar_max = {stat: None for stat in test_statistics.keys()}
     for subfig, (stat_name, values) in zip(subfigs, test_statistics.items()):
-        subfig.suptitle(f'{metric} {stat_name}', x=0, horizontalalignment="left")
+        subfig.suptitle(f'{args.metric} {stat_name}', x=0, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
         for i, view in enumerate(VIEWS):
             for j, hemi in enumerate(HEMIS):
-                scores_hemi = values[hemi][metric]
+                scores_hemi = values[hemi][args.metric]
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max[stat_name] is None:
                     if (stat_name == "t-values-smoothed") and (cbar_max['t-values'] is not None):
@@ -76,19 +75,25 @@ def run(args):
                                  "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
     if args.smoothing_iterations > 0:
-        t_values_smooth_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
-                                            args.mode,
-                                            f"t_values_smoothed_{args.smoothing_iterations}.p")
+        t_values_smooth_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
+            args.mode,
+            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
+        )
         test_statistics["t-values-smoothed"] = pickle.load(open(t_values_smooth_path, 'rb'))
-    tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    tfce_values_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
     test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
     plot_test_statistics(test_statistics, args, results_path)
 
     print(f"plotting (p-values)")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    p_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 f"p_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    p_values_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
@@ -97,9 +102,8 @@ def run(args):
     p_values['left'] = 1 - p_values['left']
     p_values['right'] = 1 - p_values['right']
 
-    metric = METRIC_MIN_DIFF_BOTH_MODALITIES
     fig = plt.figure(figsize=(5 * len(VIEWS), 2))
-    fig.suptitle(f'{metric}: 1-(p_value)', x=0, horizontalalignment="left")
+    fig.suptitle(f'{args.metric}: 1-(p_value)', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
     cbar_max = 1
     cbar_min = 0.9
@@ -116,7 +120,7 @@ def run(args):
                 bg_on_data=True,
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1-0.05,
+                threshold=1 - 0.05,
                 vmax=cbar_max,
                 vmin=cbar_min,
                 cmap="hot",
@@ -128,8 +132,6 @@ def run(args):
     results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
-
-
 
     per_subject_scores = load_per_subject_scores(args.model, args.features, args.resolution, args.mode,
                                                  args.l2_regularization_alpha)
@@ -186,14 +188,14 @@ def run(args):
             smooth_t_values_null_distribution_path = os.path.join(
                 SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
                 args.resolution,
-                args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
+                args.mode, f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
             )
             t_values_smooth_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
         null_distribution_tfce_values_file = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
             args.resolution,
             args.mode,
-            f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+            f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
         )
         null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
@@ -203,7 +205,6 @@ def run(args):
                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
             test_statistics["tfce-values"] = null_distribution_test_statistic[i]
             plot_test_statistics(test_statistics, args, filename_suffix=f"_null_distr_{i}")
-
 
     if args.per_subject_plots:
         metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
@@ -304,6 +305,8 @@ def get_args():
     parser.add_argument("--tfce", action="store_true")
     parser.add_argument("--tfce-h", type=float, default=2)
     parser.add_argument("--tfce-e", type=float, default=1)
+
+    parser.add_argument("--metric", type=str, default=METRIC_MIN_DIFF_BOTH_MODALITIES)
 
     return parser.parse_args()
 

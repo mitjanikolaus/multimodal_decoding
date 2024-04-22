@@ -31,6 +31,12 @@ METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
 
+METRIC_CODES = {
+    METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
+    METRIC_DIFF_CAPTIONS: 1,
+    METRIC_DIFF_IMAGES: 2,
+}
+
 BASE_METRICS = ["test_captions", "test_images"]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 CHANCE_VALUES = {
@@ -368,11 +374,11 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
-def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto", cluster_extents_measure="num_vertices"):
+def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh="auto", cluster_extents_measure="num_vertices"):
     tfce_values = dict()
 
     for hemi in HEMIS:
-        values = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]
+        values = t_values[hemi][metric]
         max_score = np.nanmax(values)
         if np.isnan(max_score) or np.isinf(max_score):
             print("encountered NaN or Inf in t-values while calculating tfce values")
@@ -382,7 +388,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto", cluster_
         step = max_score / 100 if dh == "auto" else dh
         score_threshs = np.arange(step, max_score + step, step)
 
-        tfce_values[hemi] = {METRIC_MIN_DIFF_BOTH_MODALITIES: np.zeros_like(values)}
+        tfce_values[hemi] = {metric: np.zeros_like(values)}
 
         for score_thresh in score_threshs:
             clusters_dict = calc_clusters(
@@ -403,7 +409,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto", cluster_
             cluster_tfces = (cluster_extents ** e) * (score_thresh ** h) * step
             nodes_above_thresh_not_in_clusters = set(np.argwhere(values > score_thresh)[:, 0])
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
-                tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][list(cluster)] += cluster_tfce
+                tfce_values[hemi][metric][list(cluster)] += cluster_tfce
                 nodes_above_thresh_not_in_clusters = nodes_above_thresh_not_in_clusters.difference(cluster)
 
             # increase tfce values for nodes out of clusters
@@ -411,7 +417,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, h=2, e=1, dh="auto", cluster_
                 if len(nodes_above_thresh_not_in_clusters) > 0:
                     single_node_tfce = (1 ** e) * (score_thresh ** h) * step
                     locations = list(nodes_above_thresh_not_in_clusters)
-                    tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][locations] += single_node_tfce
+                    tfce_values[hemi][metric][locations] += single_node_tfce
 
     return tfce_values
 
@@ -559,54 +565,37 @@ def run(args):
             distance_weights = True
             values = 'inveuclidean' if distance_weights else 'ones'
             adj_matrix = compute_adjacency_matrix(surface_infl, values=values)
-            smooth_t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smooth_surface_data(
-                adj_matrix, t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES], match=None,
+            smooth_t_values[hemi][args.metric] = smooth_surface_data(
+                adj_matrix, t_values[hemi][args.metric], match=None,
                 iterations=args.smoothing_iterations
             )
         t_values = smooth_t_values
-        t_values_smooth_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
-                                     args.mode,
-                                     f"t_values_smoothed_{args.smoothing_iterations}.p")
+        t_values_smooth_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p")
         pickle.dump(smooth_t_values, open(t_values_smooth_path, 'wb'))
-
 
     print("calculating tfce..")
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-    tfce_values = calc_tfce_values(t_values, edge_lengths, h=args.tfce_h, e=args.tfce_e)
+    tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e)
 
-    tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    tfce_values_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
     pickle.dump(tfce_values, open(tfce_values_path, "wb"))
-
-    # hemi='left'
-    # t_values_pos = test_statistic[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES].copy()
-    # t_values_pos[t_values_pos < 0] = 0
-    # t_values_pos[t_values_pos > 0] = 1
-    # from nilearn import plotting
-    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    # surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-    # plotting.plot_surf_stat_map(
-    #     surface_infl,
-    #     t_values_pos,
-    #     hemi=hemi,
-    #     view="lateral",
-    #     bg_map=fsaverage[f"sulc_{hemi}"],
-    #     colorbar=True,
-    #     symmetric_cbar=True,
-    # )
 
     null_distribution_tfce_values_file = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
         args.mode,
-        f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+        f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
     )
 
     print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
     max_test_statistic_distr = {
-        hemi: sorted([np.nanmax(n[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]) for n in null_distribution_tfce_values])
+        hemi: sorted([np.nanmax(n[hemi][args.metric]) for n in null_distribution_tfce_values])
         for hemi in HEMIS
     }
 
@@ -615,13 +604,13 @@ def run(args):
     print(f"cluster test statistic significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
     print(f"cluster test statistic significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
 
-    p_values = {hemi: np.zeros_like(t_vals[METRIC_MIN_DIFF_BOTH_MODALITIES]) for hemi, t_vals in
+    p_values = {hemi: np.zeros_like(t_vals[args.metric]) for hemi, t_vals in
                 t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
-              sorted([t for t in tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES]], reverse=True)[:10])
-        for vertex in np.argwhere(tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] > 0)[:, 0]:
-            test_stat = tfce_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES][vertex]
+              sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
+        for vertex in np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]:
+            test_stat = tfce_values[hemi][args.metric][vertex]
             value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
             if len(value_indices) > 0:
                 p_value = 1 - value_indices[0].item() / len(null_distribution_tfce_values)
@@ -632,8 +621,10 @@ def run(args):
     print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.4f}")
     print(f"smallest p value (right): {np.min(p_values['right'][p_values['right'] > 0]):.4f}")
 
-    p_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 f"p_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    p_values_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
 
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
@@ -696,7 +687,7 @@ def calc_t_values_null_distr():
             for i in range(num_permutations):
                 distr = [null_distr[i] for null_distr in null_distribution_agnostic]
                 distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-                distr_imgs =  [null_distr[i] for null_distr in null_distribution_images]
+                distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
                 if len(per_subject_scores_null_distr) <= i:
                     per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
                 scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
@@ -761,7 +752,8 @@ def create_null_distribution(args):
         smooth_t_values_null_distribution_path = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
             args.resolution,
-            args.mode, f"t_values_null_distribution_smoothed_{args.smoothing_iterations}.p"
+            args.mode,
+            f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
         )
         if not os.path.isfile(smooth_t_values_null_distribution_path):
             print("smoothing for null distribution")
@@ -779,11 +771,11 @@ def create_null_distribution(args):
                     for hemi in HEMIS:
                         smoothed = smooth_surface_data(
                             adj_matrices[hemi],
-                            t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES],
+                            t_vals[hemi][args.metric],
                             match=None,
                             iterations=args.smoothing_iterations
                         )
-                        t_vals[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = smoothed
+                        t_vals[hemi][args.metric] = smoothed
                     smooth_t_vals.append(t_vals)
                 return smooth_t_vals
 
@@ -795,16 +787,16 @@ def create_null_distribution(args):
                 )
                 for id in range(args.n_jobs)
             )
-            t_values_null_distribution = np.concatenate(all_smooth_t_vals)
-            pickle.dump(t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
-        else:
-            t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
+            smooth_t_values_null_distribution = np.concatenate(all_smooth_t_vals)
+            pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
+
+        t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
 
     tfce_values_null_distribution_path = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
         args.mode,
-        f"tfce_values_null_distribution_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+        f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
     )
     if not os.path.isfile(tfce_values_null_distribution_path):
         print(f"Calculating tfce values for null distribution")
@@ -814,7 +806,7 @@ def create_null_distribution(args):
         def tfce_values_job(t_values, edge_lengths, proc_id):
             iterator = tqdm(t_values) if proc_id == 0 else t_values
             tfce_values = [
-                calc_tfce_values(vals, edge_lengths, h=args.tfce_h, e=args.tfce_e) for vals in
+                calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
                 iterator
             ]
             return tfce_values
@@ -852,6 +844,8 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
+
+    parser.add_argument("--metric", type=str, default=METRIC_MIN_DIFF_BOTH_MODALITIES)
 
     return parser.parse_args()
 
