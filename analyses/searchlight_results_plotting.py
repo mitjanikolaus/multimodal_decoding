@@ -24,7 +24,7 @@ DEFAULT_T_VALUE_THRESH = 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
 
 
-def plot_test_statistics(test_statistics, args, filename_suffix=""):
+def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""):
     print(f"plotting test stats {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metric = METRIC_MIN_DIFF_BOTH_MODALITIES
@@ -63,13 +63,15 @@ def plot_test_statistics(test_statistics, args, filename_suffix=""):
     # fig.suptitle(title)
     # fig.tight_layout()
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
 
 def run(args):
+    results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
+    os.makedirs(results_path, exist_ok=True)
+
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
@@ -81,7 +83,7 @@ def run(args):
     tfce_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  f"tfce_values_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
     test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    plot_test_statistics(test_statistics, args)
+    plot_test_statistics(test_statistics, args, results_path)
 
     print(f"plotting (p-values)")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -123,8 +125,7 @@ def run(args):
             axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
     title = f"{args.model}_{args.mode}_group_level_p_values"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -168,8 +169,7 @@ def run(args):
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
     title = f"{args.model}_{args.mode}_group_level_pairwise_acc"
     fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-    os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+    results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -280,8 +280,7 @@ def run(args):
             # fig.suptitle(title)
             # fig.tight_layout()
             fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-            results_searchlight = os.path.join(RESULTS_DIR, "searchlight", args.resolution, f"{title}.png")
-            os.makedirs(os.path.dirname(results_searchlight), exist_ok=True)
+            results_searchlight = os.path.join(results_path, f"{title}.png")
             plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
             plt.close()
 
