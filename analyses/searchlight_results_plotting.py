@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_IMAGES, \
+from analyses.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
     load_null_distr_per_subject_scores, METRIC_MIN_ALT
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
@@ -201,7 +201,8 @@ def run(args):
             smooth_t_values_null_distribution_path = os.path.join(
                 SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
                 args.resolution,
-                args.mode, f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
+                args.mode,
+                f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
             )
             t_values_smooth_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
         null_distribution_tfce_values_file = os.path.join(
@@ -234,65 +235,31 @@ def run(args):
                 cbar_min = None
                 for i, view in enumerate(VIEWS):
                     for j, hemi in enumerate(['left', 'right']):
-                        if metric in scores[hemi].keys():
-                            scores_hemi = scores[hemi][metric]
+                        scores_hemi = scores[hemi][metric]
 
-                            infl_mesh = fsaverage[f"infl_{hemi}"]
-                            if cbar_max is None:
-                                cbar_max = np.nanmax(scores_hemi)
-                                cbar_min = np.nanmin(scores_hemi)
-                            # print(f" | max score: {cbar_max:.2f}")
+                        infl_mesh = fsaverage[f"infl_{hemi}"]
+                        if cbar_max is None:
+                            cbar_max = np.nanmax(scores_hemi)
+                            cbar_min = np.nanmin(scores_hemi)
 
-                            # destrieux_atlas = datasets.fetch_atlas_surf_destrieux()
-                            # parcellation = destrieux_atlas['map_right']
-                            # parcellation = destrieux_atlas[f'maps']
-                            # parcellation_surf = surface.vol_to_surf(parcellation, fsaverage[f'pial_{hemi}'], interpolation="nearest", radius=5).astype(int) #TODO
-
-                            # these are the regions we want to outline
-                            # regions_dict = {'L G_pariet_inf-Angular': 'left angular gyrus'}
-                            # regions_dict = {b'G_postcentral': 'Postcentral gyrus',
-                            #                 b'G_precentral': 'Precentral gyrus'}
-
-                            # get indices in atlas for these labels
-                            # regions_indices = [
-                            #     [i for i, l in destrieux_atlas['labels'] if l == region][0]
-                            #     for region in regions_dict
-                            # ]
-                            # regions_indices = [
-                            #     np.where(np.array(destrieux_atlas['labels']) == region)[0][0]
-                            #     for region in regions_dict
-                            # ]
-                            # colors = ['g', 'b']
-                            #
-                            # labels = list(regions_dict.values())
-
-                            plotting.plot_surf_stat_map(
-                                infl_mesh,
-                                scores_hemi,
-                                hemi=hemi,
-                                view=view,
-                                bg_map=fsaverage[f"sulc_{hemi}"],
-                                bg_on_data=True,
-                                axes=axes[i * 2 + j],
-                                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                                threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                                vmax=COLORBAR_MAX if cbar_min >= 0 else None,  # cbar_max,
-                                vmin=0.5 if cbar_min >= 0 else None,
-                                cmap="hot" if cbar_min >= 0 else "cold_hot",
-                                symmetric_cbar=True if cbar_min < 0 else "auto",
-                            )
-                            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-
-                            # plotting.plot_surf_contours(infl_mesh, parcellation_surf, labels=labels,
-                            #                             levels=regions_indices, axes=row_axes[i*2+j],
-                            #                             legend=True,
-                            #                             colors=colors)
-                        else:
-                            axes[i * 2 + j].axis('off')
+                        plotting.plot_surf_stat_map(
+                            infl_mesh,
+                            scores_hemi,
+                            hemi=hemi,
+                            view=view,
+                            bg_map=fsaverage[f"sulc_{hemi}"],
+                            bg_on_data=True,
+                            axes=axes[i * 2 + j],
+                            colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                            threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                            vmax=COLORBAR_MAX if cbar_min >= 0 else None,  # cbar_max,
+                            vmin=0.5 if cbar_min >= 0 else None,
+                            cmap="hot" if cbar_min >= 0 else "cold_hot",
+                            symmetric_cbar=True if cbar_min < 0 else "auto",
+                        )
+                        axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
 
             title = f"{args.model}_{args.mode}_{subject}"
-            # fig.suptitle(title)
-            # fig.tight_layout()
             fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
             results_searchlight = os.path.join(results_path, f"{title}.png")
             plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
