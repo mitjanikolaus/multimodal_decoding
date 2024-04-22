@@ -521,7 +521,6 @@ def load_per_subject_scores(model, features, resolution, mode, alpha):
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
-        print("loading: ", path_agnostic)
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
