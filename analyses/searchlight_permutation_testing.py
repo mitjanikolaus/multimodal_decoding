@@ -385,10 +385,14 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh="auto", 
         max_score = np.nanmax(values)
         if np.isnan(max_score) or np.isinf(max_score):
             print("encountered NaN or Inf in t-values while calculating tfce values")
-            tfce_values[hemi] = t_values[hemi]
+            tfce_values[hemi] = {metric: np.zeros_like(values)}
             continue
 
         step = max_score / 100 if dh == "auto" else dh
+        if max_score <= step:
+            tfce_values[hemi] = {metric: np.zeros_like(values)}
+            continue
+
         score_threshs = np.arange(step, max_score + step, step)
 
         tfce_values[hemi] = {metric: np.zeros_like(values)}
