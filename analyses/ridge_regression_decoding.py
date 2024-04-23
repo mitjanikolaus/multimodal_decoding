@@ -277,7 +277,6 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
                     'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
                 }
             }
-            print(mean_std)
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         nn_latent_transform = load_latents_transform(
