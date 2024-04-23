@@ -652,7 +652,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
-                        default=[1e3, 1e4, 1e5, 1e6, 1e7])
+                        default=[1e3, 1e5, 1e7])
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
