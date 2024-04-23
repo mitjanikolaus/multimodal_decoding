@@ -20,7 +20,8 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, pairwise_accuracy, Normalize, load_latents_transform
+    get_default_features, pairwise_accuracy, Normalize, load_latents_transform, all_pairwise_accuracy_scores, IMAGE, \
+    CAPTION
 
 from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, \
     IDS_TEST_STIM, NUM_TEST_STIMULI
@@ -28,6 +29,7 @@ from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STI
 DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
+TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
 
 def train_and_test(
@@ -48,7 +50,7 @@ def train_and_test(
     estimator.fit(X_train, y_train)
 
     y_pred = estimator.predict(X_test)
-    y_pred_normalized = Normalize(y_pred.mean(axis=0), y_pred.std(axis=0))(y_pred)
+    # y_pred_normalized = Normalize(y_pred.mean(axis=0), y_pred.std(axis=0))(y_pred)
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -56,21 +58,24 @@ def train_and_test(
             shuffled_indices = create_shuffled_indices(seed)
             y_test_shuffled = y_test[shuffled_indices]
 
-            scores_null_distr.append(
-                {
-                    "test_captions": pairwise_acc_captions(y_test_shuffled, y_pred_normalized, normalize=False),
-                    "test_images": pairwise_acc_images(y_test_shuffled, y_pred_normalized, normalize=False),
-                    "test": pairwise_acc(y_test_shuffled, y_pred_normalized, normalize=False),
-                }
-            )
+            scores = all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES)
+            scores_null_distr.append(scores)
+            # scores_null_distr.append(
+            #     {
+            #         "test_captions": pairwise_acc_captions(y_test_shuffled, y_pred_normalized, normalize=False),
+            #         "test_images": pairwise_acc_images(y_test_shuffled, y_pred_normalized, normalize=False),
+            #         "test": pairwise_acc(y_test_shuffled, y_pred_normalized, normalize=False),
+            #     }
+            # )
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = {
-        "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
-        "test_images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False),
-        "test": pairwise_acc(y_test, y_pred_normalized, normalize=False)
-    }
+    scores = all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES)
+    # scores = {
+    #     "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
+    #     "test_images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False),
+    #     "test": pairwise_acc(y_test, y_pred_normalized, normalize=False)
+    # }
 
     return scores
 
@@ -147,18 +152,18 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
-def pairwise_acc_captions(latents, predictions, normalize=True):
-    return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION],
-                             normalize=normalize)
-
-
-def pairwise_acc_images(latents, predictions, normalize=True):
-    return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE],
-                             normalize=normalize)
-
-
-def pairwise_acc(latents, predictions, normalize=True):
-    return pairwise_accuracy(latents, predictions, IDS_TEST_STIM, normalize=normalize)
+# def pairwise_acc_captions(latents, predictions, normalize=True):
+#     return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION],
+#                              normalize=normalize)
+#
+#
+# def pairwise_acc_images(latents, predictions, normalize=True):
+#     return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE],
+#                              normalize=normalize)
+#
+#
+# def pairwise_acc(latents, predictions, normalize=True):
+#     return pairwise_accuracy(latents, predictions, IDS_TEST_STIM, normalize=normalize)
 
 
 def create_shuffled_indices(seed):
@@ -304,11 +309,11 @@ def run(args):
                                                      random_seeds=random_seeds)
                         end = time.time()
                         print(f"Searchlight time: {int(end - start)}s")
-                        test_scores_caps = [score["test_captions"] for score in scores]
+                        test_scores_caps = [score["pairwise_acc_captions"] for score in scores]
                         print(
                             f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
 
-                        test_scores_imgs = [score["test_images"] for score in scores]
+                        test_scores_imgs = [score["pairwise_acc_images"] for score in scores]
                         print(
                             f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
 
