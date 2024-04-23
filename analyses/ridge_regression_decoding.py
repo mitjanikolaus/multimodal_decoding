@@ -432,33 +432,31 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
 def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
     results = dict()
 
-    if normalize:
-        for modality in [CAPTION, IMAGE]:
-            pred_caps_normalize = Normalize(
-                predictions[stim_types == modality].mean(axis=0),
-                predictions[stim_types == modality].std(axis=0)
-            )
-            predictions[stim_types == modality] = pred_caps_normalize(predictions[stim_types == modality])
-
-    if "csls_" in metric:
-        metric = metric.replace("csls_", "")
-        dist_mat = get_distance_matrix_csls(predictions, latents, metric=metric)
-    else:
-        dist_mat = get_distance_matrix(predictions, latents, metric)
-
-    mod_agnostic_accs = []
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
-        dist_mat_within_mod = dist_mat[stim_types == modality][:, stim_types == modality]
+        preds_mod = predictions[stim_types == modality].copy()
+        latents_mod = latents[stim_types == modality]
+        if normalize:
+            pred_mod_normalize = Normalize(preds_mod.mean(axis=0), preds_mod.std(axis=0))
+            preds_mod = pred_mod_normalize(preds_mod)
 
-        diag = dist_mat_within_mod.diagonal().reshape(-1, 1)
-        comp_mat = diag < dist_mat_within_mod
+        dist_mat = get_distance_matrix(preds_mod, latents_mod, metric)
+        diag = dist_mat.diagonal().reshape(-1, 1)
+        comp_mat = diag < dist_mat
         results[acc_metric_name] = comp_mat.mean()
 
+    if normalize:
+        pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = pred_normalize(predictions)
+
+    dist_mat = get_distance_matrix(predictions, latents, metric)
+
+    mod_agnostic_accs = []
+    for modality in [CAPTION, IMAGE]:
+        dist_mat_within_mod = dist_mat[stim_types == modality][:, stim_types == modality]
         dist_mat_cross_modal = dist_mat[stim_types == modality][:, stim_types != modality]
         dist_mat_min = np.min((dist_mat_within_mod, dist_mat_cross_modal), axis=0)
         diag = dist_mat_min.diagonal().reshape(-1, 1)
         comp_mat = diag < dist_mat_min
-
         scores = np.mean(comp_mat, axis=0)
         mod_agnostic_accs.extend(scores)
         results[f"pairwise_acc_mod_agnostic_{modality}s"] = scores.mean()
