@@ -609,15 +609,14 @@ def run(args):
     print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
-    max_test_statistic_distr = {
-        hemi: sorted([np.nanmax(n[hemi][args.metric]) for n in null_distribution_tfce_values])
-        for hemi in HEMIS
-    }
+    max_test_statistic_distr = [
+        np.nanmax(np.concatenate((n[HEMIS[0]][args.metric], n[HEMIS[1]][args.metric])))
+        for n in null_distribution_tfce_values
+    ]
 
-    significance_cutoffs = {hemi: np.quantile(max_test_statistic_distr[hemi], 0.95) for hemi in HEMIS}
+    significance_cutoff = np.quantile(max_test_statistic_distr, 0.95)
     print(f"{len(null_distribution_tfce_values)} permutations")
-    print(f"cluster test statistic significance cutoff for p<0.05 (left hemi): {significance_cutoffs['left']}")
-    print(f"cluster test statistic significance cutoff for p<0.05 (right hemi): {significance_cutoffs['right']}")
+    print(f"cluster test statistic significance cutoff for p<0.05 (across hemis): {significance_cutoff}")
 
     p_values = {hemi: np.zeros_like(t_vals[args.metric]) for hemi, t_vals in
                 t_values.items()}
@@ -626,7 +625,7 @@ def run(args):
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
         for vertex in np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]:
             test_stat = tfce_values[hemi][args.metric][vertex]
-            value_indices = np.argwhere(max_test_statistic_distr[hemi] > test_stat)
+            value_indices = np.argwhere(max_test_statistic_distr > test_stat)
             if len(value_indices) > 0:
                 p_value = 1 - value_indices[0].item() / len(null_distribution_tfce_values)
             else:
