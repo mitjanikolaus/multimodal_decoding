@@ -1,8 +1,3 @@
-############################################
-# Training multimodal linear brain decoders
-# inputs can be of any modality
-# outputs are uni-modal
-############################################
 import argparse
 import time
 
@@ -49,6 +44,8 @@ MOD_SPECIFIC_IMAGES = "train_images"
 MOD_SPECIFIC_CAPTIONS = "train_captions"
 TRAIN_MODE_CHOICES = ["train", MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
+
+ACC_MODALTY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 
 IMAGE = "image"
 CAPTION = "caption"
@@ -431,7 +428,45 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
     return dist_mat
 
 
-def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine", normalize=True):
+def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
+    results = dict()
+
+    if normalize:
+        for modality in [CAPTION, IMAGE]:
+            pred_caps_normalize = Normalize(
+                predictions[stim_types == modality].mean(axis=0),
+                predictions[stim_types == modality].std(axis=0)
+            )
+            predictions[stim_types == modality] = pred_caps_normalize(predictions[stim_types == modality])
+
+    if "csls_" in metric:
+        metric = metric.replace("csls_", "")
+        dist_mat = get_distance_matrix_csls(predictions, latents, metric=metric)
+    else:
+        dist_mat = get_distance_matrix(predictions, latents, metric)
+
+    mod_agnostic_accs = []
+    for modality in [CAPTION, IMAGE]:
+        dist_mat_within_mod = dist_mat[stim_types == modality][:, stim_types == modality]
+
+        diag = dist_mat_within_mod.diagonal().reshape(-1, 1)
+        comp_mat = diag < dist_mat_within_mod
+
+        results[f"pairwise_acc_{modality}s"] = comp_mat.mean()
+
+        dist_mat_cross_modal = dist_mat[stim_types == modality][:, stim_types != modality]
+        dist_mat_min = np.min((dist_mat_within_mod, dist_mat_cross_modal), axis=0)
+        diag = dist_mat_min.diagonal().reshape(-1, 1)
+        comp_mat = diag < dist_mat_min
+
+        mod_agnostic_accs.extend(np.mean(comp_mat, axis=0))
+
+    results[ACC_MODALTY_AGNOSTIC] = np.mean(mod_agnostic_accs)
+
+    return results
+
+
+def pairwise_accuracy(latents, predictions, metric="cosine", normalize=True):
     if normalize:
         pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
         predictions = pred_normalize(predictions)
@@ -444,11 +479,6 @@ def pairwise_accuracy(latents, predictions, stimulus_ids=None, metric="cosine", 
 
     diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
     comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
-
-    if stimulus_ids is not None:
-        # Take only cases where the stimulus ids are not the same (do not compare cases where caption id == image id)
-        not_same_id = cdist(stimulus_ids.reshape(-1, 1), stimulus_ids.reshape(-1, 1)) != 0
-        comp_mat = comp_mat[not_same_id]
 
     score = comp_mat.mean()
 
@@ -495,32 +525,6 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     latent_1_captions = latent_1[stimulus_types == CAPTION]
     latent_2_captions = latent_2[stimulus_types == CAPTION]
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
-
-
-def calculate_eval_metrics(results):
-    # take equally sized subsets of samples for captions and images
-    stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == CAPTION]
-    stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != CAPTION]
-    val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
-
-    predictions_caption = results["predictions"][results["stimulus_types"] == CAPTION]
-    predictions_image = results["predictions"][results["stimulus_types"] != CAPTION]
-    val_predictions = np.concatenate((predictions_caption, predictions_image))
-
-    latents_caption = results["latents"][results["stimulus_types"] == CAPTION]
-    latents_image = results["latents"][results["stimulus_types"] != CAPTION]
-    val_latents = np.concatenate((latents_caption, latents_image))
-
-    for metric in DISTANCE_METRICS:
-        acc = pairwise_accuracy(val_latents, val_predictions, val_ids, metric)
-        results[f"acc_{metric}"] = acc
-
-        acc_captions = pairwise_accuracy(latents_caption, predictions_caption, stimulus_ids_caption, metric)
-        acc_images = pairwise_accuracy(latents_image, predictions_image, stimulus_ids_image, metric)
-        results[f"acc_{metric}_captions"] = acc_captions
-        results[f"acc_{metric}_images"] = acc_images
-
-    return results
 
 
 def get_run_str(model_name, features, vision_features, mask=None, best_val_loss=False, best_val_acc=False):
@@ -584,6 +588,15 @@ def run(args):
 
                         best_alpha = clf.best_params_["alpha"]
 
+                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
+                                                                  test_stim_ids,
+                                                                  test_stim_types,
+                                                                  subject,
+                                                                  TESTING_MODE,
+                                                                  nn_latent_transform=latent_transform)
+                        best_model = clf.best_estimator_
+                        test_predicted_latents = best_model.predict(test_fmri_betas)
+
                         results = {
                             "alpha": best_alpha,
                             "model": model_name,
@@ -594,28 +607,20 @@ def run(args):
                             "mask": mask,
                             "num_voxels": test_fmri_betas.shape[1],
                             "best_val_acc": True,
-                            "cv_results": clf.cv_results_
+                            "cv_results": clf.cv_results_,
+                            "stimulus_ids": test_stim_ids,
+                            "stimulus_types": test_stim_types,
+                            "predictions": test_predicted_latents,
+                            "latents": test_data_latents
                         }
-
-                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
-                                                                  test_stim_ids,
-                                                                  test_stim_types,
-                                                                  subject,
-                                                                  TESTING_MODE,
-                                                                  nn_latent_transform=latent_transform)
-                        best_model = clf.best_estimator_
-                        test_predicted_latents = best_model.predict(test_fmri_betas)
-
-                        test_results = {"stimulus_ids": test_stim_ids,
-                                        "stimulus_types": test_stim_types,
-                                        "predictions": test_predicted_latents,
-                                        "latents": test_data_latents}
-                        test_results = calculate_eval_metrics(test_results)
-                        print(f"Best alpha: {best_alpha} | Pairwise acc: {test_results['acc_cosine']:.2f}"
-                              f" | Pairwise acc (captions): {test_results['acc_cosine_captions']:.2f}"
-                              f" | Pairwise acc (images): {test_results['acc_cosine_images']:.2f}")
-
-                        results = results | test_results
+                        results.update(
+                            all_pairwise_accuracy_scores(
+                                test_data_latents, test_predicted_latents, test_stim_types
+                            )
+                        )
+                        print(f"Best alpha: {best_alpha} | Pairwise acc: {results[ACC_MODALTY_AGNOSTIC]:.2f}"
+                              f" | Pairwise acc (captions): {results['pairwise_acc_captions']:.2f}"
+                              f" | Pairwise acc (images): {results['pairwise_acc_images']:.2f}")
 
                         results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                         run_str = get_run_str(model_name, features, args.vision_features, mask, best_val_acc=True)
