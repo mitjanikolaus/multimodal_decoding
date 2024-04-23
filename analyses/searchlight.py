@@ -172,6 +172,19 @@ def create_shuffled_indices(seed):
 
 
 def run(args):
+    random_seeds = None
+    if args.create_null_distr:
+        random_seeds = []
+        seed = 0
+        for _ in range(args.n_permutations_per_subject):
+            # shuffle indices for captions and images separately until all indices have changed
+            shuffled_indices = create_shuffled_indices(seed)
+            while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
+                seed += 1
+                shuffled_indices = create_shuffled_indices(seed)
+            random_seeds.append(seed)
+            seed += 1
+
     for subject in args.subjects:
         train_fmri = {
             "left": pickle.load(
@@ -280,21 +293,9 @@ def run(args):
                         start = time.time()
 
                         null_distr_dir = None
-                        random_seeds = None
                         if args.create_null_distr:
                             null_distr_dir = os.path.join(results_dir, "null_distr")
                             os.makedirs(null_distr_dir, exist_ok=True)
-
-                            random_seeds = []
-                            seed = 0
-                            for _ in range(args.n_permutations_per_subject):
-                                # shuffle indices for captions and images separately until all indices have changed
-                                shuffled_indices = create_shuffled_indices(seed)
-                                while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
-                                    seed += 1
-                                    shuffled_indices = create_shuffled_indices(seed)
-                                random_seeds.append(seed)
-                                seed += 1
 
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
                                                      test_ids=test_ids, n_jobs=args.n_jobs, verbose=1,
