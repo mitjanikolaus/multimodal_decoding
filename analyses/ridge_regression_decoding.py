@@ -388,7 +388,7 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
 
 
 def get_fmri_betas_mean_std_path(subject, mode, roi_mask_name):
-    mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
+    mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
     bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
     if roi_mask_name is not None:
         bold_std_mean_name += f'_mask_{roi_mask_name}'
