@@ -303,7 +303,7 @@ def apply_latent_transform(nn_latent_vectors, latent_transform, stim_types):
 
 
 def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode):
-    mean_std_dir = os.path.join(DECODER_OUT_DIR, subject)
+    mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
     model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
     return os.path.join(mean_std_dir, model_std_mean_name)
 
