@@ -264,27 +264,23 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
         if not os.path.exists(model_std_mean_path) or recompute_std_mean:
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
             os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
-
-            mean_std = {
-                CAPTION: {
+            mean_std = dict()
+            if len(stim_types[stim_types == CAPTION]) > 0:
+                mean_std[CAPTION] = {
                     'mean': nn_latent_vectors[stim_types == CAPTION].mean(axis=0),
                     'std': nn_latent_vectors[stim_types == CAPTION].std(axis=0),
-                },
-                IMAGE: {
+                }
+            if len(stim_types[stim_types == IMAGE]) > 0:
+                mean_std[IMAGE] = {
                     'mean': nn_latent_vectors[stim_types == IMAGE].mean(axis=0),
                     'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
                 }
-            }
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         nn_latent_transform = load_latents_transform(
             subject, model_name, features, vision_features_mode, mode
         )
 
-    nn_latent_vectors = np.array([
-        nn_latent_transform[CAPTION](v) if type == CAPTION else nn_latent_transform[IMAGE](v)
-        for v, type in zip(nn_latent_vectors, stim_types)]
-    )
     nn_latent_vectors = apply_latent_transform(nn_latent_vectors, nn_latent_transform, stim_types)
 
     return nn_latent_vectors, nn_latent_transform
