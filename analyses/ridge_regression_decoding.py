@@ -623,7 +623,8 @@ def run(args):
                                 test_data_latents, test_predicted_latents, test_stim_types
                             )
                         )
-                        print(f"Best alpha: {best_alpha} | Pairwise acc: {results[ACC_MODALTY_AGNOSTIC]:.2f}"
+                        print(f"Best alpha: {best_alpha}"
+                              f" | Pairwise acc (mod-agnostic): {results[ACC_MODALTY_AGNOSTIC]:.2f}"
                               f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                               f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
