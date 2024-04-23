@@ -50,6 +50,9 @@ MOD_SPECIFIC_CAPTIONS = "train_captions"
 TRAIN_MODE_CHOICES = ["train", MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
 
+IMAGE = "image"
+CAPTION = "caption"
+
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 DISTANCE_METRICS = ['cosine']
 
@@ -187,11 +190,11 @@ def get_default_features(model_name):
     if (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
         "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower")
-          or model_name.startswith("glow") or model_name.startswith("resnet-and-bge")):
+            or model_name.startswith("glow") or model_name.startswith("resnet-and-bge")):
         features = CONCAT_FEATS
     elif model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
             "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral") or model_name.startswith(
-            "bge"):
+        "bge"):
         features = LANG_FEATS_ONLY
     elif model_name.startswith("resnet") or model_name.startswith("vit") or model_name.startswith("dino"):
         features = VISION_FEATS_ONLY
@@ -223,11 +226,11 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
     if mode.endswith("_captions"):
-        stim_ids = stim_ids[stim_types == 'caption']
-        stim_types = stim_types[stim_types == 'caption']
+        stim_ids = stim_ids[stim_types == CAPTION]
+        stim_types = stim_types[stim_types == CAPTION]
     elif mode.endswith("_images"):
-        stim_ids = stim_ids[stim_types == 'image']
-        stim_types = stim_types[stim_types == 'image']
+        stim_ids = stim_ids[stim_types == IMAGE]
+        stim_types = stim_types[stim_types == IMAGE]
 
     nn_latent_vectors = []
     for stim_id, stim_type in zip(stim_ids, stim_types):
@@ -246,9 +249,9 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
         elif features == MULTIMODAL_FEATS:
             feats = latent_vectors[stim_id][MULTIMODAL_FEAT_KEY]
         elif features == MATCHED_FEATS:
-            if stim_type == 'caption':
+            if stim_type == CAPTION:
                 feats = latent_vectors[stim_id][LANG_FEAT_KEY]
-            elif stim_type == 'image':
+            elif stim_type == IMAGE:
                 vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
                 feats = vision_feats
             else:
@@ -264,15 +267,37 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
             os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
 
-            mean_std = {'mean': nn_latent_vectors.mean(axis=0),
-                        'std': nn_latent_vectors.std(axis=0)}
+            mean_std = {
+                CAPTION: {
+                    'mean': nn_latent_vectors[stim_types == CAPTION].mean(axis=0),
+                    'std': nn_latent_vectors[stim_types == CAPTION].std(axis=0),
+                },
+                IMAGE: {
+                    'mean': nn_latent_vectors[stim_types == IMAGE].mean(axis=0),
+                    'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
+                }
+            }
+            print(mean_std)
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
-        nn_latent_transform = load_latents_transform(subject, model_name, features, vision_features_mode, mode)
+        nn_latent_transform = load_latents_transform(
+            subject, model_name, features, vision_features_mode, mode
+        )
 
-    nn_latent_vectors = np.array([nn_latent_transform(v) for v in nn_latent_vectors])
+    nn_latent_vectors = np.array([
+        nn_latent_transform[CAPTION](v) if type == CAPTION else nn_latent_transform[IMAGE](v)
+        for v, type in zip(nn_latent_vectors, stim_types)]
+    )
+    nn_latent_vectors = apply_latent_transform(nn_latent_vectors, nn_latent_transform, stim_types)
 
     return nn_latent_vectors, nn_latent_transform
+
+
+def apply_latent_transform(nn_latent_vectors, latent_transform, stim_types):
+    return np.array([
+        latent_transform[CAPTION](v) if type == CAPTION else latent_transform[IMAGE](v)
+        for v, type in zip(nn_latent_vectors, stim_types)]
+    )
 
 
 def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode):
@@ -284,7 +309,10 @@ def get_latents_mean_std_path(subject, model_name, features, vision_features_mod
 def load_latents_transform(subject, model_name, features, vision_features_mode, mode):
     model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode)
     model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
-    nn_latent_transform = Normalize(model_mean_std['mean'], model_mean_std['std'])
+    nn_latent_transform = {
+        CAPTION: Normalize(model_mean_std[CAPTION]['mean'], model_mean_std[CAPTION]['std']),
+        IMAGE: Normalize(model_mean_std[IMAGE]['mean'], model_mean_std[IMAGE]['std']),
+    }
 
     return nn_latent_transform
 
@@ -302,10 +330,10 @@ def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, 
         file_name = os.path.basename(addr)
         if 'I' in file_name:  # Image
             stim_id = int(file_name[file_name.find('I') + 1:-4])
-            stim_types.append('image')
+            stim_types.append(IMAGE)
         elif 'C' in file_name:  # Caption
             stim_id = int(file_name[file_name.find('C') + 1:-4])
-            stim_types.append('caption')
+            stim_types.append(CAPTION)
         else:  # imagery
             stim_id = int(file_name[file_name.find('.nii') - 1:-4])
             stim_id = imagery_scenes[stim_id - 1][1]
@@ -458,30 +486,30 @@ def calc_rsa(latent_1, latent_2, metric="spearmanr", matrix_metric="spearmanr"):
 
 def calc_rsa_images(latent_1, latent_2, stimulus_types, metric="spearmanr", matrix_metric="spearmanr"):
     assert len(latent_1) == len(latent_2) == len(stimulus_types)
-    latent_1_images = latent_1[stimulus_types == 'image']
-    latent_2_images = latent_2[stimulus_types == 'image']
+    latent_1_images = latent_1[stimulus_types == IMAGE]
+    latent_2_images = latent_2[stimulus_types == IMAGE]
     return calc_rsa(latent_1_images, latent_2_images, metric, matrix_metric)
 
 
 def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", matrix_metric="spearmanr"):
     assert len(latent_1) == len(latent_2) == len(stimulus_types)
-    latent_1_captions = latent_1[stimulus_types == 'caption']
-    latent_2_captions = latent_2[stimulus_types == 'caption']
+    latent_1_captions = latent_1[stimulus_types == CAPTION]
+    latent_2_captions = latent_2[stimulus_types == CAPTION]
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
 def calculate_eval_metrics(results):
     # take equally sized subsets of samples for captions and images
-    stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == 'caption']
-    stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != 'caption']
+    stimulus_ids_caption = results["stimulus_ids"][results["stimulus_types"] == CAPTION]
+    stimulus_ids_image = results["stimulus_ids"][results["stimulus_types"] != CAPTION]
     val_ids = np.concatenate((stimulus_ids_caption, stimulus_ids_image))
 
-    predictions_caption = results["predictions"][results["stimulus_types"] == 'caption']
-    predictions_image = results["predictions"][results["stimulus_types"] != 'caption']
+    predictions_caption = results["predictions"][results["stimulus_types"] == CAPTION]
+    predictions_image = results["predictions"][results["stimulus_types"] != CAPTION]
     val_predictions = np.concatenate((predictions_caption, predictions_image))
 
-    latents_caption = results["latents"][results["stimulus_types"] == 'caption']
-    latents_image = results["latents"][results["stimulus_types"] != 'caption']
+    latents_caption = results["latents"][results["stimulus_types"] == CAPTION]
+    latents_image = results["latents"][results["stimulus_types"] != CAPTION]
     val_latents = np.concatenate((latents_caption, latents_image))
 
     for metric in DISTANCE_METRICS:
