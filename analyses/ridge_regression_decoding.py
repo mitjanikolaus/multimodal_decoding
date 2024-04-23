@@ -53,7 +53,6 @@ IMAGE = "image"
 CAPTION = "caption"
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
-DISTANCE_METRICS = ['cosine']
 
 MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
 MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level"
