@@ -42,7 +42,8 @@ DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 MOD_SPECIFIC_IMAGES = "train_images"
 MOD_SPECIFIC_CAPTIONS = "train_captions"
-TRAIN_MODE_CHOICES = ["train", MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
+MODE_AGNOSTIC = "train"
+TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
 
 ACC_MODALTY_AGNOSTIC = "pairwise_acc_modality_agnostic"
@@ -265,15 +266,23 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
             os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
             mean_std = dict()
-            if len(stim_types[stim_types == CAPTION]) > 0:
+            if mode in [MODE_AGNOSTIC, TESTING_MODE]:
                 mean_std[CAPTION] = {
                     'mean': nn_latent_vectors[stim_types == CAPTION].mean(axis=0),
                     'std': nn_latent_vectors[stim_types == CAPTION].std(axis=0),
                 }
-            if len(stim_types[stim_types == IMAGE]) > 0:
                 mean_std[IMAGE] = {
                     'mean': nn_latent_vectors[stim_types == IMAGE].mean(axis=0),
                     'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
+                }
+            else:
+                mean_std[CAPTION] = {
+                    'mean': nn_latent_vectors.mean(axis=0),
+                    'std': nn_latent_vectors.std(axis=0),
+                }
+                mean_std[IMAGE] =  {
+                    'mean': nn_latent_vectors.mean(axis=0),
+                    'std': nn_latent_vectors.std(axis=0),
                 }
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
