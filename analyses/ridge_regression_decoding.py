@@ -46,6 +46,8 @@ TRAIN_MODE_CHOICES = ["train", MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
 
 ACC_MODALTY_AGNOSTIC = "pairwise_acc_modality_agnostic"
+ACC_CAPTIONS = "pairwise_acc_captions"
+ACC_IMAGES = "pairwise_acc_images"
 
 IMAGE = "image"
 CAPTION = "caption"
@@ -446,13 +448,12 @@ def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="
         dist_mat = get_distance_matrix(predictions, latents, metric)
 
     mod_agnostic_accs = []
-    for modality in [CAPTION, IMAGE]:
+    for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
         dist_mat_within_mod = dist_mat[stim_types == modality][:, stim_types == modality]
 
         diag = dist_mat_within_mod.diagonal().reshape(-1, 1)
         comp_mat = diag < dist_mat_within_mod
-
-        results[f"pairwise_acc_{modality}s"] = comp_mat.mean()
+        results[acc_metric_name] = comp_mat.mean()
 
         dist_mat_cross_modal = dist_mat[stim_types == modality][:, stim_types != modality]
         dist_mat_min = np.min((dist_mat_within_mod, dist_mat_cross_modal), axis=0)
@@ -621,8 +622,8 @@ def run(args):
                             )
                         )
                         print(f"Best alpha: {best_alpha} | Pairwise acc: {results[ACC_MODALTY_AGNOSTIC]:.2f}"
-                              f" | Pairwise acc (captions): {results['pairwise_acc_captions']:.2f}"
-                              f" | Pairwise acc (images): {results['pairwise_acc_images']:.2f}")
+                              f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
+                              f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
                         results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                         run_str = get_run_str(model_name, features, args.vision_features, mask, best_val_acc=True)
