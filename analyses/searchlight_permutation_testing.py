@@ -525,11 +525,13 @@ def calc_t_values(per_subject_scores):
     return t_values
 
 
-def load_per_subject_scores(model, features, resolution, mode, alpha):
+def load_per_subject_scores(args):
     per_subject_scores = {subj: dict() for subj in SUBJECTS}
 
-    results_regex = os.path.join(SEARCHLIGHT_OUT_DIR,
-                                 f'train/{model}/{features}/*/{resolution}/*/{mode}/alpha_{str(alpha)}.p')
+    results_regex = os.path.join(
+        SEARCHLIGHT_OUT_DIR,
+        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+    )
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
     paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
@@ -561,8 +563,7 @@ def run(args):
     if not os.path.isfile(t_values_path):
         os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         print(f"Calculating t-values")
-        per_subject_scores = load_per_subject_scores(args.model, args.features, args.resolution, args.mode,
-                                                     args.l2_regularization_alpha)
+        per_subject_scores = load_per_subject_scores(args)
         t_values = calc_t_values(per_subject_scores)
 
         pickle.dump(t_values, open(t_values_path, 'wb'))

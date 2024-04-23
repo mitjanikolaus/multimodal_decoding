@@ -162,6 +162,9 @@ def run(args):
     results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
     os.makedirs(results_path, exist_ok=True)
 
+    per_subject_scores = load_per_subject_scores(args)
+    plot_acc_scores(per_subject_scores, args, results_path)
+
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
@@ -223,10 +226,6 @@ def run(args):
     results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
-
-    per_subject_scores = load_per_subject_scores(args.model, args.features, args.resolution, args.mode,
-                                                 args.l2_regularization_alpha)
-    plot_acc_scores(per_subject_scores, args, results_path)
 
     if args.plot_null_distr:
         print("plotting acc maps for null distribution examples")
