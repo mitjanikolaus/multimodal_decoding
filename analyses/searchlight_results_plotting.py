@@ -21,6 +21,9 @@ COLORBAR_MAX = 1
 COLORBAR_THRESHOLD_MIN = 0.55
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.001
 
+CMAP = "cold_white_hot"
+CMAP_POS_ONLY = "black_red_r"
+
 DEFAULT_T_VALUE_THRESH = 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
 
@@ -58,7 +61,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
                         threshold=threshold,
                         vmax=cbar_max[metric],
                         vmin=0,
-                        cmap="hot",
+                        cmap=CMAP_POS_ONLY,
                     )
                     axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
         title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats{filename_suffix}"
@@ -103,7 +106,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
                     threshold=threshold,
                     vmax=cbar_max[stat_name],
                     vmin=0,
-                    cmap="hot",
+                    cmap=CMAP_POS_ONLY,
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
     title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats2{filename_suffix}"
@@ -147,7 +150,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
                                                             metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
                     vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
                     vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
-                    cmap="hot" if CHANCE_VALUES[metric] == 0.5 else "cold_hot",
+                    cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
                     symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                 )
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
@@ -217,7 +220,7 @@ def run(args):
                 threshold=1 - 0.05,
                 vmax=cbar_max,
                 vmin=cbar_min,
-                cmap="red_transparent",
+                cmap=CMAP_POS_ONLY,
                 symmetric_cbar=False,
             )
             axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
@@ -298,7 +301,7 @@ def run(args):
                             threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
                             vmax=COLORBAR_MAX if cbar_min >= 0 else None,  # cbar_max,
                             vmin=0.5 if cbar_min >= 0 else None,
-                            cmap="hot" if cbar_min >= 0 else "cold_hot",
+                            cmap=CMAP_POS_ONLY if cbar_min >= 0 else CMAP,
                             symmetric_cbar=True if cbar_min < 0 else "auto",
                         )
                         axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
