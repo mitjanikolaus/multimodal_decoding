@@ -459,7 +459,9 @@ def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="
         diag = dist_mat_min.diagonal().reshape(-1, 1)
         comp_mat = diag < dist_mat_min
 
-        mod_agnostic_accs.extend(np.mean(comp_mat, axis=0))
+        scores = np.mean(comp_mat, axis=0)
+        mod_agnostic_accs.extend(scores)
+        results[f"pairwise_acc_mod_agnostic_{modality}s"] = scores.mean()
 
     results[ACC_MODALTY_AGNOSTIC] = np.mean(mod_agnostic_accs)
 
