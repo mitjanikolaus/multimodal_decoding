@@ -205,18 +205,24 @@ def run(args):
                     print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                           f"MODEL: {model_name} | FEATURES: {features}")
 
-                    train_data_latents, nn_latent_transform = get_nn_latent_data(model_name, features,
-                                                                                 args.vision_features,
-                                                                                 train_stim_ids,
-                                                                                 train_stim_types,
-                                                                                 subject,
-                                                                                 training_mode)
-                    test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
+                    train_data_latents, nn_latent_transform = get_nn_latent_data(
+                        model_name, features,
+                        args.vision_features,
+                        train_stim_ids,
+                        train_stim_types,
+                        subject,
+                        training_mode,
+                        recompute_std_mean=args.recompute_std_mean
+                    )
+
+                    test_data_latents, _ = get_nn_latent_data(
+                        model_name, features, args.vision_features,
                                                               test_stim_ids,
                                                               test_stim_types,
                                                               subject,
                                                               "test",
-                                                              nn_latent_transform=nn_latent_transform)
+                                                              nn_latent_transform=nn_latent_transform
+                    )
                     latents = np.concatenate((train_data_latents, test_data_latents))
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -336,6 +342,8 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
+
+    parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 

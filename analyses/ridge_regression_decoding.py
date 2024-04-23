@@ -543,10 +543,12 @@ def run(args):
         for mask in args.masks:
             mask = None if mask in ["none", "None"] else mask
             for subject in args.subjects:
-                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(subject,
-                                                                                                   training_mode,
-                                                                                                   roi_mask_name=mask,
-                                                                                                   recompute_std_mean=args.recompute_std_mean)
+                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(
+                    subject,
+                    training_mode,
+                    roi_mask_name=mask,
+                    recompute_std_mean=args.recompute_std_mean
+                )
                 test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, TESTING_MODE,
                                                                                    fmri_transform, roi_mask_name=mask)
 
@@ -559,13 +561,15 @@ def run(args):
                         print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                               f"MODEL: {model_name} | FEATURES: {features}")
 
-                        train_latents, latent_transform = get_nn_latent_data(model_name, features,
-                                                                             args.vision_features,
-                                                                             train_stim_ids,
-                                                                             train_stim_types,
-                                                                             subject,
-                                                                             training_mode,
-                                                                             recompute_std_mean=args.recompute_std_mean)
+                        train_latents, latent_transform = get_nn_latent_data(
+                            model_name, features,
+                            args.vision_features,
+                            train_stim_ids,
+                            train_stim_types,
+                            subject,
+                            training_mode,
+                            recompute_std_mean=args.recompute_std_mean
+                        )
 
                         model = Ridge()
                         pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
@@ -637,7 +641,8 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e4, 1e5, 1e6, 1e7])
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
+                        default=[1e3, 1e4, 1e5, 1e6, 1e7])
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
