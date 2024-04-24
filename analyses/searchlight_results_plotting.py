@@ -169,70 +169,70 @@ def run(args):
     results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
     os.makedirs(results_path, exist_ok=True)
 
-    per_subject_scores = load_per_subject_scores(args)
-    plot_acc_scores(per_subject_scores, args, results_path)
-
-    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 "t_values.p")
-    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    if args.smoothing_iterations > 0:
-        t_values_smooth_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
-            args.mode,
-            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
-        )
-        test_statistics["t-values-smoothed"] = pickle.load(open(t_values_smooth_path, 'rb'))
-    tfce_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    plot_test_statistics(test_statistics, args, results_path)
-
-    print(f"plotting (p-values)")
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    p_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-    p_values = pickle.load(open(p_values_path, "rb"))
-
-    # transform to plottable magnitudes:
-    p_values['left'][p_values['left'] == 0] = np.nan
-    p_values['right'][p_values['right'] == 0] = np.nan
-    p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
-    p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
-
-    fig = plt.figure(figsize=(5 * len(args.views), 2))
-    fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, horizontalalignment="left")
-    axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
-    cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
-    cbar_min = 0
-    for i, view in enumerate(args.views):
-        for j, hemi in enumerate(HEMIS):
-            scores_hemi = p_values[hemi]
-            infl_mesh = fsaverage[f"infl_{hemi}"]
-            plotting.plot_surf_stat_map(
-                infl_mesh,
-                scores_hemi,
-                hemi=hemi,
-                view=view,
-                bg_map=fsaverage[f"sulc_{hemi}"],
-                bg_on_data=True,
-                axes=axes[i * 2 + j],
-                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1.3,  # -log10(0.05) ~ 1.3
-                vmax=cbar_max,
-                vmin=cbar_min,
-                cmap=CMAP_POS_ONLY,
-                symmetric_cbar=False,
-            )
-            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_p_values"
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(results_path, f"{title}.png")
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
+    # per_subject_scores = load_per_subject_scores(args)
+    # plot_acc_scores(per_subject_scores, args, results_path)
+    #
+    # t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+    #                              "t_values.p")
+    # test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    # if args.smoothing_iterations > 0:
+    #     t_values_smooth_path = os.path.join(
+    #         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
+    #         args.mode,
+    #         f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
+    #     )
+    #     test_statistics["t-values-smoothed"] = pickle.load(open(t_values_smooth_path, 'rb'))
+    # tfce_values_path = os.path.join(
+    #     SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+    #     f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    # )
+    # test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    # plot_test_statistics(test_statistics, args, results_path)
+    #
+    # print(f"plotting (p-values)")
+    # fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    # p_values_path = os.path.join(
+    #     SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+    #     f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    # )
+    # p_values = pickle.load(open(p_values_path, "rb"))
+    #
+    # # transform to plottable magnitudes:
+    # p_values['left'][p_values['left'] == 0] = np.nan
+    # p_values['right'][p_values['right'] == 0] = np.nan
+    # p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
+    # p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
+    #
+    # fig = plt.figure(figsize=(5 * len(args.views), 2))
+    # fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, horizontalalignment="left")
+    # axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+    # cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
+    # cbar_min = 0
+    # for i, view in enumerate(args.views):
+    #     for j, hemi in enumerate(HEMIS):
+    #         scores_hemi = p_values[hemi]
+    #         infl_mesh = fsaverage[f"infl_{hemi}"]
+    #         plotting.plot_surf_stat_map(
+    #             infl_mesh,
+    #             scores_hemi,
+    #             hemi=hemi,
+    #             view=view,
+    #             bg_map=fsaverage[f"sulc_{hemi}"],
+    #             bg_on_data=True,
+    #             axes=axes[i * 2 + j],
+    #             colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+    #             threshold=1.3,  # -log10(0.05) ~ 1.3
+    #             vmax=cbar_max,
+    #             vmin=cbar_min,
+    #             cmap=CMAP_POS_ONLY,
+    #             symmetric_cbar=False,
+    #         )
+    #         axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
+    # title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_p_values"
+    # fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
+    # results_searchlight = os.path.join(results_path, f"{title}.png")
+    # plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+    # plt.close()
 
     if args.plot_null_distr:
         print("plotting acc maps for null distribution examples")
