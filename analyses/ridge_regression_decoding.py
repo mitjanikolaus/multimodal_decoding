@@ -46,7 +46,7 @@ MODE_AGNOSTIC = "train"
 TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
 
-ACC_MODALTY_AGNOSTIC = "pairwise_acc_modality_agnostic"
+ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
 ACC_IMAGES = "pairwise_acc_images"
 
@@ -466,7 +466,7 @@ def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="
         mod_agnostic_accs.extend(scores)
         results[f"pairwise_acc_mod_agnostic_{modality}s"] = scores.mean()
 
-    results[ACC_MODALTY_AGNOSTIC] = np.mean(mod_agnostic_accs)
+    results[ACC_MODALITY_AGNOSTIC] = np.mean(mod_agnostic_accs)
 
     return results
 
@@ -624,7 +624,7 @@ def run(args):
                             )
                         )
                         print(f"Best alpha: {best_alpha}"
-                              f" | Pairwise acc (mod-agnostic): {results[ACC_MODALTY_AGNOSTIC]:.2f}"
+                              f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
                               f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                               f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
