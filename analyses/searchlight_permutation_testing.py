@@ -77,9 +77,9 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         if metric_outdated in scores_agnostic:
             scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
         if metric_outdated in scores_captions:
-            scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
+            scores_captions[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_captions[metric_outdated]
         if metric_outdated in scores_images:
-            scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
+            scores_images[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_images[metric_outdated]
 
     for metric in BASE_METRICS:
         score_name = metric.split("_")[-1]
