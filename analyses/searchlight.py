@@ -50,7 +50,6 @@ def train_and_test(
     estimator.fit(X_train, y_train)
 
     y_pred = estimator.predict(X_test)
-    # y_pred_normalized = Normalize(y_pred.mean(axis=0), y_pred.std(axis=0))(y_pred)
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -60,22 +59,10 @@ def train_and_test(
 
             scores = all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES)
             scores_null_distr.append(scores)
-            # scores_null_distr.append(
-            #     {
-            #         "test_captions": pairwise_acc_captions(y_test_shuffled, y_pred_normalized, normalize=False),
-            #         "test_images": pairwise_acc_images(y_test_shuffled, y_pred_normalized, normalize=False),
-            #         "test": pairwise_acc(y_test_shuffled, y_pred_normalized, normalize=False),
-            #     }
-            # )
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
     scores = all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES)
-    # scores = {
-    #     "test_captions": pairwise_acc_captions(y_test, y_pred_normalized, normalize=False),
-    #     "test_images": pairwise_acc_images(y_test, y_pred_normalized, normalize=False),
-    #     "test": pairwise_acc(y_test, y_pred_normalized, normalize=False)
-    # }
 
     return scores
 
@@ -150,20 +137,6 @@ def custom_search_light(
             for thread_id, list_i in enumerate(group_iter)
         )
     return np.concatenate(scores)
-
-
-# def pairwise_acc_captions(latents, predictions, normalize=True):
-#     return pairwise_accuracy(latents[INDICES_TEST_STIM_CAPTION], predictions[INDICES_TEST_STIM_CAPTION],
-#                              normalize=normalize)
-#
-#
-# def pairwise_acc_images(latents, predictions, normalize=True):
-#     return pairwise_accuracy(latents[INDICES_TEST_STIM_IMAGE], predictions[INDICES_TEST_STIM_IMAGE],
-#                              normalize=normalize)
-#
-#
-# def pairwise_acc(latents, predictions, normalize=True):
-#     return pairwise_accuracy(latents, predictions, IDS_TEST_STIM, normalize=normalize)
 
 
 def create_shuffled_indices(seed):

@@ -39,7 +39,10 @@ METRIC_CODES = {
     METRIC_MIN_ALT: 3,
 }
 
-BASE_METRICS = ["test_captions", "test_images"]
+BASE_METRICS_OUTDATED = ["test_captions", "test_images"]
+BASE_METRICS_TRANSLATE = {"test_captions": "pairwise_acc_captions", "test_images": "pairwise_acc_images"}
+
+BASE_METRICS = ["pairwise_acc_captions", "pairwise_acc_images"]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 CHANCE_VALUES = {
     METRIC_CAPTIONS: 0.5,
@@ -49,7 +52,6 @@ CHANCE_VALUES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_MIN_ALT: 0,
 }
-
 
 def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
     sns.histplot(x=scores_data["n_neighbors"], y=scores[hemi]["overall"][~nan_locations])
@@ -70,8 +72,17 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
 
 def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
     scores = dict()
+
+    for metric_outdated in BASE_METRICS_OUTDATED:
+        if metric_outdated in scores_agnostic:
+            scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
+        if metric_outdated in scores_captions:
+            scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
+        if metric_outdated in scores_images:
+            scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
+
     for metric in BASE_METRICS:
-        score_name = metric.split("_")[1]
+        score_name = metric.split("_")[-1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
@@ -79,14 +90,14 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
 
     scores_specific_captions = dict()
     for metric in BASE_METRICS:
-        score_name = metric.split("_")[1]
+        score_name = metric.split("_")[-1]
         scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_captions[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_captions])
 
     scores_specific_images = dict()
     for metric in BASE_METRICS:
-        score_name = metric.split("_")[1]
+        score_name = metric.split("_")[-1]
         scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_images[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_images])
@@ -688,7 +699,7 @@ def load_null_distr_per_subject_scores(args):
                 score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
                 last_idx = int(os.path.basename(score_paths[-1])[:-2])
                 assert last_idx == len(score_paths) - 1, last_idx
-                scores = [pickle.load(open(score_path, "rb")) for score_path in score_paths]
+                scores = [pickle.load(open(score_path, "rb")) for score_path in tqdm(score_paths)]
                 return scores
 
             null_distribution_agnostic = load_null_distr_scores(os.path.dirname(path_agnostic))
