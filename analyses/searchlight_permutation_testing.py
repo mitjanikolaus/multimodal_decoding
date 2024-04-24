@@ -19,7 +19,8 @@ from scipy.stats import pearsonr
 from tqdm import tqdm
 import seaborn as sns
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
+from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES, \
+    ACC_CAPTIONS, ACC_IMAGES, ACC_MODALTY_AGNOSTIC
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
@@ -27,6 +28,7 @@ DEFAULT_N_JOBS = 10
 
 METRIC_CAPTIONS = 'captions'
 METRIC_IMAGES = 'images'
+METRIC_AGNOSTIC = 'agnostic'
 METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
@@ -41,16 +43,18 @@ METRIC_CODES = {
 
 BASE_METRICS_OUTDATED = ["test_captions", "test_images"]
 
-BASE_METRICS = ["pairwise_acc_captions", "pairwise_acc_images"]
+BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALTY_AGNOSTIC]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 CHANCE_VALUES = {
     METRIC_CAPTIONS: 0.5,
     METRIC_IMAGES: 0.5,
+    METRIC_AGNOSTIC: 0.5,
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_MIN_ALT: 0,
 }
+
 
 def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
     sns.histplot(x=scores_data["n_neighbors"], y=scores[hemi]["overall"][~nan_locations])

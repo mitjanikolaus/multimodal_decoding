@@ -13,7 +13,7 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
-    load_null_distr_per_subject_scores, METRIC_MIN_ALT
+    load_null_distr_per_subject_scores, METRIC_MIN_ALT, METRIC_AGNOSTIC
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -121,6 +121,9 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
 def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
+    if METRIC_AGNOSTIC in per_subject_scores[SUBJECTS[0]][HEMIS[0]]:
+        metrics.append(METRIC_AGNOSTIC)
+
     print(f"plotting acc scores. {filename_suffix}")
     fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
@@ -136,7 +139,9 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = min(np.nanmax(score_hemi_avgd), 99)
-
+                threshold = COLORBAR_THRESHOLD_MIN
+                if CHANCE_VALUES[metric] == 0:
+                    threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     score_hemi_avgd,
@@ -146,8 +151,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
                     bg_on_data=True,
                     axes=axes[i * 2 + j],
                     colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                    threshold=COLORBAR_THRESHOLD_MIN if CHANCE_VALUES[
-                                                            metric] == 0.5 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
+                    threshold=threshold,
                     vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
                     vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
                     cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
