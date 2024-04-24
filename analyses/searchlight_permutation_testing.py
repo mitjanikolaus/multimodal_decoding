@@ -40,7 +40,6 @@ METRIC_CODES = {
 }
 
 BASE_METRICS_OUTDATED = ["test_captions", "test_images"]
-BASE_METRICS_TRANSLATE = {"test_captions": "pairwise_acc_captions", "test_images": "pairwise_acc_images"}
 
 BASE_METRICS = ["pairwise_acc_captions", "pairwise_acc_images"]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
