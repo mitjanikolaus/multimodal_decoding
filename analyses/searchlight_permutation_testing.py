@@ -73,15 +73,12 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
 def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
     scores = dict()
 
-    for metric_outdated in BASE_METRICS_OUTDATED:
-        if metric_outdated in scores_agnostic:
-            scores_agnostic[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_agnostic[metric_outdated]
-        if metric_outdated in scores_captions:
-            scores_captions[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_captions[metric_outdated]
-        if metric_outdated in scores_images:
-            scores_images[BASE_METRICS_TRANSLATE[metric_outdated]] = scores_images[metric_outdated]
+    metrics = BASE_METRICS
+    if BASE_METRICS_OUTDATED[0] in scores_agnostic[0]:
+        print("loading data from outdated metrics naming scheme")
+        metrics = BASE_METRICS_OUTDATED
 
-    for metric in BASE_METRICS:
+    for metric in metrics:
         score_name = metric.split("_")[-1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
@@ -89,14 +86,14 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
 
     scores_specific_captions = dict()
-    for metric in BASE_METRICS:
+    for metric in metrics:
         score_name = metric.split("_")[-1]
         scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_captions[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_captions])
 
     scores_specific_images = dict()
-    for metric in BASE_METRICS:
+    for metric in metrics:
         score_name = metric.split("_")[-1]
         scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_images[score_name][~nan_locations] = np.array(
