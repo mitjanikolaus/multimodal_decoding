@@ -16,7 +16,7 @@ from analyses.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     load_null_distr_per_subject_scores, METRIC_MIN_ALT
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-VIEWS = ["lateral", "medial", "ventral", "posterior"]
+DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 1
 COLORBAR_THRESHOLD_MIN = 0.55
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.001
@@ -36,13 +36,13 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
         t_values = test_statistics['t-values']
         metrics = list(t_values['left'].keys())
         print(f"plotting t values for {len(metrics)} metrics {filename_suffix}")
-        fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+        fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
         subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
         cbar_max = {metric: None for metric in metrics}
         for subfig, metric in zip(subfigs, metrics):
             subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-            axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-            for i, view in enumerate(VIEWS):
+            axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+            for i, view in enumerate(args.views):
                 for j, hemi in enumerate(HEMIS):
                     scores_hemi = t_values[hemi][metric]
                     infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -78,13 +78,13 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
 
     print(f"plotting test stats {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    fig = plt.figure(figsize=(5 * len(VIEWS), len(test_statistics) * 2))
+    fig = plt.figure(figsize=(5 * len(args.views), len(test_statistics) * 2))
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
     cbar_max = {stat: None for stat in test_statistics.keys()}
     for subfig, (stat_name, values) in zip(subfigs, test_statistics.items()):
         subfig.suptitle(f'{args.metric} {stat_name}', x=0, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
-        for i, view in enumerate(VIEWS):
+        axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+        for i, view in enumerate(args.views):
             for j, hemi in enumerate(HEMIS):
                 scores_hemi = values[hemi][args.metric]
                 infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -122,13 +122,13 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
     print(f"plotting acc scores. {filename_suffix}")
-    fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+    fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     for subfig, metric in zip(subfigs, metrics):
         subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+        axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
         cbar_max = None
-        for i, view in enumerate(VIEWS):
+        for i, view in enumerate(args.views):
             for j, hemi in enumerate(['left', 'right']):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -199,12 +199,12 @@ def run(args):
     p_values['left'] = 1 - p_values['left']
     p_values['right'] = 1 - p_values['right']
 
-    fig = plt.figure(figsize=(5 * len(VIEWS), 2))
+    fig = plt.figure(figsize=(5 * len(args.views), 2))
     fig.suptitle(f'{args.metric}: 1-(p_value)', x=0, horizontalalignment="left")
-    axes = fig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+    axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
     cbar_max = 1
     cbar_min = 0.9
-    for i, view in enumerate(VIEWS):
+    for i, view in enumerate(args.views):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
             infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -271,16 +271,16 @@ def run(args):
         metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
         print("\n\nCreating per-subject plots..")
         for subject, scores in tqdm(per_subject_scores.items()):
-            fig = plt.figure(figsize=(5 * len(VIEWS), len(metrics) * 2))
+            fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
             subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
             for subfig, metric in zip(subfigs, metrics):
                 subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
-                axes = subfig.subplots(nrows=1, ncols=2 * len(VIEWS), subplot_kw={'projection': '3d'})
+                axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
                 cbar_max = None
                 cbar_min = None
-                for i, view in enumerate(VIEWS):
+                for i, view in enumerate(args.views):
                     for j, hemi in enumerate(['left', 'right']):
                         scores_hemi = scores[hemi][metric]
 
@@ -334,6 +334,8 @@ def get_args():
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
     parser.add_argument("--metric", type=str, default=METRIC_MIN_ALT)
+
+    parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 
     return parser.parse_args()
 
