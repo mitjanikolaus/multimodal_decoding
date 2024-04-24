@@ -196,14 +196,14 @@ def run(args):
     # transform to plottable magnitudes:
     p_values['left'][p_values['left'] == 0] = np.nan
     p_values['right'][p_values['right'] == 0] = np.nan
-    p_values['left'] = 1 - p_values['left']
-    p_values['right'] = 1 - p_values['right']
+    p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
+    p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     fig = plt.figure(figsize=(5 * len(args.views), 2))
-    fig.suptitle(f'{args.metric}: 1-(p_value)', x=0, horizontalalignment="left")
+    fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
-    cbar_max = 1
-    cbar_min = 0.9
+    cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
+    cbar_min = 0
     for i, view in enumerate(args.views):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
@@ -217,7 +217,7 @@ def run(args):
                 bg_on_data=True,
                 axes=axes[i * 2 + j],
                 colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1 - 0.05,
+                threshold=1.3,  # -log10(0.05) ~ 1.3
                 vmax=cbar_max,
                 vmin=cbar_min,
                 cmap=CMAP_POS_ONLY,
