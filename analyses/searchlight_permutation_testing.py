@@ -770,63 +770,6 @@ def calc_t_values_null_distr(args):
 
 
 def create_null_distribution(args):
-    t_values_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode, f"t_values_null_distribution.p"
-    )
-    if not os.path.isfile(t_values_null_distribution_path):
-        print(f"Calculating t-values: null distribution")
-        t_values_null_distribution = calc_t_values_null_distr(args)
-        os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
-        pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
-    else:
-        t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
-
-    if args.smoothing_iterations > 0:
-        smooth_t_values_null_distribution_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-            args.resolution,
-            args.mode,
-            f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
-        )
-        if not os.path.isfile(smooth_t_values_null_distribution_path):
-            print("smoothing for null distribution")
-
-            def smooth_t_values(t_values, proc_id):
-                smooth_t_vals = []
-                fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-                surface_infl = {hemi: surface.load_surf_mesh(fsaverage[f"infl_{hemi}"]) for hemi in HEMIS}
-                # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
-                distance_weights = True
-                values = 'inveuclidean' if distance_weights else 'ones'
-                adj_matrices = {hemi: compute_adjacency_matrix(surface_infl[hemi], values=values) for hemi in HEMIS}
-                iterator = tqdm(t_values) if proc_id == 0 else t_values
-                for t_vals in iterator:
-                    for hemi in HEMIS:
-                        smoothed = smooth_surface_data(
-                            adj_matrices[hemi],
-                            t_vals[hemi][args.metric],
-                            match=None,
-                            iterations=args.smoothing_iterations
-                        )
-                        t_vals[hemi][args.metric] = smoothed
-                    smooth_t_vals.append(t_vals)
-                return smooth_t_vals
-
-            n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
-            all_smooth_t_vals = Parallel(n_jobs=args.n_jobs)(
-                delayed(smooth_t_values)(
-                    t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
-                    id,
-                )
-                for id in range(args.n_jobs)
-            )
-            smooth_t_values_null_distribution = np.concatenate(all_smooth_t_vals)
-            pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
-
-        t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
-
     tfce_values_null_distribution_path = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
@@ -834,30 +777,87 @@ def create_null_distribution(args):
         f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
     )
     if not os.path.isfile(tfce_values_null_distribution_path):
-        print(f"Calculating tfce values for null distribution")
-
-        edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-
-        def tfce_values_job(t_values, edge_lengths, proc_id):
-            iterator = tqdm(t_values) if proc_id == 0 else t_values
-            tfce_values = [
-                calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
-                iterator
-            ]
-            return tfce_values
-
-        n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
-        tfce_values = Parallel(n_jobs=args.n_jobs)(
-            delayed(tfce_values_job)(
-                t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
-                edge_lengths.copy(),
-                id,
-            )
-            for id in range(args.n_jobs)
+        t_values_null_distribution_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+            args.resolution,
+            args.mode, f"t_values_null_distribution.p"
         )
-        tfce_values = np.concatenate(tfce_values)
+        if not os.path.isfile(t_values_null_distribution_path):
+            print(f"Calculating t-values: null distribution")
+            t_values_null_distribution = calc_t_values_null_distr(args)
+            os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
+            pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
+        else:
+            t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
-        pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
+        if args.smoothing_iterations > 0:
+            smooth_t_values_null_distribution_path = os.path.join(
+                SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+                args.resolution,
+                args.mode,
+                f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
+            )
+            if not os.path.isfile(smooth_t_values_null_distribution_path):
+                print("smoothing for null distribution")
+
+                def smooth_t_values(t_values, proc_id):
+                    smooth_t_vals = []
+                    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+                    surface_infl = {hemi: surface.load_surf_mesh(fsaverage[f"infl_{hemi}"]) for hemi in HEMIS}
+                    # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
+                    distance_weights = True
+                    values = 'inveuclidean' if distance_weights else 'ones'
+                    adj_matrices = {hemi: compute_adjacency_matrix(surface_infl[hemi], values=values) for hemi in HEMIS}
+                    iterator = tqdm(t_values) if proc_id == 0 else t_values
+                    for t_vals in iterator:
+                        for hemi in HEMIS:
+                            smoothed = smooth_surface_data(
+                                adj_matrices[hemi],
+                                t_vals[hemi][args.metric],
+                                match=None,
+                                iterations=args.smoothing_iterations
+                            )
+                            t_vals[hemi][args.metric] = smoothed
+                        smooth_t_vals.append(t_vals)
+                    return smooth_t_vals
+
+                n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
+                all_smooth_t_vals = Parallel(n_jobs=args.n_jobs)(
+                    delayed(smooth_t_values)(
+                        t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                        id,
+                    )
+                    for id in range(args.n_jobs)
+                )
+                smooth_t_values_null_distribution = np.concatenate(all_smooth_t_vals)
+                pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
+
+            t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
+
+            print(f"Calculating tfce values for null distribution")
+
+            edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+
+            def tfce_values_job(t_values, edge_lengths, proc_id):
+                iterator = tqdm(t_values) if proc_id == 0 else t_values
+                tfce_values = [
+                    calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
+                    iterator
+                ]
+                return tfce_values
+
+            n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
+            tfce_values = Parallel(n_jobs=args.n_jobs)(
+                delayed(tfce_values_job)(
+                    t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                    edge_lengths.copy(),
+                    id,
+                )
+                for id in range(args.n_jobs)
+            )
+            tfce_values = np.concatenate(tfce_values)
+
+            pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
 def get_args():
