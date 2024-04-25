@@ -16,7 +16,7 @@ from analyses.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     load_null_distr_per_subject_scores, METRIC_MIN_ALT, METRIC_AGNOSTIC
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
+DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 COLORBAR_MAX = 1
 COLORBAR_THRESHOLD_MIN = 0.55
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.001
