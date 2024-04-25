@@ -620,10 +620,10 @@ def run(args):
     print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
-    max_test_statistic_distr = [
+    max_test_statistic_distr = sorted([
         np.nanmax(np.concatenate((n[HEMIS[0]][args.metric], n[HEMIS[1]][args.metric])))
         for n in null_distribution_tfce_values
-    ]
+    ])
 
     significance_cutoff = np.quantile(max_test_statistic_distr, 0.95)
     print(f"{len(null_distribution_tfce_values)} permutations")
