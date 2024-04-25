@@ -132,7 +132,7 @@ def custom_search_light(
                 len(A),
                 print_interval,
                 null_distr_dir,
-                random_seeds.copy(),
+                random_seeds.copy() if random_seeds is not None else None,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
