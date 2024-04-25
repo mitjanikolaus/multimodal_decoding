@@ -190,7 +190,7 @@ def get_default_features(model_name):
             "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
         "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower")
             or model_name.startswith("glow") or model_name.startswith("resnet-and-bge")):
-        features = CONCAT_FEATS
+        features = MATCHED_FEATS
     elif model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
             "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral") or model_name.startswith(
         "bge"):
