@@ -135,7 +135,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
             for j, hemi in enumerate(['left', 'right']):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    score_hemi_avgd = np.mean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+                    score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = min(np.nanmax(score_hemi_avgd), 99)
