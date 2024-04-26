@@ -88,7 +88,7 @@ def run(args):
         ]
 
         labels = list(regions_dict.values())
-        colors = sns.color_palette(n_colors=len(labels))
+        colors = sns.color_palette("Set2", n_colors=len(labels)+1)[1:]
 
         fig = plt.figure(figsize=(5 * len(args.views), 2))
         # fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, horizontalalignment="left")
@@ -118,7 +118,7 @@ def run(args):
                 parcellation = destrieux_atlas[f'map_{hemi}']
                 plotting.plot_surf_contours(infl_mesh, parcellation, labels=labels,
                                             levels=regions_indices, figure=fig_hemi, axes=axes[i * 2 + j],
-                                            legend=True,
+                                            legend=False,
                                             colors=colors)
 
                 axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
