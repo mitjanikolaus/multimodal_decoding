@@ -30,14 +30,14 @@ class FlavaFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        text_embeddings = outputs.text_embeddings
-        image_embeddings = outputs.image_embeddings
+            text_embeddings = outputs.text_embeddings
+            image_embeddings = outputs.image_embeddings
 
-        text_embedding = model.text_projection(text_embeddings[:, 0, :])
-        text_embedding = nn.functional.normalize(text_embedding, dim=-1)
+            text_embedding = model.text_projection(text_embeddings[:, 0, :])
+            text_embedding = nn.functional.normalize(text_embedding, dim=-1)
 
-        image_embedding = model.image_projection(image_embeddings[:, 0, :])
-        image_embedding = nn.functional.normalize(image_embedding, dim=-1)
+            image_embedding = model.image_projection(image_embeddings[:, 0, :])
+            image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
         feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
 
