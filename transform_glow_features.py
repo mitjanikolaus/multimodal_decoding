@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 
 from feature_extraction.feat_extraction_utils import COCOSelected
-from utils import COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH
+from utils import COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH
 
 if __name__ == "__main__":
     stimuli_ids = pickle.load(open(os.path.expanduser("~/data/multimodal_decoding/stimuli_ids.p"), "rb"))
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     coco_captions = coco_captions_train | coco_captions_val
 
-    ds = COCOSelected(COCO_2017_TRAIN_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'caption')
+    ds = COCOSelected(COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'caption')
 
     caption_indices = []
     for i, idx in enumerate(stimuli_ids):
