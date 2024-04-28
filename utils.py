@@ -7,7 +7,7 @@ RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
 FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 
-COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/images/")
+COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/")
 
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
 CAPTIONS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
