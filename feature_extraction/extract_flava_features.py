@@ -29,19 +29,28 @@ class FlavaFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        img_embeddings = outputs.image_embeddings
-        language_embeddings = outputs.text_embeddings
+        image_embeddings = outputs.image_embeddings
+        text_embeddings = outputs.text_embeddings
+
+        text_embedding = model.text_projection(text_embeddings[:, 0, :])
+        # text_embedding = nn.functional.normalize(text_embedding, dim=-1)
+
+        image_embedding = model.image_projection(image_embeddings[:, 0, :])
+        # image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
         # Average lang feats while ignoring padding tokens
-        mask = inputs.data["attention_mask"]
-        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
-        language_embeddings[mask_expanded == 0] = 0
-        feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
+        # mask = inputs.data["attention_mask"]
+        # mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
+        # language_embeddings[mask_expanded == 0] = 0
+        # feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
 
-        feats_vision_cls = img_embeddings[:, 0, :]
-        feats_vision_mean = img_embeddings[:, 1:].mean(axis=1)
+        # feats_vision_cls = img_embeddings[:, 0, :]
+        feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
 
-        return feats_lang, feats_vision_mean, feats_vision_cls
+        print(text_embedding.shape)
+        print(image_embedding.shape)
+
+        return text_embedding, feats_vision_mean, image_embedding
 
 
 if __name__ == "__main__":
