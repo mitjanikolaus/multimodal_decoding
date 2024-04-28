@@ -16,7 +16,7 @@ from analyses.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     load_null_distr_per_subject_scores, METRIC_MIN_ALT, METRIC_AGNOSTIC
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
+DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 COLORBAR_MAX = 1
 COLORBAR_THRESHOLD_MIN = 0.55
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.001
@@ -135,7 +135,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
             for j, hemi in enumerate(['left', 'right']):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    score_hemi_avgd = np.mean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+                    score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = min(np.nanmax(score_hemi_avgd), 99)
