@@ -22,6 +22,7 @@ class FlavaFeatureExtractor(FeatureExtractor):
         images = [Image.open(path) for path in img_paths]
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
+        print("captions: ", captions)
         inputs = self.preprocessor(
             text=captions, images=images, return_tensors="pt",
             padding=True
@@ -30,8 +31,11 @@ class FlavaFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        image_embeddings = outputs.image_embeddings
         text_embeddings = outputs.text_embeddings
+        image_embeddings = outputs.image_embeddings
+
+        print("text embeddings: ", text_embeddings.shape)
+        print("image embeddings: ", image_embeddings.shape)
 
         text_embedding = model.text_projection(text_embeddings[:, 0, :])
         text_embedding = nn.functional.normalize(text_embedding, dim=-1)
@@ -41,8 +45,8 @@ class FlavaFeatureExtractor(FeatureExtractor):
 
         feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
 
-        print(text_embedding.shape)
-        print(image_embedding.shape)
+        print("text_embedding: ", text_embedding.shape)
+        print("image_embedding: ", image_embedding.shape)
 
         return text_embedding, feats_vision_mean, image_embedding
 
