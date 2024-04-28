@@ -1,6 +1,7 @@
 import os
 
 import torch
+from torch import nn
 
 from transformers import FlavaModel, FlavaProcessor
 
@@ -33,18 +34,11 @@ class FlavaFeatureExtractor(FeatureExtractor):
         text_embeddings = outputs.text_embeddings
 
         text_embedding = model.text_projection(text_embeddings[:, 0, :])
-        # text_embedding = nn.functional.normalize(text_embedding, dim=-1)
+        text_embedding = nn.functional.normalize(text_embedding, dim=-1)
 
         image_embedding = model.image_projection(image_embeddings[:, 0, :])
-        # image_embedding = nn.functional.normalize(image_embedding, dim=-1)
+        image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
-        # Average lang feats while ignoring padding tokens
-        # mask = inputs.data["attention_mask"]
-        # mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
-        # language_embeddings[mask_expanded == 0] = 0
-        # feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
-
-        # feats_vision_cls = img_embeddings[:, 0, :]
         feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
 
         print(text_embedding.shape)
