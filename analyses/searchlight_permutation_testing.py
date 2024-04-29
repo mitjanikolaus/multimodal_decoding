@@ -41,8 +41,6 @@ METRIC_CODES = {
     METRIC_MIN_ALT: 3,
 }
 
-BASE_METRICS_OUTDATED = ["test_captions", "test_images"]
-
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC]
 TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 CHANCE_VALUES = {
@@ -76,12 +74,7 @@ def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
 def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
     scores = dict()
 
-    metrics = BASE_METRICS
-    if BASE_METRICS_OUTDATED[0] in scores_agnostic[0]:
-        print("loading data from outdated metrics naming scheme")
-        metrics = BASE_METRICS_OUTDATED
-
-    for metric in metrics:
+    for metric in BASE_METRICS:
         score_name = metric.split("_")[-1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
@@ -89,14 +82,14 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
 
     scores_specific_captions = dict()
-    for metric in metrics:
+    for metric in BASE_METRICS:
         score_name = metric.split("_")[-1]
         scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_captions[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_captions])
 
     scores_specific_images = dict()
-    for metric in metrics:
+    for metric in BASE_METRICS:
         score_name = metric.split("_")[-1]
         scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_images[score_name][~nan_locations] = np.array(
@@ -674,47 +667,27 @@ def load_null_distr_per_subject_scores(args):
         results_agnostic = pickle.load(open(path_agnostic, 'rb'))
         nan_locations = results_agnostic['nan_locations']
 
-        legacy_null_distr_filename = f"alpha_{str(alpha)}_null_distribution.p"
-        if os.path.isfile(os.path.join(os.path.dirname(path_agnostic), legacy_null_distr_filename)):
-            print("loading null distribution files from legacy format..")
-            null_distribution_agnostic = pickle.load(
-                open(os.path.join(os.path.dirname(path_agnostic), legacy_null_distr_filename), 'rb'))
+        def load_null_distr_scores(base_path):
+            scores_dir = os.path.join(base_path, "null_distr")
+            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+            last_idx = int(os.path.basename(score_paths[-1])[:-2])
+            assert last_idx == len(score_paths) - 1, last_idx
+            scores = [pickle.load(open(score_path, "rb")) for score_path in tqdm(score_paths)]
+            return scores
 
-            null_distribution_images = pickle.load(
-                open(os.path.join(os.path.dirname(path_imgs), legacy_null_distr_filename), 'rb'))
+        null_distribution_agnostic = load_null_distr_scores(os.path.dirname(path_agnostic))
+        null_distribution_images = load_null_distr_scores(os.path.dirname(path_imgs))
+        null_distribution_captions = load_null_distr_scores(os.path.dirname(path_caps))
 
-            null_distribution_captions = pickle.load(
-                open(os.path.join(os.path.dirname(path_caps), legacy_null_distr_filename), 'rb'))
-
-            for i, (distr, distr_caps, distr_imgs) in enumerate(zip(null_distribution_agnostic,
-                                                                    null_distribution_captions,
-                                                                    null_distribution_images)):
-                if len(per_subject_scores_null_distr) <= i:
-                    per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-                per_subject_scores_null_distr[i][subject][hemi] = scores
-        else:
-            def load_null_distr_scores(base_path):
-                scores_dir = os.path.join(base_path, "null_distr")
-                score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-                last_idx = int(os.path.basename(score_paths[-1])[:-2])
-                assert last_idx == len(score_paths) - 1, last_idx
-                scores = [pickle.load(open(score_path, "rb")) for score_path in tqdm(score_paths)]
-                return scores
-
-            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(path_agnostic))
-            null_distribution_images = load_null_distr_scores(os.path.dirname(path_imgs))
-            null_distribution_captions = load_null_distr_scores(os.path.dirname(path_caps))
-
-            num_permutations = len(null_distribution_agnostic[0])
-            for i in range(num_permutations):
-                distr = [null_distr[i] for null_distr in null_distribution_agnostic]
-                distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-                distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
-                if len(per_subject_scores_null_distr) <= i:
-                    per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-                per_subject_scores_null_distr[i][subject][hemi] = scores
+        num_permutations = len(null_distribution_agnostic[0])
+        for i in range(num_permutations):
+            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
+            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
+            distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
+            if len(per_subject_scores_null_distr) <= i:
+                per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
+            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+            per_subject_scores_null_distr[i][subject][hemi] = scores
     return per_subject_scores_null_distr
 
 
