@@ -60,8 +60,6 @@ class FlavaFeatureExtractor(FeatureExtractor):
             # image_embedding = model.image_projection(image_embeddings[:, 0, :])
             # image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
-        feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
-
         feats_multi = last_hidden_states.mean(axis=1)
 
         return feats_lang, feats_vision_mean, feats_vision_cls, feats_multi
