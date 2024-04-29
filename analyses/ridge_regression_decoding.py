@@ -211,7 +211,7 @@ def get_default_vision_features(model_name):
     if model_name.startswith("flava"):
         vision_feats = VISION_CLS_FEAT_KEY
 
-    print(f"Selected default vision features for {model_name}:{vision_feats}")
+    print(f"Selected default vision features for {model_name}: {vision_feats}")
     return vision_feats
 
 
