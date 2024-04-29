@@ -90,7 +90,7 @@ class LXMERTFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
 
-        feats_lang = outputs.language_output[0]
+        feats_lang = outputs.pooled_output
         feats_vision = outputs.vision_output.mean(dim=1)
         feats_vision_cls = outputs.vision_output[0]
         return feats_lang, feats_vision, feats_vision_cls
