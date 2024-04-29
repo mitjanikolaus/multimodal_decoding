@@ -35,20 +35,36 @@ class FlavaFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-            text_embeddings = outputs.text_embeddings
-            image_embeddings = outputs.image_embeddings
+        last_hidden_states = outputs.multimodal_embeddings
 
-            text_embedding = model.text_projection(text_embeddings[:, 0, :])
-            text_embedding = nn.functional.normalize(text_embedding, dim=-1)
+        img_input_size = outputs.image_embeddings.shape[1]
 
-            image_embedding = model.image_projection(image_embeddings[:, 0, :])
-            image_embedding = nn.functional.normalize(image_embedding, dim=-1)
+        language_embeddings = last_hidden_states[:, img_input_size + 1:]    # (+1 for multimodal CLS token)
+        image_embeddings = last_hidden_states[:, 1:img_input_size + 1]    # (+1 for multimodal CLS token)
+
+        # Average lang feats while ignoring padding tokens
+        mask = inputs.data["attention_mask"]
+        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
+        language_embeddings[mask_expanded == 0] = 0
+        feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
+
+        feats_vision_cls = image_embeddings[:, 0, :]
+        feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
+
+            # text_embeddings = outputs.text_embeddings
+            # image_embeddings = outputs.image_embeddings
+            #
+            # text_embedding = model.text_projection(text_embeddings[:, 0, :])
+            # text_embedding = nn.functional.normalize(text_embedding, dim=-1)
+            #
+            # image_embedding = model.image_projection(image_embeddings[:, 0, :])
+            # image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
         feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
 
-        feats_multi = outputs.multimodal_output.pooler_output
+        feats_multi = last_hidden_states.mean(axis=1)
 
-        return text_embedding, feats_vision_mean, image_embedding, feats_multi
+        return feats_lang, feats_vision_mean, feats_vision_cls, feats_multi
 
     def extract_features(self):
         all_feats = dict()
@@ -90,7 +106,7 @@ if __name__ == "__main__":
     processor = FlavaProcessor.from_pretrained(model_name)
     model = FlavaModel.from_pretrained(model_name)
 
-    extractor = FlavaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
+    extractor = FlavaFeatureExtractor(model, processor, "flava-alt", BATCH_SIZE, device)
     extractor.extract_features()
 
     # processor = FlavaProcessor.from_pretrained(model_name)
