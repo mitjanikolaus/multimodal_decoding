@@ -14,7 +14,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 10 # currently only working with batch size 1?
+BATCH_SIZE = 1 # currently only working with batch size 1 because bottom up feats box numbers are not aligned
 
 BOTTOM_UP_FEATS_FIELDNAMES = ['image_id', 'image_w', 'image_h', 'num_boxes', 'boxes', 'features']
 
