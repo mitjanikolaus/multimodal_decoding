@@ -1,5 +1,6 @@
 import os
 import torch
+from tqdm import tqdm
 from transformers import LxmertModel, LxmertTokenizer
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
@@ -9,11 +10,11 @@ import csv
 import sys
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-#os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 1  # currently only working with batch size 1
+BATCH_SIZE = 10 # currently only working with batch size 1?
 
 BOTTOM_UP_FEATS_FIELDNAMES = ['image_id', 'image_w', 'image_h', 'num_boxes', 'boxes', 'features']
 
@@ -29,12 +30,13 @@ BOTTOM_UP_TEST_FEATS_PATH = os.path.expanduser(
 
 def load_bottom_up_features():
     csv.field_size_limit(sys.maxsize)
+    print("reading bottom up features from tsv..")
 
     def read_tsv(file_path):
         data = {}
         with open(file_path, "r") as tsv_in_file:
             reader = csv.DictReader(tsv_in_file, delimiter='\t', fieldnames=BOTTOM_UP_FEATS_FIELDNAMES)
-            for item in reader:
+            for item in tqdm(reader):
                 item['image_id'] = int(item['image_id'])
                 item['image_h'] = int(item['image_h'])
                 item['image_w'] = int(item['image_w'])
@@ -99,5 +101,5 @@ if __name__ == "__main__":
     tokenizer = LxmertTokenizer.from_pretrained(checkpoint)
     model = LxmertModel.from_pretrained(checkpoint)
 
-    extractor = LXMERTFeatureExtractor(model, tokenizer, "LXMERT", BATCH_SIZE, device)
+    extractor = LXMERTFeatureExtractor(model, tokenizer, "lxmert", BATCH_SIZE, device)
     extractor.extract_features()
