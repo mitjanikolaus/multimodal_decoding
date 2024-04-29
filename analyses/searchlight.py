@@ -20,11 +20,10 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
-    get_default_features, pairwise_accuracy, Normalize, load_latents_transform, all_pairwise_accuracy_scores, IMAGE, \
-    CAPTION
+    get_default_features, all_pairwise_accuracy_scores, IMAGE, \
+    CAPTION, get_default_vision_features
 
-from utils import VISION_MEAN_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, \
-    IDS_TEST_STIM, NUM_TEST_STIMULI
+from utils import SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI
 
 DEFAULT_N_JOBS = 10
 
@@ -192,13 +191,16 @@ def run(args):
                 for features in args.features:
                     if features == FEATS_SELECT_DEFAULT:
                         features = get_default_features(model_name)
+                    vision_features = args.vision_features
+                    if vision_features == FEATS_SELECT_DEFAULT:
+                        vision_features = get_default_vision_features(model_name)
 
                     print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                           f"MODEL: {model_name} | FEATURES: {features}")
 
                     train_data_latents, nn_latent_transform = get_nn_latent_data(
                         model_name, features,
-                        args.vision_features,
+                        vision_features,
                         train_stim_ids,
                         train_stim_types,
                         subject,
@@ -207,12 +209,12 @@ def run(args):
                     )
 
                     test_data_latents, _ = get_nn_latent_data(
-                        model_name, features, args.vision_features,
-                                                              test_stim_ids,
-                                                              test_stim_types,
-                                                              subject,
-                                                              "test",
-                                                              nn_latent_transform=nn_latent_transform
+                        model_name, features, vision_features,
+                        test_stim_ids,
+                        test_stim_types,
+                        subject,
+                        "test",
+                        nn_latent_transform=nn_latent_transform
                     )
                     latents = np.concatenate((train_data_latents, test_data_latents))
 
@@ -319,7 +321,7 @@ def get_args():
     parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
+    parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)

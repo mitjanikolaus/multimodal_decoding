@@ -32,7 +32,7 @@ FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_
                                MATCHED_FEATS, FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
-VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS]
+VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS, FEATS_SELECT_DEFAULT]
 
 NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
@@ -204,6 +204,15 @@ def get_default_features(model_name):
 
     print(f"Selected default features for {model_name}: {features}")
     return features
+
+
+def get_default_vision_features(model_name):
+    vision_feats = VISION_MEAN_FEAT_KEY
+    if model_name.startswith("flava"):
+        vision_feats = VISION_CLS_FEAT_KEY
+
+    print(f"Selected default vision features for {model_name}:{vision_feats}")
+    return vision_feats
 
 
 def get_vision_feats(latent_vectors, stim_id, vision_features_mode):
@@ -569,12 +578,16 @@ def run(args):
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
+                        vision_features = args.vision_features
+                        if vision_features == FEATS_SELECT_DEFAULT:
+                            vision_features = get_default_vision_features(model_name)
+
                         print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                               f"MODEL: {model_name} | FEATURES: {features}")
 
                         train_latents, latent_transform = get_nn_latent_data(
                             model_name, features,
-                            args.vision_features,
+                            vision_features,
                             train_stim_ids,
                             train_stim_types,
                             subject,
@@ -595,7 +608,7 @@ def run(args):
 
                         best_alpha = clf.best_params_["alpha"]
 
-                        test_data_latents, _ = get_nn_latent_data(model_name, features, args.vision_features,
+                        test_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
                                                                   test_stim_ids,
                                                                   test_stim_types,
                                                                   subject,
@@ -609,7 +622,7 @@ def run(args):
                             "model": model_name,
                             "subject": subject,
                             "features": features,
-                            "vision_features": args.vision_features,
+                            "vision_features": vision_features,
                             "training_mode": training_mode,
                             "mask": mask,
                             "num_voxels": test_fmri_betas.shape[1],
@@ -631,7 +644,7 @@ def run(args):
                               f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
                         results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
-                        run_str = get_run_str(model_name, features, args.vision_features, mask, best_val_acc=True)
+                        run_str = get_run_str(model_name, features, vision_features, mask, best_val_acc=True)
                         results_file_dir = f'{results_dir}/{run_str}'
                         os.makedirs(results_file_dir, exist_ok=True)
 
@@ -647,7 +660,7 @@ def get_args():
     parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--vision-features", type=str, default=VISION_MEAN_FEAT_KEY,
+    parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--masks", type=str, nargs='+', default=[None])
