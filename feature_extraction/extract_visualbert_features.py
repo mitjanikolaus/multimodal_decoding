@@ -258,5 +258,5 @@ if __name__ == "__main__":
     model = VisualBertModel.from_pretrained('uclanlp/visualbert-nlvr2-coco-pre')
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-    extractor = VisualBERTFeatureExtractor(model, tokenizer, "VisualBERT", BATCH_SIZE, device)
+    extractor = VisualBERTFeatureExtractor(model, tokenizer, "visualbert", BATCH_SIZE, device)
     extractor.extract_features()

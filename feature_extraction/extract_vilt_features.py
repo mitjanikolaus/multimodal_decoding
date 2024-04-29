@@ -56,6 +56,6 @@ if __name__ == "__main__":
     processor = ViltProcessor.from_pretrained("dandelin/vilt-b32-mlm")
     model = ViltModel.from_pretrained("dandelin/vilt-b32-mlm")
 
-    extractor = ViLTFeatureExtractor(model, processor, "VILT", BATCH_SIZE, device)
+    extractor = ViLTFeatureExtractor(model, processor, "vilt", BATCH_SIZE, device)
     extractor.extract_features()
 
