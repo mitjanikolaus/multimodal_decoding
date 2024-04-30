@@ -84,7 +84,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
     subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
     cbar_max = {stat: None for stat in test_statistics.keys()}
     for subfig, (stat_name, values) in zip(subfigs, test_statistics.items()):
-        subfig.suptitle(f'{args.metric} {stat_name}', x=0, horizontalalignment="left")
+        subfig.suptitle(f'{args.metric} {stat_name}', x=0, y=1.1, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
         for i, view in enumerate(args.views):
             for j, hemi in enumerate(HEMIS):
