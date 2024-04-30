@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from utils import FEATURES_DIR, RESULTS_DIR, SUBJECTS, NUM_TEST_STIMULI
-
+from analyses.ridge_regression_decoding import NUM_CV_SPLITS, DECODER_OUT_DIR, calc_rsa, calc_rsa_images, calc_rsa_captions, get_fmri_data, pairwise_accuracy, ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES
+from tqdm import tqdm
 from glob import glob
 import pickle
 
 HP_KEYS = ["alpha", "model", "subject", "features", "vision_features", "training_mode", "mask", "num_voxels"]
 METRIC_NAMES = {"acc_cosine": "pairwise_acc", "acc_cosine_captions": "pairwise_acc_captions", "acc_cosine_images": "pairwise_acc_images"}
+
+ACC_MEAN = "pairwise_acc_mean"
 
 
 def plot_metric(data, kind="bar", x_variable="model_feat", order=None, hue_variable="model_feat", hue_order=None, metric="pairwise_acc_mean", ylim=(0.5, 1), plot_legend=True, palette=None,
@@ -58,6 +61,7 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     data_filtered = data[data.metric.isin(metrics)]
 
     sns.set_style("ticks", {'axes.grid' : True})
+    palette = palette[:len(data_filtered[hue_variable].unique())]
     g = sns.catplot(data_filtered, kind=kind, x=x_variable, order=order, y="value", row=row_variable, row_order=row_order, col=col_variable, height=height, aspect=aspect, hue=hue_variable, hue_order=hue_order,
                     palette=palette, err_kws={'linewidth': 0.5, 'alpha': 0.99}, width=0.7)
    
@@ -85,53 +89,48 @@ FEAT_PALETTE = sns.color_palette('Set2')[:4]
 
 def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions", "pairwise_acc_images"], hue_variable="features", hue_order=FEAT_ORDER, ylim=None,
                         legend_title="Legend", palette=FEAT_PALETTE, dodge=False, noise_ceilings=None, plot_modality_specific=True,
-                       row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06,1), height=4.5, aspect=4):
+                       row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06,0.97), legend_2_bbox=(0.99,0.97), height=4.5, row_title_height=0.85, aspect=4, verify_num_datapoints=True):
     data_training_mode_full = data[data.training_mode == "modality-agnostic"]
     data_training_mode_captions = data[data.training_mode == "captions"]
     data_training_mode_images = data[data.training_mode == "images"]
 
-    for m_feat in model_feat_order:
-        length = len(data_training_mode_full[(data_training_mode_full.model_feat == m_feat) & (data_training_mode_full.metric == metrics[0])])
-        expected_num_datapoints = len(SUBJECTS)
-        if hue_variable != "features":
-            expected_num_datapoints *= len(data[hue_variable].unique())
-        assert length == expected_num_datapoints, f"too long or short: {length} (expected: {expected_num_datapoints}) (model_feat: {m_feat}"
+    for mode in ["modality-agnostic", "captions", "images"]:
+        data_mode = data[data.training_mode == mode]
+        for m_feat in model_feat_order:
+            length = len(data_mode[(data_mode.model_feat == m_feat) & (data_mode.metric == metrics[0])])
+            expected_num_datapoints = len(SUBJECTS)
+            if hue_variable != "features":
+                expected_num_datapoints *= len(data[hue_variable].unique())
+            if length != expected_num_datapoints:
+                message = f"unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) (model_feat: {m_feat} {mode}"
+                if verify_num_datapoints:
+                    raise RuntimeError(message)
+                else:
+                    print(f"Warning: {message}")
 
     catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=model_feat_order, metrics=metrics, x_variable="model_feat", legend_title=legend_title, legend_bbox=legend_bbox, height=height, aspect=aspect,
                                                   hue_variable=hue_variable, row_variable=row_variable, row_order=row_order, col_variable=col_variable, hue_order=hue_order, palette=palette, ylim=ylim, noise_ceilings=noise_ceilings)
 
     if plot_modality_specific:
-        _ = plot_metric(data_training_mode_captions, kind="point", order=model_feat_order, metric=metrics[0], x_variable="model_feat", dodge=dodge,
-                                      hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0)], axis=catplot_g.axes[0, 0], marker="o", plot_legend=False, ylim=ylim)
-        g, _ = plot_metric(data_training_mode_images, kind="point", order=model_feat_order, metric=metrics[0], x_variable="model_feat", dodge=dodge,
-                                      hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0)], axis=catplot_g.axes[0, 0], marker="x", plot_legend=False, ylim=ylim)
-        
-        _ = plot_metric(data_training_mode_captions, kind="point", order=model_feat_order, metric=metrics[1], x_variable="model_feat", dodge=dodge,
-                                      hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0)], axis=catplot_g.axes[1, 0], marker="o", plot_legend=False, ylim=ylim)
-        _ = plot_metric(data_training_mode_images, kind="point", order=model_feat_order, metric=metrics[1], x_variable="model_feat", dodge=dodge,
-                                      hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0)], axis=catplot_g.axes[1, 0], marker="x", plot_legend=False, ylim=ylim)
+        first_metric_graph = None
+        for m, metric in enumerate(metrics):
+            plot_metric(data_training_mode_captions, kind="point", order=model_feat_order, metric=metrics[m], x_variable="model_feat", dodge=dodge,
+                                          hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0),(0, 0, 0),(0, 0, 0)], axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
+            g, _ = plot_metric(data_training_mode_images, kind="point", order=model_feat_order, metric=metrics[m], x_variable="model_feat", dodge=dodge,
+                                          hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0),(0, 0, 0),(0, 0, 0)], axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
+            if m == 0:
+                first_metric_graph = g
 
-        if len(metrics) == 3:
-            _ = plot_metric(data_training_mode_captions, kind="point", order=model_feat_order, metric=metrics[2], x_variable="model_feat", dodge=dodge,
-                                          hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0)], axis=catplot_g.axes[2, 0], marker="o", plot_legend=False, ylim=ylim)
-            _ = plot_metric(data_training_mode_images, kind="point", order=model_feat_order, metric=metrics[2], x_variable="model_feat", dodge=dodge,
-                                          hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0)], axis=catplot_g.axes[2, 0], marker="x", plot_legend=False, ylim=ylim)
-            
-        handles, labels = g.get_legend_handles_labels()
+        handles, labels = first_metric_graph.get_legend_handles_labels()
         new_labels = ["captions", "images"]
         new_handles = [handles[0], handles[-1]]
-        catplot_g.fig.legend(handles=new_handles, labels=new_labels, ncol=2, title="Modality-specific decoders trained on", loc='upper right') #, bbox_to_anchor=(0.05,1)
+        catplot_g.fig.legend(handles=new_handles, labels=new_labels, ncol=2, title="Modality-specific decoders trained on", loc='upper right', bbox_to_anchor=legend_2_bbox)
         
-        catplot_g.axes[0, 0].set_title(catplot_g.axes[0,0].title.get_text().split("_")[-1], fontsize=30, y=0.97)
-        catplot_g.axes[1, 0].set_title(catplot_g.axes[1,0].title.get_text().split("_")[-1], fontsize=30, y=0.97)
-     
-        catplot_g.axes[0, 0].set_ylabel('pairwise accuracy')
-        catplot_g.axes[1, 0].set_ylabel('pairwise accuracy')
 
-        if len(metrics) == 3:
-            catplot_g.axes[2, 0].set_title("overall", fontsize=30, y=0.97)
-            catplot_g.axes[2, 0].set_ylabel('pairwise accuracy')
-
+    for m, metric in enumerate(metrics):
+        catplot_g.axes[m, 0].set_title(metrics[m].replace("pairwise_acc_", "").replace("_", "-"), fontsize=35, y=row_title_height)
+        catplot_g.axes[m, 0].set_ylabel('pairwise accuracy')
+        
     plt.subplots_adjust(hspace=0.15)
     return catplot_g, lgd
 
@@ -142,32 +141,27 @@ def add_avg_subject(df):
     return pd.concat((df.copy(), df_mean))
 
 
-def load_results_data(distance_metrics = ["cosine"]):
+def load_results_data():
     results_root_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm/')
     
-    metrics = ['rsa', 'rsa_captions', 'rsa_images'] #, 'predictions', 'latents', 'stimulus_ids'
-    for dist_metric in distance_metrics:
-        metrics.extend([f'acc_{dist_metric}_captions', f'acc_{dist_metric}_images'])# f'acc_{dist_metric}'
-    for metric in ["spearmanr", "pearsonr"]:
-        for matrix_metric in ["spearmanr", "pearsonr"]: 
-            metrics.append(f"rsa_{metric}_{matrix_metric}")
-        
+    metrics = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES] #, 'predictions', 'latents', 'stimulus_ids'
+    
     data = []
 
     result_files = sorted(glob(f"{results_root_dir}/*/*/*/results.p"))
-    for result_file_path in result_files:        
+    for result_file_path in tqdm(result_files):        
         results = pickle.load(open(result_file_path, 'rb'))
-
-        for metric in metrics:
-            if metric in results.keys():
-                data_item = {k: value for k, value in results.items() if k in HP_KEYS}
-                data_item["metric"] = METRIC_NAMES[metric] if metric in METRIC_NAMES.keys() else metric
-                data_item["value"] = results[metric]
-                data.append(data_item)  
-        data_item = {k: value for k, value in results.items() if k in HP_KEYS}
-        data_item["metric"] = "pairwise_acc_mean"
-        data_item["value"] = (results["acc_cosine_captions"] + results["acc_cosine_images"]) / 2
-        data.append(data_item)
+        if ACC_MODALITY_AGNOSTIC in results:
+            for metric in metrics:
+                if metric in results.keys():
+                    data_item = {k: value for k, value in results.items() if k in HP_KEYS}
+                    data_item["metric"] = metric
+                    data_item["value"] = results[metric]
+                    data.append(data_item)  
+            data_item = {k: value for k, value in results.items() if k in HP_KEYS}
+            data_item["metric"] = ACC_MEAN
+            data_item["value"] = (results[ACC_CAPTIONS] + results[ACC_IMAGES]) / 2
+            data.append(data_item)
 
 
     df = pd.DataFrame.from_records(data)
@@ -176,19 +170,6 @@ def load_results_data(distance_metrics = ["cosine"]):
 
     df["training_mode"] = df.training_mode.replace({"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
     df["mask"] = df["mask"].fillna("whole_brain")
-
-    # create modality-specific decoders with 'matched' features from existing results
-    multimodal_models = df[df.features == "vision+lang"].model.unique().tolist()
-
-    data_feat_concat_mod_specific_vision = df[(df.training_mode == "images") & (df.features == "vision") & (df.model.isin(multimodal_models))]
-    data_feat_matched_mod_specific_vision = data_feat_concat_mod_specific_vision.copy()
-    data_feat_matched_mod_specific_vision["features"] = "matched"
-    df = pd.concat((df, data_feat_matched_mod_specific_vision), ignore_index=True)
-    
-    data_feat_concat_mod_specific_lang = df[(df.training_mode == "captions") & (df.features == "lang") & (df.model.isin(multimodal_models))]
-    data_feat_matched_mod_specific_lang = data_feat_concat_mod_specific_lang.copy()
-    data_feat_matched_mod_specific_lang["features"] = "matched"
-    df = pd.concat((df, data_feat_matched_mod_specific_lang), ignore_index=True)
 
     df["model_feat"] = df.model + "_" + df.features
 
