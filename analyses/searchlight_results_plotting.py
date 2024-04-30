@@ -35,6 +35,8 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
     if "t-values" in test_statistics:
         t_values = test_statistics['t-values']
         metrics = list(t_values['left'].keys())
+        metrics.remove(METRIC_MIN_DIFF_BOTH_MODALITIES)
+
         print(f"plotting t values for {len(metrics)} metrics {filename_suffix}")
         fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
         subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
@@ -75,7 +77,6 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
     # plot remaining test stats
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
-    del test_statistics_filtered[METRIC_MIN_DIFF_BOTH_MODALITIES]
 
     print(f"plotting test stats {filename_suffix}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
