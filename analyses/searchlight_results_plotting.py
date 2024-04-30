@@ -42,7 +42,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
         subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
         cbar_max = {metric: None for metric in metrics}
         for subfig, metric in zip(subfigs, metrics):
-            subfig.suptitle(f'{metric}', x=0, y=1.3, horizontalalignment="left")
+            subfig.suptitle(f'{metric}', x=0, y=1.1, horizontalalignment="left")
             axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
             for i, view in enumerate(args.views):
                 for j, hemi in enumerate(HEMIS):
@@ -128,7 +128,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
     subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
     for subfig, metric in zip(subfigs, metrics):
-        subfig.suptitle(f'{metric}', x=0, y=1, horizontalalignment="left")
+        subfig.suptitle(f'{metric}', x=0, y=1.1, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
         cbar_max = None
         for i, view in enumerate(args.views):
@@ -204,7 +204,7 @@ def run(args):
     p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     fig = plt.figure(figsize=(5 * len(args.views), 2))
-    fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, y=1.2, horizontalalignment="left")
+    fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, y=1.1, horizontalalignment="left")
     axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
     cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
     cbar_min = 0
