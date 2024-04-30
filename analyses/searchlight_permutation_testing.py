@@ -807,30 +807,29 @@ def create_null_distribution(args):
 
             t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
 
-            print(f"Calculating tfce values for null distribution")
+        print(f"Calculating tfce values for null distribution")
+        edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
 
-            edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+        def tfce_values_job(t_values, edge_lengths, proc_id):
+            iterator = tqdm(t_values) if proc_id == 0 else t_values
+            tfce_values = [
+                calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
+                iterator
+            ]
+            return tfce_values
 
-            def tfce_values_job(t_values, edge_lengths, proc_id):
-                iterator = tqdm(t_values) if proc_id == 0 else t_values
-                tfce_values = [
-                    calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
-                    iterator
-                ]
-                return tfce_values
-
-            n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
-            tfce_values = Parallel(n_jobs=args.n_jobs)(
-                delayed(tfce_values_job)(
-                    t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
-                    edge_lengths.copy(),
-                    id,
-                )
-                for id in range(args.n_jobs)
+        n_per_job = math.ceil(len(t_values_null_distribution) / args.n_jobs)
+        tfce_values = Parallel(n_jobs=args.n_jobs)(
+            delayed(tfce_values_job)(
+                t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
+                edge_lengths.copy(),
+                id,
             )
-            tfce_values = np.concatenate(tfce_values)
+            for id in range(args.n_jobs)
+        )
+        tfce_values = np.concatenate(tfce_values)
 
-            pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
+        pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
 def get_args():
