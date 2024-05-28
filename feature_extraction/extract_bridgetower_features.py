@@ -1,19 +1,15 @@
 import os
-import pickle
 
 import torch
-from tqdm import tqdm
 
 from transformers import BridgeTowerProcessor, BridgeTowerForContrastiveLearning
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from utils import LANG_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, model_features_file_path, \
-    MULTIMODAL_FEAT_KEY
+from utils import LANG_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
@@ -34,44 +30,25 @@ class BridgeTowerFeatureExtractor(FeatureExtractor):
         img_embeddings = outputs.image_embeds
         language_embeddings = outputs.text_embeds
 
-        feats_multimodal = outputs.cross_embeds
+        hidden_states_multi = outputs.hidden_states[2]
+        print(f"hidden_states_multi shape: {hidden_states_multi.shape}")
 
-        return language_embeddings, img_embeddings, None, feats_multimodal
+        last_hidden_states_multi = hidden_states_multi[-1]
+        print(f"last_hidden_states_multi shape: {last_hidden_states_multi.shape}")
 
-    def extract_features(self):
-        all_feats = dict()
-        for ids, captions, img_paths in tqdm(self.dloader):
-            ids = [id.item() for id in ids]
-            language_feats_batch, vision_mean_feats_batch, vision_cls_feats_batch, multi_feats_batch = self.extract_features_from_batch(
-                ids, captions, img_paths)
-            if language_feats_batch is None:
-                language_feats_batch = [None] * len(ids)
-            else:
-                language_feats_batch = language_feats_batch.cpu().numpy()
-            if vision_mean_feats_batch is None:
-                vision_mean_feats_batch = [None] * len(ids)
-            else:
-                vision_mean_feats_batch = vision_mean_feats_batch.cpu().numpy()
-            if vision_cls_feats_batch is None:
-                vision_cls_feats_batch = [None] * len(ids)
-            else:
-                vision_cls_feats_batch = vision_cls_feats_batch.cpu().numpy()
-            if multi_feats_batch is None:
-                multi_feats_batch = [None] * len(ids)
-            else:
-                multi_feats_batch = multi_feats_batch.cpu().numpy()
+        cross_text_features, cross_image_features = last_hidden_states_multi
+        print(f"cross_text_features shape: {last_hidden_states_multi.shape}")
+        print(f"cross_image_features shape: {last_hidden_states_multi.shape}")
 
-            for id, feats_lang, feats_vision_mean, feats_vision_cls, feats_multi in zip(ids,
-                                                                           language_feats_batch,
-                                                                           vision_mean_feats_batch,
-                                                                           vision_cls_feats_batch,
-                                                                           multi_feats_batch):
-                all_feats[id] = {LANG_FEAT_KEY: feats_lang, VISION_MEAN_FEAT_KEY: feats_vision_mean,
-                                 VISION_CLS_FEAT_KEY: feats_vision_cls, MULTIMODAL_FEAT_KEY: feats_multi}
+        feats_fused_mean = last_hidden_states_multi.mean(dim=0).mean(dim=1)
+        print(f"feats_fused_mean shape: {feats_fused_mean.shape}")
 
-        path_out = model_features_file_path(self.model_name)
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
-        pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        return {
+            LANG_FEAT_KEY: language_embeddings, #TODO do not output, because they are fused as well!?
+            VISION_CLS_FEAT_KEY: img_embeddings,
+            FUSED_MEAN_FEAT_KEY: feats_fused_mean,
+            FUSED_CLS_FEAT_KEY: outputs.cross_embeds
+        }
 
 
 if __name__ == "__main__":
