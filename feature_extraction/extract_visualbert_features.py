@@ -257,7 +257,7 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
                     mask_expanded.sum(dim=1) + img_embeddings[:, 1:].shape[1])
 
         # return language_embeddings, img_embeddings, None
-        print(f"outputs.pooled_output shape: ", outputs.pooled_output.shape)
+        print(f"outputs.pooler_output shape: ", outputs.pooler_output.shape)
         print(f"feats_fused_mean: ", feats_fused_mean.shape)
         print(f"last_hidden_states.mean(dim=1) shape: ", last_hidden_states.mean(dim=1).shape)
 
@@ -265,8 +265,8 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         print(last_hidden_states.mean(dim=1)[0][:10])
 
         return {
-            FUSED_MEAN_FEAT_KEY: last_hidden_states.mean(dim=1),
-            FUSED_CLS_FEAT_KEY: outputs.pooled_output,
+            FUSED_MEAN_FEAT_KEY: feats_fused_mean,
+            FUSED_CLS_FEAT_KEY: outputs.pooler_output,
         }
 
 
