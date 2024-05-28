@@ -19,7 +19,7 @@ class CLIPFeatureExtractor(FeatureExtractor):
     def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(img_path).convert('RGB') for img_path in img_paths]
 
-        inputs = processor(text=captions, images=images, return_tensors="pt").to(device)
+        inputs = processor(text=captions, images=images, return_tensors="pt", padding=True).to(device)
 
         with torch.no_grad():
             outputs = model(**inputs)
