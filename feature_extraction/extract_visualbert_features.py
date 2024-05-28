@@ -20,10 +20,9 @@ from tqdm import tqdm
 from transformers import BertTokenizer, VisualBertModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor, CoCoDataset
-from utils import CAPTIONS_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
+from utils import CAPTIONS_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY, DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -33,7 +32,7 @@ MIN_BOXES = 10
 MAX_BOXES = 100
 
 BOX_FEATURES_DIM = 1024
-MASKRCNN_FEATS_PATH = "data/maskrcnn_feats.p"
+MASKRCNN_FEATS_PATH = os.path.join(DATA_DIR, "maskrcnn_feats.p")
 
 
 def load_config_and_model_weights(cfg_path):
@@ -227,10 +226,10 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
         self.maskrcnn_feats = pickle.load(open(MASKRCNN_FEATS_PATH, "rb"))
 
     def extract_features_from_batch(self, ids, captions, img_paths):
-        tokens = self.preprocessor(captions, padding=True)
-        input_ids = torch.tensor(tokens["input_ids"], device=device)
-        attention_mask = torch.tensor(tokens["attention_mask"], device=device)
-        token_type_ids = torch.tensor(tokens["token_type_ids"], device=device)
+        inputs = self.preprocessor(captions, padding=True)
+        input_ids = torch.tensor(inputs["input_ids"], device=device)
+        attention_mask = torch.tensor(inputs["attention_mask"], device=device)
+        token_type_ids = torch.tensor(inputs["token_type_ids"], device=device)
 
         visual_embeds = [torch.tensor(self.maskrcnn_feats[id], device=device) for id in ids]
         visual_embeds = torch.stack(visual_embeds)
@@ -245,12 +244,25 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
 
         last_hidden_states = outputs.last_hidden_state
 
-        # text_input_size = input_ids.data.shape[1]
-        # language_embeddings = last_hidden_states[:, :text_input_size].mean(dim=1)
-        # img_embeddings = last_hidden_states[:, text_input_size:].mean(dim=1)
+
+
+        text_input_size = input_ids.data.shape[1]
+        language_embeddings = last_hidden_states[:, :text_input_size]
+        img_embeddings = last_hidden_states[:, text_input_size:]
+
+        mask_expanded = attention_mask.unsqueeze(-1).expand((attention_mask.shape[0], attention_mask.shape[1], language_embeddings.shape[-1]))
+        language_embeddings[mask_expanded == 0] = 0
+
+        feats_fused_mean = (language_embeddings.sum(axis=1) + img_embeddings[:, 1:].sum(axis=1)) / (
+                    mask_expanded.sum(dim=1) + img_embeddings[:, 1:].shape[1])
+
         # return language_embeddings, img_embeddings, None
         print(f"outputs.pooled_output shape: ", outputs.pooled_output.shape)
+        print(f"feats_fused_mean: ", feats_fused_mean.shape)
         print(f"last_hidden_states.mean(dim=1) shape: ", last_hidden_states.mean(dim=1).shape)
+
+        print(feats_fused_mean[0][:10])
+        print(last_hidden_states.mean(dim=1)[0][:10])
 
         return {
             FUSED_MEAN_FEAT_KEY: last_hidden_states.mean(dim=1),
