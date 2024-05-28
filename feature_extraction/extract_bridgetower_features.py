@@ -31,16 +31,16 @@ class BridgeTowerFeatureExtractor(FeatureExtractor):
         language_embeddings = outputs.text_embeds
 
         hidden_states_multi = outputs.hidden_states[2]
-        print(f"hidden_states_multi shape: {hidden_states_multi.shape}")
+        # print(f"hidden_states_multi shape: {hidden_states_multi.shape}")
 
         last_hidden_states_multi = hidden_states_multi[-1]
-        print(f"last_hidden_states_multi shape: {last_hidden_states_multi.shape}")
+        # print(f"last_hidden_states_multi shape: {last_hidden_states_multi.shape}")
 
         cross_text_features, cross_image_features = last_hidden_states_multi
         print(f"cross_text_features shape: {last_hidden_states_multi.shape}")
         print(f"cross_image_features shape: {last_hidden_states_multi.shape}")
 
-        feats_fused_mean = last_hidden_states_multi.mean(dim=0).mean(dim=1)
+        feats_fused_mean = torch.cat(last_hidden_states_multi).mean(dim=0)
         print(f"feats_fused_mean shape: {feats_fused_mean.shape}")
 
         return {
