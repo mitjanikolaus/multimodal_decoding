@@ -4,9 +4,9 @@ from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
+from utils import LANG_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -24,7 +24,10 @@ class CLIPFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = model(**inputs)
 
-        return outputs.text_embeds, outputs.image_embeds, None
+        return {
+            LANG_FEAT_KEY: outputs.text_embeds,
+            VISION_CLS_FEAT_KEY: outputs.image_embeds,
+        }
 
 
 if __name__ == "__main__":
