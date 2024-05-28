@@ -208,7 +208,7 @@ def get_default_features(model_name):
 
 def get_default_vision_features(model_name):
     vision_feats = VISION_MEAN_FEAT_KEY
-    if model_name.startswith("flava"):
+    if model_name.startswith("flava") or model_name.startswith("imagebind") or model_name.startswith("clip"):
         vision_feats = VISION_CLS_FEAT_KEY
 
     print(f"Selected default vision features for {model_name}: {vision_feats}")
