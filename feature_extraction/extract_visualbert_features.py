@@ -20,7 +20,7 @@ from tqdm import tqdm
 from transformers import BertTokenizer, VisualBertModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor, CoCoDataset
-from utils import CAPTIONS_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH
+from utils import CAPTIONS_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -245,11 +245,17 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
 
         last_hidden_states = outputs.last_hidden_state
 
-        text_input_size = input_ids.data.shape[1]
-        language_embeddings = last_hidden_states[:, :text_input_size].mean(dim=1)
-        img_embeddings = last_hidden_states[:, text_input_size:].mean(dim=1)
+        # text_input_size = input_ids.data.shape[1]
+        # language_embeddings = last_hidden_states[:, :text_input_size].mean(dim=1)
+        # img_embeddings = last_hidden_states[:, text_input_size:].mean(dim=1)
+        # return language_embeddings, img_embeddings, None
+        print(f"outputs.pooled_output shape: ", outputs.pooled_output.shape)
+        print(f"last_hidden_states.mean(dim=1) shape: ", last_hidden_states.mean(dim=1).shape)
 
-        return language_embeddings, img_embeddings, None
+        return {
+            FUSED_MEAN_FEAT_KEY: last_hidden_states.mean(dim=1),
+            FUSED_CLS_FEAT_KEY: outputs.pooled_output,
+        }
 
 
 if __name__ == "__main__":
