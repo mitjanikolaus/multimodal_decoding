@@ -23,7 +23,8 @@ VISION_MEAN_FEAT_KEY = "visual_feature_mean"
 VISION_CLS_FEAT_KEY = "visual_feature_cls"
 
 LANG_FEAT_KEY = "lingual_feature"
-MULTIMODAL_FEAT_KEY = "multimodal_feature"
+FUSED_MEAN_FEAT_KEY = "fused_mean_features"
+FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
 
 def model_features_file_path(model_name):
