@@ -18,17 +18,17 @@ from tqdm import trange
 import pandas as pd
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
-    VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, \
-    MULTIMODAL_FEAT_KEY, ROOT_DIR
+    VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
 
 CONCAT_FEATS = 'concat'
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
-MULTIMODAL_FEATS = 'multi'
+FUSED_FEATS_CLS = 'fused_cls'
+FUSED_FEATS_MEAN = 'fused_mean'
 MATCHED_FEATS = 'matched'
 FEATS_SELECT_DEFAULT = 'default'
-FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, MULTIMODAL_FEATS,
+FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS, FUSED_FEATS_MEAN,
                                MATCHED_FEATS, FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
@@ -256,8 +256,10 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
             vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
             feats = np.concatenate(
                 (latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
-        elif features == MULTIMODAL_FEATS:
-            feats = latent_vectors[stim_id][MULTIMODAL_FEAT_KEY]
+        elif features == FUSED_FEATS_CLS:
+            feats = latent_vectors[stim_id][FUSED_CLS_FEAT_KEY]
+        elif features == FUSED_FEATS_MEAN:
+            feats = latent_vectors[stim_id][FUSED_MEAN_FEAT_KEY]
         elif features == MATCHED_FEATS:
             if stim_type == CAPTION:
                 feats = latent_vectors[stim_id][LANG_FEAT_KEY]
