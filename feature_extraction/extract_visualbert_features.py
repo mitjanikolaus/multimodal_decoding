@@ -238,31 +238,24 @@ class VisualBERTFeatureExtractor(FeatureExtractor):
 
         with torch.no_grad():
             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask,
-                                       token_type_ids=token_type_ids,
-                                       visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
-                                       visual_token_type_ids=visual_token_type_ids)
+                                 token_type_ids=token_type_ids,
+                                 visual_embeds=visual_embeds, visual_attention_mask=visual_attention_mask,
+                                 visual_token_type_ids=visual_token_type_ids)
 
         last_hidden_states = outputs.last_hidden_state
-
-
 
         text_input_size = input_ids.data.shape[1]
         language_embeddings = last_hidden_states[:, :text_input_size]
         img_embeddings = last_hidden_states[:, text_input_size:]
 
-        mask_expanded = attention_mask.unsqueeze(-1).expand((attention_mask.shape[0], attention_mask.shape[1], language_embeddings.shape[-1]))
+        # Average lang feats while ignoring padding tokens
+        mask_expanded = attention_mask.unsqueeze(-1).expand(
+            (attention_mask.shape[0], attention_mask.shape[1], language_embeddings.shape[-1])
+        )
         language_embeddings[mask_expanded == 0] = 0
 
         feats_fused_mean = (language_embeddings.sum(axis=1) + img_embeddings[:, 1:].sum(axis=1)) / (
-                    mask_expanded.sum(dim=1) + img_embeddings[:, 1:].shape[1])
-
-        # return language_embeddings, img_embeddings, None
-        print(f"outputs.pooler_output shape: ", outputs.pooler_output.shape)
-        print(f"feats_fused_mean: ", feats_fused_mean.shape)
-        print(f"last_hidden_states.mean(dim=1) shape: ", last_hidden_states.mean(dim=1).shape)
-
-        print(feats_fused_mean[0][:10])
-        print(last_hidden_states.mean(dim=1)[0][:10])
+                mask_expanded.sum(dim=1) + img_embeddings[:, 1:].shape[1])
 
         return {
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
