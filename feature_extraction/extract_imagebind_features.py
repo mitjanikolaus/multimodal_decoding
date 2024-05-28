@@ -6,10 +6,9 @@ from imagebind.models import imagebind_model
 from imagebind.models.imagebind_model import ModalityType
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-
+from utils import VISION_CLS_FEAT_KEY, LANG_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -27,7 +26,10 @@ class ImagebindFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             embeddings = self.model(inputs)
 
-        return embeddings[ModalityType.TEXT], embeddings[ModalityType.VISION], None
+        return {
+            LANG_FEAT_KEY: embeddings[ModalityType.TEXT],
+            VISION_CLS_FEAT_KEY: embeddings[ModalityType.VISION],
+        }
 
 
 if __name__ == "__main__":
