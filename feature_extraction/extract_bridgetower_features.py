@@ -37,8 +37,8 @@ class BridgeTowerFeatureExtractor(FeatureExtractor):
         # print(f"last_hidden_states_multi shape: {last_hidden_states_multi.shape}")
 
         cross_text_features, cross_image_features = last_hidden_states_multi
-        print(f"cross_text_features shape: {last_hidden_states_multi.shape}")
-        print(f"cross_image_features shape: {last_hidden_states_multi.shape}")
+        print(f"cross_text_features shape: {cross_text_features.shape}")
+        print(f"cross_image_features shape: {cross_image_features.shape}")
 
         feats_fused_mean = torch.cat(last_hidden_states_multi).mean(dim=0)
         print(f"feats_fused_mean shape: {feats_fused_mean.shape}")
