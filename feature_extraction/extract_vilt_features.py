@@ -12,7 +12,7 @@ from utils import LANG_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSE
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 10
 
@@ -39,21 +39,16 @@ class ViLTFeatureExtractor(FeatureExtractor):
         mask = inputs.data["attention_mask"]
         mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], language_embeddings.shape[-1]))
         language_embeddings[mask_expanded == 0] = 0
-        # feats_lang = language_embeddings.sum(axis=1) / mask_expanded.sum(dim=1)
-
-        # feats_vision_cls = img_embeddings[:, 0, :]
-        # feats_vision_mean = img_embeddings[:, 1:].mean(axis=1)
 
         feats_fused_mean = (language_embeddings.sum(axis=1) + img_embeddings[:, 1:].sum(axis=1)) / (
                     mask_expanded.sum(dim=1) + img_embeddings[:, 1:].shape[1])
         feats_fused_cls = outputs.pooler_output
 
         return {
-            # LANG_FEAT_KEY: feats_lang,
-            # VISION_MEAN_FEAT_KEY: feats_vision_mean,
-            # VISION_CLS_FEAT_KEY: feats_vision_cls,
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
-            FUSED_CLS_FEAT_KEY: feats_fused_cls
+            FUSED_CLS_FEAT_KEY: feats_fused_cls,
+            "fused_mean_features_safe": last_hidden_states.mean(dim=1),
+            "fused_mean_features_two_step": torch.cat((language_embeddings.mean(dim=1), img_embeddings.mean(dim=1)), dim=1).mean(dim=1),
         }
 
 
