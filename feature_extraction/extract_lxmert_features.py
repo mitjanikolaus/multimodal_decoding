@@ -9,6 +9,8 @@ import numpy as np
 import csv
 import sys
 
+from utils import FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -90,10 +92,18 @@ class LXMERTFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
 
-        feats_lang = outputs.language_output[0]
-        feats_vision = outputs.vision_output.mean(dim=1)
-        feats_vision_cls = outputs.vision_output[0]
-        return feats_lang, feats_vision, feats_vision_cls
+        print(f"outputs.language_output shape: {outputs.language_output.shape}")
+        print(f"outputs.vision_output shape: {outputs.vision_output.shape}")
+
+        feats_fused_mean = torch.cat((outputs.language_output, outputs.vision_output), dim=1).mean(dim=1)
+
+        print(f"feats_fused_mean shape: {feats_fused_mean.shape}")
+        print(f"outputs.pooled_output shape: {outputs.pooled_output.shape}")
+
+        return {
+            FUSED_MEAN_FEAT_KEY: feats_fused_mean,
+            FUSED_CLS_FEAT_KEY: outputs.pooled_output,
+        }
 
 
 if __name__ == "__main__":
