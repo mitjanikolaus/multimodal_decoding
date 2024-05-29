@@ -4,7 +4,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BertTokenizer, Ber
     MistralModel, LlamaTokenizer, LlamaModel, MixtralModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import DATA_DIR
+from utils import DATA_DIR, LANG_FEAT_KEY
 
 BATCH_SIZE = 512
 
@@ -36,7 +36,9 @@ class LanguageModelFeatureExtractor(FeatureExtractor):
         last_hidden_state[mask_expanded == 0] = 0
         feats_lang = last_hidden_state.sum(axis=1) / mask_expanded.sum(dim=1)
 
-        return feats_lang, None, None
+        return {
+            LANG_FEAT_KEY: feats_lang,
+        }
 
 
 if __name__ == "__main__":

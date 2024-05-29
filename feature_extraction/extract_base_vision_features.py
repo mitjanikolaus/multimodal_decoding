@@ -7,7 +7,8 @@ import pickle
 from tqdm import tqdm
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR
+from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR, VISION_MEAN_FEAT_KEY, \
+    VISION_CLS_FEAT_KEY
 
 BATCH_SIZE = 128
 
@@ -60,7 +61,11 @@ class ViTFeatureExtractor(FeatureExtractor):
 
         feats_vision_cls = last_hidden_state[:, 0, :]
         feats_vision_mean = last_hidden_state[:, 1:].mean(axis=1)
-        return None, feats_vision_mean, feats_vision_cls
+
+        return {
+            VISION_MEAN_FEAT_KEY: feats_vision_mean,
+            VISION_CLS_FEAT_KEY: feats_vision_cls,
+        }
 
 
 class ResNetFeatureExtractor(FeatureExtractor):
@@ -75,7 +80,10 @@ class ResNetFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs)
 
         feats_vision = outputs.pooler_output.squeeze()
-        return None, feats_vision, None
+
+        return {
+            VISION_MEAN_FEAT_KEY: feats_vision,
+        }
 
 
 if __name__ == "__main__":
