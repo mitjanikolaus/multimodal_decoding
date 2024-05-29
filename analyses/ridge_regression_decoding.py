@@ -560,6 +560,8 @@ def get_run_str(model_name, features, vision_features, mask=None, best_val_loss=
         run_str += "_vision_feats_cls"
     if vision_features == VISION_CONCAT_FEATS:
         run_str += "_vision_feats_concat"
+    if vision_features == VISION_MEAN_FEAT_KEY:
+        run_str += "_vision_feats_mean"
     return run_str
 
 
