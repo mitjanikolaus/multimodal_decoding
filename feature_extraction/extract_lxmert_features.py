@@ -92,13 +92,7 @@ class LXMERTFeatureExtractor(FeatureExtractor):
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
 
-        print(f"outputs.language_output shape: {outputs.language_output.shape}")
-        print(f"outputs.vision_output shape: {outputs.vision_output.shape}")
-
         feats_fused_mean = torch.cat((outputs.language_output, outputs.vision_output), dim=1).mean(dim=1)
-
-        print(f"feats_fused_mean shape: {feats_fused_mean.shape}")
-        print(f"outputs.pooled_output shape: {outputs.pooled_output.shape}")
 
         return {
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
