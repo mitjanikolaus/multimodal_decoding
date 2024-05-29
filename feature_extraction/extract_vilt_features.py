@@ -8,7 +8,7 @@ from feature_extraction.feat_extraction_utils import FeatureExtractor
 from transformers import ViltProcessor
 from PIL import Image
 
-from utils import LANG_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
+from utils import FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
