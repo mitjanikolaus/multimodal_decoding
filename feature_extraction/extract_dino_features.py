@@ -5,7 +5,7 @@ from PIL import Image
 from transformers import AutoImageProcessor, AutoModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-
+from utils import VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
@@ -28,7 +28,11 @@ class DinoFeatureExtractor(FeatureExtractor):
 
         feats_vision_cls = last_hidden_state[:, 0, :]
         feats_vision_mean = last_hidden_state[:, 1:].mean(axis=1)
-        return None, feats_vision_mean, feats_vision_cls
+
+        return {
+            VISION_MEAN_FEAT_KEY: feats_vision_mean,
+            VISION_CLS_FEAT_KEY: feats_vision_cls,
+        }
 
 
 if __name__ == "__main__":
