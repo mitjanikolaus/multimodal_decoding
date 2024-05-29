@@ -186,11 +186,14 @@ def get_roi_mask(roi_mask_name, ref_img):
 
 
 def get_default_features(model_name):
-    if (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
-            "vilt") or model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava") or model_name.startswith("random-flava") or model_name.startswith("bridgetower")
-            or model_name.startswith("glow")):
+    if (model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
+        "flava") or model_name.startswith("random-flava") or model_name.startswith("glow")):
         features = MATCHED_FEATS
+    elif (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
+            "vilt")):
+        features = FUSED_FEATS_MEAN
+    elif (model_name.startswith("bridgetower")):
+        features = FUSED_FEATS_CLS
     elif model_name.startswith("resnet-and-bge"):
         features = CONCAT_FEATS
     elif model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
