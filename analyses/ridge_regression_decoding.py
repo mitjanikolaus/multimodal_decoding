@@ -29,7 +29,7 @@ FUSED_FEATS_MEAN = 'fused_mean'
 MATCHED_FEATS = 'matched'
 FEATS_SELECT_DEFAULT = 'default'
 FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS, FUSED_FEATS_MEAN,
-                               MATCHED_FEATS, FEATS_SELECT_DEFAULT, "fused_mean_features_safe", "fused_mean_features_two_step"]
+                               MATCHED_FEATS, FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS, FEATS_SELECT_DEFAULT]
@@ -263,10 +263,6 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
             feats = latent_vectors[stim_id][FUSED_CLS_FEAT_KEY]
         elif features == FUSED_FEATS_MEAN:
             feats = latent_vectors[stim_id][FUSED_MEAN_FEAT_KEY]
-        elif features == "fused_mean_features_safe":
-            feats = latent_vectors[stim_id]["fused_mean_features_safe"]
-        elif features == "fused_mean_features_two_step":
-            feats = latent_vectors[stim_id]["fused_mean_features_two_step"]
         elif features == MATCHED_FEATS:
             if stim_type == CAPTION:
                 feats = latent_vectors[stim_id][LANG_FEAT_KEY]

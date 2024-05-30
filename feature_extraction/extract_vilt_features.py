@@ -48,8 +48,6 @@ class ViLTFeatureExtractor(FeatureExtractor):
         return {
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
             FUSED_CLS_FEAT_KEY: feats_fused_cls,
-            "fused_mean_features_safe": last_hidden_states.mean(dim=1),
-            "fused_mean_features_two_step": torch.stack((language_embeddings.mean(dim=1), img_embeddings.mean(dim=1))).mean(dim=0),
         }
 
 
