@@ -28,7 +28,8 @@ FUSED_FEATS_CLS = 'fused_cls'
 FUSED_FEATS_MEAN = 'fused_mean'
 MATCHED_FEATS = 'matched'
 FEATS_SELECT_DEFAULT = 'default'
-FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS, FUSED_FEATS_MEAN,
+FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS,
+                               FUSED_FEATS_MEAN,
                                MATCHED_FEATS, FEATS_SELECT_DEFAULT]
 
 VISION_CONCAT_FEATS = "concat"
@@ -187,15 +188,15 @@ def get_roi_mask(roi_mask_name, ref_img):
 
 def get_default_features(model_name):
     if (model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
-        "flava") or model_name.startswith("random-flava") or model_name.startswith("glow")):
-        features = MATCHED_FEATS
+            "flava") or model_name.startswith("random-flava") or model_name.startswith("glow") or model_name.startswith(
+        "resnet-and-bge")
+    ):
+        features = CONCAT_FEATS
     elif (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt")):
         features = FUSED_FEATS_MEAN
     elif (model_name.startswith("bridgetower")):
         features = FUSED_FEATS_CLS
-    elif model_name.startswith("resnet-and-bge"):
-        features = CONCAT_FEATS
     elif model_name.startswith("bert") or model_name.startswith("gpt") or model_name.startswith(
             "llama") or model_name.startswith("mistral") or model_name.startswith("mixtral") or model_name.startswith(
         "bge"):
@@ -296,7 +297,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
                     'mean': nn_latent_vectors.mean(axis=0),
                     'std': nn_latent_vectors.std(axis=0),
                 }
-                mean_std[IMAGE] =  {
+                mean_std[IMAGE] = {
                     'mean': nn_latent_vectors.mean(axis=0),
                     'std': nn_latent_vectors.std(axis=0),
                 }
