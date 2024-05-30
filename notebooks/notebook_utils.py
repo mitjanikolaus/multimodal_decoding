@@ -20,6 +20,7 @@ def plot_metric(data, kind="bar", x_variable="model_feat", order=None, hue_varia
     data_filtered = data[data.metric == metric]
 
     sns.set_style("ticks", {'axes.grid' : True})
+    palette = palette[:len(hue_order)]
     if kind == "bar":
         g = sns.barplot(data_filtered, x=x_variable, order=order, y="value", hue=hue_variable, hue_order=hue_order, palette=palette, err_kws={'linewidth': 0.5}, width=0.95)
     elif kind == "point":
@@ -61,7 +62,7 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     data_filtered = data[data.metric.isin(metrics)]
 
     sns.set_style("ticks", {'axes.grid' : True})
-    palette = palette[:len(data_filtered[hue_variable].unique())]
+    palette = palette[:len(hue_order)]
     g = sns.catplot(data_filtered, kind=kind, x=x_variable, order=order, y="value", row=row_variable, row_order=row_order, col=col_variable, height=height, aspect=aspect, hue=hue_variable, hue_order=hue_order,
                     palette=palette, err_kws={'linewidth': 0.5, 'alpha': 0.99}, width=0.7)
    
@@ -84,8 +85,8 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
 
 
 FEAT_ORDER = ["vision", "lang", "vision+lang", "matched"]
-FEAT_PALETTE = sns.color_palette('Set2')[:4]
-
+FEAT_PALETTE = sns.color_palette('Set2')
+PALETTE_BLACK_ONLY = [(0, 0, 0)] * 10
 
 def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions", "pairwise_acc_images"], hue_variable="features", hue_order=FEAT_ORDER, ylim=None,
                         legend_title="Legend", palette=FEAT_PALETTE, dodge=False, noise_ceilings=None, plot_modality_specific=True,
@@ -115,9 +116,9 @@ def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions"
         first_metric_graph = None
         for m, metric in enumerate(metrics):
             plot_metric(data_training_mode_captions, kind="point", order=model_feat_order, metric=metrics[m], x_variable="model_feat", dodge=dodge,
-                                          hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0),(0, 0, 0),(0, 0, 0)], axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
+                                          hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY, axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
             g, _ = plot_metric(data_training_mode_images, kind="point", order=model_feat_order, metric=metrics[m], x_variable="model_feat", dodge=dodge,
-                                          hue_variable=hue_variable, hue_order=hue_order, palette=[(0, 0, 0),(0, 0, 0),(0, 0, 0)], axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
+                                          hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY, axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
             if m == 0:
                 first_metric_graph = g
 
@@ -165,8 +166,6 @@ def load_results_data():
 
 
     df = pd.DataFrame.from_records(data)
-
-    df["features"] = df.features.replace({"concat": "vision+lang"})
 
     df["training_mode"] = df.training_mode.replace({"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
     df["mask"] = df["mask"].fillna("whole_brain")
