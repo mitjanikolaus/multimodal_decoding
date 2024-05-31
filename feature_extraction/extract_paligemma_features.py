@@ -1,20 +1,19 @@
 import os
 
 import torch
-from torch import nn
 
 from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from utils import LANG_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
+from utils import FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 50
+BATCH_SIZE = 10
 
 
 class PaliGemmaFeatureExtractor(FeatureExtractor):
@@ -29,42 +28,21 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         )
         inputs = inputs.to(device)
         with torch.no_grad():
-            outputs = self.model(**inputs)
+            outputs = self.model(**inputs, output_hidden_states=True)
 
-            text_embeddings = outputs.text_embeddings
-            image_embeddings = outputs.image_embeddings
+        last_hidden_states = outputs.hidden_states[-1]
 
-            text_embedding = model.text_projection(text_embeddings[:, 0, :])
-            text_embedding = nn.functional.normalize(text_embedding, dim=-1)
-
-            image_embedding = model.image_projection(image_embeddings[:, 0, :])
-            image_embedding = nn.functional.normalize(image_embedding, dim=-1)
-
-        feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
-
-        feats_fused_cls = outputs.multimodal_output.pooler_output
-        feats_fused_mean = outputs.multimodal_output.last_hidden_state.mean(dim=1)
+        feats_fused_mean = last_hidden_states.mean(dim=1)
 
         return {
-            LANG_FEAT_KEY: text_embedding,
-            VISION_MEAN_FEAT_KEY: feats_vision_mean,
-            VISION_CLS_FEAT_KEY: image_embedding,
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
-            FUSED_CLS_FEAT_KEY: feats_fused_cls
         }
 
 
 if __name__ == "__main__":
-    model_name = "google/paligemma-3b-mix-224"# "google/paligemma-3b-mix-224" # TODO which?
+    model_name = "google/paligemma-3b-pt-224"
     model = PaliGemmaForConditionalGeneration.from_pretrained(model_name).eval()
     processor = AutoProcessor.from_pretrained(model_name)
 
-    extractor = PaliGemmaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
+    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, device)
     extractor.extract_features()
-
-    # processor = FlavaProcessor.from_pretrained(model_name)
-    # model = FlavaModel(FlavaModel.from_pretrained(model_name).config)
-    # model.init_weights()
-    #
-    # extractor = FlavaFeatureExtractor(model, processor, "random-flava", BATCH_SIZE, device)
-    # extractor.extract_features()
