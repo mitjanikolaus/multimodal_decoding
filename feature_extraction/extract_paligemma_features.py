@@ -32,6 +32,10 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         last_hidden_states = outputs.hidden_states[-1]
 
+        # Average hidden states while ignoring padding tokens
+        mask = inputs["attention_mask"]
+        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
+        last_hidden_states[mask_expanded == 0] = 0
         feats_fused_mean = last_hidden_states.mean(dim=1)
 
         return {
