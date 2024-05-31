@@ -11,7 +11,8 @@ from utils import FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda:1" if torch.cuda.is_available() else "cpu"
+# device = "cuda:1" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 
 BATCH_SIZE = 10
 
