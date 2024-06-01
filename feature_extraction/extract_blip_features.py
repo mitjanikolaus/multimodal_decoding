@@ -61,22 +61,22 @@ if __name__ == "__main__":
                                           device=device)
     extractor.extract_features()
 
-    # model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
-    #                                                                   model_type="pretrain_vitL", is_eval=True,
-    #                                                                   device=device)
-    #
-    # processors = (vis_processors, txt_processors)
-    #
-    # extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-vitl", batch_size=BATCH_SIZE,
-    #                                       device=device)
-    # extractor.extract_features()
-    #
-    # model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
-    #                                                                   model_type="coco", is_eval=True,
-    #                                                                   device=device)
-    #
-    # processors = (vis_processors, txt_processors)
-    #
-    # extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-coco", batch_size=BATCH_SIZE,
-    #                                       device=device)
-    # extractor.extract_features()
+    model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
+                                                                      model_type="pretrain_vitL", is_eval=True,
+                                                                      device=device)
+
+    processors = (vis_processors, txt_processors)
+
+    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-vitl", batch_size=BATCH_SIZE,
+                                          device=device)
+    extractor.extract_features()
+
+    model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
+                                                                      model_type="coco", is_eval=True,
+                                                                      device=device)
+
+    processors = (vis_processors, txt_processors)
+
+    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-coco", batch_size=BATCH_SIZE,
+                                          device=device)
+    extractor.extract_features()
