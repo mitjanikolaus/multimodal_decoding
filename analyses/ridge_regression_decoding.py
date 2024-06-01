@@ -18,7 +18,8 @@ from tqdm import trange
 import pandas as pd
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
-    VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
+    VISION_CLS_FEAT_KEY, LANG_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
+    LANG_CLS_FEAT_KEY
 
 CONCAT_FEATS = 'concat'
 AVG_FEATS = 'avg'
@@ -34,6 +35,7 @@ FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_
 
 VISION_CONCAT_FEATS = "concat"
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS, FEATS_SELECT_DEFAULT]
+LANG_FEAT_COMBINATION_CHOICES = [LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, FEATS_SELECT_DEFAULT]
 
 NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
@@ -219,6 +221,15 @@ def get_default_vision_features(model_name):
     return vision_feats
 
 
+def get_default_lang_features(model_name):
+    lang_feats = LANG_MEAN_FEAT_KEY
+    if model_name.startswith("flava") or model_name.startswith("imagebind") or model_name.startswith("clip"):
+        lang_feats = LANG_CLS_FEAT_KEY
+
+    print(f"Selected default lang features for {model_name}: {lang_feats}")
+    return lang_feats
+
+
 def get_vision_feats(latent_vectors, stim_id, vision_features_mode):
     if vision_features_mode == VISION_MEAN_FEAT_KEY:
         vision_feats = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
@@ -229,11 +240,22 @@ def get_vision_feats(latent_vectors, stim_id, vision_features_mode):
         vision_feats_cls = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
         vision_feats = np.concatenate((vision_feats_mean, vision_feats_cls))
     else:
-        raise RuntimeError("Unknown vision feature combination choice: ", vision_features_mode)
+        raise RuntimeError("Unknown vision feature choice: ", vision_features_mode)
     return vision_feats
 
 
-def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, stim_types, subject, mode,
+def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
+    if lang_features_mode == LANG_MEAN_FEAT_KEY:
+        lang_feats = latent_vectors[stim_id][LANG_MEAN_FEAT_KEY]
+    elif lang_features_mode == LANG_CLS_FEAT_KEY:
+        lang_feats = latent_vectors[stim_id][LANG_CLS_FEAT_KEY]
+    else:
+        raise RuntimeError("Unknown lang feature choice: ", lang_features_mode)
+    return lang_feats
+
+
+def get_nn_latent_data(model_name, features, vision_features_mode, lang_features_mode, stim_ids, stim_types, subject,
+                       mode,
                        nn_latent_transform=None,
                        recompute_std_mean=False):
     latent_vectors_file = model_features_file_path(model_name)
@@ -251,25 +273,25 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
         if features == VISION_FEATS_ONLY:
             feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
         elif features == LANG_FEATS_ONLY:
-            feats = latent_vectors[stim_id][LANG_FEAT_KEY]
+            feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
         elif features == AVG_FEATS:
             vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
-            feats = np.stack((latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
+            lang_feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
+            feats = np.stack((lang_feats, vision_feats))
             feats = feats.mean(axis=0)
         elif features == CONCAT_FEATS:
             vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
-            feats = np.concatenate(
-                (latent_vectors[stim_id][LANG_FEAT_KEY], vision_feats))
+            lang_feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
+            feats = np.concatenate((lang_feats, vision_feats))
         elif features == FUSED_FEATS_CLS:
             feats = latent_vectors[stim_id][FUSED_CLS_FEAT_KEY]
         elif features == FUSED_FEATS_MEAN:
             feats = latent_vectors[stim_id][FUSED_MEAN_FEAT_KEY]
         elif features == MATCHED_FEATS:
             if stim_type == CAPTION:
-                feats = latent_vectors[stim_id][LANG_FEAT_KEY]
+                feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
             elif stim_type == IMAGE:
-                vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
-                feats = vision_feats
+                feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
             else:
                 raise RuntimeError(f"Unknown stim type: {stim_type}")
         else:
@@ -278,7 +300,8 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
     nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
 
     if nn_latent_transform is None:
-        model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode)
+        model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode,
+                                                        lang_features_mode, mode)
         if not os.path.exists(model_std_mean_path) or recompute_std_mean:
             print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
             os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
@@ -304,7 +327,7 @@ def get_nn_latent_data(model_name, features, vision_features_mode, stim_ids, sti
             pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         nn_latent_transform = load_latents_transform(
-            subject, model_name, features, vision_features_mode, mode
+            subject, model_name, features, vision_features_mode, lang_features_mode, mode
         )
 
     nn_latent_vectors = apply_latent_transform(nn_latent_vectors, nn_latent_transform, stim_types)
@@ -319,14 +342,16 @@ def apply_latent_transform(nn_latent_vectors, latent_transform, stim_types):
     )
 
 
-def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode):
+def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, lang_features_mode, mode):
     mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
-    model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_mean_std_{mode}.p'
+    model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_{lang_features_mode}_mean_std_{mode}.p'
     return os.path.join(mean_std_dir, model_std_mean_name)
 
 
-def load_latents_transform(subject, model_name, features, vision_features_mode, mode):
-    model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode, mode)
+def load_latents_transform(subject, model_name, features, vision_features_mode, lang_features_mode, mode):
+    model_std_mean_path = get_latents_mean_std_path(
+        subject, model_name, features, vision_features_mode, lang_features_mode, mode
+    )
     model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
     nn_latent_transform = {
         CAPTION: Normalize(model_mean_std[CAPTION]['mean'], model_mean_std[CAPTION]['std']),
@@ -549,20 +574,14 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def get_run_str(model_name, features, vision_features, mask=None, best_val_loss=False, best_val_acc=False):
+def get_run_str(model_name, features, vision_features, lang_features, mask=None):
     run_str = f"{model_name}_{features}"
+    run_str += f"_{vision_features}"
+    run_str += f"_{lang_features}"
+
     if mask is not None:
         run_str += f"_mask_{mask}"
-    if best_val_loss:
-        run_str += "_best_val_loss"
-    if best_val_acc:
-        run_str += "_best_val_acc"
-    if vision_features == VISION_CLS_FEAT_KEY:
-        run_str += "_vision_feats_cls"
-    if vision_features == VISION_CONCAT_FEATS:
-        run_str += "_vision_feats_concat"
-    if vision_features == VISION_MEAN_FEAT_KEY:
-        run_str += "_vision_feats_mean"
+
     return run_str
 
 
@@ -589,13 +608,17 @@ def run(args):
                         vision_features = args.vision_features
                         if vision_features == FEATS_SELECT_DEFAULT:
                             vision_features = get_default_vision_features(model_name)
+                        lang_features = args.lang_features
+                        if lang_features == FEATS_SELECT_DEFAULT:
+                            lang_features = get_default_lang_features(model_name)
 
                         print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
-                              f"MODEL: {model_name} | FEATURES: {features}")
+                              f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features}")
 
                         train_latents, latent_transform = get_nn_latent_data(
                             model_name, features,
                             vision_features,
+                            lang_features,
                             train_stim_ids,
                             train_stim_types,
                             subject,
@@ -616,7 +639,7 @@ def run(args):
 
                         best_alpha = clf.best_params_["alpha"]
 
-                        test_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
+                        test_data_latents, _ = get_nn_latent_data(model_name, features, vision_features, lang_features,
                                                                   test_stim_ids,
                                                                   test_stim_types,
                                                                   subject,
@@ -631,10 +654,10 @@ def run(args):
                             "subject": subject,
                             "features": features,
                             "vision_features": vision_features,
+                            "lang_features": lang_features,
                             "training_mode": training_mode,
                             "mask": mask,
                             "num_voxels": test_fmri_betas.shape[1],
-                            "best_val_acc": True,
                             "cv_results": clf.cv_results_,
                             "stimulus_ids": test_stim_ids,
                             "stimulus_types": test_stim_types,
@@ -652,7 +675,7 @@ def run(args):
                               f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
                         results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
-                        run_str = get_run_str(model_name, features, vision_features, mask, best_val_acc=True)
+                        run_str = get_run_str(model_name, features, vision_features, lang_features, mask)
                         results_file_dir = f'{results_dir}/{run_str}'
                         os.makedirs(results_file_dir, exist_ok=True)
 
@@ -670,6 +693,8 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
+    parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
+                        choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--masks", type=str, nargs='+', default=[None])
 
