@@ -13,7 +13,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 50
+BATCH_SIZE = 100
 
 
 class PerceiverFeatureExtractor(FeatureExtractor):
@@ -37,7 +37,7 @@ class PerceiverFeatureExtractor(FeatureExtractor):
             feats_vision_cls = features_image.image_embeds_proj[:, 0, :]
 
             features_text = model.extract_features(sample, mode="text")
-            feats_lang = features_text.text_embeds_proj[:, 0, :]
+            feats_lang = features_text.text_embeds_proj.mean(dim=1)
 
         return {
             LANG_FEAT_KEY: feats_lang,
@@ -55,6 +55,6 @@ if __name__ == "__main__":
 
     processors = (vis_processors, txt_processors)
 
-    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2", batch_size=BATCH_SIZE,
+    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-alt", batch_size=BATCH_SIZE,
                                           device=device)
     extractor.extract_features()
