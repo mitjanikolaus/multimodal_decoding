@@ -19,10 +19,12 @@ TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/"
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
 
-VISION_MEAN_FEAT_KEY = "visual_feature_mean"
-VISION_CLS_FEAT_KEY = "visual_feature_cls"
+VISION_MEAN_FEAT_KEY = "vision_features_mean"
+VISION_CLS_FEAT_KEY = "vision_features_cls"
 
-LANG_FEAT_KEY = "lingual_feature"
+LANG_MEAN_FEAT_KEY = "lang_features_mean"
+LANG_CLS_FEAT_KEY = "lang_features_cls"
+
 FUSED_MEAN_FEAT_KEY = "fused_mean_features"
 FUSED_CLS_FEAT_KEY = "fused_cls_features"
 

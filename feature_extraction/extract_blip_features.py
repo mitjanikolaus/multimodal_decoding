@@ -3,11 +3,11 @@ import os
 import torch
 from lavis.models import load_model_and_preprocess
 
-
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from utils import LANG_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
+from utils import LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, \
+    FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
@@ -37,10 +37,12 @@ class PerceiverFeatureExtractor(FeatureExtractor):
             feats_vision_cls = features_image.image_embeds_proj[:, 0, :]
 
             features_text = model.extract_features(sample, mode="text")
-            feats_lang = features_text.text_embeds_proj.mean(dim=1)
+            feats_lang_mean = features_text.text_embeds_proj.mean(dim=1)
+            feats_lang_cls = features_text.text_embeds_proj[:, 0, :]
 
         return {
-            LANG_FEAT_KEY: feats_lang,
+            LANG_MEAN_FEAT_KEY: feats_lang_mean,
+            LANG_CLS_FEAT_KEY: feats_lang_cls,
             VISION_MEAN_FEAT_KEY: feats_vision_mean,
             VISION_CLS_FEAT_KEY: feats_vision_cls,
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
@@ -55,6 +57,26 @@ if __name__ == "__main__":
 
     processors = (vis_processors, txt_processors)
 
-    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-alt", batch_size=BATCH_SIZE,
+    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2", batch_size=BATCH_SIZE,
                                           device=device)
     extractor.extract_features()
+
+    # model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
+    #                                                                   model_type="pretrain_vitL", is_eval=True,
+    #                                                                   device=device)
+    #
+    # processors = (vis_processors, txt_processors)
+    #
+    # extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-vitl", batch_size=BATCH_SIZE,
+    #                                       device=device)
+    # extractor.extract_features()
+    #
+    # model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
+    #                                                                   model_type="coco", is_eval=True,
+    #                                                                   device=device)
+    #
+    # processors = (vis_processors, txt_processors)
+    #
+    # extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2-coco", batch_size=BATCH_SIZE,
+    #                                       device=device)
+    # extractor.extract_features()
