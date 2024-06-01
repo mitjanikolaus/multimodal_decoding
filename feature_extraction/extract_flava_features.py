@@ -8,13 +8,14 @@ from transformers import FlavaModel, FlavaProcessor
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from utils import LANG_FEAT_KEY, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
+from utils import VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, \
+    LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda:1" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-BATCH_SIZE = 50
+BATCH_SIZE = 100
 
 
 class FlavaFeatureExtractor(FeatureExtractor):
@@ -40,13 +41,15 @@ class FlavaFeatureExtractor(FeatureExtractor):
             image_embedding = model.image_projection(image_embeddings[:, 0, :])
             image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
-        feats_vision_mean = image_embeddings[:, 1:].mean(axis=1)
+        feats_vision_mean = image_embeddings.mean(axis=1)
+        feats_lang_mean = text_embeddings.mean(axis=1)
 
         feats_fused_cls = outputs.multimodal_output.pooler_output
         feats_fused_mean = outputs.multimodal_output.last_hidden_state.mean(dim=1)
 
         return {
-            LANG_FEAT_KEY: text_embedding,
+            LANG_MEAN_FEAT_KEY: feats_lang_mean,
+            LANG_CLS_FEAT_KEY: text_embedding,
             VISION_MEAN_FEAT_KEY: feats_vision_mean,
             VISION_CLS_FEAT_KEY: image_embedding,
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
