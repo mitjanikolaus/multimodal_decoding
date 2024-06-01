@@ -605,81 +605,82 @@ def run(args):
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
-                        vision_features = args.vision_features
-                        if vision_features == FEATS_SELECT_DEFAULT:
-                            vision_features = get_default_vision_features(model_name)
-                        lang_features = args.lang_features
-                        if lang_features == FEATS_SELECT_DEFAULT:
-                            lang_features = get_default_lang_features(model_name)
+                        for vision_features in args.vision_features:
+                            if vision_features == FEATS_SELECT_DEFAULT:
+                                vision_features = get_default_vision_features(model_name)
+                            for lang_features in args.lang_features:
+                                if lang_features == FEATS_SELECT_DEFAULT:
+                                    lang_features = get_default_lang_features(model_name)
 
-                        print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
-                              f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features}")
+                                print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                                      f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features}")
 
-                        train_latents, latent_transform = get_nn_latent_data(
-                            model_name, features,
-                            vision_features,
-                            lang_features,
-                            train_stim_ids,
-                            train_stim_types,
-                            subject,
-                            training_mode,
-                            recompute_std_mean=args.recompute_std_mean
-                        )
+                                train_latents, latent_transform = get_nn_latent_data(
+                                    model_name, features,
+                                    vision_features,
+                                    lang_features,
+                                    train_stim_ids,
+                                    train_stim_types,
+                                    subject,
+                                    training_mode,
+                                    recompute_std_mean=args.recompute_std_mean
+                                )
 
-                        model = Ridge()
-                        pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                        clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                           scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                           pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                                model = Ridge()
+                                pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
-                        start = time.time()
-                        clf.fit(train_fmri_betas, train_latents)
-                        end = time.time()
-                        print(f"Elapsed time: {int(end - start)}s")
+                                start = time.time()
+                                clf.fit(train_fmri_betas, train_latents)
+                                end = time.time()
+                                print(f"Elapsed time: {int(end - start)}s")
 
-                        best_alpha = clf.best_params_["alpha"]
+                                best_alpha = clf.best_params_["alpha"]
 
-                        test_data_latents, _ = get_nn_latent_data(model_name, features, vision_features, lang_features,
-                                                                  test_stim_ids,
-                                                                  test_stim_types,
-                                                                  subject,
-                                                                  TESTING_MODE,
-                                                                  nn_latent_transform=latent_transform)
-                        best_model = clf.best_estimator_
-                        test_predicted_latents = best_model.predict(test_fmri_betas)
+                                test_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
+                                                                          lang_features,
+                                                                          test_stim_ids,
+                                                                          test_stim_types,
+                                                                          subject,
+                                                                          TESTING_MODE,
+                                                                          nn_latent_transform=latent_transform)
+                                best_model = clf.best_estimator_
+                                test_predicted_latents = best_model.predict(test_fmri_betas)
 
-                        results = {
-                            "alpha": best_alpha,
-                            "model": model_name,
-                            "subject": subject,
-                            "features": features,
-                            "vision_features": vision_features,
-                            "lang_features": lang_features,
-                            "training_mode": training_mode,
-                            "mask": mask,
-                            "num_voxels": test_fmri_betas.shape[1],
-                            "cv_results": clf.cv_results_,
-                            "stimulus_ids": test_stim_ids,
-                            "stimulus_types": test_stim_types,
-                            "predictions": test_predicted_latents,
-                            "latents": test_data_latents
-                        }
-                        results.update(
-                            all_pairwise_accuracy_scores(
-                                test_data_latents, test_predicted_latents, test_stim_types
-                            )
-                        )
-                        print(f"Best alpha: {best_alpha}"
-                              f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
-                              f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                              f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
+                                results = {
+                                    "alpha": best_alpha,
+                                    "model": model_name,
+                                    "subject": subject,
+                                    "features": features,
+                                    "vision_features": vision_features,
+                                    "lang_features": lang_features,
+                                    "training_mode": training_mode,
+                                    "mask": mask,
+                                    "num_voxels": test_fmri_betas.shape[1],
+                                    "cv_results": clf.cv_results_,
+                                    "stimulus_ids": test_stim_ids,
+                                    "stimulus_types": test_stim_types,
+                                    "predictions": test_predicted_latents,
+                                    "latents": test_data_latents
+                                }
+                                results.update(
+                                    all_pairwise_accuracy_scores(
+                                        test_data_latents, test_predicted_latents, test_stim_types
+                                    )
+                                )
+                                print(f"Best alpha: {best_alpha}"
+                                      f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
+                                      f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
+                                      f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
-                        results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
-                        run_str = get_run_str(model_name, features, vision_features, lang_features, mask)
-                        results_file_dir = f'{results_dir}/{run_str}'
-                        os.makedirs(results_file_dir, exist_ok=True)
+                                results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
+                                run_str = get_run_str(model_name, features, vision_features, lang_features, mask)
+                                results_file_dir = f'{results_dir}/{run_str}'
+                                os.makedirs(results_file_dir, exist_ok=True)
 
-                        pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+                                pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
 
 
 def get_args():
@@ -691,9 +692,9 @@ def get_args():
     parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--vision-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=VISION_FEAT_COMBINATION_CHOICES)
-    parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--lang-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--masks", type=str, nargs='+', default=[None])
