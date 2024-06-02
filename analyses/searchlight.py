@@ -330,7 +330,7 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
-    parser.add_argument("--lang-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
+    parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
