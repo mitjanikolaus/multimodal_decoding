@@ -217,8 +217,7 @@ def get_default_vision_features(model_name):
     if model_name.startswith("flava") or model_name.startswith("imagebind") or model_name.startswith(
             "clip") or model_name.startswith("bridgetower"):
         vision_feats = VISION_CLS_FEAT_KEY
-    elif model_name.startswith("blip") or model_name.startswith("vilt") or model_name.startswith(
-            "visualbert") or model_name.startswith("lxmert"):
+    elif model_name.startswith("blip"):
         vision_feats = VISION_MEAN_FEAT_KEY
     elif model_name.startswith("bridgetower") or model_name.startswith("vilt") or model_name.startswith(
             "visualbert") or model_name.startswith("lxmert"):
