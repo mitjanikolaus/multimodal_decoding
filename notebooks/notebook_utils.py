@@ -9,7 +9,7 @@ from tqdm import tqdm
 from glob import glob
 import pickle
 
-HP_KEYS = ["alpha", "model", "subject", "features", "vision_features", "training_mode", "mask", "num_voxels"]
+HP_KEYS = ["alpha", "model", "subject", "features", "vision_features", "lang_features", "training_mode", "mask", "num_voxels"]
 METRIC_NAMES = {"acc_cosine": "pairwise_acc", "acc_cosine_captions": "pairwise_acc_captions", "acc_cosine_images": "pairwise_acc_images"}
 
 ACC_MEAN = "pairwise_acc_mean"
@@ -102,7 +102,7 @@ def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions"
             expected_num_datapoints = len(SUBJECTS)
             if hue_variable != "features":
                 expected_num_datapoints *= len(data[hue_variable].unique())
-            if length != expected_num_datapoints:
+            if (length > 0) and (length != expected_num_datapoints):
                 message = f"unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) (model_feat: {m_feat} {mode}"
                 if verify_num_datapoints:
                     raise RuntimeError(message)
@@ -123,9 +123,10 @@ def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions"
                 first_metric_graph = g
 
         handles, labels = first_metric_graph.get_legend_handles_labels()
-        new_labels = ["captions", "images"]
-        new_handles = [handles[0], handles[-1]]
-        catplot_g.fig.legend(handles=new_handles, labels=new_labels, ncol=2, title="Modality-specific decoders trained on", loc='upper right', bbox_to_anchor=legend_2_bbox)
+        if len(handles) > 0:
+            new_labels = ["captions", "images"]
+            new_handles = [handles[0], handles[-1]]
+            catplot_g.fig.legend(handles=new_handles, labels=new_labels, ncol=2, title="Modality-specific decoders trained on", loc='upper right', bbox_to_anchor=legend_2_bbox)
         
 
     for m, metric in enumerate(metrics):
@@ -169,6 +170,9 @@ def load_results_data():
 
     df["training_mode"] = df.training_mode.replace({"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
     df["mask"] = df["mask"].fillna("whole_brain")
+
+    df["vision_features"] = df.vision_features.replace({"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
+    df["lang_features"] = df["lang_features"].fillna("unk")
 
     df["model_feat"] = df.model + "_" + df.features
 
