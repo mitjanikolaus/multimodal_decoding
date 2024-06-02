@@ -21,7 +21,7 @@ from sklearn.preprocessing import StandardScaler
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
     get_default_features, all_pairwise_accuracy_scores, IMAGE, \
-    CAPTION, get_default_vision_features
+    CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features
 
 from utils import SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI
 
@@ -194,6 +194,9 @@ def run(args):
                     vision_features = args.vision_features
                     if vision_features == FEATS_SELECT_DEFAULT:
                         vision_features = get_default_vision_features(model_name)
+                    lang_features = args.lang_features
+                    if lang_features == FEATS_SELECT_DEFAULT:
+                        lang_features = get_default_lang_features(model_name)
 
                     print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                           f"MODEL: {model_name} | FEATURES: {features}")
@@ -201,6 +204,7 @@ def run(args):
                     train_data_latents, nn_latent_transform = get_nn_latent_data(
                         model_name, features,
                         vision_features,
+                        lang_features,
                         train_stim_ids,
                         train_stim_types,
                         subject,
@@ -209,7 +213,10 @@ def run(args):
                     )
 
                     test_data_latents, _ = get_nn_latent_data(
-                        model_name, features, vision_features,
+                        model_name,
+                        features,
+                        vision_features,
+                        lang_features,
                         test_stim_ids,
                         test_stim_types,
                         subject,
@@ -323,6 +330,8 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
+    parser.add_argument("--lang-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
+                        choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
