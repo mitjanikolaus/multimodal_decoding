@@ -32,13 +32,13 @@ METRIC_AGNOSTIC = 'agnostic'
 METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
-METRIC_MIN_ALT = 'min_alternative'
+METRIC_MIN = 'min_alternative'
 
 METRIC_CODES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_DIFF_CAPTIONS: 1,
     METRIC_DIFF_IMAGES: 2,
-    METRIC_MIN_ALT: 3,
+    METRIC_MIN: 3,
 }
 
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC]
@@ -50,7 +50,7 @@ CHANCE_VALUES = {
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
-    METRIC_MIN_ALT: 0,
+    METRIC_MIN: 0,
 }
 
 
@@ -514,11 +514,7 @@ def calc_t_values(per_subject_scores):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
-                axis=0)
-
-            t_values[hemi][METRIC_MIN_ALT] = np.nanmin(
+            t_values[hemi][METRIC_MIN] = np.nanmin(
                 (
                     t_values[hemi][METRIC_DIFF_CAPTIONS],
                     t_values[hemi][METRIC_DIFF_IMAGES],
@@ -710,10 +706,7 @@ def calc_t_values_null_distr(args):
 
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES] = np.nanmin(
-                        (t_values[hemi][METRIC_DIFF_CAPTIONS], t_values[hemi][METRIC_DIFF_IMAGES]),
-                        axis=0)
-                    t_values[hemi][METRIC_MIN_ALT] = np.nanmin(
+                    t_values[hemi][METRIC_MIN] = np.nanmin(
                         (
                             t_values[hemi][METRIC_DIFF_CAPTIONS],
                             t_values[hemi][METRIC_DIFF_IMAGES],
@@ -852,7 +845,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=1000)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MIN_ALT)
+    parser.add_argument("--metric", type=str, default=METRIC_MIN)
 
     return parser.parse_args()
 
