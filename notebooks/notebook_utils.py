@@ -172,6 +172,25 @@ def load_results_data():
     df["mask"] = df["mask"].fillna("whole_brain")
 
     df["vision_features"] = df.vision_features.replace({"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
+
+    # imagebind only supports extraction of cls features
+    df.loc[df.model == "imagebind", "lang_features"] = "lang_features_cls"
+
+    # we currently always compute mean features from language models 
+    df.loc[df.model.isin(["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b", "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "lang_features"] = "lang_features_mean"
+
+    # update unimodal feat values for fused feats of multimodal models:
+    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n/a"
+    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n/a"
+    # df.loc[df.model.isin(["bridgetower"]), "lang_features"] = "lang_features_cls"
+    # df.loc[df.model.isin(["bridgetower"]), "vision_features"] = "vision_features_cls"
+    # df.loc[df.model.isin(["vilt", "visualbert", "lxmert"]), "lang_features"] = "lang_features_mean"
+    # df.loc[df.model.isin(["vilt", "visualbert", "lxmert"]), "vision_features"] = "vision_features_mean"
+
+    # default values for unimodal models:
+    df.loc[df.model.isin(["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b", "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n/a"
+    df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large", "dino-giant"]), "lang_features"] = "n/a"
+    
     df["lang_features"] = df["lang_features"].fillna("unk")
 
     df["model_feat"] = df.model + "_" + df.features
