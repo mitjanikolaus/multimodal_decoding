@@ -9,8 +9,8 @@ from glob import glob
 import pickle
 
 from analyses.ridge_regression_decoding import DEFAULT_SUBJECTS
-from analyses.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION, IDS_TEST_STIM
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, SURFACE_LEVEL_FMRI_DIR
+from analyses.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
+from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, SURFACE_LEVEL_FMRI_DIR, IDS_TEST_STIM
 
 
 def get_graymatter_mask(subject):
