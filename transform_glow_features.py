@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 
 from feature_extraction.feat_extraction_utils import CoCoDataset
-from utils import COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH
+from utils import COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, LANG_CLS_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 if __name__ == "__main__":
     stimuli_ids = pickle.load(open(os.path.expanduser("~/data/multimodal_decoding/stimuli_ids.p"), "rb"))
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     feats_v = np.load(os.path.expanduser("~/Downloads/gw_features_tr+cont/v_gw.npy"))[::5]
     all_feats = dict()
     for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
-        all_feats[id] = {"visual_feature_mean": feat_v, "lingual_feature": feat_l}
+        all_feats[id] = {VISION_CLS_FEAT_KEY: feat_v, LANG_CLS_FEAT_KEY: feat_l}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/glow-transl-contrastive.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     feats_v = np.load(os.path.expanduser("~/Downloads/gw_features_cont/v_gw.npy"))[::5]
     all_feats = dict()
     for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
-        all_feats[id] = {"visual_feature_mean": feat_v, "lingual_feature": feat_l}
+        all_feats[id] = {VISION_CLS_FEAT_KEY: feat_v, LANG_CLS_FEAT_KEY: feat_l}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/glow-contrastive.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -90,26 +90,26 @@ if __name__ == "__main__":
     feats_v = np.load(os.path.expanduser("~/Downloads/gw_features/v_gw.npy"))[::5]
     all_feats = dict()
     for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
-        all_feats[id] = {"visual_feature_mean": feat_v, "lingual_feature": feat_l}
+        all_feats[id] = {VISION_CLS_FEAT_KEY: feat_v, LANG_CLS_FEAT_KEY: feat_l}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/glow.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
     feats_v = np.load(os.path.expanduser("~/Downloads/gw_features/resnet.npy"))[::5]
     all_feats = dict()
     for feat_v, id in zip(feats_v, stimuli_ids):
-        all_feats[id] = {"visual_feature_mean": feat_v}
+        all_feats[id] = {VISION_CLS_FEAT_KEY: feat_v}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/resnet-50-glow.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
     feats_l = np.load(os.path.expanduser("~/Downloads/gw_features/bge.npy"))[caption_indices]
     all_feats = dict()
     for feat_l, id in zip(feats_l, stimuli_ids):
-        all_feats[id] = {"lingual_feature": feat_l}
+        all_feats[id] = {LANG_CLS_FEAT_KEY: feat_l}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/bge.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
     all_feats = dict()
     for feat_l, feat_v, id in zip(feats_l, feats_v, stimuli_ids):
-        all_feats[id] = {"lingual_feature": feat_l, "visual_feature_mean": feat_v}
+        all_feats[id] = {LANG_CLS_FEAT_KEY: feat_l, VISION_CLS_FEAT_KEY: feat_v}
     path_out = os.path.expanduser("~/data/multimodal_decoding/nn_features/resnet-and-bge.p")
     pickle.dump(all_feats, open(path_out, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
