@@ -1,8 +1,6 @@
 import argparse
 
-import nibabel
 import numpy as np
-from nibabel import nifti1, MGHImage
 from nilearn import datasets, plotting
 import matplotlib.pyplot as plt
 import os
@@ -12,11 +10,9 @@ import seaborn as sns
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight_permutation_testing import METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_IMAGES, \
-    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
-    METRIC_MIN_ALT
+from analyses.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN
 from analyses.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS
-from utils import RESULTS_DIR, SUBJECTS, HEMIS
+from utils import RESULTS_DIR, HEMIS
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -131,7 +127,7 @@ def run(args):
 
     # from nibabel.gifti import GiftiDataArray, GiftiImage
     # for hemi in HEMIS:
-    #     data = t_values[hemi][METRIC_MIN_DIFF_BOTH_MODALITIES].astype(np.float32)
+    #     data = t_values[hemi][METRIC_MIN].astype(np.float32)
     #     # gimage = GiftiImage(darrays=[GiftiDataArray(data, intent='z score', datatype="float32")])
     #     # img_surf = nibabel.freesurfer.mghformat.load()
     #     infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -164,7 +160,7 @@ def get_args():
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MIN_ALT)
+    parser.add_argument("--metric", type=str, default=METRIC_MIN)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 
