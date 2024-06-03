@@ -63,11 +63,11 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=10, device="cpu")
     # extractor.extract_features()
     #
-    # model_name = 'gpt2-large'
-    # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    # model = GPT2Model.from_pretrained(model_name)
-    # extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
-    # extractor.extract_features()
+    model_name = 'gpt2-large'
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = GPT2Model.from_pretrained(model_name)
+    extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
+    extractor.extract_features()
     #
     # model_name = 'gpt2-medium'
     # tokenizer = GPT2Tokenizer.from_pretrained(model_name)
@@ -99,11 +99,11 @@ if __name__ == "__main__":
     # extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-7b", batch_size=10, device="cpu")
     # extractor.extract_features()
 
-    model_weights_path = os.path.join(DATA_DIR, "llama2_70b")
-    tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
-    model = LlamaModel.from_pretrained(model_weights_path)
-    extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-70b", batch_size=5, device="cpu")
-    extractor.extract_features()
+    # model_weights_path = os.path.join(DATA_DIR, "llama2_70b")
+    # tokenizer = LlamaTokenizer.from_pretrained(model_weights_path)
+    # model = LlamaModel.from_pretrained(model_weights_path)
+    # extractor = LanguageModelFeatureExtractor(model, tokenizer, "llama2-70b", batch_size=5, device="cpu")
+    # extractor.extract_features()
 
     # model_name = 'facebook/opt-30b'
     # tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
