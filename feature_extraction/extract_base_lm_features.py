@@ -9,9 +9,8 @@ from utils import DATA_DIR, LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY
 BATCH_SIZE = 512
 
 if torch.cuda.is_available():
-    device = "cuda"
+    device = "cuda:1"
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 else:
     device = "cpu"
 
