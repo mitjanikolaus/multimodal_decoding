@@ -221,10 +221,10 @@ def get_default_vision_features(model_name):
         vision_feats = VISION_MEAN_FEAT_KEY
     elif model_name.startswith("bridgetower") or model_name.startswith("vilt") or model_name.startswith(
             "visualbert") or model_name.startswith("lxmert"):
-        vision_feats = "n/a"
+        vision_feats = "n_a"
     elif model_name.startswith("bert") or model_name.startswith("llama") or model_name.startswith(
             "mistral") or model_name.startswith("mixtral") or model_name.startswith("gpt"):
-        vision_feats = "n/a"
+        vision_feats = "n_a"
 
     print(f"Selected default vision features for {model_name}: {vision_feats}")
     return vision_feats
@@ -239,9 +239,9 @@ def get_default_lang_features(model_name):
         lang_feats = LANG_MEAN_FEAT_KEY
     elif model_name.startswith("bridgetower") or model_name.startswith("vilt") or model_name.startswith(
             "visualbert") or model_name.startswith("lxmert"):
-        lang_feats = "n/a"
+        lang_feats = "n_a"
     elif model_name.startswith("vit") or model_name.startswith("resnet") or model_name.startswith("dino"):
-        lang_feats = "n/a"
+        lang_feats = "n_a"
 
     print(f"Selected default lang features for {model_name}: {lang_feats}")
     return lang_feats
