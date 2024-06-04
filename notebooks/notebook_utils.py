@@ -180,16 +180,16 @@ def load_results_data():
     df.loc[df.model.isin(["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b", "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "lang_features"] = "lang_features_mean"
 
     # update unimodal feat values for fused feats of multimodal models:
-    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n/a"
-    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n/a"
+    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n_a"
+    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n_a"
     # df.loc[df.model.isin(["bridgetower"]), "lang_features"] = "lang_features_cls"
     # df.loc[df.model.isin(["bridgetower"]), "vision_features"] = "vision_features_cls"
     # df.loc[df.model.isin(["vilt", "visualbert", "lxmert"]), "lang_features"] = "lang_features_mean"
     # df.loc[df.model.isin(["vilt", "visualbert", "lxmert"]), "vision_features"] = "vision_features_mean"
 
     # default values for unimodal models:
-    df.loc[df.model.isin(["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b", "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n/a"
-    df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large", "dino-giant"]), "lang_features"] = "n/a"
+    df.loc[df.model.isin(["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b", "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n_a"
+    df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large", "dino-giant"]), "lang_features"] = "n_a"
     
     df["lang_features"] = df["lang_features"].fillna("unk")
 
