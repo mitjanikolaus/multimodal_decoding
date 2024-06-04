@@ -1,7 +1,11 @@
 import argparse
 
+import nilearn
 import numpy as np
 from nilearn import datasets, plotting
+from nibabel.nifti1 import intent_codes, data_type_codes
+from nibabel.gifti import GiftiDataArray, GiftiImage
+
 import matplotlib.pyplot as plt
 import os
 import pickle
@@ -18,8 +22,10 @@ HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
+FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
-def run(args):
+
+def plot(args):
     results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
 
     p_values_path = os.path.join(
@@ -59,7 +65,6 @@ def run(args):
         # }
     ]
 
-
     # not/less relevant:
     # b'S_circular_insula_sup': 'Superior segment of the circular sulcus of the insula',
     # b'G_Ins_lg_and_S_cent_ins': 'Long insular gyrus and central sulcus of the insula',
@@ -84,7 +89,7 @@ def run(args):
         ]
 
         labels = list(regions_dict.values())
-        colors = sns.color_palette("Set2", n_colors=len(labels)+1)[1:]
+        colors = sns.color_palette("Set2", n_colors=len(labels) + 1)[1:]
 
         fig = plt.figure(figsize=(5 * len(args.views), 2))
         # fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, horizontalalignment="left")
@@ -125,6 +130,33 @@ def run(args):
         plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
         plt.close()
 
+
+def export_to_gifti(args):
+    p_values_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
+    p_values = pickle.load(open(p_values_path, "rb"))
+
+    # transform to plottable magnitudes:
+    p_values['left'][p_values['left'] == 0] = np.nan
+    p_values['right'][p_values['right'] == 0] = np.nan
+    p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
+    p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
+
+    for hemi in HEMIS:
+        data = p_values[hemi].astype(np.float32)
+        gimage = GiftiImage(
+            darrays=[GiftiDataArray(
+                data,
+                intent=intent_codes.code['NIFTI_INTENT_NONE'],
+                datatype=data_type_codes.code['NIFTI_TYPE_FLOAT32'])]
+        )
+        path_out = p_values_path.replace(".p", f"_{FS_HEMI_NAMES[hemi]}.gii")
+        gimage.to_filename(path_out)
+
+
+
     # from nibabel.gifti import GiftiDataArray, GiftiImage
     # for hemi in HEMIS:
     #     data = t_values[hemi][METRIC_MIN].astype(np.float32)
@@ -138,8 +170,6 @@ def run(args):
     #     # gimage.add_gifti_data_array([GiftiDataArray(data, intent='z score', datatype="float32")])
     #
     #     nibabel.save(gimage, f"t_values_{hemi}.nii.gz")
-    #     # gimage.to_filename(f"t_values_{hemi}.gii")
-    #     # write(gimage, some_path)
 
 
 def get_args():
@@ -174,4 +204,4 @@ if __name__ == "__main__":
     if args.resolution != 'fsaverage5':
         raise NotImplementedError()
 
-    run(args)
+    export_to_gifti(args)
