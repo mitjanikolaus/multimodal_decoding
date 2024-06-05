@@ -215,7 +215,7 @@ def get_default_features(model_name):
 def get_default_vision_features(model_name):
     vision_feats = VISION_MEAN_FEAT_KEY
     if model_name.startswith("flava") or model_name.startswith("imagebind") or model_name.startswith(
-            "clip"):
+            "clip") or model_name.startswith("random-flava"):
         vision_feats = VISION_CLS_FEAT_KEY
     elif model_name.startswith("blip") or model_name.startswith("resnet-50-glow"):
         vision_feats = VISION_MEAN_FEAT_KEY
@@ -234,7 +234,8 @@ def get_default_lang_features(model_name):
     lang_feats = LANG_MEAN_FEAT_KEY
     if model_name.startswith("imagebind") or model_name.startswith("bge") or model_name.startswith("resnet-and-bge"):
         lang_feats = LANG_CLS_FEAT_KEY
-    elif model_name.startswith("flava") or model_name.startswith("clip") or model_name.startswith("blip"):
+    elif model_name.startswith("flava") or model_name.startswith("random-flava") or model_name.startswith(
+            "clip") or model_name.startswith("blip"):
         lang_feats = LANG_MEAN_FEAT_KEY
     elif model_name.startswith("bridgetower") or model_name.startswith("vilt") or model_name.startswith(
             "visualbert") or model_name.startswith("lxmert"):
