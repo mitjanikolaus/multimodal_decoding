@@ -10,22 +10,19 @@
 import os
 import numpy as np
 from os.path import join as opj
-import nipype.interfaces.spm as spm
 from nipype.interfaces.spm import SliceTiming, Realign, Coregister
-from nipype.interfaces.utility import IdentityInterface, Function
+from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
-from nipype.pipeline.engine import Workflow, Node, MapNode
-from nipype.algorithms.misc import Gunzip
+from nipype.pipeline.engine import Workflow, Node
 from nipype import MapNode
 from nipype.algorithms.misc import Gunzip
 import glob
 
 import nipype.interfaces.matlab as mlab
 
-mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
+from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR
 
-FMRI_DATA_DIR = "/mnt/HD1/milad/multimodal_decoding/fmri_data"
-FMRI_PREPROCESSED_DATA_DIR = "/mnt/HD1/milad/multimodal_decoding/preprocessed_data/"
+mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
 
 
 def print_session_names(sessions):
@@ -46,13 +43,13 @@ def print_run_names(runs):
 if __name__ == "__main__":
 
     # load subject names from subjects folder
-    subjects = [os.path.basename(p) for p in glob.glob(os.path.join(FMRI_DATA_DIR, 'bids/sub-*'))]
+    subjects = [os.path.basename(p) for p in glob.glob(os.path.join(FMRI_RAW_DATA_DIR, 'bids/sub-*'))]
     print(subjects)
     print()
 
     # list subject sessions
-    data_root = os.path.join(FMRI_DATA_DIR, 'bids')
-    anat_root = os.path.join(FMRI_DATA_DIR, 'corrected_anat')
+    data_root = os.path.join(FMRI_RAW_DATA_DIR, 'bids')
+    anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
         sess = []

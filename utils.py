@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
@@ -12,7 +13,11 @@ COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/")
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
 CAPTIONS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
+
 SURFACE_LEVEL_FMRI_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
+
+FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "fmri_data")
+FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed_data")
 
 TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
 

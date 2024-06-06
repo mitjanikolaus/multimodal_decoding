@@ -19,7 +19,21 @@ freeview \
 
 # Appendix 
 
-## Feature extraction 
+## fMRI Preprocessing
+
+### SPM Preprocessing script
+
+This script performs the following steps using SPM 12: 
+1. Slice time correction (STC)
+2. Realignment
+3. Coregistration
+
+```
+python preprocessing/fmri_preprocessing.py
+```
+
+
+## DNN Feature extraction 
 
 ### VisualBERT feature extraction
 
