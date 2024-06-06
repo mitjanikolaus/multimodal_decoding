@@ -54,24 +54,24 @@ CHANCE_VALUES = {
 }
 
 
-def correlation_num_voxels_acc(scores_data, scores, hemi, nan_locations):
-    sns.histplot(x=scores_data["n_neighbors"], y=scores[hemi]["overall"][~nan_locations])
+def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
+    corr = pearsonr(n_neighbors, scores['agnostic'][~nan_locations])
+
+    sns.histplot(x=n_neighbors, y=scores['agnostic'][~nan_locations])
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
-    corr = pearsonr(scores_data["n_neighbors"], scores[hemi]["overall"][~nan_locations])
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig("results/searchlight_correlation_num_voxels_acc.png", dpi=300)
+    plt.savefig(f"results/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png", dpi=300)
 
     plt.figure()
-    sns.regplot(x=scores_data["n_neighbors"], y=scores[hemi]["overall"][~nan_locations], x_bins=30)
+    sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
-    corr = pearsonr(scores_data["n_neighbors"], scores[hemi]["overall"][~nan_locations])
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig("results/searchlight_correlation_num_voxels_acc_binned.png", dpi=300)
+    plt.savefig(f"results/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png", dpi=300)
 
 
-def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
+def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
     scores = dict()
 
     for metric in BASE_METRICS:
@@ -79,7 +79,8 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
-    # correlation_num_voxels_acc(scores_agnostic, scores, hemi, nan_locations)
+    if args.plot_n_neighbors_correlation_graph and (n_neighbors is not None) and (subj is not None):
+        correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
 
     scores_specific_captions = dict()
     for metric in BASE_METRICS:
@@ -548,7 +549,10 @@ def load_per_subject_scores(args):
         scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
 
         nan_locations = results_agnostic['nan_locations']
-        scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
+        n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
+        scores = process_scores(
+            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, args, n_neighbors
+        )
         # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
         # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
         # print("")
@@ -682,7 +686,7 @@ def load_null_distr_per_subject_scores(args):
             distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
             if len(per_subject_scores_null_distr) <= i:
                 per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
-            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations, subject, hemi, args)
             per_subject_scores_null_distr[i][subject][hemi] = scores
     return per_subject_scores_null_distr
 
@@ -846,6 +850,8 @@ def get_args():
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
     parser.add_argument("--metric", type=str, default=METRIC_MIN)
+
+    parser.add_argument("--plot-n-neighbors-correlation-graph", action="store_true", default=False)
 
     return parser.parse_args()
 
