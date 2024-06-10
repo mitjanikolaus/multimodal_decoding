@@ -19,7 +19,7 @@ import pandas as pd
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY
+    LANG_CLS_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -368,7 +368,7 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
     return nn_latent_transform
 
 
-def get_fmri_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
+def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
     imagery_scenes = IMAGERY_SCENES[subject]
 
     fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
@@ -581,7 +581,7 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def get_run_str(model_name, features, vision_features, lang_features, mask=None):
+def get_run_str(model_name, features, vision_features, lang_features, mask, surface, resolution):
     run_str = f"{model_name}_{features}"
     run_str += f"_{vision_features}"
     run_str += f"_{lang_features}"
@@ -589,7 +589,55 @@ def get_run_str(model_name, features, vision_features, lang_features, mask=None)
     if mask is not None:
         run_str += f"_mask_{mask}"
 
+    if surface:
+        run_str += f"_surface_{resolution}"
+
     return run_str
+
+
+def get_fmri_surface_data(subject, mode, resolution):
+    base_mode = mode.split('_')[0]
+    fmri_betas = {
+        hemi: pickle.load(
+            open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
+        in HEMIS
+    }
+    stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
+    stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
+
+    if mode == MOD_SPECIFIC_CAPTIONS:
+        for hemi in HEMIS:
+            fmri_betas[hemi] = fmri_betas[hemi][stim_types == CAPTION]
+        stim_ids = stim_ids[stim_types == CAPTION]
+        stim_types = stim_types[stim_types == CAPTION]
+    elif mode == MOD_SPECIFIC_IMAGES:
+        for hemi in HEMIS:
+            fmri_betas[hemi] = fmri_betas[hemi][stim_types == IMAGE]
+        stim_ids = stim_ids[stim_types == IMAGE]
+        stim_types = stim_types[stim_types == IMAGE]
+
+    return fmri_betas, stim_ids, stim_types
+
+
+def get_fmri_data(subject, mode, roi_mask_name=None, fmri_transform=None, recompute_std_mean=False, resolution=None):
+    if args.surface:
+        fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
+        fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']))
+
+        if fmri_transform is None:
+            fmri_transform = Normalize(fmri_betas.mean(axis=0), fmri_betas.std(axis=0))
+        fmri_betas = np.array([fmri_transform(v) for v in fmri_betas])
+        fmri_transform = fmri_transform
+    else:
+        fmri_betas, stim_ids, stim_types, fmri_transform = get_fmri_voxel_data(
+            subject,
+            mode,
+            roi_mask_name=roi_mask_name,
+            recompute_std_mean=recompute_std_mean,
+            fmri_betas_transform=fmri_transform,
+        )
+
+    return fmri_betas, stim_ids, stim_types, fmri_transform
 
 
 def run(args):
@@ -601,10 +649,16 @@ def run(args):
                     subject,
                     training_mode,
                     roi_mask_name=mask,
-                    recompute_std_mean=args.recompute_std_mean
+                    recompute_std_mean=args.recompute_std_mean,
+                    resolution=args.resolution,
                 )
-                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(subject, TESTING_MODE,
-                                                                                   fmri_transform, roi_mask_name=mask)
+                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(
+                    subject,
+                    TESTING_MODE,
+                    fmri_transform=fmri_transform,
+                    roi_mask_name=mask,
+                    resolution=args.resolution
+                )
 
                 for model_name in args.models:
                     model_name = model_name.lower()
@@ -670,7 +724,9 @@ def run(args):
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "predictions": test_predicted_latents,
-                                    "latents": test_data_latents
+                                    "latents": test_data_latents,
+                                    "surface": args.surface,
+                                    "resolution": args.resolution,
                                 }
                                 results.update(
                                     all_pairwise_accuracy_scores(
@@ -683,8 +739,10 @@ def run(args):
                                       f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
 
                                 results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
-                                run_str = get_run_str(model_name, features, vision_features, lang_features, mask)
-                                results_file_dir = f'{results_dir}/{run_str}'
+                                run_str = get_run_str(
+                                    model_name, features, vision_features, lang_features, mask, args.surface,
+                                    args.resolution)
+                                results_file_dir = os.path.join(results_dir, run_str)
                                 os.makedirs(results_file_dir, exist_ok=True)
 
                                 pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
@@ -695,6 +753,9 @@ def get_args():
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
+
+    parser.add_argument("--surface", action="store_true", default=False)
+    parser.add_argument("--resolution", type=str, default="fsaverage7")
 
     parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
@@ -708,8 +769,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
-                        default=[1e3, 1e5, 1e7])
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)

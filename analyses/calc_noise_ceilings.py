@@ -5,7 +5,7 @@ import numpy as np
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import get_fmri_data, DECODER_OUT_DIR, calc_rsa, calc_rsa_images, \
+from analyses.ridge_regression_decoding import get_fmri_voxel_data, DECODER_OUT_DIR, calc_rsa, calc_rsa_images, \
     calc_rsa_captions, \
     create_dissimilarity_matrix, rsa_from_matrices, TESTING_MODE
 
@@ -39,7 +39,7 @@ def run(args):
     all_stim_ids = dict()
 
     for subj in SUBJECTS:
-        fmri_test_betas, stim_ids, stim_types, _ = get_fmri_data(subj, TESTING_MODE, load_mean_std(subj))
+        fmri_test_betas, stim_ids, stim_types, _ = get_fmri_voxel_data(subj, TESTING_MODE, load_mean_std(subj))
         all_betas[subj] = fmri_test_betas
         all_stim_types[subj] = stim_types
         all_stim_ids[subj] = stim_ids

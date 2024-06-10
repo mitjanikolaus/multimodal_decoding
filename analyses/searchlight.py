@@ -21,7 +21,8 @@ from sklearn.preprocessing import StandardScaler
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
     get_default_features, all_pairwise_accuracy_scores, IMAGE, \
-    CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features
+    CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
+    get_fmri_surface_data
 
 from utils import SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI
 
@@ -163,28 +164,11 @@ def run(args):
             seed += 1
 
     for subject in args.subjects:
-        train_fmri = {
-            "left": pickle.load(
-                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_train.p"), 'rb')),
-            "right": pickle.load(
-                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_train.p"), 'rb')),
-        }
-
-        test_fmri = {
-            "left": pickle.load(
-                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_left_{args.resolution}_test.p"), 'rb')),
-            "right": pickle.load(
-                open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_right_{args.resolution}_test.p"), 'rb')),
-        }
-
-        train_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'rb'))
-        train_stim_types = pickle.load(
-            open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'rb'))
-
-        test_stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_test.p"), 'rb'))
-        test_stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_test.p"), 'rb'))
-
         for training_mode in args.training_modes:
+            train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(subject, training_mode,
+                                                                                 args.resolution)
+            test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, training_mode, args.resolution)
+
             for model_name in args.models:
                 model_name = model_name.lower()
 
@@ -228,20 +212,13 @@ def run(args):
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
                         print("Hemisphere: ", hemi)
-                        if training_mode == "train_captions":
-                            train_fmri_hemi = train_fmri[hemi][train_stim_types == 'caption']
-                        elif training_mode == "train_images":
-                            train_fmri_hemi = train_fmri[hemi][train_stim_types == 'image']
-                        else:
-                            train_fmri_hemi = train_fmri[hemi]
+                        print(f"train_fmri shape: {train_fmri[hemi].shape}")
+                        print(f"test_fmri shape: {test_fmri[hemi].shape}")
 
-                        print(f"train_fmri_hemi shape: {train_fmri_hemi.shape}")
-                        print(f"test_fmri_hemi shape: {test_fmri[hemi].shape}")
+                        train_ids = list(range(len(train_fmri[hemi])))
+                        test_ids = list(range(len(train_fmri[hemi]), len(train_fmri[hemi]) + len(test_fmri[hemi])))
 
-                        train_ids = list(range(len(train_fmri_hemi)))
-                        test_ids = list(range(len(train_fmri_hemi), len(train_fmri_hemi) + len(test_fmri[hemi])))
-
-                        X = np.concatenate((train_fmri_hemi, test_fmri[hemi]))
+                        X = np.concatenate((train_fmri[hemi], test_fmri[hemi]))
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
 
