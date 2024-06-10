@@ -623,7 +623,7 @@ def get_fmri_data(subject, mode, roi_mask_name=None, fmri_transform=None, recomp
                   resolution=None):
     if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
-        fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']))
+        fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']), axis=1)
 
         if fmri_transform is None:
             fmri_transform = Normalize(fmri_betas.mean(axis=0), fmri_betas.std(axis=0))
