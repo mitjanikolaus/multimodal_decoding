@@ -619,8 +619,9 @@ def get_fmri_surface_data(subject, mode, resolution):
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_data(subject, mode, roi_mask_name=None, fmri_transform=None, recompute_std_mean=False, resolution=None):
-    if args.surface:
+def get_fmri_data(subject, mode, roi_mask_name=None, fmri_transform=None, recompute_std_mean=False, surface=False,
+                  resolution=None):
+    if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
         fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']))
 
@@ -650,6 +651,7 @@ def run(args):
                     training_mode,
                     roi_mask_name=mask,
                     recompute_std_mean=args.recompute_std_mean,
+                    surface=args.surface,
                     resolution=args.resolution,
                 )
                 test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(
@@ -657,6 +659,7 @@ def run(args):
                     TESTING_MODE,
                     fmri_transform=fmri_transform,
                     roi_mask_name=mask,
+                    surface=args.surface,
                     resolution=args.resolution
                 )
 
