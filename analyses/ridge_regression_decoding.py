@@ -21,7 +21,6 @@ from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_pa
     VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
     LANG_CLS_FEAT_KEY
 
-CONCAT_FEATS = 'concat'
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
@@ -29,12 +28,11 @@ FUSED_FEATS_CLS = 'fused_cls'
 FUSED_FEATS_MEAN = 'fused_mean'
 MATCHED_FEATS = 'matched'
 FEATS_SELECT_DEFAULT = 'default'
-FEATURE_COMBINATION_CHOICES = [CONCAT_FEATS, AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS,
+FEATURE_COMBINATION_CHOICES = [AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS,
                                FUSED_FEATS_MEAN,
                                MATCHED_FEATS, FEATS_SELECT_DEFAULT]
 
-VISION_CONCAT_FEATS = "concat"
-VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_CONCAT_FEATS, FEATS_SELECT_DEFAULT]
+VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, FEATS_SELECT_DEFAULT]
 LANG_FEAT_COMBINATION_CHOICES = [LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, FEATS_SELECT_DEFAULT]
 
 NUM_CV_SPLITS = 5
@@ -191,9 +189,9 @@ def get_roi_mask(roi_mask_name, ref_img):
 def get_default_features(model_name):
     if (model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
             "flava") or model_name.startswith("random-flava") or model_name.startswith("glow") or model_name.startswith(
-        "resnet-and-bge") or model_name.startswith("blip")
+        "blip")
     ):
-        features = CONCAT_FEATS
+        features = AVG_FEATS
     elif (model_name.startswith("visualbert") or model_name.startswith("lxmert") or model_name.startswith(
             "vilt")):
         features = FUSED_FEATS_MEAN
@@ -214,10 +212,10 @@ def get_default_features(model_name):
 
 def get_default_vision_features(model_name):
     vision_feats = VISION_MEAN_FEAT_KEY
-    if model_name.startswith("flava") or model_name.startswith("imagebind") or model_name.startswith(
-            "clip") or model_name.startswith("random-flava"):
+    if model_name.startswith("imagebind") or model_name.startswith("clip"):
         vision_feats = VISION_CLS_FEAT_KEY
-    elif model_name.startswith("blip") or model_name.startswith("resnet-50-glow"):
+    elif model_name.startswith("flava") or model_name.startswith("random-flava") or model_name.startswith(
+            "blip") or model_name.startswith("resnet-50-glow"):
         vision_feats = VISION_MEAN_FEAT_KEY
     elif model_name.startswith("bridgetower") or model_name.startswith("vilt") or model_name.startswith(
             "visualbert") or model_name.startswith("lxmert") or model_name.startswith("bge"):
@@ -232,10 +230,10 @@ def get_default_vision_features(model_name):
 
 def get_default_lang_features(model_name):
     lang_feats = LANG_MEAN_FEAT_KEY
-    if model_name.startswith("imagebind") or model_name.startswith("bge") or model_name.startswith("resnet-and-bge"):
+    if model_name.startswith("imagebind") or model_name.startswith("bge") or model_name.startswith(
+            "resnet-and-bge") or model_name.startswith("clip"):
         lang_feats = LANG_CLS_FEAT_KEY
-    elif model_name.startswith("flava") or model_name.startswith("random-flava") or model_name.startswith(
-            "clip") or model_name.startswith("blip"):
+    elif model_name.startswith("flava") or model_name.startswith("random-flava") or model_name.startswith("blip"):
         lang_feats = LANG_MEAN_FEAT_KEY
     elif model_name.startswith("bridgetower") or model_name.startswith("vilt") or model_name.startswith(
             "visualbert") or model_name.startswith("lxmert"):
@@ -252,10 +250,6 @@ def get_vision_feats(latent_vectors, stim_id, vision_features_mode):
         vision_feats = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
     elif vision_features_mode == VISION_CLS_FEAT_KEY:
         vision_feats = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
-    elif vision_features_mode == VISION_CONCAT_FEATS:
-        vision_feats_mean = latent_vectors[stim_id][VISION_MEAN_FEAT_KEY]
-        vision_feats_cls = latent_vectors[stim_id][VISION_CLS_FEAT_KEY]
-        vision_feats = np.concatenate((vision_feats_mean, vision_feats_cls))
     else:
         raise RuntimeError("Unknown vision feature choice: ", vision_features_mode)
     return vision_feats
@@ -296,10 +290,6 @@ def get_nn_latent_data(model_name, features, vision_features_mode, lang_features
             lang_feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
             feats = np.stack((lang_feats, vision_feats))
             feats = feats.mean(axis=0)
-        elif features == CONCAT_FEATS:
-            vision_feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
-            lang_feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
-            feats = np.concatenate((lang_feats, vision_feats))
         elif features == FUSED_FEATS_CLS:
             feats = latent_vectors[stim_id][FUSED_CLS_FEAT_KEY]
         elif features == FUSED_FEATS_MEAN:
