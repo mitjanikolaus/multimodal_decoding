@@ -628,6 +628,7 @@ def get_fmri_data(subject, mode, roi_mask_name=None, fmri_transform=None, recomp
         if fmri_transform is None:
             fmri_transform = Normalize(fmri_betas.mean(axis=0), fmri_betas.std(axis=0))
         fmri_betas = np.array([fmri_transform(v) for v in fmri_betas])
+        fmri_betas = fmri_betas[:, ~np.isnan(fmri_betas[0])]
         fmri_transform = fmri_transform
     else:
         fmri_betas, stim_ids, stim_types, fmri_transform = get_fmri_voxel_data(
