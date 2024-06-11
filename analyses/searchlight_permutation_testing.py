@@ -659,8 +659,8 @@ def load_null_distr_per_subject_scores(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
-    for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
+    for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
+                                                   paths_mod_specific_images):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
         subject = os.path.dirname(path_agnostic).split("/")[-4]
 
@@ -669,18 +669,36 @@ def load_null_distr_per_subject_scores(args):
 
         def load_null_distr_scores(base_path):
             scores_dir = os.path.join(base_path, "null_distr")
+            print(f'loading scores from {scores_dir}')
             score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
             last_idx = int(os.path.basename(score_paths[-1])[:-2])
             assert last_idx == len(score_paths) - 1, last_idx
-            scores = [pickle.load(open(score_path, "rb")) for score_path in tqdm(score_paths)]
-            return scores
+
+            def load_scores_from_pickle(paths, proc_id):
+                job_scores = []
+                iterator = tqdm(paths) if proc_id == 0 else paths
+                for path in iterator:
+                    scores = pickle.load(open(path, "rb"))
+                    job_scores.append(scores)
+                return job_scores
+
+            n_per_job = math.ceil(len(score_paths) / args.n_jobs)
+            all_scores = Parallel(n_jobs=args.n_jobs)(
+                delayed(load_scores_from_pickle)(
+                    score_paths[id * n_per_job:(id + 1) * n_per_job],
+                    id,
+                )
+                for id in range(args.n_jobs)
+            )
+            return np.concatenate(all_scores)
 
         null_distribution_agnostic = load_null_distr_scores(os.path.dirname(path_agnostic))
         null_distribution_images = load_null_distr_scores(os.path.dirname(path_imgs))
         null_distribution_captions = load_null_distr_scores(os.path.dirname(path_caps))
 
         num_permutations = len(null_distribution_agnostic[0])
-        for i in range(num_permutations):
+        print('final per subject scores null distribution dict creation:')
+        for i in tqdm(range(num_permutations)):
             distr = [null_distr[i] for null_distr in null_distribution_agnostic]
             distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
             distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
@@ -692,7 +710,18 @@ def load_null_distr_per_subject_scores(args):
 
 
 def calc_t_values_null_distr(args):
-    per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+    per_subject_scores_null_distr_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        args.resolution,
+        args.mode,
+        f"per_subject_scores_null_distr.p"
+    )
+    if not os.path.isfile(per_subject_scores_null_distr_path):
+        print("loading per subject null distr scores")
+        per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+        pickle.dump(per_subject_scores_null_distr, open(per_subject_scores_null_distr_path, 'wb'))
+    else:
+        per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
     def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
         job_t_vals = []
