@@ -183,7 +183,7 @@ def get_roi_mask(roi_mask_name, ref_img):
         return get_functional_mask(roi_mask_name, ref_img)
 
     else:
-        raise RuntimeError("Unknown mask: ", roi_mask_name)
+        raise RuntimeError("Unknown mask for volume space: ", roi_mask_name)
 
 
 def get_default_features(model_name):
@@ -587,7 +587,12 @@ def get_run_str(model_name, features, vision_features, lang_features, mask, surf
     run_str += f"_{lang_features}"
 
     if mask is not None:
-        run_str += f"_mask_{mask}"
+        if mask.startswith("functional_") or mask.startswith("anatomical_"):
+            run_str += f"_mask_{mask}"
+        elif "p_values" in mask:
+            run_str += f"_mask_p_values"
+        else:
+            raise RuntimeError(f"Unsupported mask: {mask}")
 
     if surface:
         run_str += f"_surface_{resolution}"
@@ -619,25 +624,47 @@ def get_fmri_surface_data(subject, mode, resolution):
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_data(subject, mode, roi_mask_name=None, fmri_transform=None, recompute_std_mean=False, surface=False,
-                  resolution=None):
+def get_surface_mask(mask_path, p_value_mask_threshold):
+    masks = dict()
+    if "p_values" in mask_path:
+        print(f"loading surface space mask based on p values from {mask_path}")
+        print(f"p value threshold: {p_value_mask_threshold}")
+        p_values = pickle.load(open(mask_path, 'rb'))
+        for hemi in HEMIS:
+            masks[hemi] = p_values[hemi] < p_value_mask_threshold
+    else:
+        raise RuntimeError(f"Unsupported mask type for surface-based fmri: {mask_path}")
+    return masks
+
+
+def get_fmri_data(subject, mode, mask_name=None, fmri_transform=None, recompute_std_mean=False, surface=False,
+                  resolution=None, p_value_mask_threshold=0.01):
     if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
+
+        if mask_name is not None:
+            mask = get_surface_mask(mask_name, p_value_mask_threshold)
+            fmri_betas['left'] = fmri_betas['left'][mask['left']]
+            fmri_betas['right'] = fmri_betas['right'][mask['right']]
+
         fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']), axis=1)
 
         if fmri_transform is None:
             fmri_transform = Normalize(fmri_betas.mean(axis=0), fmri_betas.std(axis=0))
         fmri_betas = np.array([fmri_transform(v) for v in fmri_betas])
+
         fmri_betas = fmri_betas[:, ~np.isnan(fmri_betas[0])]
+
     else:
         fmri_betas, stim_ids, stim_types, fmri_transform = get_fmri_voxel_data(
             subject,
             mode,
-            roi_mask_name=roi_mask_name,
+            roi_mask_name=mask_name,
             recompute_std_mean=recompute_std_mean,
             fmri_betas_transform=fmri_transform,
         )
 
+    print(f"fMRI betas shape: {fmri_betas.shape}")
     return fmri_betas, stim_ids, stim_types, fmri_transform
 
 
@@ -649,18 +676,20 @@ def run(args):
                 train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(
                     subject,
                     training_mode,
-                    roi_mask_name=mask,
+                    mask_name=mask,
                     recompute_std_mean=args.recompute_std_mean,
                     surface=args.surface,
                     resolution=args.resolution,
+                    p_value_mask_threshold=args.p_value_mask_threshold,
                 )
                 test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(
                     subject,
                     TESTING_MODE,
                     fmri_transform=fmri_transform,
-                    roi_mask_name=mask,
+                    mask_name=mask,
                     surface=args.surface,
-                    resolution=args.resolution
+                    resolution=args.resolution,
+                    p_value_mask_threshold=args.p_value_mask_threshold,
                 )
 
                 for model_name in args.models:
@@ -730,6 +759,7 @@ def run(args):
                                     "latents": test_data_latents,
                                     "surface": args.surface,
                                     "resolution": args.resolution,
+                                    "p_value_mask_threshold": args.p_value_mask_threshold,
                                 }
                                 results.update(
                                     all_pairwise_accuracy_scores(
@@ -759,6 +789,7 @@ def get_args():
 
     parser.add_argument("--surface", action="store_true", default=False)
     parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--p-value-mask-threshold", type=float, default=0.01)
 
     parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
