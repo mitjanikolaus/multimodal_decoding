@@ -644,8 +644,8 @@ def get_fmri_data(subject, mode, mask_name=None, fmri_transform=None, recompute_
 
         if mask_name is not None:
             mask = get_surface_mask(mask_name, p_value_mask_threshold)
-            fmri_betas['left'] = fmri_betas['left'][:, mask['left']]
-            fmri_betas['right'] = fmri_betas['right'][:, mask['right']]
+            for hemi in HEMIS:
+                fmri_betas[hemi] = fmri_betas[hemi][:, mask[hemi]]
 
         fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']), axis=1)
 
