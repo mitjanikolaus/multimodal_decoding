@@ -632,7 +632,7 @@ def get_surface_mask(mask_path, p_value_mask_threshold):
         p_values = pickle.load(open(mask_path, 'rb'))
         for hemi in HEMIS:
             masks[hemi] = p_values[hemi] < p_value_mask_threshold
-            masks[hemi][p_values[hemi] == 0] = np.nan
+            masks[hemi][p_values[hemi] == 0] = False
     else:
         raise RuntimeError(f"Unsupported mask type for surface-based fmri: {mask_path}")
     return masks
