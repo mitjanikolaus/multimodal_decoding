@@ -41,7 +41,6 @@ def print_run_names(runs):
 
 
 if __name__ == "__main__":
-
     # load subject names from subjects folder
     subjects = [os.path.basename(p) for p in glob.glob(os.path.join(FMRI_RAW_DATA_DIR, 'bids/sub-*'))]
     print(subjects)
@@ -100,25 +99,22 @@ if __name__ == "__main__":
     # gunzip_anat_node = Node(Gunzip(), name = 'gunzip_anat')   # new corrected anat files are not gz
 
     # Slice timing correction
-    stc_node = Node(SliceTiming(
-        num_slices=number_of_slices,
-        time_repetition=TR,
-        time_acquisition=TR - (TR / (number_of_slices / multiband_factor)),
-        slice_order=slice2time,
-        ref_slice=slice2time[ref_slice_index],
-        out_prefix='a'),
-        name='stc')
+    stc_node = Node(
+        SliceTiming(
+            num_slices=number_of_slices,
+            time_repetition=TR,
+            time_acquisition=TR - (TR / (number_of_slices / multiband_factor)),
+            slice_order=slice2time,
+            ref_slice=slice2time[ref_slice_index],
+            out_prefix='a'),
+        name='stc'
+    )
 
     # Realignment
-    realign_node = Node(Realign(
-        register_to_mean=True,
-        out_prefix='r'),
-        name='realign')
+    realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
 
     # Coregistration
-    coregister_node = Node(Coregister(
-        out_prefix='ra'),
-        name='coregister')
+    coregister_node = Node(Coregister(out_prefix='ra'), name='coregister')
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -134,21 +130,19 @@ if __name__ == "__main__":
     anat_file = opj('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
     func_file = opj('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
-    selectfiles_anat = Node(SelectFiles({'anat': anat_file},
-                                        base_directory=anat_root),
-                            name="selectfiles_anat")
+    selectfiles_anat = Node(
+        SelectFiles({'anat': anat_file}, base_directory=anat_root), name="selectfiles_anat"
+    )
 
-    selectfiles_sessions = Node(SelectFiles({'func': func_file},
-                                            base_directory=data_root),
-                                name="selectfiles_sessions")
+    selectfiles_sessions = Node(
+        SelectFiles({'func': func_file}, base_directory=data_root), name="selectfiles_sessions"
+    )
 
     # Working directory
     workflow_dir = FMRI_PREPROCESSED_DATA_DIR
 
     # Datasink - creates an extra output folder for storing the desired files
-    datasink_node = Node(DataSink(base_directory=workflow_dir,
-                                  container='datasink'),
-                         name="datasink")
+    datasink_node = Node(DataSink(base_directory=workflow_dir, container='datasink'), name="datasink")
 
     # Remove nipype's prefix for the files and folders in the datasink
     substitutions = [('_subject_id_', ''), ('_session_id_', '')]
@@ -193,4 +187,4 @@ if __name__ == "__main__":
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
 
     # run the pipeline
-    preproc.run('MultiProc', plugin_args={'n_procs': 40})
+    preproc.run('MultiProc', plugin_args={'n_procs': 30})
