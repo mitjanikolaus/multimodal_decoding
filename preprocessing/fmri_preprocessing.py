@@ -140,6 +140,7 @@ if __name__ == "__main__":
 
     # Working directory
     workflow_dir = FMRI_PREPROCESSED_DATA_DIR
+    os.makedirs(workflow_dir, exist_ok=True)
 
     # Datasink - creates an extra output folder for storing the desired files
     datasink_node = Node(DataSink(base_directory=workflow_dir, container='datasink'), name="datasink")

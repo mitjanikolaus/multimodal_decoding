@@ -32,6 +32,12 @@ This script performs the following steps using SPM 12:
 python preprocessing/fmri_preprocessing.py
 ```
 
+Input data:
+- fmri BIDS: `~/data/multimodal_decoding/fmri/raw/bids`
+- corrected T1w: `~/data/multimodal_decoding/fmri/raw/corrected_anat`
+
+Output data:
+- preprocessed data: `~/data/multimodal_decoding/fmri/preprocessed/datasink`
 
 ## DNN Feature extraction 
 
