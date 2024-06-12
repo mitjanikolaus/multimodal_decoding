@@ -23,7 +23,7 @@ freeview \
 
 ### SPM Preprocessing script
 
-This script performs the following steps using SPM 12: 
+This script performs the following steps using SPM: 
 1. Slice time correction (STC)
 2. Realignment
 3. Coregistration
@@ -32,11 +32,15 @@ This script performs the following steps using SPM 12:
 python preprocessing/fmri_preprocessing.py
 ```
 
-Input data:
+#### Requirements
+
+This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
+
+#### Input data:
 - fmri BIDS: `~/data/multimodal_decoding/fmri/raw/bids`
 - corrected T1w: `~/data/multimodal_decoding/fmri/raw/corrected_anat`
 
-Output data:
+#### Output data:
 - preprocessed data: `~/data/multimodal_decoding/fmri/preprocessed/datasink`
 
 ## DNN Feature extraction 
