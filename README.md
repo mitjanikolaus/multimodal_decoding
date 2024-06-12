@@ -21,7 +21,7 @@ freeview \
 
 ## fMRI Preprocessing
 
-### SPM Preprocessing script
+### STC, Realignment and Coregistration
 
 This script performs the following steps using SPM: 
 1. Slice time correction (STC)
@@ -42,6 +42,31 @@ This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
 
 #### Output data:
 - preprocessed data: `~/data/multimodal_decoding/fmri/preprocessed/datasink`
+
+
+### Gray Matter Mask
+
+A mask is used to perform the analysis only on gray matter voxels. 
+
+These masks are created using the matlab library imcalc:
+
+- download imcalc from [http://tools.robjellis.net/](http://tools.robjellis.net/) and
+extract it to `~/apps/spm12/toolbox/imcalc/`
+- then, start matlab and run:
+
+```
+addpath ~/apps/spm12
+addpath(genpath('~/apps/spm12/toolbox/imcalc'))
+imcalc
+```
+
+### Transformation to MNI space
+
+```
+python preprocessing/raw_data_to_mni.py
+```
+
+
 
 ## DNN Feature extraction 
 
