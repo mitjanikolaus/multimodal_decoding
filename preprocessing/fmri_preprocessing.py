@@ -188,4 +188,4 @@ if __name__ == "__main__":
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
 
     # run the pipeline
-    preproc.run('MultiProc', plugin_args={'n_procs': 30})
+    preproc.run('MultiProc', plugin_args={'n_procs': 15})
