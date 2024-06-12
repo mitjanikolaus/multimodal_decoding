@@ -61,14 +61,14 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png", dpi=300)
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png", dpi=300)
 
     plt.figure()
     sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png", dpi=300)
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png", dpi=300)
 
 
 def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
