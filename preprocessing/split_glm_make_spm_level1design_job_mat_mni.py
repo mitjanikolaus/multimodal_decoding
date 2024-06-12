@@ -15,7 +15,7 @@ import csv
 import pickle
 from nipype.interfaces.base import Bunch
 import pandas as pd
-from decoding_utils import extract_stim_ids_from_event_files
+
 
 ##############
 # EVENT Loader

@@ -13,7 +13,6 @@ from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
-from decoding_utils import get_distance_matrix
 from tqdm import trange
 import pandas as pd
 
@@ -481,6 +480,10 @@ def get_distance_matrix_csls(predictions, latents, knn=100, metric="cosine"):
     dist_mat = 2 * scores - average_dist_preds - average_dist_lats
 
     return dist_mat
+
+
+def get_distance_matrix(predictions, originals, metric='cosine'):
+    return cdist(predictions, originals, metric=metric)
 
 
 def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
