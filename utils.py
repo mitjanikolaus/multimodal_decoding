@@ -16,8 +16,7 @@ FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
 FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_SURFACE_LEVEL_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
-
-TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
+FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 

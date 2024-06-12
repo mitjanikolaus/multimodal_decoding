@@ -10,11 +10,11 @@ import pickle
 
 from analyses.ridge_regression_decoding import DEFAULT_SUBJECTS
 from analyses.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM
+from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM
 
 
 def get_graymatter_mask(subject):
-    fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+    fmri_data_dir = os.path.join(FMRI_BETAS_DIR, subject)
     gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
     return gray_matter_mask_address
 
@@ -22,7 +22,7 @@ def get_graymatter_mask(subject):
 def get_fmri_data(subject, mode):
     imagery_scenes = IMAGERY_SCENES[subject]
 
-    fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+    fmri_data_dir = os.path.join(FMRI_BETAS_DIR, subject)
     fmri_addresses_regex = os.path.join(fmri_data_dir, f'betas_{mode}*', '*.nii')
     fmri_betas_addresses = np.array(sorted(glob(fmri_addresses_regex)))
 

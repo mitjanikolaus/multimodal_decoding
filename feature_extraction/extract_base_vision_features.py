@@ -7,7 +7,7 @@ import pickle
 from tqdm import tqdm
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, TWO_STAGE_GLM_DATA_DIR, VISION_MEAN_FEAT_KEY, \
+from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, FMRI_BETAS_DIR, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY
 
 BATCH_SIZE = 128
@@ -26,7 +26,7 @@ def load_and_save_relevant_coco_ids():
         all_ids = []
         for mode in ["train", "test", "imagery"]:
             for subject in SUBJECTS:
-                fmri_root_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+                fmri_root_dir = os.path.join(FMRI_BETAS_DIR, subject)
                 imagery_scenes = IMAGERY_SCENES[subject]
 
                 fmri_betas_addresses = sorted(glob(os.path.join(fmri_root_dir, f'betas_{mode}*', '*.nii')))

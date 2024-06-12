@@ -16,7 +16,7 @@ import pickle
 from tqdm import trange
 import pandas as pd
 
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
+from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
     LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS
 
@@ -370,7 +370,7 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
 def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
     imagery_scenes = IMAGERY_SCENES[subject]
 
-    fmri_data_dir = os.path.join(TWO_STAGE_GLM_DATA_DIR, subject)
+    fmri_data_dir = os.path.join(FMRI_BETAS_DIR, subject)
     fmri_addresses_regex = os.path.join(fmri_data_dir, f'betas_{mode}*', '*.nii')
     fmri_betas_addresses = np.array(sorted(glob(fmri_addresses_regex)))
 
