@@ -41,7 +41,6 @@ def print_run_names(runs):
 
 
 if __name__ == "__main__":
-    # load subject names from subjects folder
     subjects = [SUBJECTS[0]]
     # subjects = SUBJECTS
     print(subjects)
