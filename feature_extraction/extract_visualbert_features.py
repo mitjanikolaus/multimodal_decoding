@@ -20,7 +20,7 @@ from tqdm import tqdm
 from transformers import BertTokenizer, VisualBertModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor, CoCoDataset
-from utils import CAPTIONS_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY, DATA_DIR
+from utils import STIM_INFO_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY, DATA_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
@@ -169,7 +169,7 @@ def get_visual_embeds(box_features, keep_boxes):
 
 def extract_image_features():
     """Extract image features that will be fed into VisualBERT."""
-    ds = CoCoDataset(COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
+    ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'both')
     dloader = DataLoader(ds, shuffle=False, batch_size=BATCH_SIZE)
 
     cfg_path = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"

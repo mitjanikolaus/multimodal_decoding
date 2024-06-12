@@ -18,7 +18,7 @@ import pandas as pd
 
 from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, SURFACE_LEVEL_FMRI_DIR, HEMIS
+    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -607,11 +607,11 @@ def get_fmri_surface_data(subject, mode, resolution):
     base_mode = mode.split('_')[0]
     fmri_betas = {
         hemi: pickle.load(
-            open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
+            open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
         in HEMIS
     }
-    stim_ids = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
-    stim_types = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
+    stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
+    stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
 
     if mode == MOD_SPECIFIC_CAPTIONS:
         for hemi in HEMIS:

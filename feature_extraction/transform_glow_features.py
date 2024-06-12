@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 
 from feature_extraction.feat_extraction_utils import CoCoDataset
-from utils import COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, LANG_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY, \
+from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, LANG_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY, \
     VISION_MEAN_FEAT_KEY
 
 if __name__ == "__main__":
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     coco_captions = coco_captions_train | coco_captions_val
 
-    ds = CoCoDataset(COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'caption')
+    ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'caption')
 
     caption_indices = []
     for i, idx in enumerate(stimuli_ids):

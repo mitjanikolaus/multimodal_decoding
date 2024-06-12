@@ -24,7 +24,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
     get_fmri_surface_data
 
-from utils import SURFACE_LEVEL_FMRI_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI
+from utils import FMRI_SURFACE_LEVEL_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI
 
 DEFAULT_N_JOBS = 10
 

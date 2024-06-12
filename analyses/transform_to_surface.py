@@ -10,7 +10,7 @@ import pickle
 
 from analyses.ridge_regression_decoding import DEFAULT_SUBJECTS
 from analyses.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
-from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, SURFACE_LEVEL_FMRI_DIR, IDS_TEST_STIM
+from utils import IMAGERY_SCENES, TWO_STAGE_GLM_DATA_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM
 
 
 def get_graymatter_mask(subject):
@@ -54,10 +54,10 @@ def run(args):
         train_fmri, train_stim_ids, train_stim_types = get_fmri_data(subject, "train")
         test_fmri, test_stim_ids, test_stim_types = get_fmri_data(subject, "test")
 
-        pickle.dump(train_stim_ids, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_train.p"), 'wb'))
-        pickle.dump(train_stim_types, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_train.p"), 'wb'))
-        pickle.dump(test_stim_ids, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_ids_test.p"), 'wb'))
-        pickle.dump(test_stim_types, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, f"{subject}_stim_types_test.p"), 'wb'))
+        pickle.dump(train_stim_ids, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_train.p"), 'wb'))
+        pickle.dump(train_stim_types, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_train.p"), 'wb'))
+        pickle.dump(test_stim_ids, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_test.p"), 'wb'))
+        pickle.dump(test_stim_types, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_test.p"), 'wb'))
 
         assert np.all(test_stim_types[INDICES_TEST_STIM_IMAGE] == "image")
         assert np.all(test_stim_types[INDICES_TEST_STIM_CAPTION] == "caption")
@@ -74,7 +74,7 @@ def run(args):
             X = surface.vol_to_surf(train_fmri[:2500], pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name_1 = f"{subject}_{hemi}_train_1.p"
-            pickle.dump(X, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_1), 'wb'))
+            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_1), 'wb'))
             print("saved.")
 
             print("transforming to surface.. (train part 2)", end=" ")
@@ -82,7 +82,7 @@ def run(args):
             X = surface.vol_to_surf(train_fmri[2500:5000], pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name_2 = f"{subject}_{hemi}_train_2.p"
-            pickle.dump(X, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_2), 'wb'))
+            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_2), 'wb'))
             print("saved.")
 
             print("transforming to surface.. (train part 3)", end=" ")
@@ -90,7 +90,7 @@ def run(args):
             X = surface.vol_to_surf(train_fmri[5000:7500], pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name_3 = f"{subject}_{hemi}_train_3.p"
-            pickle.dump(X, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_3), 'wb'))
+            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_3), 'wb'))
             print("saved.")
 
             print("transforming to surface.. (train part 4)", end=" ")
@@ -98,25 +98,25 @@ def run(args):
             X = surface.vol_to_surf(train_fmri[7500:], pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name_4 = f"{subject}_{hemi}_train_4.p"
-            pickle.dump(X, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_4), 'wb'))
+            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_4), 'wb'))
             print("saved.")
 
-            X_1 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_1), 'rb'))
-            X_2 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_2), 'rb'))
-            X_3 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_3), 'rb'))
-            X_4 = pickle.load(open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_4), 'rb'))
+            X_1 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_1), 'rb'))
+            X_2 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_2), 'rb'))
+            X_3 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_3), 'rb'))
+            X_4 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_4), 'rb'))
             results_file_name = f"{subject}_{hemi}_{args.resolution}_train.p"
-            pickle.dump(np.concatenate((X_1, X_2, X_3, X_4)), open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name), 'wb'))
-            os.remove(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_1))
-            os.remove(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_2))
-            os.remove(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_3))
-            os.remove(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name_4))
+            pickle.dump(np.concatenate((X_1, X_2, X_3, X_4)), open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name), 'wb'))
+            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_1))
+            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_2))
+            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_3))
+            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_4))
 
             print("transforming to surface.. (test)", end=" ")
             X = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask).T
             print("done.")
             results_file_name = f"{subject}_{hemi}_{args.resolution}_test.p"
-            pickle.dump(X, open(os.path.join(SURFACE_LEVEL_FMRI_DIR, results_file_name), 'wb'))
+            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name), 'wb'))
             print("saved.")
 
 
@@ -134,6 +134,6 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(SURFACE_LEVEL_FMRI_DIR, exist_ok=True)
+    os.makedirs(FMRI_SURFACE_LEVEL_DIR, exist_ok=True)
 
     run(args)

@@ -3,23 +3,23 @@ import numpy as np
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
-
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
-FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 
 COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/")
 
+NN_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
+
+STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.p")
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
-CAPTIONS_PATH = os.path.join(DATA_DIR, "ShortCaptions_AllStims_CorrectedTyposInTestCaptionsLinux.p")
+
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
-
-SURFACE_LEVEL_FMRI_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
-
-FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "fmri_data")
-FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed_data")
+FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
+FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
+FMRI_SURFACE_LEVEL_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 
 TWO_STAGE_GLM_DATA_DIR = os.path.join(FMRI_DATA_DIR, "glm_manual/two-stage-mni/")
+
+RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
@@ -35,7 +35,7 @@ FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
 
 def model_features_file_path(model_name):
-    return os.path.join(FEATURES_DIR, f"{model_name.lower()}.p")
+    return os.path.join(NN_FEATURES_DIR, f"{model_name.lower()}.p")
 
 
 IMAGES_IMAGERY_CONDITION = [

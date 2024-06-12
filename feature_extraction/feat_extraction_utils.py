@@ -6,7 +6,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from utils import IMAGES_IMAGERY_CONDITION, COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, FEATURES_DIR, \
+from utils import IMAGES_IMAGERY_CONDITION, COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, NN_FEATURES_DIR, \
     model_features_file_path
 
 
@@ -16,7 +16,7 @@ class CoCoDataset(Dataset):
     The data is filtered for ids contained in the `stimuli_ids_path` file.
     """
 
-    def __init__(self, coco_root, captions_path, stimuli_ids_path, mode='both'):
+    def __init__(self, coco_root, stim_info_path, stimuli_ids_path, mode='both'):
         r"""
         Args:
             `coco_root` (str): address to the coco2017 root folder (= the parent directory of `images` folder)
@@ -24,7 +24,7 @@ class CoCoDataset(Dataset):
             `mode` (str): can be `caption` or `image` to load captions or images, respectively. Default: `image`
         """
         super().__init__()
-        data = np.load(captions_path, allow_pickle=True)
+        data = np.load(stim_info_path, allow_pickle=True)
         data.extend(IMAGES_IMAGERY_CONDITION)
         self.stimuli_ids = pickle.load(open(stimuli_ids_path, "rb"))
         self.img_paths = {id: path for id, path, _ in data if id in self.stimuli_ids}
@@ -66,10 +66,10 @@ class FeatureExtractor:
 
         self.model_name = model_name
 
-        self.ds = CoCoDataset(COCO_IMAGES_DIR, CAPTIONS_PATH, STIMULI_IDS_PATH, 'both')
+        self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'both')
         self.dloader = DataLoader(self.ds, shuffle=False, batch_size=batch_size)
 
-        os.makedirs(FEATURES_DIR, exist_ok=True)
+        os.makedirs(NN_FEATURES_DIR, exist_ok=True)
 
     def extract_features(self):
         all_feats = dict()

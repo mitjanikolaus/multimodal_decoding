@@ -3,7 +3,7 @@
 # Note: Matlab and SPM are required for this script
 # This script performs the following steps:
 #   1. Slice Time Correction (STC)
-#   2. Realignement (to the first image of each run)
+#   2. Realignment (to the first image of each run)
 #   3. Coregistration (to T1w anatomical image)
 ##########################################################
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         out_prefix='r'),
         name='realign')
 
-    # Coregisteration
+    # Coregistration
     coregister_node = Node(Coregister(
         out_prefix='ra'),
         name='coregister')
