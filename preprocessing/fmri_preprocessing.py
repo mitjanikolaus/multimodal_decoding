@@ -20,7 +20,7 @@ import glob
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR
+from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS
 
 mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
 
@@ -42,7 +42,8 @@ def print_run_names(runs):
 
 if __name__ == "__main__":
     # load subject names from subjects folder
-    subjects = [os.path.basename(p) for p in glob.glob(os.path.join(FMRI_RAW_DATA_DIR, 'bids/sub-*'))]
+    subjects = [SUBJECTS[0]]
+    # subjects = SUBJECTS
     print(subjects)
     print()
 
