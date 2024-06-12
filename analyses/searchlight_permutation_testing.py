@@ -719,6 +719,7 @@ def calc_t_values_null_distr(args):
     if not os.path.isfile(per_subject_scores_null_distr_path):
         print("loading per subject null distr scores")
         per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+        os.makedirs(os.path.dirname(per_subject_scores_null_distr_path), exist_ok=True)
         pickle.dump(per_subject_scores_null_distr, open(per_subject_scores_null_distr_path, 'wb'))
     else:
         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
