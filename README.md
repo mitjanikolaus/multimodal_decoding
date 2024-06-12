@@ -48,16 +48,12 @@ This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
 
 A mask is used to perform the analysis only on gray matter voxels. 
 
-These masks are created using the matlab library imcalc:
+These masks are created using the matlab library spm_imcalc:
 
-- download imcalc from [http://tools.robjellis.net/](http://tools.robjellis.net/) and
-extract it to `~/apps/spm12/toolbox/imcalc/`
-- then, start matlab and run:
-
+- start matlab and run:
 ```
 addpath ~/apps/spm12
-addpath(genpath('~/apps/spm12/toolbox/imcalc'))
-imcalc
+spm_imcalc
 ```
 
 ### Transformation to MNI space
