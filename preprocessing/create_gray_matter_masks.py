@@ -15,6 +15,11 @@ def convert_mask_to_mni(mask_file, subject, out_file):
         raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
 
 
+def get_graymatter_mask_path(subject):
+    mni_mask_image_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, 'graymatter_masks', subject, f'mask.nii')
+    return mni_mask_image_path
+
+
 def run(args):
     os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
 
@@ -33,7 +38,7 @@ def run(args):
         os.makedirs(os.path.dirname(mask_image_path), exist_ok=True)
         nib.save(mask_img, mask_image_path)
 
-        mni_mask_image_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, 'graymatter_masks', subject, f'mask.nii')
+        mni_mask_image_path = get_graymatter_mask_path(subject)
         convert_mask_to_mni(mask_image_path, subject, mni_mask_image_path)
 
 

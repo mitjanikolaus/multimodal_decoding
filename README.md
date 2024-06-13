@@ -65,6 +65,16 @@ included. The script creates a mask for each subject and converts it to MNI spac
 python preprocessing/create_gray_matter_masks.py
 ```
 
+### Generation of beta values
+
+We generate beta values for each stimulus (image or caption) using a GLM.
+
+First create the matlab script, and then run it:
+```
+python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py
+matlab -nodisplay  -r split_glm_spm_design_phase2,exit  -logfile matlab_output.txt
+```
+
 
 ## DNN Feature extraction 
 

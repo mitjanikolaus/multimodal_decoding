@@ -3,6 +3,7 @@
 # - first GLM for the split case
 # - with or without wbf
 ###########################################
+import argparse
 
 from numpy.lib.function_base import copy
 from scipy.io import matlab, savemat, loadmat
@@ -15,6 +16,9 @@ import csv
 import pickle
 from nipype.interfaces.base import Bunch
 import pandas as pd
+
+from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from utils import SUBJECTS, FMRI_BETAS_DIR
 
 
 ##############
@@ -75,7 +79,8 @@ def get_condition_names(df, glm_stage):
             else:
                 raise Exception(f'Uncondition Trial: {trial}')
     return conditions
-            
+
+
 def preprocess_event_files(event_files, glm_stage):
     r"""
     loads all event tsv files into a single pandas dataframe.
@@ -94,7 +99,7 @@ def preprocess_event_files(event_files, glm_stage):
         if glm_stage == 1:
             run_reg_data = np.zeros((df.shape[0], len(run_reg_names)))
             if r_idx < len(run_reg_names):
-                run_reg_data[:,r_idx] = 1
+                run_reg_data[:, r_idx] = 1
             run_reg_df = pd.DataFrame(run_reg_data, columns=run_reg_names)
             # for reg_idx, reg_name in enumerate(run_reg_names):
             #     df[reg_name] = run_reg_data[:,reg_idx]
@@ -106,10 +111,8 @@ def preprocess_event_files(event_files, glm_stage):
 
     return pd.concat(data, ignore_index=True)
 
-def load_event_files_stage1(
-    tsv_files,
-    log_file=None):
 
+def load_event_files_stage1(tsv_files, log_file=None):
     events_df = preprocess_event_files(tsv_files, glm_stage=1)
     condition_names = sorted(list(set(events_df['glm_condition'])))
     condition_names.remove('null')
@@ -123,9 +126,9 @@ def load_event_files_stage1(
     ###############################
     # Design-Matrix-Friendly format
     ###############################
-    onsets = {cond:[] for cond in condition_names}
-    durs   = {cond:[] for cond in condition_names}
-    orth   = {cond:0.0  for cond in condition_names}
+    onsets = {cond: [] for cond in condition_names}
+    durs = {cond: [] for cond in condition_names}
+    orth = {cond: 0.0 for cond in condition_names}
     # orth['train_image'] = 0.0
     # orth['train_caption'] = 0.0
 
@@ -138,8 +141,8 @@ def load_event_files_stage1(
 
     subject_info = Bunch(
         conditions=np.array(condition_names, dtype=object),
-        onsets=np.array([np.array(onsets[k])[:,np.newaxis] for k in condition_names], dtype=object),
-        durations=np.array([np.array(durs[k])[:,np.newaxis] for k in condition_names], dtype=object),
+        onsets=np.array([np.array(onsets[k])[:, np.newaxis] for k in condition_names], dtype=object),
+        durations=np.array([np.array(durs[k])[:, np.newaxis] for k in condition_names], dtype=object),
         orthogonalizations=np.array([orth[k] for k in condition_names], dtype=object),
         tmod=np.zeros((len(condition_names),), dtype=object),
         pmod=np.zeros((len(condition_names),), dtype=object),
@@ -148,10 +151,8 @@ def load_event_files_stage1(
 
     return subject_info
 
-def load_event_files_stage2(
-    tsv_files,
-    log_files=None):
 
+def load_event_files_stage2(tsv_files, log_files=None):
     subject_infos = []
 
     for tsvf_idx, tsvf in enumerate(tsv_files):
@@ -168,9 +169,9 @@ def load_event_files_stage2(
         ###############################
         # Design-Matrix-Friendly format
         ###############################
-        onsets = {cond:[] for cond in condition_names}
-        durs   = {cond:[] for cond in condition_names}
-        orth   = {cond:0.0  for cond in condition_names}
+        onsets = {cond: [] for cond in condition_names}
+        durs = {cond: [] for cond in condition_names}
+        orth = {cond: 0.0 for cond in condition_names}
         # orth['train_image'] = 0.0
         # orth['train_caption'] = 0.0
 
@@ -184,8 +185,8 @@ def load_event_files_stage2(
         temp_condition_names = ['dummy'] + condition_names[:]
         onsets['dummy'] = [0, 0]
         durs['dummy'] = [0, 0]
-        temp_onsets   = np.array([np.array(onsets[k])[:,np.newaxis] for k in temp_condition_names], dtype=object)
-        temp_durations= np.array([np.array(durs[k])[:,np.newaxis] for k in temp_condition_names], dtype=object)
+        temp_onsets = np.array([np.array(onsets[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
+        temp_durations = np.array([np.array(durs[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
         temp_onsets = temp_onsets[1:]
         temp_durations = temp_durations[1:]
 
@@ -204,228 +205,257 @@ def load_event_files_stage2(
         subject_infos.append(subject_info)
     return subject_infos
 
+
 def multi_regressors(realign_files):
     n_runs = len(realign_files)
-    
-    reg_names  = [f'UR{i}' for i in range(1, n_runs)]       # run regressors (1 less than total number of runs)
-    reg_names += [f'Realign{i}' for i in range(1,7)]        # 6 realignment axes
-    
+
+    reg_names = [f'UR{i}' for i in range(1, n_runs)]  # run regressors (1 less than total number of runs)
+    reg_names += [f'Realign{i}' for i in range(1, 7)]  # 6 realignment axes
+
     run_arrays = []
-    realign_arrays = [[] for i in range(1,7)]
+    realign_arrays = [[] for i in range(1, 7)]
     total_size = 0
     for ridx in range(n_runs):
         realign = np.loadtxt(realign_files[ridx])
         total_size += realign.shape[0]
         for aidx in range(6):
-            realign_arrays[aidx].append(realign[:,aidx])
-    
+            realign_arrays[aidx].append(realign[:, aidx])
+
     run_start = 0
-    for ridx in range(n_runs-1):
+    for ridx in range(n_runs - 1):
         arr = np.zeros((total_size, 1), dtype=np.double)
-        arr[run_start:run_start+realign_arrays[0][ridx].shape[0],0] = 1.0
+        arr[run_start:run_start + realign_arrays[0][ridx].shape[0], 0] = 1.0
         run_start += realign_arrays[0][ridx].shape[0]
         run_arrays.append(arr)
 
     for aidx in range(6):
-        realign_arrays[aidx] = np.concatenate(realign_arrays[aidx])[:,np.newaxis]
+        realign_arrays[aidx] = np.concatenate(realign_arrays[aidx])[:, np.newaxis]
 
-    reg_arrays = np.array([[]]+run_arrays+realign_arrays, dtype=object)
+    reg_arrays = np.array([[]] + run_arrays + realign_arrays, dtype=object)
     reg_arrays = reg_arrays[1:].astype(dtype=object, copy=True)
     return fromarrays([reg_names, reg_arrays], names=['name', 'val'])
 
-########################
-# 0- general parameters:
-########################
-subsample_sessions = None
-# subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
-spm_dir      = '/home/milad/apps/spm12'
-base_task_name = 'two-stage'
-if subsample_sessions:
-    task_name = f'{base_task_name}_{len(subsample_sessions)}sess_{"_".join(subsample_sessions)}'
-else:
-    task_name = f'{base_task_name}'
+def run(args):
+    subsample_sessions = None
+    # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
-print(task_name)
-subject_name = 'sub-07'
-
-data_dir     = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/mni305/{subject_name}'
-datasink     = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/datasink'
-fmri_dir     = f'/mnt/HD1/milad/multimodal_decoding/fmri_data/bids/{subject_name}'
-
-# save_dir             = f'/mnt/HD1/milad/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured'
-# stage1_residuals_dir = f'/mnt/HD1/milad/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured'
-save_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured')
-
-#####################
-# 1- fmri parameters:
-#####################
-
-# timings
-units   = 'secs'    # units for design secs/scans
-RT      = 2.0       # interscan interval
-fmri_t  = 46.0        # microtime resolution (16). in case of slice-timing set it to number of slices
-fmri_t0 = 23.0        # microtime onset (8). in case of slice-timing, set it to the reference slice
-
-# no factorial design (don't change)
-# matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
-
-# hrf
-derivs = [0.0,0.0]      # HRF derivatives
-
-# do not model interaction (don't change)
-VOLT = 1.0
-
-# no global minimization (don't change)
-GLOBAL = 'None'
-
-# implicit mask threhsold
-mthresh = 0.8
-
-# explicit mask (if set, the threhsold will be ignored)
-mask = f"/mnt/HD1/milad/multimodal_decoding/fmri_data/explicit_masks/{subject_name}/{subject_name}_T1_graymatter_mni.nii"
-
-# serial correlation (don't change)
-CVI = 'AR(1)'
-
-
-#########################
-# Generating job MAT file
-#########################
-STAGE = 2
-
-def get_base_fmri_spec():
-    fmri_spec = dict()
-
-    fmri_spec['timing'] = dict()
-    fmri_spec['timing']['units'] = units
-    fmri_spec['timing']['RT'] = RT
-    fmri_spec['timing']['fmri_t'] = fmri_t
-    fmri_spec['timing']['fmri_t0'] = fmri_t0
-
-    # fmri_spec['fact'] = {'name':None, 'levels':None}
-
-    fmri_spec['bases'] = dict()
-    fmri_spec['bases']['hrf'] = dict()
-    fmri_spec['bases']['hrf']['derivs'] = np.array(derivs, dtype=np.double)
-
-    fmri_spec['volt'] = VOLT
-    fmri_spec['global'] = GLOBAL
-
-    fmri_spec['mthresh'] = mthresh if len(mask) == 0 else -1 * np.inf
-    fmri_spec['mask'] = np.array([mask], dtype=object)
-    fmri_spec['cvi'] = CVI
-
-    fmri_spec['sess'] = dict()
-    fmri_spec['sess']['hpf'] = 128.0
-    return fmri_spec
-
-if STAGE == 1:
-    # stage 1
-    fmri_spec = get_base_fmri_spec()
-
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    fmri_spec['dir'] = np.array([save_dir], dtype=object)
-
-    # listing scans
-    scans = []
-    event_files = []
-    realign_files = []
+    spm_dir = os.path.expanduser('~/apps/spm12')
+    base_task_name = 'two-stage'
     if subsample_sessions:
-        # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
-        session_list = subsample_sessions
+        task_name = f'{base_task_name}_{len(subsample_sessions)}sess_{"_".join(subsample_sessions)}'
     else:
-        n_sessions = len(glob(os.path.join(data_dir,'ses-*')))
-        session_list = [f'{i:02d}' for i in range(1, n_sessions+1)]
-    for sess_idx in session_list:
-        sess_dir = os.path.join(data_dir, f'ses-{sess_idx}')
-        n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
-        for run_idx in range(1, n_runs+1):
-            run_file = os.path.join(sess_dir, f'rara{subject_name}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
-            event_files.append(os.path.join(fmri_dir, f"ses-{sess_idx}", "func", f"{subject_name}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
-            realign_files.append(os.path.join(datasink, 'realignment', subject_name, f'ses-{sess_idx}', f'rp_a{subject_name}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.txt'))
-            run_nii  = nib.load(run_file)
-            run_size = run_nii.shape[-1]
-            for s in range(1, run_size+1):
-                scans.append(f"{run_file},{s}")
-    fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:,np.newaxis]
+        task_name = f'{base_task_name}'
 
-    # multi regressors
-    fmri_spec['sess']['regress'] = multi_regressors(realign_files)
+    print(task_name)
 
-    # conditions
-    conditions = load_event_files_stage1(
-        event_files,
-        log_file= os.path.join(save_dir, 'dmlog_stage_1.tsv'))
+    for subject in args.subjects:
 
-    fmri_spec['sess']['cond'] = fromarrays([conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod, conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth'])
+        data_dir = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/mni305/{subject}'
+        datasink = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/datasink'
+        fmri_dir = f'/mnt/HD1/milad/multimodal_decoding/fmri_data/bids/{subject}'
 
-    fmri_spec['fact'] = fromarrays([[],[]], names=['name','levels'])
+        # save_dir             = f'/mnt/HD1/milad/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured'
+        # stage1_residuals_dir = f'/mnt/HD1/milad/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured'
+        save_dir = os.path.join(FMRI_BETAS_DIR, subject, "unstructured")
 
-    jobs = dict()
-    jobs['jobs'] = [dict()]
-    jobs['jobs'][0]['spm'] = dict()
-    jobs['jobs'][0]['spm']['stats'] = dict()
-    jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
-    savemat(os.path.join(save_dir,'spm_lvl1_job_stage_1.mat'), jobs)
+        #####################
+        # 1- fmri parameters:
+        #####################
 
-elif STAGE == 2:
-    # stage 2
-    # listing scans
-    scans = []
-    event_files = []
-    stage_2_fmri_specs = []
-    stage_2_save_dirs = []
+        # timings
+        units = 'secs'  # units for design secs/scans
+        RT = 2.0  # interscan interval
+        fmri_t = 46.0  # microtime resolution (16). in case of slice-timing set it to number of slices
+        fmri_t0 = 23.0  # microtime onset (8). in case of slice-timing, set it to the reference slice
 
-    if subsample_sessions:
-        # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
-        session_list = subsample_sessions
-    else:
-        n_sessions = len(glob(os.path.join(data_dir, 'ses-*')))
-        session_list = [f'{i:02d}' for i in range(1, n_sessions+1)]
-    
-    res_start = 0
-    for sess_idx in session_list:
-        sess_dir = os.path.join(data_dir, f'ses-{sess_idx}')
-        n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
-        for run_idx in range(1, n_runs+1):
-            run_scans = []
-            run_file = os.path.join(sess_dir, f'rara{subject_name}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
-            res_file = save_dir
-            event_files.append(os.path.join(fmri_dir, f"ses-{sess_idx}", "func", f"{subject_name}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
-            run_nii  = nib.load(run_file)
-            run_size = run_nii.shape[-1]
-            for s in range(1, run_size+1):
-                run_scans.append(os.path.join(res_file, f'Res_{(res_start+s):04d}.nii'))
-            res_start += run_size
-            scans.append(run_scans)
+        # no factorial design (don't change)
+        # matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
 
+        # hrf
+        derivs = [0.0, 0.0]  # HRF derivatives
+
+        # do not model interaction (don't change)
+        VOLT = 1.0
+
+        # no global minimization (don't change)
+        GLOBAL = 'None'
+
+        # implicit mask threhsold
+        mthresh = 0.8
+
+        # explicit mask (if set, the threshold will be ignored)
+        mask = get_graymatter_mask_path(subject)
+
+        # serial correlation (don't change)
+        CVI = 'AR(1)'
+
+        #########################
+        # Generating job MAT file
+        #########################
+        STAGE = 2
+
+        def get_base_fmri_spec():
+            fmri_spec = dict()
+
+            fmri_spec['timing'] = dict()
+            fmri_spec['timing']['units'] = units
+            fmri_spec['timing']['RT'] = RT
+            fmri_spec['timing']['fmri_t'] = fmri_t
+            fmri_spec['timing']['fmri_t0'] = fmri_t0
+
+            # fmri_spec['fact'] = {'name':None, 'levels':None}
+
+            fmri_spec['bases'] = dict()
+            fmri_spec['bases']['hrf'] = dict()
+            fmri_spec['bases']['hrf']['derivs'] = np.array(derivs, dtype=np.double)
+
+            fmri_spec['volt'] = VOLT
+            fmri_spec['global'] = GLOBAL
+
+            fmri_spec['mthresh'] = mthresh if len(mask) == 0 else -1 * np.inf
+            fmri_spec['mask'] = np.array([mask], dtype=object)
+            fmri_spec['cvi'] = CVI
+
+            fmri_spec['sess'] = dict()
+            fmri_spec['sess']['hpf'] = 128.0
+            return fmri_spec
+
+        if STAGE == 1:
+            # stage 1
             fmri_spec = get_base_fmri_spec()
-            save_dir_stage2 = os.path.join(save_dir, f'run_{len(scans):03d}')
-            if not os.path.exists(save_dir_stage2):
-                os.makedirs(save_dir_stage2)
-            stage_2_save_dirs.append(save_dir_stage2)
-            fmri_spec['dir'] = np.array([save_dir_stage2], dtype=object)
-            fmri_spec['sess']['scans'] = np.array(run_scans, dtype=object)[:,np.newaxis]
-            stage_2_fmri_specs.append(fmri_spec)
 
-    # multi regressors
-    # fmri_spec['sess']['regress'] = multi_regressors(realign_files)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            fmri_spec['dir'] = np.array([save_dir], dtype=object)
 
-    # conditions
-    all_conditions = load_event_files_stage2(
-        event_files,
-        log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs])
+            # listing scans
+            scans = []
+            event_files = []
+            realign_files = []
+            if subsample_sessions:
+                # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
+                session_list = subsample_sessions
+            else:
+                n_sessions = len(glob(os.path.join(data_dir, 'ses-*')))
+                session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
+            for sess_idx in session_list:
+                sess_dir = os.path.join(data_dir, f'ses-{sess_idx}')
+                n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
+                for run_idx in range(1, n_runs + 1):
+                    run_file = os.path.join(sess_dir,
+                                            f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
+                    event_files.append(os.path.join(fmri_dir, f"ses-{sess_idx}", "func",
+                                                    f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
+                    realign_files.append(
+                        os.path.join(
+                            datasink, 'realignment', subject, f'ses-{sess_idx}',
+                            f'rp_a{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.txt'
+                        )
+                    )
+                    run_nii = nib.load(run_file)
+                    run_size = run_nii.shape[-1]
+                    for s in range(1, run_size + 1):
+                        scans.append(f"{run_file},{s}")
+            fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
 
-    for spec_idx, conditions in enumerate(all_conditions):
-        stage_2_fmri_specs[spec_idx]['sess']['cond'] = fromarrays([conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod, conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth'],
-        shape = (len(conditions.conditions),))
-        stage_2_fmri_specs[spec_idx]['fact'] = fromarrays([[],[]], names=['name','levels'])
+            # multi regressors
+            fmri_spec['sess']['regress'] = multi_regressors(realign_files)
 
-        jobs = dict()
-        jobs['jobs'] = [dict()]
-        jobs['jobs'][0]['spm'] = dict()
-        jobs['jobs'][0]['spm']['stats'] = dict()
-        jobs['jobs'][0]['spm']['stats']['fmri_spec'] = stage_2_fmri_specs[spec_idx]
-        savemat(os.path.join(stage_2_save_dirs[spec_idx],'spm_lvl1_job_stage_2.mat'), jobs)
+            # conditions
+            conditions = load_event_files_stage1(
+                event_files,
+                log_file=os.path.join(save_dir, 'dmlog_stage_1.tsv'))
+
+            fmri_spec['sess']['cond'] = fromarrays(
+                [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
+                 conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth']
+            )
+
+            fmri_spec['fact'] = fromarrays([[], []], names=['name', 'levels'])
+
+            jobs = dict()
+            jobs['jobs'] = [dict()]
+            jobs['jobs'][0]['spm'] = dict()
+            jobs['jobs'][0]['spm']['stats'] = dict()
+            jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
+            savemat(os.path.join(save_dir, 'spm_lvl1_job_stage_1.mat'), jobs)
+
+        elif STAGE == 2:
+            # stage 2
+            # listing scans
+            scans = []
+            event_files = []
+            stage_2_fmri_specs = []
+            stage_2_save_dirs = []
+
+            if subsample_sessions:
+                # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
+                session_list = subsample_sessions
+            else:
+                n_sessions = len(glob(os.path.join(data_dir, 'ses-*')))
+                session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
+
+            res_start = 0
+            for sess_idx in session_list:
+                sess_dir = os.path.join(data_dir, f'ses-{sess_idx}')
+                n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
+                for run_idx in range(1, n_runs + 1):
+                    run_scans = []
+                    run_file = os.path.join(sess_dir,
+                                            f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
+                    res_file = save_dir
+                    event_files.append(os.path.join(fmri_dir, f"ses-{sess_idx}", "func",
+                                                    f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
+                    run_nii = nib.load(run_file)
+                    run_size = run_nii.shape[-1]
+                    for s in range(1, run_size + 1):
+                        run_scans.append(os.path.join(res_file, f'Res_{(res_start + s):04d}.nii'))
+                    res_start += run_size
+                    scans.append(run_scans)
+
+                    fmri_spec = get_base_fmri_spec()
+                    save_dir_stage2 = os.path.join(save_dir, f'run_{len(scans):03d}')
+                    if not os.path.exists(save_dir_stage2):
+                        os.makedirs(save_dir_stage2)
+                    stage_2_save_dirs.append(save_dir_stage2)
+                    fmri_spec['dir'] = np.array([save_dir_stage2], dtype=object)
+                    fmri_spec['sess']['scans'] = np.array(run_scans, dtype=object)[:, np.newaxis]
+                    stage_2_fmri_specs.append(fmri_spec)
+
+            # multi regressors
+            # fmri_spec['sess']['regress'] = multi_regressors(realign_files)
+
+            # conditions
+            all_conditions = load_event_files_stage2(
+                event_files,
+                log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs])
+
+            for spec_idx, conditions in enumerate(all_conditions):
+                stage_2_fmri_specs[spec_idx]['sess']['cond'] = fromarrays(
+                    [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
+                     conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth'],
+                    shape=(len(conditions.conditions),)
+                )
+                stage_2_fmri_specs[spec_idx]['fact'] = fromarrays([[], []], names=['name', 'levels'])
+
+                jobs = dict()
+                jobs['jobs'] = [dict()]
+                jobs['jobs'][0]['spm'] = dict()
+                jobs['jobs'][0]['spm']['stats'] = dict()
+                jobs['jobs'][0]['spm']['stats']['fmri_spec'] = stage_2_fmri_specs[spec_idx]
+                savemat(os.path.join(stage_2_save_dirs[spec_idx], 'spm_lvl1_job_stage_2.mat'), jobs)
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = get_args()
+
+    run(args)
