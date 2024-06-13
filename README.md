@@ -47,7 +47,7 @@ This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
 ### Transformation to MNI space
 
 ```
-python preprocessing/raw_data_to_mni.py
+python preprocessing/transform_to_mni.py
 ```
 
 #### Requirements
