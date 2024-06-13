@@ -19,12 +19,12 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
-    FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, DEFAULT_SUBJECTS, get_nn_latent_data, \
+    FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
     get_fmri_surface_data
 
-from utils import FMRI_SURFACE_LEVEL_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI
+from utils import FMRI_SURFACE_LEVEL_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS
 
 DEFAULT_N_JOBS = 10
 
@@ -312,7 +312,7 @@ def get_args():
 
     parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--resolution", type=str, default="fsaverage7")
 

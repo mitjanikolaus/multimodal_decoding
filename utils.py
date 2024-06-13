@@ -18,6 +18,8 @@ FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_SURFACE_LEVEL_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 
+FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
+
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']

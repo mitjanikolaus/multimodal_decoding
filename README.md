@@ -44,24 +44,26 @@ This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
 - preprocessed data: `~/data/multimodal_decoding/fmri/preprocessed/datasink`
 
 
-### Gray Matter Mask
-
-A mask is used to perform the analysis only on gray matter voxels. 
-
-These masks are created using the matlab library spm_imcalc:
-
-- start matlab and run:
-```
-addpath ~/apps/spm12
-spm_imcalc
-```
-
 ### Transformation to MNI space
 
 ```
 python preprocessing/raw_data_to_mni.py
 ```
 
+#### Requirements
+
+For conversion to MNI space, this script requires freesurfer to be installed.
+
+
+### Gray Matter Mask
+
+Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
+We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
+included. The script creates a mask for each subject and converts it to MNI space.
+
+```
+python preprocessing/create_gray_matter_masks.py
+```
 
 
 ## DNN Feature extraction 

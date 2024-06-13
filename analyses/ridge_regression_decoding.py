@@ -18,7 +18,7 @@ import pandas as pd
 
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS
+    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -37,8 +37,6 @@ LANG_FEAT_COMBINATION_CHOICES = [LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, FEATS_SE
 NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
 DEFAULT_N_PRE_DISPATCH = 5
-
-DEFAULT_SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 
 MOD_SPECIFIC_IMAGES = "train_images"
 MOD_SPECIFIC_CAPTIONS = "train_captions"
@@ -805,7 +803,7 @@ def get_args():
 
     parser.add_argument("--masks", type=str, nargs='+', default=[None])
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=[1e3, 1e5, 1e7])
 

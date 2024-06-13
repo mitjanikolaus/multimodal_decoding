@@ -8,9 +8,8 @@ import os
 from glob import glob
 import pickle
 
-from analyses.ridge_regression_decoding import DEFAULT_SUBJECTS
 from analyses.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
-from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM
+from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
 
 
 def get_graymatter_mask(subject):
@@ -123,7 +122,7 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=DEFAULT_SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--resolution", type=str, default="fsaverage7")
 

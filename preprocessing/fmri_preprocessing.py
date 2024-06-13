@@ -6,7 +6,7 @@
 #   2. Realignment (to the first image of each run)
 #   3. Coregistration (to T1w anatomical image)
 ##########################################################
-
+import argparse
 import os
 import numpy as np
 from os.path import join as opj
@@ -40,9 +40,8 @@ def print_run_names(runs):
         print()
 
 
-if __name__ == "__main__":
-    subjects = [SUBJECTS[0]]
-    # subjects = SUBJECTS
+def run(args):
+    subjects = args.subjects
     print(subjects)
     print()
 
@@ -189,3 +188,17 @@ if __name__ == "__main__":
 
     # run the pipeline
     preproc.run('MultiProc', plugin_args={'n_procs': 15})
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = get_args()
+
+    run(args)
