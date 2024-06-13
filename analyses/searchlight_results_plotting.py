@@ -340,6 +340,8 @@ def get_args():
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 
+    parser.add_argument("--plot-n-neighbors-correlation-graph", action="store_true", default=False)
+
     return parser.parse_args()
 
 
