@@ -25,14 +25,12 @@ def run(args):
 
         all_vol_files = sorted(glob(os.path.join(vol_dir, '_session_*', 'coregister', f'rara{subject}_*_bold.nii')))
         for vol_file in tqdm(all_vol_files):
-            out_sess_dir = os.path.join(out_dir, sess_id)
-            os.makedirs(out_sess_dir, exist_ok=True)
-
             idx = vol_file.find('ses-')
             sess_id = vol_file[idx:idx + 6]
-
+            out_sess_dir = os.path.join(out_dir, sess_id)
             file_name = os.path.basename(vol_file)
             out_vol = os.path.join(out_sess_dir, file_name)
+            os.makedirs(out_sess_dir, exist_ok=True)
 
             conv_cmd = f'mri_vol2vol --mov "{vol_file}" --reg "{reg_file}" --o "{out_vol}" --tal --talres 2'
             result_code = os.system(conv_cmd)
