@@ -758,7 +758,7 @@ def calc_t_values_null_distr(args):
     print(f"n iters per job: {n_iters_per_job} (last job: {n_iters_last_job})")
     all_t_vals = Parallel(n_jobs=args.n_jobs)(
         delayed(shuffle_and_calc_t_values)(
-            per_subject_scores_null_distr.copy(),
+            per_subject_scores_null_distr,
             id,
             n_iters_per_job if not id == args.n_jobs - 1 else n_iters_last_job,
         )
