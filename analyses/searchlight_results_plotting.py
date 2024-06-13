@@ -164,30 +164,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     plt.close()
 
 
-def run(args):
-    results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
-    os.makedirs(results_path, exist_ok=True)
-
-    per_subject_scores = load_per_subject_scores(args)
-    plot_acc_scores(per_subject_scores, args, results_path)
-
-    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 "t_values.p")
-    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    if args.smoothing_iterations > 0:
-        t_values_smooth_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
-            args.mode,
-            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
-        )
-        test_statistics["t-values-smoothed"] = pickle.load(open(t_values_smooth_path, 'rb'))
-    tfce_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    plot_test_statistics(test_statistics, args, results_path)
-
+def plot_p_values(results_path, args):
     print(f"plotting (p-values)")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     p_values_path = os.path.join(
@@ -232,6 +209,33 @@ def run(args):
     results_searchlight = os.path.join(results_path, f"{title}.png")
     plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
     plt.close()
+
+
+def run(args):
+    results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
+    os.makedirs(results_path, exist_ok=True)
+
+    plot_p_values(results_path, args)
+
+    per_subject_scores = load_per_subject_scores(args)
+    plot_acc_scores(per_subject_scores, args, results_path)
+
+    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+                                 "t_values.p")
+    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    if args.smoothing_iterations > 0:
+        t_values_smooth_path = os.path.join(
+            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
+            args.mode,
+            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
+        )
+        test_statistics["t-values-smoothed"] = pickle.load(open(t_values_smooth_path, 'rb'))
+    tfce_values_path = os.path.join(
+        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
+        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+    )
+    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    plot_test_statistics(test_statistics, args, results_path)
 
     if args.plot_null_distr:
         print("plotting acc maps for null distribution examples")
