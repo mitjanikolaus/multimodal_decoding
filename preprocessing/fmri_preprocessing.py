@@ -16,7 +16,6 @@ from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
 from nipype import MapNode
 from nipype.algorithms.misc import Gunzip
-import glob
 
 import nipype.interfaces.matlab as mlab
 
