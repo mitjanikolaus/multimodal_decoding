@@ -18,7 +18,8 @@ from nipype.interfaces.base import Bunch
 import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_RAW_BIDS_DATA_DIR
+from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_RAW_BIDS_DATA_DIR, \
+    FMRI_PREPROCESSED_DATA_DIR
 
 
 ##############
@@ -253,7 +254,7 @@ def run(args):
     for subject in args.subjects:
         print(subject)
         preprocessed_fmri_mni_space_dir = os.path.join(FMRI_PREPROCESSED_MNI_DATA_DIR, subject)
-        datasink_dir = os.path.join(FMRI_PREPROCESSED_MNI_DATA_DIR, "datasink")
+        datasink_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
         raw_fmri_subj_data_dir = os.path.join(FMRI_RAW_BIDS_DATA_DIR, subject)
 
         save_dir = os.path.join(FMRI_BETAS_DIR, subject, "unstructured")
