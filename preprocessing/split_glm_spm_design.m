@@ -1,11 +1,11 @@
 clearvars
-addpath('/home/milad/apps/spm12');
+addpath('~/apps/spm12');
 spm('Defaults', 'fMRI');
 setenv('SPM_HTML_BROWSER','0');
 spm_jobman('initcfg');
 spm_get_defaults('cmdline',true);
 
-data_dir = '/mnt/HD1/milad/multimodal_decoding/glm_manual/two-stage/sub-07/unstructured';
+data_dir = '~/data/multimodal_decoding/fmri/betas/sub-01/unstructured';
 cd(data_dir)
 
 %design
@@ -27,7 +27,7 @@ matlabbatch{1}.spm.stats.fmri_est.spmmat = {[data_dir '/SPM.mat']};
 matlabbatch{1}.spm.stats.fmri_est.write_residuals = 1;
 matlabbatch{1}.spm.stats.fmri_est.method.Classical = 1;
 
-addpath('/home/milad/apps/spm12');
+addpath('~/apps/spm12');
 spm('Defaults', 'fMRI');
 setenv('SPM_HTML_BROWSER','0');
 spm_jobman('initcfg');
