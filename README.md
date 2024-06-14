@@ -37,7 +37,15 @@ freeview \
 
 ## fMRI Preprocessing
 
-### STC, Realignment and Coregistration
+#### Requirements
+
+- Parts of the preprocessing pipeline are based on SPM. Therefore, we require matlab and
+[SPM version 12](https://www.fil.ion.ucl.ac.uk/spm/software/spm12/) to be installed
+(SPM should be installed to `~/apps/spm12/`).
+- For conversion to MNI space, we rely on [freesurfer](https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall).
+
+
+### (1) STC, Realignment and Coregistration
 
 This script performs the following steps using SPM: 
 1. Slice time correction (STC)
@@ -48,19 +56,10 @@ This script performs the following steps using SPM:
 python preprocessing/fmri_preprocessing.py
 ```
 
-#### Requirements
+The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
+the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
 
-This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
-
-#### Input data:
-- fmri BIDS: `~/data/multimodal_decoding/fmri/raw/bids`
-- corrected T1w: `~/data/multimodal_decoding/fmri/raw/corrected_anat`
-
-#### Output data:
-- preprocessed data: `~/data/multimodal_decoding/fmri/preprocessed/datasink`
-
-
-### Transformation to MNI space
+### (2) Transformation to MNI space
 
 First, we're running recon-all to generate cortical reconstructions for all subjects:
 ```
@@ -72,13 +71,8 @@ Then, we can convert all data to MNI space:
 python preprocessing/transform_to_mni.py
 ```
 
-#### Requirements
 
-For conversion to MNI space, you need to install freesurfer.
-
-
-
-### Gray Matter Mask
+### (3) Gray Matter Masks
 
 Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
@@ -95,7 +89,7 @@ python preprocessing/create_gray_matter_masks.py
 Finally, the aforementioned script is also converting the mask to MNI space. The final masks are save to
 `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask.nii`.
 
-### Generation of beta values
+### (4) Generation of beta values
 
 We generate beta values for each stimulus (image or caption) using a GLM.
 
