@@ -7,7 +7,7 @@ from glob import glob
 
 from tqdm import tqdm
 
-from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_PREPROCESSED_DATA_DIR
+from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR
 
 
 def run(args):
@@ -19,7 +19,7 @@ def run(args):
 
         vol_dir = f'{FMRI_PREPROCESSED_DATA_DIR}/preprocess_workflow/{nipype_subject_name}'
         reg_file = f'{FREESURFER_BASE_DIR}/regfiles/{subject}/spm2fs.change-name.lta'
-        out_dir = f'{FMRI_PREPROCESSED_DATA_DIR}/mni305/{subject}'
+        out_dir = f'{FMRI_PREPROCESSED_MNI_DATA_DIR}/{subject}'
 
         os.makedirs(out_dir, exist_ok=True)
 

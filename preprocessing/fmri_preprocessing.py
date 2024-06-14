@@ -19,7 +19,7 @@ from nipype.algorithms.misc import Gunzip
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS
+from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR
 
 mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
 
@@ -45,7 +45,7 @@ def run(args):
     print()
 
     # list subject sessions
-    data_root = os.path.join(FMRI_RAW_DATA_DIR, 'bids')
+    data_root = FMRI_RAW_BIDS_DATA_DIR
     anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
     sessions = dict()
     for subj in subjects:

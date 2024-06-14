@@ -18,7 +18,8 @@ from nipype.interfaces.base import Bunch
 import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_BETAS_DIR
+from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, \
+    FMRI_RAW_BIDS_DATA_DIR, FMRI_RAW_DATA_DIR
 
 
 ##############
@@ -252,12 +253,10 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        data_dir = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/mni305/{subject}'
-        datasink = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/datasink'
-        fmri_dir = f'/mnt/HD1/milad/multimodal_decoding/fmri_data/bids/{subject}'
+        preprocessed_fmri_mni_space_dir = os.path.join(FMRI_PREPROCESSED_MNI_DATA_DIR, subject)
+        datasink_dir = os.path.join(FMRI_RAW_DATA_DIR, "datasink")
+        raw_fmri_subj_data_dir = os.path.join(FMRI_RAW_BIDS_DATA_DIR, subject)
 
-        # save_dir             = f'/mnt/HD1/milad/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured'
-        # stage1_residuals_dir = f'/mnt/HD1/milad/multimodal_decoding/glm_manual/{task_name}/{subject_name}/unstructured'
         save_dir = os.path.join(FMRI_BETAS_DIR, subject, "unstructured")
 
         #####################
@@ -335,19 +334,19 @@ def run(args):
                 # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
                 session_list = subsample_sessions
             else:
-                n_sessions = len(glob(os.path.join(data_dir, 'ses-*')))
+                n_sessions = len(glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*')))
                 session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
             for sess_idx in session_list:
-                sess_dir = os.path.join(data_dir, f'ses-{sess_idx}')
+                sess_dir = os.path.join(preprocessed_fmri_mni_space_dir, f'ses-{sess_idx}')
                 n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
                 for run_idx in range(1, n_runs + 1):
                     run_file = os.path.join(sess_dir,
                                             f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
-                    event_files.append(os.path.join(fmri_dir, f"ses-{sess_idx}", "func",
+                    event_files.append(os.path.join(raw_fmri_subj_data_dir, f"ses-{sess_idx}", "func",
                                                     f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
                     realign_files.append(
                         os.path.join(
-                            datasink, 'realignment', subject, f'ses-{sess_idx}',
+                            datasink_dir, 'realignment', subject, f'ses-{sess_idx}',
                             f'rp_a{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.txt'
                         )
                     )
@@ -390,19 +389,19 @@ def run(args):
                 # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
                 session_list = subsample_sessions
             else:
-                n_sessions = len(glob(os.path.join(data_dir, 'ses-*')))
+                n_sessions = len(glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*')))
                 session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
 
             res_start = 0
             for sess_idx in session_list:
-                sess_dir = os.path.join(data_dir, f'ses-{sess_idx}')
+                sess_dir = os.path.join(preprocessed_fmri_mni_space_dir, f'ses-{sess_idx}')
                 n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
                 for run_idx in range(1, n_runs + 1):
                     run_scans = []
                     run_file = os.path.join(sess_dir,
                                             f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
                     res_file = save_dir
-                    event_files.append(os.path.join(fmri_dir, f"ses-{sess_idx}", "func",
+                    event_files.append(os.path.join(raw_fmri_subj_data_dir, f"ses-{sess_idx}", "func",
                                                     f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
                     run_nii = nib.load(run_file)
                     run_size = run_nii.shape[-1]
