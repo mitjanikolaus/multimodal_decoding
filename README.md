@@ -96,10 +96,10 @@ We generate beta values for each stimulus (image or caption) using a GLM.
 First create the matlab script, and then run it:
 ```
 python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py --stage 1
-matlab -nodisplay  -r split_glm_spm_design.m,exit  -logfile matlab_output.txt
+matlab -nodisplay  -r "run('preprocessing/split_glm_spm_design.m');exit;"  -logfile matlab_output.txt
 
 python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py --stage 2
-matlab -nodisplay  -r split_glm_spm_design_phase2,exit  -logfile matlab_output.txt
+matlab -nodisplay  -r "run('preprocessing/split_glm_spm_design_phase2.m');exit;"  -logfile matlab_output.txt
 ```
 
 
