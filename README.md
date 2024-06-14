@@ -62,24 +62,38 @@ This script requires matlab and SPM version 12 (installed at `~/apps/spm12/`).
 
 ### Transformation to MNI space
 
+First, we're running recon-all to generate cortical reconstructions for all subjects:
+```
+python preprocessing/recon_script.py
+```
+
+Then, we can convert all data to MNI space:
 ```
 python preprocessing/transform_to_mni.py
 ```
 
 #### Requirements
 
-For conversion to MNI space, this script requires freesurfer to be installed.
+For conversion to MNI space, you need to install freesurfer.
+
 
 
 ### Gray Matter Mask
 
 Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
-included. The script creates a mask for each subject and converts it to MNI space.
+included. 
 
+As a first step, we took the corrected T1w image of the first session for each subject
+(e.g. `~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii`) and segment it using
+SPM. (The output of this step is part of the raw data folder, so you don't have to repeat it.)
+Then, we take the c1 (gray matter) segmentation (e.g. `c1sub-01_ses-01_run-01_T1W.nii`) and use the following script to
+create a binary mask.
 ```
 python preprocessing/create_gray_matter_masks.py
 ```
+Finally, the aforementioned script is also converting the mask to MNI space. The final masks are save to
+`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask.nii`.
 
 ### Generation of beta values
 
