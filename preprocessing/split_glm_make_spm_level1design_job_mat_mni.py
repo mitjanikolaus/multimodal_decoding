@@ -248,9 +248,10 @@ def run(args):
         task_name = f'{base_task_name}'
 
     print(task_name)
+    print("Stage: ", args.stage)
 
     for subject in args.subjects:
-
+        print(subject)
         data_dir = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/mni305/{subject}'
         datasink = f'/mnt/HD1/milad/multimodal_decoding/preprocessed_data/datasink'
         fmri_dir = f'/mnt/HD1/milad/multimodal_decoding/fmri_data/bids/{subject}'
@@ -293,8 +294,6 @@ def run(args):
         #########################
         # Generating job MAT file
         #########################
-        STAGE = 2
-
         def get_base_fmri_spec():
             fmri_spec = dict()
 
@@ -321,8 +320,7 @@ def run(args):
             fmri_spec['sess']['hpf'] = 128.0
             return fmri_spec
 
-        if STAGE == 1:
-            # stage 1
+        if args.stage == 1:
             fmri_spec = get_base_fmri_spec()
 
             if not os.path.exists(save_dir):
@@ -381,8 +379,7 @@ def run(args):
             jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
             savemat(os.path.join(save_dir, 'spm_lvl1_job_stage_1.mat'), jobs)
 
-        elif STAGE == 2:
-            # stage 2
+        elif args.stage == 2:
             # listing scans
             scans = []
             event_files = []
@@ -451,6 +448,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--stage", type=int, choices=[1, 2])
 
     return parser.parse_args()
 
