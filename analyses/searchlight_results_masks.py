@@ -1,4 +1,5 @@
 import argparse
+import copy
 
 import numpy as np
 from nibabel import GiftiImage
@@ -35,36 +36,46 @@ def create_masks(args):
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
-    p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
-    p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
+    log_10_p_values = copy.deepcopy(p_values)
+    log_10_p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
+    log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     masks_path = os.path.join(os.path.dirname(p_values_path), "masks")
     os.makedirs(masks_path, exist_ok=True)
 
-    gifti_masks_path = os.path.join(os.path.dirname(p_values_path), "masks_gifti")
-    os.makedirs(gifti_masks_path, exist_ok=True)
+    p_values_gifti_path = os.path.join(os.path.dirname(p_values_path), "p_values_gifti")
+    os.makedirs(p_values_gifti_path, exist_ok=True)
 
     for hemi in HEMIS:
-        path_out = os.path.join(gifti_masks_path, f"{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(p_values[hemi], path_out)
-    path_out = os.path.join(masks_path, f"p_values.p")
-    pickle.dump(p_values, open(path_out, mode='wb'))
+        path_out = os.path.join(p_values_gifti_path, f"{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(log_10_p_values[hemi], path_out)
+
+    masks = copy.deepcopy(p_values)
+    for hemi in HEMIS:
+        masks[hemi][masks[hemi] < args.threshold] = 1
+        masks[hemi][masks[hemi] >= args.threshold] = 0
+
+    path_out = os.path.join(masks_path, f"p_values_thresh_{args.threshold}.p")
+    pickle.dump(masks, open(path_out, mode='wb'))
 
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     for hemi in HEMIS:
-        results = calc_clusters(p_values[hemi], threshold=0, edge_lengths=edge_lengths[hemi], return_clusters=True)
+        print(hemi)
+        results = calc_clusters(masks[hemi], threshold=0, edge_lengths=edge_lengths[hemi], return_clusters=True)
         clusters = results['clusters']
         clusters.sort(key=len, reverse=True)
         for i, cluster in enumerate(clusters[:10]):
-            cluster_map = np.zeros_like(p_values[hemi])
-            cluster_map[list(cluster)] = 1
+            print(f"{i}: Cluster of size {len(cluster)}")
+            cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
+            cluster_map[list(cluster)] = log_10_p_values[hemi][list(cluster)]
 
-            path_out = os.path.join(gifti_masks_path, f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii")
+            fname = f"thresh_{args.threshold}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            path_out = os.path.join(p_values_gifti_path, fname)
             export_to_gifti(cluster_map, path_out)
 
             cluster_mask = {h: np.zeros_like(cluster_map) for h in HEMIS}
-            cluster_mask[hemi] = cluster_map
-            path_out = os.path.join(masks_path, f"p_values_{hemi}_cluster_{i}.p")
+            cluster_mask[hemi][list(cluster)] = 1
+            path_out = os.path.join(masks_path, f"p_values_thresh_{args.threshold}_{hemi}_cluster_{i}.p")
             pickle.dump(cluster_mask, open(path_out, mode='wb'))
 
 
@@ -87,6 +98,8 @@ def get_args():
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
     parser.add_argument("--metric", type=str, default=METRIC_MIN)
+
+    parser.add_argument("--threshold", type=float, default=0.01)
 
     return parser.parse_args()
 
