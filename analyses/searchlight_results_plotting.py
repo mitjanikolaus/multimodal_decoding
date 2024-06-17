@@ -177,8 +177,6 @@ def plot_p_values(results_path, args):
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
-    p_values['left'][p_values['left'] == 0] = np.nan
-    p_values['right'][p_values['right'] == 0] = np.nan
     p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
     p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
@@ -323,34 +321,6 @@ def run(args):
             plt.close()
 
 
-FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
-
-
-def export_to_gifti(args):
-    p_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-    p_values = pickle.load(open(p_values_path, "rb"))
-
-    # transform to plottable magnitudes:
-    p_values['left'][p_values['left'] == 0] = np.nan
-    p_values['right'][p_values['right'] == 0] = np.nan
-    p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
-    p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
-
-    for hemi in HEMIS:
-        data = p_values[hemi].astype(np.float32)
-        gimage = GiftiImage(
-            darrays=[GiftiDataArray(
-                data,
-                intent=intent_codes.code['NIFTI_INTENT_NONE'],
-                datatype=data_type_codes.code['NIFTI_TYPE_FLOAT32'])]
-        )
-        path_out = p_values_path.replace(".p", f"_{FS_HEMI_NAMES[hemi]}.gii")
-        gimage.to_filename(path_out)
-
-
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -361,7 +331,7 @@ def get_args():
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
-    parser.add_argument("--mode", type=str, default='n_neighbors_100')
+    parser.add_argument("--mode", type=str, default='n_neighbors_200')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)
 
@@ -384,5 +354,4 @@ if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
-    export_to_gifti(args)
     run(args)

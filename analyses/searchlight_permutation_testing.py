@@ -622,8 +622,7 @@ def run(args):
     print(f"{len(null_distribution_tfce_values)} permutations")
     print(f"cluster test statistic significance cutoff for p<0.05 (across hemis): {significance_cutoff}")
 
-    p_values = {hemi: np.zeros_like(t_vals[args.metric]) for hemi, t_vals in
-                t_values.items()}
+    p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
