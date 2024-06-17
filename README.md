@@ -108,14 +108,19 @@ the hardcoded `data_dir` variable!
 
 ## DNN Feature extraction 
 
-### VisualBERT feature extraction
+### BLIP2
+
+Follow instructions on [https://github.com/salesforce/LAVIS/](https://github.com/salesforce/LAVIS/) to create a python
+environment.
+
+### VisualBERT
 
 ```
 pip install opencv-python pyyaml==5.1
 pip install 'git+https://github.com/facebookresearch/detectron2.git'
 ```
 
-### LXMERT features
+### LXMERT
 
 Precomputed bottom-up features can be downloaded from [this link](https://storage.googleapis.com/up-down-attention/trainval.zip)
 (Source: https://github.com/peteanderson80/bottom-up-attention).
