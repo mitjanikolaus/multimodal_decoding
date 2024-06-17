@@ -16,7 +16,7 @@ device = "cuda:1" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 50
 
 
-class PerceiverFeatureExtractor(FeatureExtractor):
+class BlipFeatureExtractor(FeatureExtractor):
 
     def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(path) for path in img_paths]
@@ -51,12 +51,23 @@ class PerceiverFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
-                                                                      model_type="pretrain", is_eval=True,
+    model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_image_text_matching",
+                                                                      model_type="coco", is_eval=True,
                                                                       device=device)
 
     processors = (vis_processors, txt_processors)
 
-    extractor = PerceiverFeatureExtractor(model, prepocessor=processors, model_name="blip2", batch_size=BATCH_SIZE,
-                                          device=device)
+    extractor = BlipFeatureExtractor(model, prepocessor=processors, model_name="blip2-coco", batch_size=BATCH_SIZE,
+                                     device=device)
     extractor.extract_features()
+
+    # model, vis_processors, txt_processors = load_model_and_preprocess(name="blip2_feature_extractor",
+    #                                                                   model_type="pretrain", is_eval=True,
+    #                                                                   device=device)
+    #
+    # processors = (vis_processors, txt_processors)
+    #
+    # extractor = BlipFeatureExtractor(model, prepocessor=processors, model_name="blip2", batch_size=BATCH_SIZE,
+    #                                  device=device)
+    # extractor.extract_features()
+
