@@ -86,22 +86,25 @@ create a binary mask.
 ```
 python preprocessing/create_gray_matter_masks.py
 ```
-Finally, the aforementioned script is also converting the mask to MNI space. The final masks are save to
+Finally, the aforementioned script is also converting the mask to MNI space. The final masks are saved to
 `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask.nii`.
 
 ### (4) Generation of beta values
 
 We generate beta values for each stimulus (image or caption) using a GLM.
 
-First create the matlab script, and then run it:
+First create the matlab scripts, and then run them.
+
 ```
 python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py --stage 1
-matlab -nodisplay  -r "run('preprocessing/split_glm_spm_design.m');exit;"  -logfile matlab_output.txt
+matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/split_glm_spm_design.m');exit;"  -logfile matlab_output.txt
 
 python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py --stage 2
-matlab -nodisplay  -r "run('preprocessing/split_glm_spm_design_phase2.m');exit;"  -logfile matlab_output.txt
+matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/split_glm_spm_design_phase2.m');exit;"  -logfile matlab_output.txt
 ```
 
+__Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
+the hardcoded `data_dir` variable!
 
 ## DNN Feature extraction 
 
