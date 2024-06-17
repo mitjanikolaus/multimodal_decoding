@@ -5,7 +5,8 @@ setenv('SPM_HTML_BROWSER','0');
 spm_jobman('initcfg');
 spm_get_defaults('cmdline',true);
 
-data_dir = '~/data/multimodal_decoding/fmri/betas/sub-01/unstructured';
+home = getenv('HOME');
+data_dir = [home,'/data/multimodal_decoding/fmri/betas/sub-01/unstructured'];
 cd(data_dir)
 
 %design
