@@ -591,7 +591,8 @@ def get_run_str(model_name, features, vision_features, lang_features, mask, surf
         if mask.startswith("functional_") or mask.startswith("anatomical_"):
             run_str += f"_mask_{mask}"
         elif "p_values" in mask:
-            run_str += f"_mask_{mask.replace('.p', '')}"
+            mask_name = os.path.basename(mask).replace(".p", "")
+            run_str += f"_mask_{mask_name}"
         else:
             raise RuntimeError(f"Unsupported mask: {mask}")
 
