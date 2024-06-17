@@ -52,8 +52,10 @@ def create_masks(args):
 
     masks = copy.deepcopy(p_values)
     for hemi in HEMIS:
-        masks[hemi][masks[hemi] < args.threshold] = 1
-        masks[hemi][masks[hemi] >= args.threshold] = 0
+        masks[hemi][p_values[hemi] < args.threshold] = 1
+        masks[hemi][p_values[hemi] >= args.threshold] = 0
+        masks[hemi][np.isnan(p_values[hemi])] = 0
+        masks[hemi] = masks[hemi].astype(np.uint8)
 
     path_out = os.path.join(masks_path, f"p_values_thresh_{args.threshold}.p")
     pickle.dump(masks, open(path_out, mode='wb'))
@@ -61,7 +63,7 @@ def create_masks(args):
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     for hemi in HEMIS:
         print(hemi)
-        results = calc_clusters(masks[hemi], threshold=0, edge_lengths=edge_lengths[hemi], return_clusters=True)
+        results = calc_clusters(masks[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
         clusters = results['clusters']
         clusters.sort(key=len, reverse=True)
         for i, cluster in enumerate(clusters[:10]):
@@ -73,7 +75,7 @@ def create_masks(args):
             path_out = os.path.join(p_values_gifti_path, fname)
             export_to_gifti(cluster_map, path_out)
 
-            cluster_mask = {h: np.zeros_like(cluster_map) for h in HEMIS}
+            cluster_mask = {h: np.zeros_like(cluster_map, dtype=np.uint8) for h in HEMIS}
             cluster_mask[hemi][list(cluster)] = 1
             path_out = os.path.join(masks_path, f"p_values_thresh_{args.threshold}_{hemi}_cluster_{i}.p")
             pickle.dump(cluster_mask, open(path_out, mode='wb'))
