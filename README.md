@@ -7,12 +7,12 @@ for fsaverage5:
 ```
 freeview \
 -f $FREESURFER_HOME/subjects/fsaverage5/surf/lh.inflated\
-:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage5/n_neighbors_200/p_values_metric_3_h_2.0_e_1.0_smoothed_0_lh.gii\
+:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage5/n_neighbors_200/masks_gifti/lh.gii\
 :annot=~/code/multimodal_decoding/multimodal_decoding/atlas_data/hcp_surface/lh.HCP-MMP1-fsaverage5.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage5/label/lh.aparc.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage5/label/lh.aparc.a2009s.annot \
 -f $FREESURFER_HOME/subjects/fsaverage5/surf/rh.inflated\
-:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage5/n_neighbors_200/p_values_metric_3_h_2.0_e_1.0_smoothed_0_rh.gii\
+:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage5/n_neighbors_200/masks_gifti/rh.gii\
 :annot=~/code/multimodal_decoding/multimodal_decoding/atlas_data/hcp_surface/rh.HCP-MMP1-fsaverage5.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage5/label/rh.aparc.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage5/label/rh.aparc.a2009s.annot
@@ -22,12 +22,12 @@ for fsaverage7:
 ```
 freeview \
 -f $FREESURFER_HOME/subjects/fsaverage/surf/lh.inflated\
-:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/p_values_metric_3_h_2.0_e_1.0_smoothed_0_lh.gii\
+:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/masks_gifti/lh.gii\
 :annot=~/code/multimodal_decoding/multimodal_decoding/atlas_data/hcp_surface/lh.HCP-MMP1.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage/label/lh.aparc.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage/label/lh.aparc.a2009s.annot \
 -f $FREESURFER_HOME/subjects/fsaverage/surf/rh.inflated\
-:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/p_values_metric_3_h_2.0_e_1.0_smoothed_0_rh.gii\
+:overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/masks_gifti/rh.gii\
 :annot=~/code/multimodal_decoding/multimodal_decoding/atlas_data/hcp_surface/rh.HCP-MMP1.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage/label/rh.aparc.annot\
 :annot=$FREESURFER_HOME/subjects/fsaverage/label/rh.aparc.a2009s.annot
