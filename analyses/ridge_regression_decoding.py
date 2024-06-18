@@ -50,6 +50,7 @@ ACC_IMAGES = "pairwise_acc_images"
 
 IMAGE = "image"
 CAPTION = "caption"
+IMAGERY = "imagery"
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
 
@@ -365,17 +366,14 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
     return nn_latent_transform
 
 
-def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
-    imagery_scenes = IMAGERY_SCENES[subject]
-
-    fmri_data_dir = os.path.join(FMRI_BETAS_DIR, subject)
-    fmri_addresses_regex = os.path.join(fmri_data_dir, f'betas_{mode}*', '*.nii')
-    fmri_betas_addresses = np.array(sorted(glob(fmri_addresses_regex)))
+def get_fmri_data_paths(subject, mode):
+    fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', '*.nii')
+    fmri_betas_paths = np.array(sorted(glob(fmri_addresses_regex)))
 
     stim_ids = []
     stim_types = []
-    for addr in fmri_betas_addresses:
-        file_name = os.path.basename(addr)
+    for path in fmri_betas_paths:
+        file_name = os.path.basename(path)
         if 'I' in file_name:  # Image
             stim_id = int(file_name[file_name.find('I') + 1:-4])
             stim_types.append(IMAGE)
@@ -383,16 +381,22 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
             stim_id = int(file_name[file_name.find('C') + 1:-4])
             stim_types.append(CAPTION)
         else:  # imagery
-            stim_id = int(file_name[file_name.find('.nii') - 1:-4])
-            stim_id = imagery_scenes[stim_id - 1][1]
-            stim_types.append('imagery')
+            stim_id_idx = int(file_name[file_name.find('.nii') - 1:-4])
+            stim_id = IMAGERY_SCENES[subject][stim_id_idx - 1][1]
+            stim_types.append(IMAGERY)
         stim_ids.append(stim_id)
 
     stim_ids = np.array(stim_ids)
     stim_types = np.array(stim_types)
 
-    gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
-    gray_matter_mask_img = nib.load(gray_matter_mask_address)
+    return fmri_betas_paths, stim_ids, stim_types
+
+
+def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
+
+    gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
+    gray_matter_mask_img = nib.load(gray_matter_mask_path)
     gray_matter_mask_ras = nib.as_closest_canonical(gray_matter_mask_img)
     gray_matter_mask_ras_data = gray_matter_mask_ras.get_fdata()
     gray_matter_mask = gray_matter_mask_ras_data == 1
@@ -407,9 +411,9 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
     if roi_mask_name is not None:
         mask = roi_mask & gray_matter_mask
 
-    fmri_betas = np.array([None for _ in range(len(fmri_betas_addresses))])
-    for idx in trange(len(fmri_betas_addresses), desc="loading fmri data"):
-        sample = nib.load(fmri_betas_addresses[idx])
+    fmri_betas = np.array([None for _ in range(len(fmri_betas_paths))])
+    for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
+        sample = nib.load(fmri_betas_paths[idx])
         sample = nib.as_closest_canonical(sample)
         sample = sample.get_fdata()
         sample = sample[mask].astype('float32').reshape(-1)
@@ -678,6 +682,14 @@ def run(args):
                 test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(
                     subject,
                     TESTING_MODE,
+                    fmri_transform=fmri_transform,
+                    mask_name=mask,
+                    surface=args.surface,
+                    resolution=args.resolution,
+                )
+                imagery_fmri_betas, imagery_stim_ids, imagery_stim_types, _ = get_fmri_data(
+                    subject,
+                    IMAGERY,
                     fmri_transform=fmri_transform,
                     mask_name=mask,
                     surface=args.surface,
