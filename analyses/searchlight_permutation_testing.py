@@ -861,7 +861,7 @@ def create_null_distribution(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model", type=str, default='vilt')
+    parser.add_argument("--model", type=str, default='blip2')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
