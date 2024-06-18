@@ -769,7 +769,7 @@ def calc_t_values_null_distr(args):
     n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
-    print("filtering scores for enough data and split up for jobs")
+    print("filtering scores for enough data and splitting up for jobs")
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
     for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr)):
         for job_id in range(args.n_jobs):
