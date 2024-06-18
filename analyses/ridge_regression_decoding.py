@@ -47,6 +47,7 @@ TESTING_MODE = "test"
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
 ACC_IMAGES = "pairwise_acc_images"
+ACC_IMAGERY = "pairwise_acc_imagery"
 
 IMAGE = "image"
 CAPTION = "caption"
@@ -488,6 +489,21 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
     return cdist(predictions, originals, metric=metric)
 
 
+def imagery_pairwise_accuracy_scores(latents, predictions, metric="cosine", normalize=True):
+    results = dict()
+
+    if normalize:
+        pred_mod_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = pred_mod_normalize(predictions)
+
+    dist_mat = get_distance_matrix(predictions, latents, metric)
+    diag = dist_mat.diagonal().reshape(-1, 1)
+    comp_mat = diag < dist_mat
+    results[ACC_IMAGERY] = comp_mat.mean()
+
+    return results
+
+
 def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
     results = dict()
 
@@ -743,8 +759,18 @@ def run(args):
                                                                           subject,
                                                                           TESTING_MODE,
                                                                           nn_latent_transform=latent_transform)
+
+                                imagery_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
+                                                                          lang_features,
+                                                                          imagery_stim_ids,
+                                                                          imagery_stim_types,
+                                                                          subject,
+                                                                          IMAGERY,
+                                                                          nn_latent_transform=latent_transform)
+
                                 best_model = clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
+                                imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
                                 results = {
                                     "alpha": best_alpha,
@@ -759,8 +785,11 @@ def run(args):
                                     "cv_results": clf.cv_results_,
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
+                                    "imagery_stimulus_ids": imagery_stim_ids,
                                     "predictions": test_predicted_latents,
+                                    "imagery_predictions": imagery_predicted_latents,
                                     "latents": test_data_latents,
+                                    "imagery_latents": imagery_data_latents,
                                     "surface": args.surface,
                                     "resolution": args.resolution,
                                 }
@@ -769,10 +798,14 @@ def run(args):
                                         test_data_latents, test_predicted_latents, test_stim_types
                                     )
                                 )
+                                results.update(
+                                    imagery_pairwise_accuracy_scores(imagery_data_latents, imagery_predicted_latents)
+                                )
                                 print(f"Best alpha: {best_alpha}"
                                       f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
                                       f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                                      f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}")
+                                      f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
+                                      f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}")
 
                                 results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
