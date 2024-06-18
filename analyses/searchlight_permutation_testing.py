@@ -502,7 +502,10 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
 
 
 def calc_image_t_values(data, popmean):
-    return np.array([stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] for x in data.T])
+    # use heuristic that mean needs to be greater than popmean to speed up calculation
+    return np.array(
+        [stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if x[~np.isnan(x)].mean() > popmean else 0 for x in data.T]
+    )
 
 
 def calc_t_values(per_subject_scores):
@@ -727,7 +730,7 @@ def calc_t_values_null_distr(args, path):
     else:
         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
-    def shuffle_and_calc_t_values(per_subject_scores, permutations, proc_id, path):
+    def calc_permutation_t_values(per_subject_scores, permutations, proc_id, path):
         job_temp_results_file = os.path.join(path, "temp_t_vals", f"{proc_id}.p")
         os.makedirs(os.path.dirname(job_temp_results_file), exist_ok=True)
 
@@ -789,7 +792,7 @@ def calc_t_values_null_distr(args, path):
                         scores_jobs[job_id][id][subj][hemi][metric] = filtered[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
 
     job_t_vals = Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-        delayed(shuffle_and_calc_t_values)(
+        delayed(calc_permutation_t_values)(
             scores_jobs[id],
             permutations,
             id,
