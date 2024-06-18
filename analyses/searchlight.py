@@ -167,7 +167,7 @@ def run(args):
         for training_mode in args.training_modes:
             train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(subject, training_mode,
                                                                                  args.resolution)
-            test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, training_mode, args.resolution)
+            test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, "test", args.resolution)
 
             for model_name in args.models:
                 model_name = model_name.lower()
