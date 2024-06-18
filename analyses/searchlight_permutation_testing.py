@@ -1,11 +1,12 @@
 import argparse
 import copy
+import itertools
 import math
 import warnings
 
 import numpy as np
 from joblib import Parallel, delayed
-from nilearn import datasets, plotting
+from nilearn import datasets
 import matplotlib.pyplot as plt
 import os
 from glob import glob
@@ -22,7 +23,7 @@ import seaborn as sns
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES, \
     ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC
 from analyses.searchlight import SEARCHLIGHT_OUT_DIR
-from utils import RESULTS_DIR, SUBJECTS, HEMIS
+from utils import SUBJECTS, HEMIS
 
 DEFAULT_N_JOBS = 10
 
@@ -61,14 +62,17 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png", dpi=300)
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png",
+                dpi=300)
 
     plt.figure()
     sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png", dpi=300)
+    plt.savefig(
+        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png",
+        dpi=300)
 
 
 def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
@@ -498,11 +502,7 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
 
 
 def calc_image_t_values(data, popmean):
-    enough_data = (~np.isnan(data)).sum(axis=0) > 2  # at least 3 datapoints
-    return np.array([
-        stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if ed else np.nan for x, ed
-        in zip(data.T, enough_data)]
-    )
+    return np.array([stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] for x in data.T])
 
 
 def calc_t_values(per_subject_scores):
@@ -511,7 +511,9 @@ def calc_t_values(per_subject_scores):
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS])
             popmean = CHANCE_VALUES[metric]
-            t_values[hemi][metric] = calc_image_t_values(data, popmean)
+            enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
+            t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
+            t_values[hemi][metric][enough_data] = calc_image_t_values(data[:, enough_data], popmean)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -725,17 +727,16 @@ def calc_t_values_null_distr(args):
     else:
         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
-    def shuffle_and_calc_t_values(per_subject_scores, proc_id, n_iters_per_job):
+    def shuffle_and_calc_t_values(per_subject_scores, permutations, proc_id):
         job_t_vals = []
-        iterator = tqdm(range(n_iters_per_job)) if proc_id == 0 else range(n_iters_per_job)
-        for _ in iterator:
+        iterator = tqdm(permutations) if proc_id == 0 else permutations
+        for permutation in iterator:
             t_values = {hemi: dict() for hemi in HEMIS}
             for hemi in HEMIS:
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
-                    random_idx = np.random.choice(len(per_subject_scores), size=len(SUBJECTS))
                     data = np.array(
                         [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                         zip(random_idx, SUBJECTS)])
+                         zip(permutation, SUBJECTS)])
                     popmean = CHANCE_VALUES[metric]
                     t_values[hemi][metric] = calc_image_t_values(data, popmean)
 
@@ -752,20 +753,50 @@ def calc_t_values_null_distr(args):
             job_t_vals.append(t_values)
         return job_t_vals
 
-    n_iters_per_job = math.ceil(args.n_permutations_group_level / args.n_jobs)
-    n_iters_last_job = n_iters_per_job
-    if args.n_permutations_group_level % args.n_jobs != 0:
-        n_iters_last_job = (n_iters_per_job * args.n_jobs) - args.n_permutations_group_level
-    print(f"n iters per job: {n_iters_per_job} (last job: {n_iters_last_job})")
-    all_t_vals = Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
+    permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
+
+    n_vertices = per_subject_scores_null_distr[0][SUBJECTS[0]]['left'][METRIC_IMAGES].shape[0]
+    enough_data = {
+        hemi: np.argwhere(
+            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][METRIC_IMAGES] for subj in SUBJECTS])).sum(
+                axis=0) > 2)[:, 0]
+        for hemi in HEMIS
+    }  # at least 3 datapoints
+    enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
+    print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
+
+    n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
+    print(f"n vertices per job: {n_per_job}")
+
+    print("filtering scores for enough data and split up for jobs")
+    scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
+    for id, scores in tqdm(enumerate(per_subject_scores_null_distr)):
+        for job_id in range(args.n_jobs):
+            scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in SUBJECTS})
+        for subj in SUBJECTS:
+            for hemi in HEMIS:
+                for metric in scores[subj][hemi].keys():
+                    for job_id in range(args.n_jobs):
+                        filtered = scores[subj][hemi][metric][enough_data[hemi]]
+                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
+
+    job_t_vals = Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
         delayed(shuffle_and_calc_t_values)(
-            per_subject_scores_null_distr,
+            scores_jobs[id],
+            permutations,
             id,
-            n_iters_per_job if not id == args.n_jobs - 1 else n_iters_last_job,
         )
         for id in range(args.n_jobs)
     )
-    all_t_vals = np.concatenate(all_t_vals)
+
+    print("assembling results")
+    all_t_vals = [{hemi: dict() for hemi in HEMIS} for _ in range(args.n_permutations_group_level)]
+    for i in tqdm(range(args.n_permutations_group_level)):
+        for hemi in HEMIS:
+            for metric in job_t_vals[0][i][hemi].keys():
+                all_t_vals[i][hemi][metric] = np.repeat(np.nan, n_vertices)
+                all_t_vals[i][hemi][metric][enough_data[hemi]] = np.concatenate([job_t_vals[job_id][i][hemi][metric] for job_id in range(args.n_jobs)])
 
     return all_t_vals
 
