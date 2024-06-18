@@ -670,6 +670,8 @@ def load_null_distr_per_subject_scores(args):
             scores_dir = os.path.join(base_path, "null_distr")
             print(f'loading scores from {scores_dir}')
             score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+            if len(score_paths) == 0:
+                raise RuntimeError(f"No null distribution scores found: {scores_dir}")
             last_idx = int(os.path.basename(score_paths[-1])[:-2])
             assert last_idx == len(score_paths) - 1, last_idx
 
