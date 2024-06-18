@@ -712,7 +712,7 @@ def load_null_distr_per_subject_scores(args):
     return per_subject_scores_null_distr
 
 
-def calc_t_values_null_distr(args):
+def calc_t_values_null_distr(args, path):
     per_subject_scores_null_distr_path = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
@@ -727,10 +727,13 @@ def calc_t_values_null_distr(args):
     else:
         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
-    def shuffle_and_calc_t_values(per_subject_scores, permutations, proc_id):
+    def shuffle_and_calc_t_values(per_subject_scores, permutations, proc_id, path):
+        job_temp_results_file = os.path.join(path, "temp_t_vals", f"{proc_id}.p")
+        os.makedirs(os.path.dirname(job_temp_results_file), exist_ok=True)
+
         job_t_vals = []
-        iterator = tqdm(permutations) if proc_id == 0 else permutations
-        for permutation in iterator:
+        iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(permutations)
+        for iteration, permutation in iterator:
             t_values = {hemi: dict() for hemi in HEMIS}
             for hemi in HEMIS:
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
@@ -749,8 +752,12 @@ def calc_t_values_null_distr(args):
                             t_values[hemi][METRIC_IMAGES],
                             t_values[hemi][METRIC_CAPTIONS]),
                         axis=0)
-
             job_t_vals.append(t_values)
+
+            if iteration % 100 == 0:
+                pickle.dump(job_t_vals, open(job_temp_results_file, 'wb'))
+
+        pickle.dump(job_t_vals, open(job_temp_results_file, 'wb'))
         return job_t_vals
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
@@ -786,6 +793,7 @@ def calc_t_values_null_distr(args):
             scores_jobs[id],
             permutations,
             id,
+            os.path.dirname(path),
         )
         for id in range(args.n_jobs)
     )
@@ -816,7 +824,7 @@ def create_null_distribution(args):
         )
         if not os.path.isfile(t_values_null_distribution_path):
             print(f"Calculating t-values: null distribution")
-            t_values_null_distribution = calc_t_values_null_distr(args)
+            t_values_null_distribution = calc_t_values_null_distr(args, t_values_null_distribution_path)
             os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
             pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
         else:
