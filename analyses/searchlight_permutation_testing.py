@@ -771,7 +771,7 @@ def calc_t_values_null_distr(args):
 
     print("filtering scores for enough data and split up for jobs")
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
-    for id, scores in tqdm(enumerate(per_subject_scores_null_distr)):
+    for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr)):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in SUBJECTS})
         for subj in SUBJECTS:
