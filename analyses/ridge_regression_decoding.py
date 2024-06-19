@@ -797,11 +797,14 @@ def run(args):
                                         imagery_data_latents, imagery_predicted_latents, test_data_latents
                                     )
                                 )
-                                print(f"Best alpha: {best_alpha}"
-                                      f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
-                                      f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                                      f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
-                                      f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}")
+                                print(
+                                    f"Best alpha: {best_alpha}"
+                                    f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
+                                    f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
+                                    f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
+                                    f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
+                                    f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
+                                )
 
                                 results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
