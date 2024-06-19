@@ -125,10 +125,13 @@ REGIONS_LANGUAGE = [
 ]
 
 
-def get_anatomical_mask(roi_mask_name):
+def get_anatomical_mask(roi_mask_name, ref_img):
     destrieux_atlas = fetch_atlas_destrieux_2009()
     label_to_id_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
-    atlas_map = nib.load(destrieux_atlas.maps).get_fdata()
+    atlas_map = nib.load(destrieux_atlas.maps)
+    atlas_map = resample_to_img(atlas_map, ref_img, interpolation='nearest')
+    atlas_map = atlas_map.get_fdata()
+
     if roi_mask_name == MASK_ANATOMICAL_VISUAL_LOW_LEVEL:
         region_names = [label for label in REGIONS_LOW_LEVEL_VISUAL]
     elif roi_mask_name == MASK_ANATOMICAL_VISUAL_HIGH_LEVEL:
@@ -176,7 +179,7 @@ def get_functional_mask(roi_mask_name, ref_img):
 
 def get_roi_mask(roi_mask_name, ref_img):
     if roi_mask_name.startswith("anatomical_"):
-        return get_anatomical_mask(roi_mask_name)
+        return get_anatomical_mask(roi_mask_name, ref_img)
 
     elif roi_mask_name.startswith("functional_"):
         return get_functional_mask(roi_mask_name, ref_img)
@@ -398,9 +401,8 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
 
     gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
     gray_matter_mask_img = nib.load(gray_matter_mask_path)
-    # gray_matter_mask_ras = nib.as_closest_canonical(gray_matter_mask_img)
-    gray_matter_mask_ras_data = gray_matter_mask_img.get_fdata().reshape(-1)
-    gray_matter_mask = gray_matter_mask_ras_data == 1
+    gray_matter_mask_data = gray_matter_mask_img.get_fdata()
+    gray_matter_mask = gray_matter_mask_data == 1
     print(f"Gray matter mask size: {gray_matter_mask.sum()}")
 
     if roi_mask_name is not None:
@@ -415,9 +417,8 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
     fmri_betas = np.array([None for _ in range(len(fmri_betas_paths))])
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
-        # sample = nib.as_closest_canonical(sample)
         sample = sample.get_fdata()
-        sample = sample.astype('float32').reshape(-1)[mask]
+        sample = sample[mask].astype('float32').reshape(-1)
         fmri_betas[idx] = sample.copy()
 
     if fmri_betas_transform is None:
