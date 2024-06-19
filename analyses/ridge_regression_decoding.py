@@ -48,6 +48,7 @@ ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
 ACC_IMAGES = "pairwise_acc_images"
 ACC_IMAGERY = "pairwise_acc_imagery"
+ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 IMAGE = "image"
 CAPTION = "caption"
@@ -541,6 +542,18 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, met
     return results
 
 
+def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
+                                          normalize=True):
+    results = dict()
+
+    results[ACC_IMAGERY] = pairwise_accuracy(imagery_latents, imagery_predictions, metric, normalize)
+
+    target_latents = np.concatenate((imagery_latents, latents))
+    results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(target_latents, imagery_predictions, metric, normalize)
+
+    return results
+
+
 def create_dissimilarity_matrix(sample_embeds, matrix_metric="spearmanr"):
     if matrix_metric == "spearmanr":
         sim_mat = spearmanr(sample_embeds, axis=1)[0]
@@ -779,8 +792,11 @@ def run(args):
                                         test_data_latents, test_predicted_latents, test_stim_types
                                     )
                                 )
-                                results[ACC_IMAGERY] = pairwise_accuracy(imagery_data_latents,
-                                                                         imagery_predicted_latents)
+                                results.update(
+                                    calc_imagery_pairwise_accuracy_scores(
+                                        imagery_data_latents, imagery_predicted_latents, test_data_latents
+                                    )
+                                )
                                 print(f"Best alpha: {best_alpha}"
                                       f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
                                       f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
