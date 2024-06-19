@@ -399,7 +399,7 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
     gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
     gray_matter_mask_img = nib.load(gray_matter_mask_path)
     # gray_matter_mask_ras = nib.as_closest_canonical(gray_matter_mask_img)
-    gray_matter_mask_ras_data = gray_matter_mask_img.get_fdata()
+    gray_matter_mask_ras_data = gray_matter_mask_img.get_fdata().reshape(-1)
     gray_matter_mask = gray_matter_mask_ras_data == 1
     print(f"Gray matter mask size: {gray_matter_mask.sum()}")
 
@@ -417,7 +417,7 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
         sample = nib.load(fmri_betas_paths[idx])
         sample = nib.as_closest_canonical(sample)
         sample = sample.get_fdata()
-        sample = sample[mask].astype('float32').reshape(-1)
+        sample = sample.astype('float32').reshape(-1)[mask]
         fmri_betas[idx] = sample.copy()
 
     if fmri_betas_transform is None:
