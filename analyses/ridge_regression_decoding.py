@@ -492,10 +492,10 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
 
 def dist_mat_to_pairwise_acc(dist_mat):
     diag = dist_mat.diagonal().reshape(-1, 1)
-    n = diag.shape[0]
     comp_mat = diag < dist_mat
     corrects = comp_mat.sum()
-    score = corrects / ((n * n) - n)  # subtract n for the diagonal
+    # subtract the number of elements of the diagonal as these values are always "False" (not smaller than themselves)
+    score = corrects / (dist_mat.size - diag.size)
     return score
 
 
