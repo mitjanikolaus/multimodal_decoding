@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES
+from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, calc_all_pairwise_accuracy_scores, pairwise_accuracy, calc_imagery_pairwise_accuracy_scores
 from tqdm import tqdm
 from glob import glob
 import pickle
@@ -173,18 +173,36 @@ def add_avg_subject(df):
     df_mean["subject"] = "average"
     return pd.concat((df.copy(), df_mean))
 
+METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES]
+METRICS_ERROR_ANALYSIS = ['predictions', 'latents', 'stimulus_ids', 'stimulus_types']
+METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, 'imagery_predictions', 'imagery_latents']
 
-def load_results_data():
+def update_acc_scores(results):
+    results.update(
+        calc_all_pairwise_accuracy_scores(
+            results["latents"], results["predictions"], results["stimulus_types"]
+        )
+    )
+    if "imagery_predictions" in results:
+        results.update(
+            calc_imagery_pairwise_accuracy_scores(
+                results["imagery_latents"], results["imagery_predictions"], results["latents"]
+            )
+        )
+    return results
+
+def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=True):
     results_root_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm/')
-
-    metrics = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, 'predictions', 'latents', 'stimulus_ids']
 
     data = []
 
     result_files = sorted(glob(f"{results_root_dir}/*/*/*/results.p"))
     for result_file_path in tqdm(result_files):
         results = pickle.load(open(result_file_path, 'rb'))
-        if ACC_MODALITY_AGNOSTIC in results:
+        if results['model'] in models:
+            if recompute_acc_scores:
+                results = update_acc_scores(results)
+            
             for metric in metrics:
                 if metric in results.keys():
                     data_item = {k: value for k, value in results.items() if k in HP_KEYS}
@@ -200,7 +218,11 @@ def load_results_data():
 
     df["training_mode"] = df.training_mode.replace(
         {"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
-    df["mask"] = df["mask"].fillna("whole_brain")
+
+    if "surface" in df.columns:
+        df["surface"] = df.surface.fillna(False)
+    else:
+        df["surface"] = False
 
     df["vision_features"] = df.vision_features.replace(
         {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
@@ -216,10 +238,6 @@ def load_results_data():
     # update unimodal feat values for fused feats of multimodal models:
     df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n_a"
     df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n_a"
-    # df.loc[df.model.isin(["bridgetower"]), "lang_features"] = "lang_features_cls"
-    # df.loc[df.model.isin(["bridgetower"]), "vision_features"] = "vision_features_cls"
-    # df.loc[df.model.isin(["vilt", "visualbert", "lxmert"]), "lang_features"] = "lang_features_mean"
-    # df.loc[df.model.isin(["vilt", "visualbert", "lxmert"]), "vision_features"] = "vision_features_mean"
 
     # default values for unimodal models:
     df.loc[df.model.isin(
