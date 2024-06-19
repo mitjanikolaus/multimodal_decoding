@@ -120,6 +120,8 @@ IMAGERY_SCENES = {
         ],
 }
 
+IDS_IMAGES_IMAGERY = [scene[1] for scenes_subj in IMAGERY_SCENES.values() for scene in scenes_subj]
+
 IDS_IMAGES_TEST = [
     3862,
     6450,
