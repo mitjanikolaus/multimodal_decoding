@@ -775,12 +775,12 @@ def run(args):
                                     "resolution": args.resolution,
                                 }
                                 results.update(
-                                    all_pairwise_accuracy_scores(
+                                    calc_all_pairwise_accuracy_scores(
                                         test_data_latents, test_predicted_latents, test_stim_types
                                     )
                                 )
-                                results[ACC_IMAGERY] = pairwise_accuracy_scores(imagery_data_latents,
-                                                                                imagery_predicted_latents)
+                                results[ACC_IMAGERY] = pairwise_accuracy(imagery_data_latents,
+                                                                         imagery_predicted_latents)
                                 print(f"Best alpha: {best_alpha}"
                                       f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
                                       f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
