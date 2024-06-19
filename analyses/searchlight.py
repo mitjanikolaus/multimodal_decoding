@@ -20,11 +20,11 @@ from sklearn.preprocessing import StandardScaler
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
-    get_default_features, all_pairwise_accuracy_scores, IMAGE, \
+    get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
     get_fmri_surface_data
 
-from utils import FMRI_SURFACE_LEVEL_DIR, INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS
+from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS
 
 DEFAULT_N_JOBS = 10
 
@@ -57,12 +57,12 @@ def train_and_test(
             shuffled_indices = create_shuffled_indices(seed)
             y_test_shuffled = y_test[shuffled_indices]
 
-            scores = all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES)
+            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES)
+    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES)
 
     return scores
 
