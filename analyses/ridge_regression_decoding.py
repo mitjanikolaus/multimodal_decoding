@@ -490,75 +490,55 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
     return cdist(predictions, originals, metric=metric)
 
 
-def imagery_pairwise_accuracy_scores(latents, predictions, metric="cosine", normalize=True):
-    results = dict()
-
-    if normalize:
-        pred_mod_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
-        predictions = pred_mod_normalize(predictions)
-
-    dist_mat = get_distance_matrix(predictions, latents, metric)
+def dist_mat_to_pairwise_acc(dist_mat):
     diag = dist_mat.diagonal().reshape(-1, 1)
+    n = diag.shape[0]
     comp_mat = diag < dist_mat
-    results[ACC_IMAGERY] = comp_mat.mean()
-
-    return results
-
-
-def all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
-    results = dict()
-
-    for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
-        preds_mod = predictions[stim_types == modality].copy()
-        latents_mod = latents[stim_types == modality]
-        if normalize:
-            pred_mod_normalize = Normalize(preds_mod.mean(axis=0), preds_mod.std(axis=0))
-            preds_mod = pred_mod_normalize(preds_mod)
-
-        dist_mat = get_distance_matrix(preds_mod, latents_mod, metric)
-        diag = dist_mat.diagonal().reshape(-1, 1)
-        comp_mat = diag < dist_mat
-        results[acc_metric_name] = comp_mat.mean()
-
-    if normalize:
-        pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
-        predictions = pred_normalize(predictions)
-
-    dist_mat = get_distance_matrix(predictions, latents, metric)
-
-    mod_agnostic_accs = []
-    for modality in [CAPTION, IMAGE]:
-        dist_mat_within_mod = dist_mat[stim_types == modality][:, stim_types == modality]
-        dist_mat_cross_modal = dist_mat[stim_types == modality][:, stim_types != modality]
-        dist_mat_min = np.min((dist_mat_within_mod, dist_mat_cross_modal), axis=0)
-        diag = dist_mat_min.diagonal().reshape(-1, 1)
-        comp_mat = diag < dist_mat_min
-        scores = np.mean(comp_mat, axis=0)
-        mod_agnostic_accs.extend(scores)
-        results[f"pairwise_acc_mod_agnostic_{modality}s"] = scores.mean()
-
-    results[ACC_MODALITY_AGNOSTIC] = np.mean(mod_agnostic_accs)
-
-    return results
+    corrects = comp_mat.sum()
+    score = corrects / ((n * n) - n)  # subtract n for the diagonal
+    return score
 
 
 def pairwise_accuracy(latents, predictions, metric="cosine", normalize=True):
     if normalize:
+        preds_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = preds_normalize(predictions)
+
+    dist_mat = get_distance_matrix(predictions, latents, metric)
+    return dist_mat_to_pairwise_acc(dist_mat)
+
+
+def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cosine", normalize=True):
+    results = dict()
+
+    if normalize:
         pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
         predictions = pred_normalize(predictions)
 
-    if "csls_" in metric:
-        metric = metric.replace("csls_", "")
-        dist_mat = get_distance_matrix_csls(predictions, latents, metric=metric)
-    else:
-        dist_mat = get_distance_matrix(predictions, latents, metric)
+    dist_mat = get_distance_matrix(predictions, latents, metric)
 
-    diag = dist_mat.diagonal().reshape(-1, 1)  # all congruent distances
-    comp_mat = diag < dist_mat  # we are interested in i,j where d(i,i) < d(i,j)
+    for modality in [CAPTION, IMAGE]:
+        dist_mat_within_mod = dist_mat[stim_types == modality][:, stim_types == modality]
+        dist_mat_cross_modal = dist_mat[stim_types == modality][:, stim_types != modality]
+        dist_mat_min = np.min((dist_mat_within_mod, dist_mat_cross_modal), axis=0)
+        results[f"pairwise_acc_mod_agnostic_{modality}s"] = dist_mat_to_pairwise_acc(dist_mat_min)
 
-    score = comp_mat.mean()
+    score = np.mean([results[f"pairwise_acc_mod_agnostic_{modality}s"] for modality in [CAPTION, IMAGE]])
 
-    return score
+    results[ACC_MODALITY_AGNOSTIC] = score
+    return results
+
+
+def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
+    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize)
+
+    for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
+        preds_mod = predictions[stim_types == modality].copy()
+        latents_mod = latents[stim_types == modality]
+
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod)
+
+    return results
 
 
 def create_dissimilarity_matrix(sample_embeds, matrix_metric="spearmanr"):
@@ -762,12 +742,12 @@ def run(args):
                                                                           nn_latent_transform=latent_transform)
 
                                 imagery_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
-                                                                          lang_features,
-                                                                          imagery_stim_ids,
-                                                                          imagery_stim_types,
-                                                                          subject,
-                                                                          IMAGERY,
-                                                                          nn_latent_transform=latent_transform)
+                                                                             lang_features,
+                                                                             imagery_stim_ids,
+                                                                             imagery_stim_types,
+                                                                             subject,
+                                                                             IMAGERY,
+                                                                             nn_latent_transform=latent_transform)
 
                                 best_model = clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
@@ -799,9 +779,8 @@ def run(args):
                                         test_data_latents, test_predicted_latents, test_stim_types
                                     )
                                 )
-                                results.update(
-                                    imagery_pairwise_accuracy_scores(imagery_data_latents, imagery_predicted_latents)
-                                )
+                                results[ACC_IMAGERY] = pairwise_accuracy_scores(imagery_data_latents,
+                                                                                imagery_predicted_latents)
                                 print(f"Best alpha: {best_alpha}"
                                       f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
                                       f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
