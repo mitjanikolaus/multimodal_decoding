@@ -302,6 +302,8 @@ def get_nn_latent_data(model_name, features, vision_features_mode, lang_features
                 feats = get_lang_feats(latent_vectors, stim_id, lang_features_mode)
             elif stim_type == IMAGE:
                 feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
+            elif stim_type == IMAGERY:
+                feats = get_vision_feats(latent_vectors, stim_id, vision_features_mode)
             else:
                 raise RuntimeError(f"Unknown stim type: {stim_type}")
         else:
