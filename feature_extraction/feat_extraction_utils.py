@@ -51,6 +51,11 @@ class CoCoDataset(Dataset):
             cap = self.captions[id]
             return id, cap, img_path
 
+    def get_img_by_coco_id(self, coco_id):
+        img_path = os.path.join(self.root, self.img_paths[coco_id])
+        img = Image.open(img_path).convert('RGB')
+        return img
+
 
 class FeatureExtractor:
     def __init__(self, model, prepocessor=None, model_name=None, batch_size=10, device="cpu"):
