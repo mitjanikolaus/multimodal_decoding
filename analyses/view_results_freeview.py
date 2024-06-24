@@ -1,33 +1,36 @@
-
 import argparse
 import os
 
-from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR
-
-# freeview \
-# -f $FREESURFER_HOME/subjects/fsaverage/surf/lh.inflated\
-# :overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/p_values_gifti/lh.gii\
-# :annot=~/code/multimodal_decoding/atlas_data/hcp_surface/lh.HCP-MMP1.annot\
-# :annot=$FREESURFER_HOME/subjects/fsaverage/label/lh.aparc.annot\
-# :annot=$FREESURFER_HOME/subjects/fsaverage/label/lh.aparc.a2009s.annot \
-# -f $FREESURFER_HOME/subjects/fsaverage/surf/rh.inflated\
-# :overlay=~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/p_values_gifti/rh.gii\
-# :annot=~/code/multimodal_decoding/atlas_data/hcp_surface/rh.HCP-MMP1.annot\
-# :annot=$FREESURFER_HOME/subjects/fsaverage/label/rh.aparc.annot\
-# :annot=$FREESURFER_HOME/subjects/fsaverage/label/rh.aparc.a2009s.annot
+from analyses.ridge_regression_decoding import get_default_features, FEATS_SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
+from analyses.searchlight import SEARCHLIGHT_OUT_DIR
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
 
 
 def run(args):
-    os.environ["FREESURFER_HOME"] = f"/usr/local/freesurfer/7.4.1"
-    result_code = os.system("$FREESURFER_HOME/SetUpFreeSurfer.sh")
-    cmd = (f"freeview -f $FREESURFER_HOME/subjects/fsaverage/surf/lh.inflated")
+    os.environ["FREESURFER_HOME"] = FREESURFER_HOME_DIR
+    os.system("$FREESURFER_HOME/SetUpFreeSurfer.sh")
+    cmd = (f"freeview")
+    thresh = str(args.p_values_threshold)
+    for hemi_fs in HEMIS_FS:
+        cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
+        mask_paths = [os.path.join(
+            SEARCHLIGHT_OUT_DIR,
+            f"train/{args.model}/{args.features}/fsaverage7/{args.mode}/p_values_gifti/{hemi_fs}.gii")
+        ]
+        mask_paths += [os.path.join(
+            SEARCHLIGHT_OUT_DIR,
+            f"train/{args.model}/{args.features}/fsaverage7/{args.mode}/p_values_gifti/thresh_{thresh}_{hemi_fs}"
+            f"_cluster_{i}.gii")
+            for i in range(10)
+        ]
+        for mask_path in mask_paths:
+            cmd += f":overlay={mask_path}:overlay_zorder=2"
+        annot_paths = [os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.{atlas_name}") for
+                       atlas_name in ["aparc.annot", "aparc.a2009s.annot"]]
+        annot_paths += [os.path.join(ROOT_DIR, f"atlas_data/hcp_surface/{hemi_fs}.HCP-MMP1.annot")]
+        for annot_path in annot_paths:
+            cmd += f":annot={annot_path}:annot_zorder=1"
 
-    mask_paths = [os.path.expanduser("~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/p_values_gifti/lh.gii")]
-    mask_paths += [os.path.expanduser(f"~/data/multimodal_decoding/searchlight/train/blip2/avg/fsaverage7/n_neighbors_200/p_values_gifti/thresh_0.01_lh_cluster_{i}.gii") for i in range(10)]
-    for mask_path in mask_paths:
-        cmd += f":overlay={mask_path}"
-    annot_path = os.path.expanduser("~/code/multimodal_decoding/atlas_data/hcp_surface/lh.HCP-MMP1.annot")
-    cmd += f":annot={annot_path}"
     result_code = os.system(cmd)
     if result_code != 0:
         raise RuntimeError(f"failed to start freeview with error code {result_code}")
@@ -36,12 +39,17 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--p-values-threshold", type=float, default=0.01)
+    parser.add_argument("--model", type=str, default='blip2')
+    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = get_args()
+    args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
     run(args)

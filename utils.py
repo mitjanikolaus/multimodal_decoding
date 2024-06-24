@@ -21,11 +21,13 @@ FMRI_SURFACE_LEVEL_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
+FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
+HEMIS_FS = ['lh', 'rh']
 
 VISION_MEAN_FEAT_KEY = "vision_features_mean"
 VISION_CLS_FEAT_KEY = "vision_features_cls"
