@@ -4,6 +4,7 @@ import itertools
 import math
 import warnings
 
+import h5py
 import numpy as np
 from joblib import Parallel, delayed
 from nilearn import datasets
@@ -730,11 +731,17 @@ def calc_t_values_null_distr(args, path):
     else:
         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
-    def calc_permutation_t_values(per_subject_scores, permutations, proc_id, path):
-        job_temp_results_file = os.path.join(path, "temp_t_vals", f"{proc_id}.p")
-        os.makedirs(os.path.dirname(job_temp_results_file), exist_ok=True)
+    def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path):
+        os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
 
-        job_t_vals = []
+        f = h5py.File(tmp_file_path, 'w')
+        dsets = dict()
+        for hemi in HEMIS:
+            dsets[hemi] = dict()
+            for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
+                tvals_shape = (len(permutations), per_subject_scores[0][SUBJECTS[0]][hemi][METRIC_IMAGES].size)
+                dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
+
         iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(permutations)
         for iteration, permutation in iterator:
             t_values = {hemi: dict() for hemi in HEMIS}
@@ -745,23 +752,17 @@ def calc_t_values_null_distr(args, path):
                          zip(permutation, SUBJECTS)])
                     popmean = CHANCE_VALUES[metric]
                     t_values[hemi][metric] = calc_image_t_values(data, popmean)
+                    dsets[hemi][metric][iteration] = t_values[hemi][metric]
 
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    t_values[hemi][METRIC_MIN] = np.nanmin(
+                    dsets[hemi][METRIC_MIN][iteration] = np.nanmin(
                         (
                             t_values[hemi][METRIC_DIFF_CAPTIONS],
                             t_values[hemi][METRIC_DIFF_IMAGES],
                             t_values[hemi][METRIC_IMAGES],
                             t_values[hemi][METRIC_CAPTIONS]),
                         axis=0)
-            job_t_vals.append(t_values)
-
-            if iteration % 100 == 0:
-                pickle.dump(job_t_vals, open(job_temp_results_file, 'wb'))
-
-        pickle.dump(job_t_vals, open(job_temp_results_file, 'wb'))
-        return job_t_vals
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
@@ -791,23 +792,28 @@ def calc_t_values_null_distr(args, path):
                         filtered = scores[subj][hemi][metric][enough_data[hemi]]
                         scores_jobs[job_id][id][subj][hemi][metric] = filtered[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
 
-    job_t_vals = Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+    tmp_files = {job_id: os.path.join(os.path.dirname(path), "temp_t_vals", f"{job_id}.hdf5") for job_id in range(args.n_jobs)}
+    Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
         delayed(calc_permutation_t_values)(
             scores_jobs[id],
             permutations,
             id,
-            os.path.dirname(path),
+            tmp_files[id],
         )
         for id in range(args.n_jobs)
     )
 
     print("assembling results")
     all_t_vals = [{hemi: dict() for hemi in HEMIS} for _ in range(args.n_permutations_group_level)]
+
+    tmp_files = {job_id: h5py.File(tmp_files[job_id], 'r') for job_id in range(args.n_jobs)}
+
     for i in tqdm(range(args.n_permutations_group_level)):
-        for hemi in HEMIS:
-            for metric in job_t_vals[0][i][hemi].keys():
-                all_t_vals[i][hemi][metric] = np.repeat(np.nan, n_vertices)
-                all_t_vals[i][hemi][metric][enough_data[hemi]] = np.concatenate([job_t_vals[job_id][i][hemi][metric] for job_id in range(args.n_jobs)])
+        for hemi_metric in tmp_files[0].keys():
+            hemi = hemi_metric.split('__')[0]
+            metric = hemi_metric.split('__')[1]
+            all_t_vals[i][hemi][metric] = np.repeat(np.nan, n_vertices)
+            all_t_vals[i][hemi][metric][enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
 
     return all_t_vals
 
