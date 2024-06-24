@@ -21,7 +21,7 @@ def run(args):
             SEARCHLIGHT_OUT_DIR,
             f"train/{args.model}/{args.features}/fsaverage7/{args.mode}/p_values_gifti/thresh_{thresh}_{hemi_fs}"
             f"_cluster_{i}.gii")
-            for i in range(10)
+            for i in range(args.n_clusters)
         ]
         for mask_path in mask_paths:
             cmd += f":overlay={mask_path}:overlay_zorder=2"
@@ -44,6 +44,8 @@ def get_args():
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
+
+    parser.add_argument("--n-clusters", type=int, default=10)
 
     return parser.parse_args()
 
