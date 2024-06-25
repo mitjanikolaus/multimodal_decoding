@@ -189,7 +189,7 @@ def get_roi_mask(roi_mask_name, ref_img):
         raise RuntimeError("Unknown mask for volume space: ", roi_mask_name)
 
 
-def get_default_features(model_name):
+def get_default_features(model_name, logging=True):
     if (model_name.startswith("clip") or model_name.startswith("imagebind") or model_name.startswith(
             "flava") or model_name.startswith("random-flava") or model_name.startswith("glow") or model_name.startswith(
         "blip")
@@ -209,11 +209,12 @@ def get_default_features(model_name):
     else:
         raise RuntimeError(f"Unknown default features for {model_name}")
 
-    print(f"Selected default features for {model_name}: {features}")
+    if logging:
+        print(f"Selected default features for {model_name}: {features}")
     return features
 
 
-def get_default_vision_features(model_name):
+def get_default_vision_features(model_name, logging=True):
     vision_feats = VISION_MEAN_FEAT_KEY
     if model_name.startswith("imagebind") or model_name.startswith("clip"):
         vision_feats = VISION_CLS_FEAT_KEY
@@ -227,11 +228,12 @@ def get_default_vision_features(model_name):
             "mistral") or model_name.startswith("mixtral") or model_name.startswith("gpt"):
         vision_feats = "n_a"
 
-    print(f"Selected default vision features for {model_name}: {vision_feats}")
+    if logging:
+        print(f"Selected default vision features for {model_name}: {vision_feats}")
     return vision_feats
 
 
-def get_default_lang_features(model_name):
+def get_default_lang_features(model_name, logging=True):
     lang_feats = LANG_MEAN_FEAT_KEY
     if model_name.startswith("imagebind") or model_name.startswith("bge") or model_name.startswith(
             "resnet-and-bge") or model_name.startswith("clip"):
@@ -244,7 +246,8 @@ def get_default_lang_features(model_name):
     elif model_name.startswith("vit") or model_name.startswith("resnet") or model_name.startswith("dino"):
         lang_feats = "n_a"
 
-    print(f"Selected default lang features for {model_name}: {lang_feats}")
+    if logging:
+        print(f"Selected default lang features for {model_name}: {lang_feats}")
     return lang_feats
 
 
