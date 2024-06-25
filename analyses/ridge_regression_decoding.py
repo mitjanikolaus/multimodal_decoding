@@ -539,7 +539,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, met
         preds_mod = predictions[stim_types == modality].copy()
         latents_mod = latents[stim_types == modality]
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod)
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize)
 
     return results
 
