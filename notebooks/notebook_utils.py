@@ -69,7 +69,7 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
                         ylim=(0.5, 1),
                         plot_legend=True, palette=None, noise_ceilings=None, hatches=None,
                         legend_title="Model features modality", height=4, aspect=4, legend_bbox=(0.05, 1), rotation=80,
-                        cut_labels=True):
+                        cut_labels=True, shorten_label_texts=True):
     data_filtered = data[data.metric.isin(metrics)]
 
     sns.set_style("ticks", {'axes.grid': True})
@@ -79,8 +79,10 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
                     hue_order=hue_order,
                     palette=palette, err_kws={'linewidth': 0.5, 'alpha': 0.99}, width=0.7)
 
-    g._legend.remove()
+    if g._legend is not None:
+        g._legend.remove()
     bbox_extra_artists = None
+    lgd = None
     if plot_legend:
         # lgd = g.fig.legend(loc='upper left', title="", bbox_to_anchor=(1, 0.9), ncol=2)
         lgd = g.fig.legend(ncol=2, title=legend_title, loc="upper left",
@@ -89,8 +91,9 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
 
     for i in range(len(g.axes[-1])):
         last_axis = g.axes[-1][i]
-        last_axis.set_xticklabels([get_short_label_text(label, cut_labels) for label in last_axis.get_xticklabels()],
-                                  rotation=rotation)
+        if shorten_label_texts:
+            last_axis.set_xticklabels([get_short_label_text(label, cut_labels) for label in last_axis.get_xticklabels()])
+        last_axis.tick_params(axis='x', rotation=rotation)
 
     g.set(ylim=ylim, ylabel="pairwise_acc_mean", xlabel='')
 
@@ -104,47 +107,47 @@ FEAT_PALETTE = sns.color_palette('Set2')
 PALETTE_BLACK_ONLY = [(0, 0, 0)] * 10
 
 
-def create_result_graph(data, model_feat_order, metrics=["pairwise_acc_captions", "pairwise_acc_images"],
+def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pairwise_acc_captions", "pairwise_acc_images"],
                         hue_variable="features", hue_order=FEAT_ORDER, ylim=None,
                         legend_title="Legend", palette=FEAT_PALETTE, dodge=False, noise_ceilings=None,
                         plot_modality_specific=True,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
-                        verify_num_datapoints=True):
+                        verify_num_datapoints=True, plot_legend=True):
     data_training_mode_full = data[data.training_mode == "modality-agnostic"]
     data_training_mode_captions = data[data.training_mode == "captions"]
     data_training_mode_images = data[data.training_mode == "images"]
 
     for mode in ["modality-agnostic", "captions", "images"]:
         data_mode = data[data.training_mode == mode]
-        for m_feat in model_feat_order:
-            length = len(data_mode[(data_mode.model_feat == m_feat) & (data_mode.metric == metrics[0])])
+        for x_variable_value in order:
+            length = len(data_mode[(data_mode[x_variable] == x_variable_value) & (data_mode.metric == metrics[0])])
             expected_num_datapoints = len(SUBJECTS)
             if hue_variable != "features":
                 expected_num_datapoints *= len(data[hue_variable].unique())
             if (length > 0) and (length != expected_num_datapoints):
-                message = f"unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) (model_feat: {m_feat} {mode}"
+                message = f"unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) ({x_variable}: {x_variable_value} {mode}"
                 if verify_num_datapoints:
                     raise RuntimeError(message)
                 else:
                     print(f"Warning: {message}")
 
-    catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=model_feat_order, metrics=metrics,
-                                                       x_variable="model_feat", legend_title=legend_title,
+    catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=order, metrics=metrics,
+                                                       x_variable=x_variable, legend_title=legend_title,
                                                        legend_bbox=legend_bbox, height=height, aspect=aspect,
                                                        hue_variable=hue_variable, row_variable=row_variable,
                                                        row_order=row_order, col_variable=col_variable,
                                                        hue_order=hue_order, palette=palette, ylim=ylim,
-                                                       noise_ceilings=noise_ceilings)
+                                                       noise_ceilings=noise_ceilings, plot_legend=plot_legend)
 
     if plot_modality_specific:
         first_metric_graph = None
         for m, metric in enumerate(metrics):
-            plot_metric(data_training_mode_captions, kind="point", order=model_feat_order, metric=metrics[m],
+            plot_metric(data_training_mode_captions, kind="point", order=order, metric=metrics[m],
                         x_variable="model_feat", dodge=dodge,
                         hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
                         axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
-            g, _ = plot_metric(data_training_mode_images, kind="point", order=model_feat_order, metric=metrics[m],
+            g, _ = plot_metric(data_training_mode_images, kind="point", order=order, metric=metrics[m],
                                x_variable="model_feat", dodge=dodge,
                                hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
                                axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
