@@ -823,10 +823,11 @@ def calc_t_values_null_distr(args, path):
     for hemi in HEMIS:
         dsets[hemi] = dict()
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
-            tvals_shape = (len(permutations), all_t_vals[0][hemi][METRIC_IMAGES].size)
-            dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
             all_t_vals_hemi_metric = np.concatenate([all_t_vals[job_id][hemi][metric] for job_id in args.n_jobs])
             print(all_t_vals_hemi_metric.shape)
+            tvals_shape = (len(permutations), all_t_vals_hemi_metric.size)
+            dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
+
             dsets[hemi][metric] = all_t_vals_hemi_metric
 
     f.close()
