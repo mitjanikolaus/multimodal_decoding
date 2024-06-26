@@ -734,35 +734,35 @@ def calc_t_values_null_distr(args, path):
     def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
 
-        f = h5py.File(tmp_file_path, 'w')
-        dsets = dict()
-        for hemi in HEMIS:
-            dsets[hemi] = dict()
-            for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
-                tvals_shape = (len(permutations), per_subject_scores[0][SUBJECTS[0]][hemi][METRIC_IMAGES].size)
-                dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
-
-        iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(permutations)
-        for iteration, permutation in iterator:
-            t_values = {hemi: dict() for hemi in HEMIS}
+        with h5py.File(tmp_file_path, 'w') as f:
+            dsets = dict()
             for hemi in HEMIS:
-                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
-                    data = np.array(
-                        [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                         zip(permutation, SUBJECTS)])
-                    popmean = CHANCE_VALUES[metric]
-                    t_values[hemi][metric] = calc_image_t_values(data, popmean)
-                    dsets[hemi][metric][iteration] = t_values[hemi][metric]
+                dsets[hemi] = dict()
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
+                    tvals_shape = (len(permutations), per_subject_scores[0][SUBJECTS[0]][hemi][METRIC_IMAGES].size)
+                    dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    dsets[hemi][METRIC_MIN][iteration] = np.nanmin(
-                        (
-                            t_values[hemi][METRIC_DIFF_CAPTIONS],
-                            t_values[hemi][METRIC_DIFF_IMAGES],
-                            t_values[hemi][METRIC_IMAGES],
-                            t_values[hemi][METRIC_CAPTIONS]),
-                        axis=0)
+            iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(permutations)
+            for iteration, permutation in iterator:
+                t_values = {hemi: dict() for hemi in HEMIS}
+                for hemi in HEMIS:
+                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
+                        data = np.array(
+                            [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                             zip(permutation, SUBJECTS)])
+                        popmean = CHANCE_VALUES[metric]
+                        t_values[hemi][metric] = calc_image_t_values(data, popmean)
+                        dsets[hemi][metric][iteration] = t_values[hemi][metric]
+
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", category=RuntimeWarning)
+                        dsets[hemi][METRIC_MIN][iteration] = np.nanmin(
+                            (
+                                t_values[hemi][METRIC_DIFF_CAPTIONS],
+                                t_values[hemi][METRIC_DIFF_IMAGES],
+                                t_values[hemi][METRIC_IMAGES],
+                                t_values[hemi][METRIC_CAPTIONS]),
+                            axis=0)
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
