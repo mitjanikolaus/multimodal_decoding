@@ -818,6 +818,8 @@ def calc_t_values_null_distr(args, path):
         for id in range(args.n_jobs)
     )
 
+    all_t_vals = np.concatenate(all_t_vals)
+    print(all_t_vals.shape)
     f = h5py.File(tmp_filenames[8], 'w')
     dsets = dict()
     for hemi in HEMIS:
@@ -825,9 +827,7 @@ def calc_t_values_null_distr(args, path):
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
             tvals_shape = (len(permutations), all_t_vals[0][hemi][METRIC_IMAGES].size)
             dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
-            all_t_vals_hemi_metric = np.concatenate([all_t_vals[job_id][hemi][metric] for job_id in args.n_jobs])
-            print(all_t_vals_hemi_metric.shape)
-            dsets[hemi][metric] = all_t_vals_hemi_metric
+            dsets[hemi][metric] = all_t_vals
 
     f.close()
 
