@@ -773,7 +773,7 @@ def calc_t_values_null_distr(args, path):
                     #         t_values[hemi][METRIC_IMAGES],
                     #         t_values[hemi][METRIC_CAPTIONS]),
                     #     axis=0)
-        return np.array(job_t_vals)
+        return job_t_vals
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
