@@ -773,7 +773,7 @@ def calc_t_values_null_distr(args, path):
                     #         t_values[hemi][METRIC_IMAGES],
                     #         t_values[hemi][METRIC_CAPTIONS]),
                     #     axis=0)
-        return job_t_vals
+        return np.array(job_t_vals)
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
@@ -808,7 +808,7 @@ def calc_t_values_null_distr(args, path):
 
     n_per_job = math.ceil(len(permutations) / args.n_jobs)
     print(f"n vertices per job: {n_per_job}")
-    all_t_vals = Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+    job_t_vals = Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
         delayed(calc_permutation_t_values)(
             scores_jobs[8],
             permutations[id * n_per_job:(id + 1) * n_per_job], #TODO just permutations
@@ -818,16 +818,16 @@ def calc_t_values_null_distr(args, path):
         for id in range(args.n_jobs)
     )
 
-    all_t_vals = np.concatenate(all_t_vals)
-    print(all_t_vals.shape)
+    job_t_vals = np.concatenate(job_t_vals)
+    print(job_t_vals.shape)
     f = h5py.File(tmp_filenames[8], 'w')
     dsets = dict()
     for hemi in HEMIS:
         dsets[hemi] = dict()
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
-            tvals_shape = (len(permutations), all_t_vals[0][hemi][METRIC_IMAGES].size)
+            tvals_shape = (len(permutations), job_t_vals[0][hemi][METRIC_IMAGES].size)
             dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
-            dsets[hemi][metric] = all_t_vals
+            dsets[hemi][metric] = job_t_vals
 
     f.close()
 
