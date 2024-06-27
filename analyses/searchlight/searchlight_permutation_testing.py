@@ -816,7 +816,9 @@ def calc_t_values_null_distr(args, out_path):
         for i in tqdm(range(args.n_permutations_group_level)):
             for hemi_metric in tmp_files[0].keys():
                 hemi = hemi_metric.split('__')[0]
-                all_t_vals_file[hemi_metric][i, enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+                data_tvals = np.zeros(n_vertices)
+                data_tvals[enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+                all_t_vals_file[hemi_metric][i] = data_tvals
 
     print("finished assemble")
 
