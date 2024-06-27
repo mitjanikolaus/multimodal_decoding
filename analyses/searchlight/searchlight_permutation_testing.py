@@ -819,7 +819,6 @@ def calc_t_values_null_distr(args, out_path):
                 all_t_vals_file[hemi_metric][i, enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
 
     print("finished assemble")
-    sys.exit(0)
 
 
 def create_null_distribution(args):
