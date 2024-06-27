@@ -792,13 +792,13 @@ def calc_t_values_null_distr(args, path):
     #                     filtered = scores[subj][hemi][metric][enough_data[hemi]]
     #                     scores_jobs[job_id][id][subj][hemi][metric] = filtered[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
 
-    tmp_files = {job_id: os.path.join(os.path.dirname(path), "temp_t_vals", f"{job_id}.hdf5") for job_id in range(args.n_jobs)}
+    tmp_filenames = {job_id: os.path.join(os.path.dirname(path), "temp_t_vals", f"{job_id}.hdf5") for job_id in range(args.n_jobs)}
     # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
     #     delayed(calc_permutation_t_values)(
     #         scores_jobs[id],
     #         permutations,
     #         id,
-    #         tmp_files[id],
+    #         tmp_filenames[id],
     #     )
     #     for id in range(args.n_jobs)
     # )
@@ -806,7 +806,10 @@ def calc_t_values_null_distr(args, path):
     print("assembling results")
     all_t_vals = [{hemi: dict() for hemi in HEMIS} for _ in range(args.n_permutations_group_level)]
 
-    tmp_files = {job_id: h5py.File(tmp_files[job_id], 'r') for job_id in range(args.n_jobs)}
+    tmp_files = dict()
+    for job_id in range(args.n_jobs):
+        print(job_id)
+        tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
 
     for i in tqdm(range(args.n_permutations_group_level)):
         for hemi_metric in tmp_files[0].keys():
