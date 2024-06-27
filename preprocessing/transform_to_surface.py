@@ -8,7 +8,7 @@ import os
 import pickle
 
 from analyses.ridge_regression_decoding import get_fmri_data_paths, IMAGERY
-from analyses.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
+from analyses.searchlight.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
 
 

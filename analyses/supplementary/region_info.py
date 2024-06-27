@@ -1,10 +1,9 @@
-import re
-
 import numpy as np
 import nibabel as nib
 from nilearn.datasets import fetch_atlas_destrieux_2009
 from analyses.ridge_regression_decoding import REGIONS_LOW_LEVEL_VISUAL, REGIONS_HIGH_LEVEL_VISUAL, REGIONS_LANGUAGE
 import pandas as pd
+
 
 def run():
     long_names = {}
@@ -45,7 +44,6 @@ def run():
     for roi_name in roi_names:
         print(roi_name)
         print(roi_descs[roi_name].to_latex(escape=True))
-
 
 
 if __name__ == "__main__":

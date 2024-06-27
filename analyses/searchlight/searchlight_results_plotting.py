@@ -2,9 +2,6 @@ import argparse
 import warnings
 
 import numpy as np
-from nibabel import GiftiImage
-from nibabel.gifti import GiftiDataArray
-from nibabel.nifti1 import intent_codes, data_type_codes
 from nilearn import datasets, plotting
 import matplotlib.pyplot as plt
 import os
@@ -13,8 +10,8 @@ import pickle
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
     load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC
 from utils import RESULTS_DIR, SUBJECTS, HEMIS

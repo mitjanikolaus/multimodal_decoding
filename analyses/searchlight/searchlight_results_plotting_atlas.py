@@ -10,9 +10,9 @@ import pickle
 import seaborn as sns
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN
-from analyses.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.searchlight.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN
+from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS
 from utils import RESULTS_DIR, HEMIS
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")

@@ -23,7 +23,7 @@ import seaborn as sns
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES, \
     ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC
-from analyses.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from utils import SUBJECTS, HEMIS
 
 DEFAULT_N_JOBS = 10
@@ -256,7 +256,6 @@ def smooth_surface_data(matrix, surf_data,
     >>> curv_smooth = surface.smooth_surface_data(surface=white_left, surf_data=curv, iterations=50)
     >>> plotting.plot_surf(white_left, surf_map = curv_smooth)
     """
-    from scipy.sparse import diags
     # First, calculate the center and surround weights for the
     # center-surround knob.
     center_weight = 1 / (1 + np.exp2(-center_surround_knob))

@@ -82,6 +82,13 @@ matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/split_glm_spm_desi
 __Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
 the hardcoded `data_dir` variable!
 
+### (5) Transformation to surface space
+
+```
+python preprocessing/transform_to_surface.py
+```
+
+
 ## DNN Feature extraction 
 
 ### BLIP2

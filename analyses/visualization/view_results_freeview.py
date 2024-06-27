@@ -2,7 +2,7 @@ import argparse
 import os
 
 from analyses.ridge_regression_decoding import get_default_features, FEATS_SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
 
 

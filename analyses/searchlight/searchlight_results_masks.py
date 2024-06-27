@@ -9,8 +9,8 @@ import os
 import pickle
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN, calc_clusters, \
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.searchlight.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN, calc_clusters, \
     get_edge_lengths_dicts_based_on_edges
 from utils import HEMIS
 
