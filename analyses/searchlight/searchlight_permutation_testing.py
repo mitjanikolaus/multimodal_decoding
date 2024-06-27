@@ -817,6 +817,7 @@ def calc_t_values_null_distr(args, path):
             all_t_vals[i][hemi][metric] = np.repeat(np.nan, n_vertices)
             all_t_vals[i][hemi][metric][enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
 
+    print("finished assemble")
     return all_t_vals
 
 
