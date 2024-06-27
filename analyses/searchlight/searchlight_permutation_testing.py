@@ -2,6 +2,7 @@ import argparse
 import copy
 import itertools
 import math
+import sys
 import warnings
 
 import h5py
@@ -715,7 +716,7 @@ def load_null_distr_per_subject_scores(args):
     return per_subject_scores_null_distr
 
 
-def calc_t_values_null_distr(args, path):
+def calc_t_values_null_distr(args, out_path):
     per_subject_scores_null_distr_path = os.path.join(
         SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
         args.resolution,
@@ -791,7 +792,7 @@ def calc_t_values_null_distr(args, path):
     #                     filtered = scores[subj][hemi][metric][enough_data[hemi]]
     #                     scores_jobs[job_id][id][subj][hemi][metric] = filtered[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
 
-    tmp_filenames = {job_id: os.path.join(os.path.dirname(path), "temp_t_vals", f"{job_id}.hdf5") for job_id in range(args.n_jobs)}
+    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in range(args.n_jobs)}
     # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
     #     delayed(calc_permutation_t_values)(
     #         scores_jobs[id],
@@ -807,18 +808,27 @@ def calc_t_values_null_distr(args, path):
 
     tmp_files = dict()
     for job_id in range(args.n_jobs):
-        print(job_id)
         tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
 
-    for i in tqdm(range(args.n_permutations_group_level)):
+    with h5py.File(out_path, 'w') as all_t_vals_file:
         for hemi_metric in tmp_files[0].keys():
-            hemi = hemi_metric.split('__')[0]
-            metric = hemi_metric.split('__')[1]
-            all_t_vals[i][hemi][metric] = np.repeat(np.nan, n_vertices)
-            all_t_vals[i][hemi][metric][enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+            tvals_shape = (args.n_permutations_group_level, n_vertices)
+            all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float16', fillvalue=np.nan)
+            # all_t_vals_file[hemi_metric] = np.repeat(np.nan, n_vertices*args.n_permutations_group_level).reshape((args.n_permutations_group_level, n_vertices))
+
+        for i in tqdm(range(args.n_permutations_group_level)):
+            for hemi_metric in tmp_files[0].keys():
+                hemi = hemi_metric.split('__')[0]
+                # metric = hemi_metric.split('__')[1]
+                all_t_vals_file[hemi_metric][i][enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+                # all_t_vals[i][hemi][metric] = np.repeat(np.nan, n_vertices)
+                # all_t_vals[i][hemi][metric][enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
 
     print("finished assemble")
-    return all_t_vals
+    sys.exit(0)
+    # pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
+    #
+    # return all_t_vals
 
 
 def create_null_distribution(args):
@@ -832,15 +842,16 @@ def create_null_distribution(args):
         t_values_null_distribution_path = os.path.join(
             SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
             args.resolution,
-            args.mode, f"t_values_null_distribution.p"
+            args.mode, f"t_values_null_distribution.hdf5"
         )
         if not os.path.isfile(t_values_null_distribution_path):
             print(f"Calculating t-values: null distribution")
-            t_values_null_distribution = calc_t_values_null_distr(args, t_values_null_distribution_path)
             os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
-            pickle.dump(t_values_null_distribution, open(t_values_null_distribution_path, 'wb'))
+            calc_t_values_null_distr(args, t_values_null_distribution_path)
         else:
-            t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
+            #TODO
+            ...
+            # t_values_null_distribution = pickle.load(open(t_values_null_distribution_path, 'rb'))
 
         if args.smoothing_iterations > 0:
             smooth_t_values_null_distribution_path = os.path.join(
