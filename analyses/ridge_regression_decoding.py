@@ -677,7 +677,7 @@ def get_fmri_data(subject, mode, mask_name=None, fmri_transform=None, recompute_
             fmri_betas_transform=fmri_transform,
         )
 
-    print(f"fMRI betas shape: {fmri_betas.shape}")
+    print(f"{mode} fMRI betas shape: {fmri_betas.shape}")
     return fmri_betas, stim_ids, stim_types, fmri_transform
 
 
