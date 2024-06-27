@@ -1,17 +1,11 @@
 import argparse
-import copy
 
 import numpy as np
 from nibabel import GiftiImage
 from nibabel.gifti import GiftiDataArray
 from nibabel.nifti1 import intent_codes, data_type_codes
-import os
 import pickle
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN, calc_clusters, \
-    get_edge_lengths_dicts_based_on_edges
 from analyses.searchlight.searchlight_results_masks import FS_HEMI_NAMES
 from utils import HEMIS
 
