@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, calc_all_pairwise_accuracy_scores, pairwise_accuracy, calc_imagery_pairwise_accuracy_scores
+from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, calc_all_pairwise_accuracy_scores, pairwise_accuracy, calc_imagery_pairwise_accuracy_scores, get_default_features, get_default_vision_features, get_default_lang_features
 from tqdm import tqdm
 from glob import glob
 import pickle
@@ -113,7 +113,7 @@ def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pai
                         plot_modality_specific=True,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
-                        verify_num_datapoints=True, plot_legend=True):
+                        verify_num_datapoints=True, plot_legend=True, shorten_label_texts=True):
     data_training_mode_full = data[data.training_mode == "modality-agnostic"]
     data_training_mode_captions = data[data.training_mode == "captions"]
     data_training_mode_images = data[data.training_mode == "images"]
@@ -138,7 +138,8 @@ def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pai
                                                        hue_variable=hue_variable, row_variable=row_variable,
                                                        row_order=row_order, col_variable=col_variable,
                                                        hue_order=hue_order, palette=palette, ylim=ylim,
-                                                       noise_ceilings=noise_ceilings, plot_legend=plot_legend)
+                                                       noise_ceilings=noise_ceilings, plot_legend=plot_legend,
+                                                       shorten_label_texts=shorten_label_texts)
 
     if plot_modality_specific:
         first_metric_graph = None
@@ -180,21 +181,21 @@ METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES]
 METRICS_ERROR_ANALYSIS = ['predictions', 'latents', 'stimulus_ids', 'stimulus_types']
 METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, 'imagery_predictions', 'imagery_latents']
 
-def update_acc_scores(results):
+def update_acc_scores(results, metric="cosine"):
     results.update(
         calc_all_pairwise_accuracy_scores(
-            results["latents"], results["predictions"], results["stimulus_types"]
+            results["latents"], results["predictions"], results["stimulus_types"], metric=metric
         )
     )
     if "imagery_predictions" in results:
         results.update(
             calc_imagery_pairwise_accuracy_scores(
-                results["imagery_latents"], results["imagery_predictions"], results["latents"]
+                results["imagery_latents"], results["imagery_predictions"], results["latents"], metric=metric
             )
         )
     return results
 
-def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=True):
+def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine"):
     results_root_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm/')
 
     data = []
@@ -204,7 +205,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=True):
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
             if recompute_acc_scores:
-                results = update_acc_scores(results)
+                results = update_acc_scores(results, metric=pairwise_acc_metric)
             
             for metric in metrics:
                 if metric in results.keys():
@@ -251,6 +252,20 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=True):
 
     df["lang_features"] = df["lang_features"].fillna("unk")
 
+    df["mask"] = df["mask"].fillna("whole_brain")
+    df["mask"] = df["mask"].apply(lambda x: os.path.basename(x).replace("p_values_", "").replace(".p", ""))
+
     df["model_feat"] = df.model + "_" + df.features
 
     return df
+
+
+def get_data_default_feats(data, logging=False):
+    data_default_feats = data.copy()
+    for model in data.model.unique():
+        default_feats = get_default_features(model, logging=logging)
+        default_vision_feats = get_default_vision_features(model, logging=logging)
+        default_lang_feats = get_default_lang_features(model, logging=logging)
+        data_default_feats = data_default_feats[((data_default_feats.model == model) & (data_default_feats.features == default_feats) & (data_default_feats.vision_features == default_vision_feats) & (data_default_feats.lang_features == default_lang_feats)) | (data_default_feats.model != model)]
+        
+    return data_default_feats
