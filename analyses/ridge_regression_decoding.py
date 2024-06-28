@@ -317,8 +317,6 @@ def get_nn_latent_data(model_name, features, vision_features_mode, lang_features
     if nn_latent_transform is None:
         model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode,
                                                         lang_features_mode, mode)
-
-        print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
         os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
         mean_std = dict()
         if mode in [MODE_AGNOSTIC, TESTING_MODE]:
