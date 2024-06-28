@@ -24,7 +24,8 @@ def run(args):
             for i in range(args.n_clusters)
         ]
         for mask_path in mask_paths:
-            cmd += f":overlay={mask_path}:overlay_zorder=2"
+            if os.path.isfile(mask_path):
+                cmd += f":overlay={mask_path}:overlay_zorder=2"
         annot_paths = [os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.{atlas_name}") for
                        atlas_name in ["aparc.annot", "aparc.a2009s.annot"]]
         annot_paths += [os.path.join(ROOT_DIR, f"atlas_data/hcp_surface/{hemi_fs}.HCP-MMP1.annot")]
@@ -39,7 +40,7 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--p-values-threshold", type=float, default=0.01)
+    parser.add_argument("--p-values-threshold", type=float, default=0.001)
     parser.add_argument("--model", type=str, default='blip2')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
