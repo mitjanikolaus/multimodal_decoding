@@ -856,8 +856,4 @@ if __name__ == "__main__":
     args = get_args()
     os.makedirs(DECODER_OUT_DIR, exist_ok=True)
 
-    os.environ["OMP_NUM_THREADS"] = str(args.n_jobs)
-    os.environ["MKL_NUM_THREADS"] = str(args.n_jobs)
-    os.environ["OPENBLAS_NUM_THREADS"] = str(args.n_jobs)
-
     run(args)
