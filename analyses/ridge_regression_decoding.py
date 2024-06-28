@@ -420,13 +420,14 @@ def get_fmri_voxel_data(subject, mode, roi_mask_name=None):
     if roi_mask_name is not None:
         mask = roi_mask & gray_matter_mask
 
-    fmri_betas = np.array([None for _ in range(len(fmri_betas_paths))])
+    fmri_betas = []
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
         sample = sample[mask].astype('float32').reshape(-1)
-        fmri_betas[idx] = sample.copy()
+        fmri_betas.append(sample)
 
+    fmri_betas = np.array(fmri_betas)
     return fmri_betas, stim_ids, stim_types
 
 
