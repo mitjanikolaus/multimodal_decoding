@@ -653,7 +653,7 @@ def apply_mask_and_clean(mask_name, betas_list, args):
             raise NotImplementedError()
         mask = load_surface_mask(mask_name)
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
-        betas_list = [betas[:, mask_flat == 1] for betas in betas_list]
+        betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
     betas_list = [betas[:, ~np.isnan(betas[0])] for betas in betas_list]
 
@@ -683,19 +683,19 @@ def normalize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, 
 def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
-            train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_data(
+            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
                 subject,
                 training_mode,
                 surface=args.surface,
                 resolution=args.resolution,
             )
-            test_fmri_betas, test_stim_ids, test_stim_types = get_fmri_data(
+            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
                 subject,
                 TESTING_MODE,
                 surface=args.surface,
                 resolution=args.resolution,
             )
-            imagery_fmri_betas, imagery_stim_ids, imagery_stim_types = get_fmri_data(
+            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
                 subject,
                 IMAGERY,
                 surface=args.surface,
@@ -704,7 +704,7 @@ def run(args):
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
-                    mask, [train_fmri_betas, test_fmri_betas, imagery_fmri_betas], args
+                    mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = normalize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask
