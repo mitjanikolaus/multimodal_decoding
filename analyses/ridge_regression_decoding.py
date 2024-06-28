@@ -674,9 +674,6 @@ def normalize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, 
     test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
     imagery_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
 
-    print(f"train fMRI betas shape: {train_fmri_betas.shape}")
-    print(f"test fMRI betas shape: {test_fmri_betas.shape}")
-    print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
     return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
 
@@ -725,6 +722,9 @@ def run(args):
 
                                 print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features}")
+                                print(f"train fMRI betas shape: {train_fmri_betas.shape}")
+                                print(f"test fMRI betas shape: {test_fmri_betas.shape}")
+                                print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
                                 train_latents, latent_transform = get_nn_latent_data(
                                     model_name, features,
