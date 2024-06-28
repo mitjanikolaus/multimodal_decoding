@@ -193,7 +193,6 @@ def run(args):
                         train_stim_types,
                         subject,
                         training_mode,
-                        recompute_std_mean=args.recompute_std_mean
                     )
 
                     test_data_latents, _ = get_nn_latent_data(
@@ -309,8 +308,6 @@ def get_args():
                         choices=VISION_FEAT_COMBINATION_CHOICES)
     parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
-
-    parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 

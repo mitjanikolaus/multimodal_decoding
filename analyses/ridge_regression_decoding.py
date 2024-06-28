@@ -273,8 +273,8 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
 
 def get_nn_latent_data(model_name, features, vision_features_mode, lang_features_mode, stim_ids, stim_types, subject,
                        mode,
-                       nn_latent_transform=None,
-                       recompute_std_mean=False):
+                       nn_latent_transform=None
+                       ):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
@@ -317,29 +317,29 @@ def get_nn_latent_data(model_name, features, vision_features_mode, lang_features
     if nn_latent_transform is None:
         model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode,
                                                         lang_features_mode, mode)
-        if not os.path.exists(model_std_mean_path) or recompute_std_mean:
-            print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
-            os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
-            mean_std = dict()
-            if mode in [MODE_AGNOSTIC, TESTING_MODE]:
-                mean_std[CAPTION] = {
-                    'mean': nn_latent_vectors[stim_types == CAPTION].mean(axis=0),
-                    'std': nn_latent_vectors[stim_types == CAPTION].std(axis=0),
-                }
-                mean_std[IMAGE] = {
-                    'mean': nn_latent_vectors[stim_types == IMAGE].mean(axis=0),
-                    'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
-                }
-            else:
-                mean_std[CAPTION] = {
-                    'mean': nn_latent_vectors.mean(axis=0),
-                    'std': nn_latent_vectors.std(axis=0),
-                }
-                mean_std[IMAGE] = {
-                    'mean': nn_latent_vectors.mean(axis=0),
-                    'std': nn_latent_vectors.std(axis=0),
-                }
-            pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        print(f"Calculating Mean and STD of Model Latent Variables for {mode} samples")
+        os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
+        mean_std = dict()
+        if mode in [MODE_AGNOSTIC, TESTING_MODE]:
+            mean_std[CAPTION] = {
+                'mean': nn_latent_vectors[stim_types == CAPTION].mean(axis=0),
+                'std': nn_latent_vectors[stim_types == CAPTION].std(axis=0),
+            }
+            mean_std[IMAGE] = {
+                'mean': nn_latent_vectors[stim_types == IMAGE].mean(axis=0),
+                'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
+            }
+        else:
+            mean_std[CAPTION] = {
+                'mean': nn_latent_vectors.mean(axis=0),
+                'std': nn_latent_vectors.std(axis=0),
+            }
+            mean_std[IMAGE] = {
+                'mean': nn_latent_vectors.mean(axis=0),
+                'std': nn_latent_vectors.std(axis=0),
+            }
+        pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
         nn_latent_transform = load_latents_transform(
             subject, model_name, features, vision_features_mode, lang_features_mode, mode
@@ -402,7 +402,7 @@ def get_fmri_data_paths(subject, mode):
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=None, recompute_std_mean=False):
+def get_fmri_voxel_data(subject, mode, roi_mask_name=None):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
 
     gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
@@ -427,22 +427,7 @@ def get_fmri_voxel_data(subject, mode, fmri_betas_transform=None, roi_mask_name=
         sample = sample[mask].astype('float32').reshape(-1)
         fmri_betas[idx] = sample.copy()
 
-    if fmri_betas_transform is None:
-        bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, roi_mask_name)
-
-        if not os.path.exists(bold_std_mean_path) or recompute_std_mean:
-            print(f"Calculating mean and std of BOLD Signals for mode {mode} with mask {roi_mask_name}")
-            os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
-
-            mean_std = {'mean': fmri_betas.mean(axis=0),
-                        'std': fmri_betas.std(axis=0)}
-            pickle.dump(mean_std, open(bold_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
-
-        fmri_betas_transform = load_fmri_betas_transform(subject, mode, roi_mask_name)
-
-    fmri_betas = np.array([fmri_betas_transform(v) for v in fmri_betas])
-
-    return fmri_betas, stim_ids, stim_types, fmri_betas_transform
+    return fmri_betas, stim_ids, stim_types
 
 
 def get_fmri_betas_mean_std_path(subject, mode, roi_mask_name):
@@ -623,11 +608,13 @@ def get_run_str(model_name, features, vision_features, lang_features, mask, surf
 
 def get_fmri_surface_data(subject, mode, resolution):
     base_mode = mode.split('_')[0]
+    print(f"loading {base_mode} fmri data.. ", end="")
     fmri_betas = {
         hemi: pickle.load(
             open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
         in HEMIS
     }
+    print("done.")
     stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
     stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
 
@@ -645,70 +632,82 @@ def get_fmri_surface_data(subject, mode, resolution):
     return fmri_betas, stim_ids, stim_types
 
 
-def load_surface_mask(mask_path):
-    masks = pickle.load(open(mask_path, 'rb'))
-    return masks
-
-
-def get_fmri_data(subject, mode, mask_name=None, fmri_transform=None, recompute_std_mean=False, surface=False,
-                  resolution=None):
+def get_fmri_data(subject, mode, surface=False, resolution=None):
     if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
-
-        if mask_name is not None:
-            mask = load_surface_mask(mask_name)
-            for hemi in HEMIS:
-                fmri_betas[hemi] = fmri_betas[hemi][:, mask[hemi] == 1]
-
-        fmri_betas = np.concatenate((fmri_betas['left'], fmri_betas['right']), axis=1)
-
-        if fmri_transform is None:
-            fmri_transform = Normalize(fmri_betas.mean(axis=0), fmri_betas.std(axis=0))
-        fmri_betas = np.array([fmri_transform(v) for v in fmri_betas])
-
-        fmri_betas = fmri_betas[:, ~np.isnan(fmri_betas[0])]
-
+        fmri_betas = np.concatenate((fmri_betas[HEMIS[0]], fmri_betas[HEMIS[1]]), axis=1)
     else:
-        fmri_betas, stim_ids, stim_types, fmri_transform = get_fmri_voxel_data(
-            subject,
-            mode,
-            roi_mask_name=mask_name,
-            recompute_std_mean=recompute_std_mean,
-            fmri_betas_transform=fmri_transform,
-        )
+        fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(subject, mode)
 
-    print(f"{mode} fMRI betas shape: {fmri_betas.shape}")
-    return fmri_betas, stim_ids, stim_types, fmri_transform
+    return fmri_betas, stim_ids, stim_types
+
+
+def load_surface_mask(mask_path):
+    mask = pickle.load(open(mask_path, 'rb'))
+    return mask
+
+
+def apply_mask_and_clean(mask_name, betas_list, args):
+    if mask_name is not None:
+        if not args.surface:
+            raise NotImplementedError()
+        mask = load_surface_mask(mask_name)
+        mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
+        betas_list = [betas[:, mask_flat == 1] for betas in betas_list]
+
+    betas_list = [betas[:, ~np.isnan(betas[0])] for betas in betas_list]
+
+    return betas_list
+
+
+def normalize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask_name):
+    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, mask_name)
+    os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
+
+    mean_std = {'mean': train_fmri_betas.mean(axis=0),
+                'std': train_fmri_betas.std(axis=0)}
+    pickle.dump(mean_std, open(bold_std_mean_path, 'wb'))
+
+    fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
+
+    train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
+    test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
+    imagery_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
+
+    print(f"train fMRI betas shape: {train_fmri_betas.shape}")
+    print(f"test fMRI betas shape: {test_fmri_betas.shape}")
+    print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
+    return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
 
 def run(args):
     for training_mode in args.training_modes:
-        for mask in args.masks:
-            mask = None if mask in ["none", "None"] else mask
-            for subject in args.subjects:
-                train_fmri_betas, train_stim_ids, train_stim_types, fmri_transform = get_fmri_data(
-                    subject,
-                    training_mode,
-                    mask_name=mask,
-                    recompute_std_mean=args.recompute_std_mean,
-                    surface=args.surface,
-                    resolution=args.resolution,
+        for subject in args.subjects:
+            train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_data(
+                subject,
+                training_mode,
+                surface=args.surface,
+                resolution=args.resolution,
+            )
+            test_fmri_betas, test_stim_ids, test_stim_types = get_fmri_data(
+                subject,
+                TESTING_MODE,
+                surface=args.surface,
+                resolution=args.resolution,
+            )
+            imagery_fmri_betas, imagery_stim_ids, imagery_stim_types = get_fmri_data(
+                subject,
+                IMAGERY,
+                surface=args.surface,
+                resolution=args.resolution,
+            )
+            for mask in args.masks:
+                mask = None if mask in ["none", "None"] else mask
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
+                    mask, [train_fmri_betas, test_fmri_betas, imagery_fmri_betas], args
                 )
-                test_fmri_betas, test_stim_ids, test_stim_types, _ = get_fmri_data(
-                    subject,
-                    TESTING_MODE,
-                    fmri_transform=fmri_transform,
-                    mask_name=mask,
-                    surface=args.surface,
-                    resolution=args.resolution,
-                )
-                imagery_fmri_betas, imagery_stim_ids, imagery_stim_types, _ = get_fmri_data(
-                    subject,
-                    IMAGERY,
-                    fmri_transform=fmri_transform,
-                    mask_name=mask,
-                    surface=args.surface,
-                    resolution=args.resolution,
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = normalize_fmri_betas(
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask
                 )
 
                 for model_name in args.models:
@@ -735,7 +734,6 @@ def run(args):
                                     train_stim_types,
                                     subject,
                                     training_mode,
-                                    recompute_std_mean=args.recompute_std_mean
                                 )
 
                                 model = Ridge()
@@ -846,8 +844,6 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
-
-    parser.add_argument("--recompute-std-mean", action=argparse.BooleanOptionalAction, default=False)
 
     return parser.parse_args()
 
