@@ -529,7 +529,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
 
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize)
 
-    if imagery_latents:
+    if imagery_latents is not None:
         results.update(
             calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric, normalize)
         )
