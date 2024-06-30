@@ -22,7 +22,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
-    get_fmri_surface_data
+    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS
 
@@ -39,17 +39,21 @@ def train_and_test(
         *,
         train_ids,
         test_ids,
+        imagery_ids,
         null_distr_dir=None,
         random_seeds=None,
         list_i=None,
 ):
     X_train = X[train_ids]
     X_test = X[test_ids]
+    X_imagery = X[imagery_ids]
     y_train = y[train_ids]
     y_test = y[test_ids]
+    y_imagery = y[imagery_ids]
     estimator.fit(X_train, y_train)
 
     y_pred = estimator.predict(X_test)
+    y_pred_imagery = estimator.predict(X_imagery)
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -62,7 +66,7 @@ def train_and_test(
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES)
+    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
 
     return scores
 
@@ -75,6 +79,7 @@ def custom_group_iter_search_light(
         y,
         train_ids,
         test_ids,
+        imagery_ids,
         thread_id,
         total,
         print_interval=500,
@@ -84,7 +89,7 @@ def custom_group_iter_search_light(
     results = []
     t0 = time.time()
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
-        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
+        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
                                 null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
         results.append(scores)
         if print_interval > 0:
@@ -110,6 +115,7 @@ def custom_search_light(
         A,
         train_ids,
         test_ids,
+        imagery_ids,
         n_jobs=-1,
         verbose=0,
         print_interval=500,
@@ -128,6 +134,7 @@ def custom_search_light(
                 y,
                 train_ids,
                 test_ids,
+                imagery_ids,
                 thread_id,
                 len(A),
                 print_interval,
@@ -167,7 +174,9 @@ def run(args):
         for training_mode in args.training_modes:
             train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(subject, training_mode,
                                                                                  args.resolution)
-            test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, "test", args.resolution)
+            test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, TESTING_MODE, args.resolution)
+            imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(subject, IMAGERY,
+                                                                                       args.resolution)
 
             for model_name in args.models:
                 model_name = model_name.lower()
@@ -203,21 +212,35 @@ def run(args):
                         test_stim_ids,
                         test_stim_types,
                         subject,
-                        "test",
+                        TESTING_MODE,
                         nn_latent_transform=nn_latent_transform
                     )
-                    latents = np.concatenate((train_data_latents, test_data_latents))
+
+                    imagery_data_latents, _ = get_nn_latent_data(
+                        model_name,
+                        features,
+                        vision_features,
+                        lang_features,
+                        imagery_stim_ids,
+                        imagery_stim_types,
+                        subject,
+                        IMAGERY,
+                        nn_latent_transform=nn_latent_transform)
+                    latents = np.concatenate((train_data_latents, test_data_latents, imagery_data_latents))
 
                     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
                     for hemi in args.hemis:
                         print("Hemisphere: ", hemi)
                         print(f"train_fmri shape: {train_fmri[hemi].shape}")
                         print(f"test_fmri shape: {test_fmri[hemi].shape}")
+                        print(f"imagery_fmri shape: {imagery_fmri[hemi].shape}")
 
                         train_ids = list(range(len(train_fmri[hemi])))
                         test_ids = list(range(len(train_fmri[hemi]), len(train_fmri[hemi]) + len(test_fmri[hemi])))
+                        imagery_ids = list(range(len(train_ids) + len(test_ids),
+                                                 len(train_ids) + len(test_ids) + len(imagery_fmri[hemi])))
 
-                        X = np.concatenate((train_fmri[hemi], test_fmri[hemi]))
+                        X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
 
                         results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
 
@@ -261,7 +284,8 @@ def run(args):
                             os.makedirs(null_distr_dir, exist_ok=True)
 
                         scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
-                                                     test_ids=test_ids, n_jobs=args.n_jobs, verbose=1,
+                                                     test_ids=test_ids, imagery_ids=imagery_ids, n_jobs=args.n_jobs,
+                                                     verbose=1,
                                                      print_interval=500,
                                                      null_distr_dir=null_distr_dir,
                                                      random_seeds=random_seeds)
@@ -274,6 +298,14 @@ def run(args):
                         test_scores_imgs = [score["pairwise_acc_images"] for score in scores]
                         print(
                             f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
+
+                        imagery_scores = [score[ACC_IMAGERY] for score in scores]
+                        print(
+                            f"Mean score ({ACC_IMAGERY}): {np.mean(imagery_scores):.2f} | Max score: {np.max(imagery_scores):.2f}")
+
+                        imagery_whole_test_set_scores = [score[ACC_IMAGERY_WHOLE_TEST] for score in scores]
+                        print(
+                            f"Mean score ({ACC_IMAGERY_WHOLE_TEST}): {np.mean(imagery_whole_test_set_scores):.2f} | Max score: {np.max(imagery_whole_test_set_scores):.2f}")
 
                         results_dict["scores"] = scores
                         pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))

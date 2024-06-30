@@ -519,7 +519,8 @@ def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cos
     return results
 
 
-def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine", normalize=True):
+def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
+                                      imagery_predictions=None, metric="cosine", normalize=True):
     results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize)
 
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
@@ -527,6 +528,11 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, met
         latents_mod = latents[stim_types == modality]
 
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize)
+
+    if imagery_latents:
+        results.update(
+            calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric, normalize)
+        )
 
     return results
 
@@ -791,12 +797,8 @@ def run(args):
                                 }
                                 results.update(
                                     calc_all_pairwise_accuracy_scores(
-                                        test_data_latents, test_predicted_latents, test_stim_types
-                                    )
-                                )
-                                results.update(
-                                    calc_imagery_pairwise_accuracy_scores(
-                                        imagery_data_latents, imagery_predicted_latents, test_data_latents
+                                        test_data_latents, test_predicted_latents, test_stim_types,
+                                        imagery_data_latents, imagery_predicted_latents
                                     )
                                 )
                                 print(
