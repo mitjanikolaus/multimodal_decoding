@@ -23,7 +23,7 @@ from tqdm import tqdm
 import seaborn as sns
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES, \
-    ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC
+    ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from utils import SUBJECTS, HEMIS
 
@@ -36,6 +36,8 @@ METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
 METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
 METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
 METRIC_MIN = 'min_alternative'
+METRIC_IMAGERY = 'imagery'
+METRIC_IMAGERY_WHOLE_TEST = 'imagery_whole_test'
 
 METRIC_CODES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
@@ -44,8 +46,7 @@ METRIC_CODES = {
     METRIC_MIN: 3,
 }
 
-BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC]
-TEST_METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY]
 CHANCE_VALUES = {
     METRIC_CAPTIONS: 0.5,
     METRIC_IMAGES: 0.5,
@@ -54,6 +55,8 @@ CHANCE_VALUES = {
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_MIN: 0,
+    METRIC_IMAGERY: 0.5,
+    METRIC_IMAGERY_WHOLE_TEST: 0.5,
 }
 
 
@@ -101,6 +104,9 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores_specific_images[score_name][~nan_locations] = np.array(
             [score[metric] for score in scores_images])
+
+    scores[METRIC_IMAGERY_WHOLE_TEST] = np.repeat(np.nan, nan_locations.shape)
+    scores[METRIC_IMAGERY_WHOLE_TEST][~nan_locations] = np.array([score[ACC_IMAGERY_WHOLE_TEST] for score in scores_agnostic])
 
     scores[METRIC_DIFF_IMAGES] = np.array(
         [ai - si for ai, ac, si, sc in

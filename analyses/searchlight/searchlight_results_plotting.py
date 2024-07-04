@@ -13,7 +13,7 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
-    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC
+    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
@@ -121,7 +121,7 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
 
 def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+    metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
 
     print(f"plotting acc scores. {filename_suffix}")
     fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
