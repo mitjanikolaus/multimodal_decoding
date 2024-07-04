@@ -13,7 +13,7 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
-    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY
+    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
