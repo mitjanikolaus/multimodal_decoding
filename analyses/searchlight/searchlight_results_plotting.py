@@ -141,6 +141,8 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
                 threshold = COLORBAR_THRESHOLD_MIN
                 if CHANCE_VALUES[metric] == 0:
                     threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
+
+                print(f"metric: {metric} {hemi} hemi max value: {np.nanmax(score_hemi_avgd)}")
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     score_hemi_avgd,
