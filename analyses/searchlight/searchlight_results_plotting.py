@@ -130,11 +130,14 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
         subfig.suptitle(f'{metric}', x=0, y=1.1, horizontalalignment="left")
         axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
         cbar_max = None
-        for i, view in enumerate(args.views):
-            for j, hemi in enumerate(['left', 'right']):
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+        for j, hemi in enumerate(HEMIS):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+
+            print(f"metric: {metric} {hemi} hemi max value: {np.nanmax(score_hemi_avgd)}")
+
+            for i, view in enumerate(args.views):
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = min(np.nanmax(score_hemi_avgd), 99)
@@ -142,7 +145,6 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
                 if CHANCE_VALUES[metric] == 0:
                     threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
 
-                print(f"metric: {metric} {hemi} hemi max value: {np.nanmax(score_hemi_avgd)}")
                 plotting.plot_surf_stat_map(
                     infl_mesh,
                     score_hemi_avgd,
