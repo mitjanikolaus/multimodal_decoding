@@ -477,6 +477,6 @@ if __name__ == "__main__":
     if args.lang_features == FEATS_SELECT_DEFAULT:
         args.lang_features = get_default_lang_features(model_name)
 
-    # run(args) #TODO
+    run(args)
     create_gifti_results_maps(args)
 
