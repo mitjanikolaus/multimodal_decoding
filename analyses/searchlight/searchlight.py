@@ -2,6 +2,7 @@ import argparse
 import sys
 import time
 import warnings
+from glob import glob
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -17,19 +18,35 @@ import pickle
 
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
-    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
+    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CAPTIONS, ACC_IMAGES, \
+    ACC_MODALITY_AGNOSTIC
 
-from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS
+from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, \
+    correlation_num_voxels_acc, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
+
+BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY]
+
+
+METRIC_CAPTIONS = 'captions'
+METRIC_IMAGES = 'images'
+METRIC_AGNOSTIC = 'agnostic'
+METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
+METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
+METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
+METRIC_MIN = 'min_alternative'
+METRIC_IMAGERY = 'imagery'
+METRIC_IMAGERY_WHOLE_TEST = 'imagery_whole_test'
 
 
 def train_and_test(
@@ -178,137 +195,225 @@ def run(args):
             imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(subject, IMAGERY,
                                                                                        args.resolution)
 
-            for model_name in args.models:
-                model_name = model_name.lower()
+            model_name = args.model.lower()
 
-                for features in args.features:
-                    if features == FEATS_SELECT_DEFAULT:
-                        features = get_default_features(model_name)
-                    vision_features = args.vision_features
-                    if vision_features == FEATS_SELECT_DEFAULT:
-                        vision_features = get_default_vision_features(model_name)
-                    lang_features = args.lang_features
-                    if lang_features == FEATS_SELECT_DEFAULT:
-                        lang_features = get_default_lang_features(model_name)
+            print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
+                  f"MODEL: {model_name} | FEATURES: {args.features}")
 
-                    print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
-                          f"MODEL: {model_name} | FEATURES: {features}")
+            train_data_latents, nn_latent_transform = get_nn_latent_data(
+                model_name, args.features,
+                args.vision_features,
+                args.lang_features,
+                train_stim_ids,
+                train_stim_types,
+                subject,
+                training_mode,
+            )
 
-                    train_data_latents, nn_latent_transform = get_nn_latent_data(
-                        model_name, features,
-                        vision_features,
-                        lang_features,
-                        train_stim_ids,
-                        train_stim_types,
-                        subject,
-                        training_mode,
-                    )
+            test_data_latents, _ = get_nn_latent_data(
+                model_name,
+                args.features,
+                args.vision_features,
+                args.lang_features,
+                test_stim_ids,
+                test_stim_types,
+                subject,
+                TESTING_MODE,
+                nn_latent_transform=nn_latent_transform
+            )
 
-                    test_data_latents, _ = get_nn_latent_data(
-                        model_name,
-                        features,
-                        vision_features,
-                        lang_features,
-                        test_stim_ids,
-                        test_stim_types,
-                        subject,
-                        TESTING_MODE,
-                        nn_latent_transform=nn_latent_transform
-                    )
+            imagery_data_latents, _ = get_nn_latent_data(
+                model_name,
+                args.features,
+                args.vision_features,
+                args.lang_features,
+                imagery_stim_ids,
+                imagery_stim_types,
+                subject,
+                IMAGERY,
+                nn_latent_transform=nn_latent_transform)
+            latents = np.concatenate((train_data_latents, test_data_latents, imagery_data_latents))
 
-                    imagery_data_latents, _ = get_nn_latent_data(
-                        model_name,
-                        features,
-                        vision_features,
-                        lang_features,
-                        imagery_stim_ids,
-                        imagery_stim_types,
-                        subject,
-                        IMAGERY,
-                        nn_latent_transform=nn_latent_transform)
-                    latents = np.concatenate((train_data_latents, test_data_latents, imagery_data_latents))
+            fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+            for hemi in args.hemis:
+                print("Hemisphere: ", hemi)
+                print(f"train_fmri shape: {train_fmri[hemi].shape}")
+                print(f"test_fmri shape: {test_fmri[hemi].shape}")
+                print(f"imagery_fmri shape: {imagery_fmri[hemi].shape}")
 
-                    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-                    for hemi in args.hemis:
-                        print("Hemisphere: ", hemi)
-                        print(f"train_fmri shape: {train_fmri[hemi].shape}")
-                        print(f"test_fmri shape: {test_fmri[hemi].shape}")
-                        print(f"imagery_fmri shape: {imagery_fmri[hemi].shape}")
+                train_ids = list(range(len(train_fmri[hemi])))
+                test_ids = list(range(len(train_fmri[hemi]), len(train_fmri[hemi]) + len(test_fmri[hemi])))
+                imagery_ids = list(range(len(train_ids) + len(test_ids),
+                                         len(train_ids) + len(test_ids) + len(imagery_fmri[hemi])))
 
-                        train_ids = list(range(len(train_fmri[hemi])))
-                        test_ids = list(range(len(train_fmri[hemi]), len(train_fmri[hemi]) + len(test_fmri[hemi])))
-                        imagery_ids = list(range(len(train_ids) + len(test_ids),
-                                                 len(train_ids) + len(test_ids) + len(imagery_fmri[hemi])))
+                X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
 
-                        X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
+                results_dir = get_results_dir(args, args.features, hemi, model_name, subject, training_mode)
 
-                        results_dir = get_results_dir(args, features, hemi, model_name, subject, training_mode)
+                results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
-                        results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
+                nan_locations = np.isnan(X[0])
+                assert np.all(nan_locations == np.isnan(X[-1]))
+                X = X[:, ~nan_locations]
 
-                        nan_locations = np.isnan(X[0])
-                        assert np.all(nan_locations == np.isnan(X[-1]))
-                        X = X[:, ~nan_locations]
+                infl_mesh = fsaverage[f"infl_{hemi}"]
+                coords, _ = surface.load_surf_mesh(infl_mesh)
+                coords = coords[~nan_locations]
 
-                        infl_mesh = fsaverage[f"infl_{hemi}"]
-                        coords, _ = surface.load_surf_mesh(infl_mesh)
-                        coords = coords[~nan_locations]
+                nn = neighbors.NearestNeighbors(radius=args.radius)
+                results_dict = {}
+                results_dict["nan_locations"] = nan_locations
+                if args.radius is not None:
+                    adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
+                                 nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+                    n_neighbors = [len(adj) for adj in adjacency]
+                    results_dict["n_neighbors"] = n_neighbors
+                    print(
+                        f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} "
+                        f"(max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
+                elif args.n_neighbors is not None:
+                    distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
+                    results_dict["distances"] = distances
+                    print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+                    print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
+                    print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
+                else:
+                    raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
-                        nn = neighbors.NearestNeighbors(radius=args.radius)
-                        results_dict = {}
-                        results_dict["nan_locations"] = nan_locations
-                        if args.radius is not None:
-                            adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
-                                         nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-                            n_neighbors = [len(adj) for adj in adjacency]
-                            results_dict["n_neighbors"] = n_neighbors
-                            print(
-                                f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} "
-                                f"(max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
-                        elif args.n_neighbors is not None:
-                            distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-                            results_dict["distances"] = distances
-                            print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
-                            print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
-                            print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
-                        else:
-                            raise RuntimeError("Need to set either radius or n_neighbors arg!")
+                results_dict["adjacency"] = adjacency
+                model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
+                start = time.time()
 
-                        results_dict["adjacency"] = adjacency
-                        model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
-                        start = time.time()
+                null_distr_dir = None
+                if args.create_null_distr:
+                    null_distr_dir = os.path.join(results_dir, "null_distr")
+                    os.makedirs(null_distr_dir, exist_ok=True)
 
-                        null_distr_dir = None
-                        if args.create_null_distr:
-                            null_distr_dir = os.path.join(results_dir, "null_distr")
-                            os.makedirs(null_distr_dir, exist_ok=True)
+                scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
+                                             test_ids=test_ids, imagery_ids=imagery_ids, n_jobs=args.n_jobs,
+                                             verbose=1,
+                                             print_interval=500,
+                                             null_distr_dir=null_distr_dir,
+                                             random_seeds=random_seeds)
+                end = time.time()
+                print(f"Searchlight time: {int(end - start)}s")
+                test_scores_caps = [score["pairwise_acc_captions"] for score in scores]
+                print(
+                    f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
 
-                        scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
-                                                     test_ids=test_ids, imagery_ids=imagery_ids, n_jobs=args.n_jobs,
-                                                     verbose=1,
-                                                     print_interval=500,
-                                                     null_distr_dir=null_distr_dir,
-                                                     random_seeds=random_seeds)
-                        end = time.time()
-                        print(f"Searchlight time: {int(end - start)}s")
-                        test_scores_caps = [score["pairwise_acc_captions"] for score in scores]
-                        print(
-                            f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
+                test_scores_imgs = [score["pairwise_acc_images"] for score in scores]
+                print(
+                    f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
 
-                        test_scores_imgs = [score["pairwise_acc_images"] for score in scores]
-                        print(
-                            f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
+                imagery_scores = [score[ACC_IMAGERY] for score in scores]
+                print(
+                    f"Mean score ({ACC_IMAGERY}): {np.mean(imagery_scores):.2f} | Max score: {np.max(imagery_scores):.2f}")
 
-                        imagery_scores = [score[ACC_IMAGERY] for score in scores]
-                        print(
-                            f"Mean score ({ACC_IMAGERY}): {np.mean(imagery_scores):.2f} | Max score: {np.max(imagery_scores):.2f}")
+                imagery_whole_test_set_scores = [score[ACC_IMAGERY_WHOLE_TEST] for score in scores]
+                print(
+                    f"Mean score ({ACC_IMAGERY_WHOLE_TEST}): {np.mean(imagery_whole_test_set_scores):.2f} | Max score: {np.max(imagery_whole_test_set_scores):.2f}")
 
-                        imagery_whole_test_set_scores = [score[ACC_IMAGERY_WHOLE_TEST] for score in scores]
-                        print(
-                            f"Mean score ({ACC_IMAGERY_WHOLE_TEST}): {np.mean(imagery_whole_test_set_scores):.2f} | Max score: {np.max(imagery_whole_test_set_scores):.2f}")
+                results_dict["scores"] = scores
+                pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
 
-                        results_dict["scores"] = scores
-                        pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
+
+def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
+    scores = dict()
+
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[-1]
+        scores[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
+
+    if "plot_n_neighbors_correlation_graph" in args and args.plot_n_neighbors_correlation_graph and (n_neighbors is not None) and (subj is not None):
+        correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
+
+    scores_specific_captions = dict()
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[-1]
+        scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_specific_captions[score_name][~nan_locations] = np.array(
+            [score[metric] for score in scores_captions])
+
+    scores_specific_images = dict()
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[-1]
+        scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_specific_images[score_name][~nan_locations] = np.array(
+            [score[metric] for score in scores_images])
+
+    scores[METRIC_IMAGERY_WHOLE_TEST] = np.repeat(np.nan, nan_locations.shape)
+    scores[METRIC_IMAGERY_WHOLE_TEST][~nan_locations] = np.array([score[ACC_IMAGERY_WHOLE_TEST] for score in scores_agnostic])
+
+    scores[METRIC_DIFF_IMAGES] = np.array(
+        [ai - si for ai, ac, si, sc in
+         zip(scores[METRIC_IMAGES],
+             scores[METRIC_CAPTIONS],
+             scores_specific_images[METRIC_IMAGES],
+             scores_specific_captions[METRIC_CAPTIONS])]
+    )
+    scores[METRIC_DIFF_CAPTIONS] = np.array(
+        [ac - sc for ai, ac, si, sc in
+         zip(scores[METRIC_IMAGES],
+             scores[METRIC_CAPTIONS],
+             scores_specific_images[METRIC_IMAGES],
+             scores_specific_captions[METRIC_CAPTIONS])]
+    )
+
+    return scores
+
+
+def load_per_subject_scores(args):
+    per_subject_scores = {subj: dict() for subj in SUBJECTS}
+
+    results_regex = os.path.join(
+        SEARCHLIGHT_OUT_DIR,
+        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+    )
+    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
+    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
+    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
+
+    for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
+                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
+        hemi = os.path.dirname(path_agnostic).split("/")[-2]
+        subject = os.path.dirname(path_agnostic).split("/")[-4]
+
+        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
+        scores_agnostic = results_agnostic['scores']
+        scores_captions = pickle.load(open(path_caps, 'rb'))['scores']
+        scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
+
+        nan_locations = results_agnostic['nan_locations']
+        n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
+        scores = process_scores(
+            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, args, n_neighbors
+        )
+        # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
+        # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+        # print("")
+
+        per_subject_scores[subject][hemi] = scores
+    return per_subject_scores
+
+
+def create_gifti_results_maps(args):
+    args.mode = mode_from_args(args)
+    per_subject_scores = load_per_subject_scores(args)
+
+    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
+               METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
+
+    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+                               args.resolution, args.mode, "acc_scores_gifti")
+    os.makedirs(results_dir, exist_ok=True)
+
+    for metric in METRICS:
+        for hemi in HEMIS:
+            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+            path_out = os.path.join(results_dir,  f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+            export_to_gifti(score_hemi_avgd, path_out)
 
 
 def mode_from_args(args):
@@ -333,8 +438,8 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
 
-    parser.add_argument("--models", type=str, nargs='+', default=['vilt'])
-    parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
+    parser.add_argument("--model", type=str, default="blip2")
+    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
@@ -364,4 +469,14 @@ if __name__ == "__main__":
     args = get_args()
     os.makedirs(SEARCHLIGHT_OUT_DIR, exist_ok=True)
 
-    run(args)
+    model_name = args.model.lower()
+    if args.features == FEATS_SELECT_DEFAULT:
+        args.features = get_default_features(model_name)
+    if args.vision_features == FEATS_SELECT_DEFAULT:
+        args.vision_features = get_default_vision_features(model_name)
+    if args.lang_features == FEATS_SELECT_DEFAULT:
+        args.lang_features = get_default_lang_features(model_name)
+
+    # run(args) #TODO
+    create_gifti_results_maps(args)
+

@@ -1,5 +1,12 @@
 import os
 import numpy as np
+from scipy.stats import pearsonr
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from nibabel import GiftiImage
+from nibabel.gifti import GiftiDataArray
+from nibabel.nifti1 import intent_codes, data_type_codes
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,6 +44,8 @@ LANG_CLS_FEAT_KEY = "lang_features_cls"
 
 FUSED_MEAN_FEAT_KEY = "fused_mean_features"
 FUSED_CLS_FEAT_KEY = "fused_cls_features"
+
+FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
 
 def model_features_file_path(model_name):
@@ -201,3 +210,34 @@ NUM_TEST_STIMULI = len(IDS_IMAGES_TEST) * 2
 INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
 INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
 IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
+
+
+def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
+    corr = pearsonr(n_neighbors, scores['agnostic'][~nan_locations])
+
+    sns.histplot(x=n_neighbors, y=scores['agnostic'][~nan_locations])
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png",
+                dpi=300)
+
+    plt.figure()
+    sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig(
+        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png",
+        dpi=300)
+
+
+def export_to_gifti(scores, path):
+    data = scores.astype(np.float32)
+    gimage = GiftiImage(
+        darrays=[GiftiDataArray(
+            data,
+            intent=intent_codes.code['NIFTI_INTENT_NONE'],
+            datatype=data_type_codes.code['NIFTI_TYPE_FLOAT32'])]
+    )
+    gimage.to_filename(path)

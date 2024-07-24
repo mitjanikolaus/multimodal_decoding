@@ -2,14 +2,12 @@ import argparse
 import copy
 import itertools
 import math
-import sys
 import warnings
 
 import h5py
 import numpy as np
 from joblib import Parallel, delayed
 from nilearn import datasets
-import matplotlib.pyplot as plt
 import os
 from glob import glob
 import pickle
@@ -18,26 +16,15 @@ from nilearn.surface import surface
 from scipy import stats
 from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
-from scipy.stats import pearsonr
 from tqdm import tqdm
-import seaborn as sns
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES, \
-    ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_CAPTIONS, \
+    METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_IMAGERY, \
+    METRIC_IMAGERY_WHOLE_TEST
 from utils import SUBJECTS, HEMIS
 
 DEFAULT_N_JOBS = 10
-
-METRIC_CAPTIONS = 'captions'
-METRIC_IMAGES = 'images'
-METRIC_AGNOSTIC = 'agnostic'
-METRIC_DIFF_CAPTIONS = 'captions_agno - captions_specific'
-METRIC_DIFF_IMAGES = 'imgs_agno - imgs_specific'
-METRIC_MIN_DIFF_BOTH_MODALITIES = 'min(captions_agno - captions_specific, imgs_agno - imgs_specific)'
-METRIC_MIN = 'min_alternative'
-METRIC_IMAGERY = 'imagery'
-METRIC_IMAGERY_WHOLE_TEST = 'imagery_whole_test'
 
 METRIC_CODES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
@@ -46,7 +33,6 @@ METRIC_CODES = {
     METRIC_MIN: 3,
 }
 
-BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY]
 CHANCE_VALUES = {
     METRIC_CAPTIONS: 0.5,
     METRIC_IMAGES: 0.5,
@@ -58,72 +44,6 @@ CHANCE_VALUES = {
     METRIC_IMAGERY: 0.5,
     METRIC_IMAGERY_WHOLE_TEST: 0.5,
 }
-
-
-def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
-    corr = pearsonr(n_neighbors, scores['agnostic'][~nan_locations])
-
-    sns.histplot(x=n_neighbors, y=scores['agnostic'][~nan_locations])
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png",
-                dpi=300)
-
-    plt.figure()
-    sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(
-        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png",
-        dpi=300)
-
-
-def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
-    scores = dict()
-
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
-
-    if args.plot_n_neighbors_correlation_graph and (n_neighbors is not None) and (subj is not None):
-        correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
-
-    scores_specific_captions = dict()
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_specific_captions[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_captions])
-
-    scores_specific_images = dict()
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_specific_images[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_images])
-
-    scores[METRIC_IMAGERY_WHOLE_TEST] = np.repeat(np.nan, nan_locations.shape)
-    scores[METRIC_IMAGERY_WHOLE_TEST][~nan_locations] = np.array([score[ACC_IMAGERY_WHOLE_TEST] for score in scores_agnostic])
-
-    scores[METRIC_DIFF_IMAGES] = np.array(
-        [ai - si for ai, ac, si, sc in
-         zip(scores[METRIC_IMAGES],
-             scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
-    )
-    scores[METRIC_DIFF_CAPTIONS] = np.array(
-        [ac - sc for ai, ac, si, sc in
-         zip(scores[METRIC_IMAGES],
-             scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
-    )
-
-    return scores
 
 
 def compute_adjacency_matrix(surface, values='ones'):
@@ -511,7 +431,8 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
 def calc_image_t_values(data, popmean):
     # use heuristic that mean needs to be greater than popmean to speed up calculation
     return np.array(
-        [stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if x[~np.isnan(x)].mean() > popmean else 0 for x in data.T]
+        [stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if x[~np.isnan(
+            x)].mean() > popmean else 0 for x in data.T]
     )
 
 
@@ -536,41 +457,6 @@ def calc_t_values(per_subject_scores):
                 axis=0)
 
     return t_values
-
-
-def load_per_subject_scores(args):
-    per_subject_scores = {subj: dict() for subj in SUBJECTS}
-
-    results_regex = os.path.join(
-        SEARCHLIGHT_OUT_DIR,
-        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
-    )
-    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
-    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
-
-    for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
-        hemi = os.path.dirname(path_agnostic).split("/")[-2]
-        subject = os.path.dirname(path_agnostic).split("/")[-4]
-
-        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
-        scores_agnostic = results_agnostic['scores']
-        scores_captions = pickle.load(open(path_caps, 'rb'))['scores']
-        scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
-
-        nan_locations = results_agnostic['nan_locations']
-        n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
-        scores = process_scores(
-            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, args, n_neighbors
-        )
-        # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
-        # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-        # print("")
-
-        per_subject_scores[subject][hemi] = scores
-    return per_subject_scores
 
 
 def run(args):
@@ -748,7 +634,8 @@ def calc_t_values_null_distr(args, out_path):
                     tvals_shape = (len(permutations), per_subject_scores[0][SUBJECTS[0]][hemi][METRIC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
-            iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(permutations)
+            iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
+                permutations)
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
@@ -796,9 +683,12 @@ def calc_t_values_null_distr(args, out_path):
                 for metric in scores[subj][hemi].keys():
                     for job_id in range(args.n_jobs):
                         filtered = scores[subj][hemi][metric][enough_data[hemi]]
-                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
+                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[
+                                                                      job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
+                                                                          hemi]]
 
-    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in range(args.n_jobs)}
+    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
+                     range(args.n_jobs)}
     Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
         delayed(calc_permutation_t_values)(
             scores_jobs[id],
@@ -823,7 +713,8 @@ def calc_t_values_null_distr(args, out_path):
             for hemi_metric in tmp_files[0].keys():
                 hemi = hemi_metric.split('__')[0]
                 data_tvals = np.repeat(np.nan, n_vertices)
-                data_tvals[enough_data[hemi]] = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+                data_tvals[enough_data[hemi]] = np.concatenate(
+                    [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[hemi_metric][i] = data_tvals
 
     print("finished assemble")
@@ -896,7 +787,6 @@ def create_null_distribution(args):
 
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
-
                 # t_values = [id * n_per_job: (id + 1) * n_per_job]
                 indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
                 iterator = tqdm(indices) if proc_id == 0 else indices
