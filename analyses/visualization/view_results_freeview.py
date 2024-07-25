@@ -36,7 +36,6 @@ def run(args):
             results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
                                        args.resolution, args.mode, "acc_scores_gifti")
             maps_paths = [os.path.join(results_dir, f"{metric.replace(' ', '')}_{hemi_fs}.gii") for metric in METRICS]
-            print(maps_paths)
             for maps_path in maps_paths:
                 if os.path.isfile(maps_path):
                     cmd += f":overlay={maps_path}:overlay_zorder=2"
