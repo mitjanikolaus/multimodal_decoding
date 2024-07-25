@@ -253,7 +253,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     df["lang_features"] = df["lang_features"].fillna("unk")
 
     df["mask"] = df["mask"].fillna("whole_brain")
-    df["mask"] = df["mask"].apply(lambda x: os.path.basename(x).replace("p_values_", "").replace(".p", ""))
+    df["mask"] = df["mask"].apply(lambda x: x.replace("p_values_", "").replace(".p", "")) #os.path.basename(x)
 
     df["model_feat"] = df.model + "_" + df.features
 
