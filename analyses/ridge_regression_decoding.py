@@ -3,8 +3,6 @@ import time
 
 import numpy as np
 import nibabel as nib
-from nilearn.datasets import fetch_atlas_destrieux_2009
-from nilearn.image import resample_to_img
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.linear_model import Ridge
@@ -14,7 +12,6 @@ import os
 from glob import glob
 import pickle
 from tqdm import trange
-import pandas as pd
 
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
@@ -55,138 +52,6 @@ CAPTION = "caption"
 IMAGERY = "imagery"
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
-
-MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
-MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level"
-MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
-
-REGIONS_LOW_LEVEL_VISUAL = [
-    'L G_and_S_occipital_inf',
-    'L G_occipital_middle',
-    'L G_occipital_sup',
-    'L Pole_occipital',
-    'L S_oc_middle_and_Lunatus',
-    'L S_oc_sup_and_transversal',
-    'L S_occipital_ant',
-    'R G_and_S_occipital_inf',
-    'R G_occipital_middle',
-    'R G_occipital_sup',
-    'R Pole_occipital',
-    'R S_oc_middle_and_Lunatus',
-    'R S_oc_sup_and_transversal',
-    'R S_occipital_ant',
-    'L S_calcarine',
-    'R S_calcarine',
-    'L G_cuneus',
-    'R G_cuneus',
-    'L G_oc-temp_med-Lingual',
-    'R G_oc-temp_med-Lingual',
-]
-
-REGIONS_HIGH_LEVEL_VISUAL = [
-    'L G_oc-temp_lat-fusifor',
-    'R G_oc-temp_lat-fusifor',
-    'L G_oc-temp_med-Parahip',
-    'R G_oc-temp_med-Parahip',
-    'L S_oc-temp_lat',
-    'R S_oc-temp_lat',
-    'L G_temporal_inf',
-    'L G_temporal_middle',
-    'L S_temporal_inf',
-    'R G_temporal_inf',
-    'R G_temporal_middle',
-    'R S_temporal_inf',
-    'L S_collat_transv_post',
-    'R S_collat_transv_post',
-    'L S_parieto_occipital',
-    'R S_parieto_occipital',
-    'L S_oc-temp_med_and_Lingual',
-    'R S_oc-temp_med_and_Lingual',
-]
-
-REGIONS_LANGUAGE = [
-    'L G_front_inf-Opercular',  # left inferior frontal gyrus
-    'L G_front_inf-Orbital',  # left orbital inferior frontal gyrus
-    'L G_front_inf-Triangul',  # left inferior frontal gyrus
-    'L G_pariet_inf-Angular',  # left angular gyrus
-    'L G_front_middle',  # left middle frontal gyrus
-    'L G_temp_sup-Lateral',  # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe
-    'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
-    'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
-    'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci
-    'L S_temporal_sup',  # Superior temporal sulcus
-    'L S_temporal_transverse',  # Transverse temporal sulcus
-    'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
-    'L G_pariet_inf-Supramar',  # Supramarginal gyrus
-    'L G_Ins_lg_and_S_cent_ins',  # Insula
-    'L G_insular_short',  # Insula
-    'L S_circular_insula_ant',  # Insula
-    'L S_circular_insula_inf',  # Insula
-    'L S_circular_insula_sup',  # Insula
-]
-
-
-def get_anatomical_mask(roi_mask_name, ref_img):
-    destrieux_atlas = fetch_atlas_destrieux_2009()
-    label_to_id_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
-    atlas_map = nib.load(destrieux_atlas.maps)
-    atlas_map = resample_to_img(atlas_map, ref_img, interpolation='nearest')
-    atlas_map = atlas_map.get_fdata()
-
-    if roi_mask_name == MASK_ANATOMICAL_VISUAL_LOW_LEVEL:
-        region_names = [label for label in REGIONS_LOW_LEVEL_VISUAL]
-    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_HIGH_LEVEL:
-        region_names = [label for label in REGIONS_HIGH_LEVEL_VISUAL]
-    elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE:
-        region_names = [label for label in REGIONS_LANGUAGE]
-    else:
-        raise RuntimeError("Unknown mask: ", roi_mask_name)
-
-    ids = [label_to_id_dict[label] for label in region_names]
-    roi_mask = np.isin(atlas_map, ids)
-    return roi_mask
-
-
-MASK_FUNCTIONAL_LANGUAGE = "functional_Language"
-MASK_FUNCTIONAL_VISUAL1 = "functional_Visual1"
-MASK_FUNCTIONAL_VISUAL2 = "functional_Visual2"
-
-
-def get_functional_mask(roi_mask_name, ref_img):
-    ji_conv_filename = os.path.join(ROOT_DIR,
-                                    'atlas_data/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt')
-    ji_conversion = pd.read_csv(ji_conv_filename, delimiter='\t')
-
-    network_names = roi_mask_name.split("_")[1:]
-    glasser_labels = ji_conversion[ji_conversion.NETWORK.isin(network_names)].GLASSERLABELNAME.dropna().unique()
-
-    atlas_hcp = nib.load(os.path.join(ROOT_DIR, 'atlas_data/MNI_Glasser_HCP_v1.0.nii.gz'))
-    hcp_resampled = resample_to_img(atlas_hcp, ref_img, interpolation='nearest')
-    hcp_data = hcp_resampled.get_fdata().round().astype(np.int32)
-
-    glasser_label_to_idx = pd.read_csv(os.path.join(ROOT_DIR, 'atlas_data/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt'),
-                                       delimiter=' ', names=['idx', 'label'], index_col=1)
-
-    def get_idx(label):
-        idx = glasser_label_to_idx.loc[label.replace('R_', 'L_')].idx
-        if label.startswith("R_"):
-            idx += 1000
-        return idx
-
-    ids = np.unique([get_idx(label) for label in glasser_labels])
-    roi_mask = np.isin(hcp_data, ids)
-    return roi_mask
-
-
-def get_roi_mask(roi_mask_name, ref_img):
-    if roi_mask_name.startswith("anatomical_"):
-        return get_anatomical_mask(roi_mask_name, ref_img)
-
-    elif roi_mask_name.startswith("functional_"):
-        return get_functional_mask(roi_mask_name, ref_img)
-
-    else:
-        raise RuntimeError("Unknown mask for volume space: ", roi_mask_name)
 
 
 def get_default_features(model_name, logging=True):
@@ -400,7 +265,7 @@ def get_fmri_data_paths(subject, mode):
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_fmri_voxel_data(subject, mode, roi_mask_name=None):
+def get_fmri_voxel_data(subject, mode):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
 
     gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
@@ -409,36 +274,27 @@ def get_fmri_voxel_data(subject, mode, roi_mask_name=None):
     gray_matter_mask = gray_matter_mask_data == 1
     print(f"Gray matter mask size: {gray_matter_mask.sum()}")
 
-    if roi_mask_name is not None:
-        roi_mask = get_roi_mask(roi_mask_name, gray_matter_mask_img)
-        print(f"Applying ROI {roi_mask_name} mask of size {roi_mask.sum()}")
-        print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
-
-    mask = gray_matter_mask
-    if roi_mask_name is not None:
-        mask = roi_mask & gray_matter_mask
-
     fmri_betas = []
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
-        sample = sample[mask].astype('float32').reshape(-1)
+        sample = sample[gray_matter_mask].astype('float32').reshape(-1)
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_betas_mean_std_path(subject, mode, roi_mask_name):
+def get_fmri_betas_mean_std_path(subject, mode, mask_name):
     mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
     bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
-    if roi_mask_name is not None:
-        bold_std_mean_name += f'_mask_{roi_mask_name}'
+    if mask_name is not None:
+        bold_std_mean_name += f'_mask_{mask_name}'
     return os.path.join(mean_std_dir, bold_std_mean_name)
 
 
-def load_fmri_betas_transform(subject, mode, roi_mask_name=None):
-    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, roi_mask_name)
+def load_fmri_betas_transform(subject, mode, mask_name=None):
+    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, mask_name)
 
     bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
     fmri_betas_transform = Normalize(bold_mean_std['mean'], bold_mean_std['std'])
