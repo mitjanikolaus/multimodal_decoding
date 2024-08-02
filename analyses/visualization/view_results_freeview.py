@@ -13,17 +13,21 @@ METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS
 def run(args):
     os.environ["FREESURFER_HOME"] = FREESURFER_HOME_DIR
     os.system("$FREESURFER_HOME/SetUpFreeSurfer.sh")
-    cmd = (f"freeview")
+    cmd = "freeview"
     thresh = str(args.p_values_threshold)
+    searchlight_dir = SEARCHLIGHT_OUT_DIR
+    if args.local:
+        searchlight_dir = searchlight_dir.replace("searchlight", "searchlight_local")
+
     for hemi_fs in HEMIS_FS:
         cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
 
         mask_paths = [os.path.join(
-            SEARCHLIGHT_OUT_DIR,
+            searchlight_dir,
             f"train/{args.model}/{args.features}/{args.resolution}/{args.mode}/p_values_gifti/{hemi_fs}.gii")
         ]
         mask_paths += [os.path.join(
-            SEARCHLIGHT_OUT_DIR,
+            searchlight_dir,
             f"train/{args.model}/{args.features}/{args.resolution}/{args.mode}/p_values_gifti/thresh_{thresh}_{hemi_fs}"
             f"_cluster_{i}.gii")
             for i in range(args.n_clusters)
@@ -32,7 +36,7 @@ def run(args):
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
 
-        results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+        results_dir = os.path.join(searchlight_dir, "train", args.model, args.features,
                                    args.resolution, args.mode, "acc_scores_gifti")
         maps_paths = [os.path.join(results_dir, f"{metric.replace(' ', '')}_{hemi_fs}.gii") for metric in METRICS]
         for maps_path in maps_paths:
@@ -61,6 +65,8 @@ def get_args():
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--n-clusters", type=int, default=10)
+
+    parser.add_argument("--local", action="store_true", default=False)
 
     return parser.parse_args()
 
