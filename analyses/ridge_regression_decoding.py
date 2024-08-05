@@ -357,12 +357,16 @@ def pairwise_accuracy(latents, predictions, metric="cosine", normalize_predictio
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
-def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cosine", normalize=True):
+def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cosine", normalize_predictions=True,
+                                   normalize_targets=False):
     results = dict()
 
-    if normalize:
+    if normalize_predictions:
         pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
         predictions = pred_normalize(predictions)
+    if normalize_targets:
+        latens_normalize = Normalize(latents.mean(axis=0), latents.std(axis=0))
+        latents = latens_normalize(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
 
@@ -379,18 +383,19 @@ def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cos
 
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
-                                      imagery_predictions=None, metric="cosine", normalize=True):
-    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize)
+                                      imagery_predictions=None, metric="cosine", normalize_predictions=True,
+                                      normalize_targets=False):
+    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize_predictions, normalize_targets)
 
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
         preds_mod = predictions[stim_types == modality].copy()
         latents_mod = latents[stim_types == modality]
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize)
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions, normalize_targets)
 
     if imagery_latents is not None:
         results.update(
-            calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric, normalize)
+            calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric, normalize_predictions, normalize_targets)
         )
 
     return results
