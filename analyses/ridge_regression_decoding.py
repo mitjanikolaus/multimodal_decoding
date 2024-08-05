@@ -345,10 +345,13 @@ def dist_mat_to_pairwise_acc(dist_mat):
     return score
 
 
-def pairwise_accuracy(latents, predictions, metric="cosine", normalize=True):
-    if normalize:
+def pairwise_accuracy(latents, predictions, metric="cosine", normalize_predictions=True, normalize_targets=False):
+    if normalize_predictions:
         preds_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
         predictions = preds_normalize(predictions)
+    if normalize_targets:
+        latens_normalize = Normalize(latents.mean(axis=0), latents.std(axis=0))
+        latents = latens_normalize(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
     return dist_mat_to_pairwise_acc(dist_mat)
@@ -394,13 +397,17 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
 
 
 def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
-                                          normalize=True):
+                                          normalize_predictions=True, normalize_targets=False):
     results = dict()
 
-    results[ACC_IMAGERY] = pairwise_accuracy(imagery_latents, imagery_predictions, metric, normalize)
+    results[ACC_IMAGERY] = pairwise_accuracy(
+        imagery_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
+    )
 
     target_latents = np.concatenate((imagery_latents, latents))
-    results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(target_latents, imagery_predictions, metric, normalize)
+    results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(
+        target_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
+    )
 
     return results
 
