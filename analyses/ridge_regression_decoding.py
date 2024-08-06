@@ -44,6 +44,10 @@ TESTING_MODE = "test"
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
 ACC_IMAGES = "pairwise_acc_images"
+
+ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
+ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
+
 ACC_IMAGERY = "pairwise_acc_imagery"
 ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
@@ -390,6 +394,12 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
         preds_mod = predictions[stim_types == modality].copy()
         latents_mod = latents[stim_types == modality]
+
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions, normalize_targets)
+
+    for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION], [ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]):
+        preds_mod = predictions[stim_types == mod_preds].copy()
+        latents_mod = latents[stim_types == mod_latents]
 
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions, normalize_targets)
 
