@@ -439,7 +439,7 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
 
-    parser.add_argument("--model", type=str, default="blip2")
+    parser.add_argument("--model", type=str, default="imagebind")
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,

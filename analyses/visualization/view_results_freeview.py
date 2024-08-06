@@ -57,7 +57,7 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--p-values-threshold", type=float, default=0.0001)
-    parser.add_argument("--model", type=str, default='blip2')
+    parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')

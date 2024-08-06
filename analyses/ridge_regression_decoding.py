@@ -707,7 +707,7 @@ def get_args():
     parser.add_argument("--surface", action="store_true", default=False)
     parser.add_argument("--resolution", type=str, default="fsaverage7")
 
-    parser.add_argument("--models", type=str, nargs='+', default=['blip2'])
+    parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--vision-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
