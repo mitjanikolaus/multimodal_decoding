@@ -402,7 +402,6 @@ def load_per_subject_scores(args):
 
 
 def create_gifti_results_maps(args):
-    args.mode = mode_from_args(args)
     per_subject_scores = load_per_subject_scores(args)
 
     METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
@@ -481,5 +480,6 @@ if __name__ == "__main__":
         args.lang_features = get_default_lang_features(model_name)
 
     run(args)
+    args.mode = mode_from_args(args)
     create_gifti_results_maps(args)
 
