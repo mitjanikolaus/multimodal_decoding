@@ -350,15 +350,15 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         [ai - si for ai, ac, si, sc in
          zip(scores[METRIC_IMAGES],
              scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
+             scores_specific_captions[METRIC_IMAGES],
+             scores_specific_images[METRIC_CAPTIONS])]
     )
     scores[METRIC_DIFF_CAPTIONS] = np.array(
         [ac - sc for ai, ac, si, sc in
          zip(scores[METRIC_IMAGES],
              scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
+             scores_specific_captions[METRIC_IMAGES],
+             scores_specific_images[METRIC_CAPTIONS])]
     )
 
     return scores
@@ -372,10 +372,8 @@ def load_per_subject_scores(args):
         f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/').replace('avg/', 'lang/'))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/').replace('avg/', 'vision/'))))
-    # paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-    # paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
+    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
