@@ -21,7 +21,7 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_CAPTIONS, \
     METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_IMAGERY, \
-    METRIC_IMAGERY_WHOLE_TEST, load_per_subject_scores, process_scores
+    METRIC_IMAGERY_WHOLE_TEST, load_per_subject_scores, process_scores, create_gifti_results_maps
 from utils import SUBJECTS, HEMIS
 
 DEFAULT_N_JOBS = 10
@@ -846,5 +846,6 @@ if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
+    create_gifti_results_maps(args)
     create_null_distribution(args)
     run(args)
