@@ -428,11 +428,12 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def calc_image_t_values(data, popmean):
+def calc_image_t_values(data, popmean, use_tqdm=False):
+    iterator = tqdm(data.T) if use_tqdm else data.T
     # use heuristic that mean needs to be greater than popmean to speed up calculation
     return np.array(
         [stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if x[~np.isnan(
-            x)].mean() > popmean else 0 for x in data.T]
+            x)].mean() > popmean else 0 for x in iterator]
     )
 
 
@@ -444,7 +445,7 @@ def calc_t_values(per_subject_scores):
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
-            t_values[hemi][metric][enough_data] = calc_image_t_values(data[:, enough_data], popmean)
+            t_values[hemi][metric][enough_data] = calc_image_t_values(data[:, enough_data], popmean, True)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
