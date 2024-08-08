@@ -838,7 +838,9 @@ def get_args():
 
     parser.add_argument("--metric", type=str, default=METRIC_MIN)
 
-    parser.add_argument("--plot-n-neighbors-correlation-graph", action="store_true", default=False)
+    parser.add_argument("--create-null-distr", default=False, action="store_true")
+
+    parser.add_argument("--modality-specific-feats-for-modality-specific-decoders", action="store_true", default=False)
 
     return parser.parse_args()
 

@@ -372,10 +372,14 @@ def load_per_subject_scores(args):
         f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/').replace('avg/', 'lang/'))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/').replace('avg/', 'vision/'))))
-    # paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-    # paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+
+    if args.modality_specific_feats_for_modality_specific_decoders:
+        paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/').replace(f'{args.features}/', 'lang/'))))
+        paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/').replace(f'{args.features}/', 'vision/'))))
+    else:
+        paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
+        paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     print("loading per-subject scores")
@@ -482,5 +486,7 @@ if __name__ == "__main__":
 
     run(args)
     args.mode = mode_from_args(args)
+
+    args.modality_specific_feats_for_modality_specific_decoders = False
     create_gifti_results_maps(args)
 
