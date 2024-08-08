@@ -846,6 +846,6 @@ if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
-    create_gifti_results_maps(args)
     create_null_distribution(args)
     run(args)
+    create_gifti_results_maps(args)

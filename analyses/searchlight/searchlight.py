@@ -376,6 +376,7 @@ def load_per_subject_scores(args):
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
+    print("loading per-subject scores")
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                         paths_mod_specific_images), total=len(paths_mod_agnostic)):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
