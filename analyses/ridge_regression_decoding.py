@@ -469,8 +469,8 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def get_run_str(model_name, features, vision_features, lang_features, mask, surface, resolution):
-    run_str = f"{model_name}_{features}"
+def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface, resolution):
+    run_str = f"{model_name}_{features}_test_{test_features}"
     run_str += f"_{vision_features}"
     run_str += f"_{lang_features}"
 
@@ -596,6 +596,10 @@ def run(args):
                     for features in args.features:
                         if features == FEATS_SELECT_DEFAULT:
                             features = get_default_features(model_name)
+                        test_features = args.test_features
+                        if test_features == FEATS_SELECT_DEFAULT:
+                            test_features = get_default_features(model_name)
+
                         for vision_features in args.vision_features:
                             if vision_features == FEATS_SELECT_DEFAULT:
                                 vision_features = get_default_vision_features(model_name)
@@ -632,7 +636,8 @@ def run(args):
 
                                 best_alpha = clf.best_params_["alpha"]
 
-                                test_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
+                                test_data_latents, _ = get_nn_latent_data(model_name, test_features,
+                                                                          vision_features,
                                                                           lang_features,
                                                                           test_stim_ids,
                                                                           test_stim_types,
@@ -657,6 +662,7 @@ def run(args):
                                     "model": model_name,
                                     "subject": subject,
                                     "features": features,
+                                    "test_features": test_features,
                                     "vision_features": vision_features,
                                     "lang_features": lang_features,
                                     "training_mode": training_mode,
@@ -690,7 +696,7 @@ def run(args):
 
                                 results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
-                                    model_name, features, vision_features, lang_features, mask, args.surface,
+                                    model_name, features, test_features, vision_features, lang_features, mask, args.surface,
                                     args.resolution)
                                 results_file_dir = os.path.join(results_dir, run_str)
                                 os.makedirs(results_file_dir, exist_ok=True)
@@ -710,6 +716,9 @@ def get_args():
     parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--test-features", type=str, default=FEATS_SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+
     parser.add_argument("--vision-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=VISION_FEAT_COMBINATION_CHOICES)
     parser.add_argument("--lang-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],

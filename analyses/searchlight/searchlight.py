@@ -211,9 +211,12 @@ def run(args):
                 training_mode,
             )
 
+            test_features = args.test_features
+            if test_features == FEATS_SELECT_DEFAULT:
+                test_features = get_default_features(model_name)
             test_data_latents, _ = get_nn_latent_data(
                 model_name,
-                args.test_features,
+                test_features,
                 args.vision_features,
                 args.lang_features,
                 test_stim_ids,
