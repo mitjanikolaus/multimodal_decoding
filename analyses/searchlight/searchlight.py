@@ -213,7 +213,7 @@ def run(args):
 
             test_data_latents, _ = get_nn_latent_data(
                 model_name,
-                args.features,
+                args.test_features,
                 args.vision_features,
                 args.lang_features,
                 test_stim_ids,
@@ -249,7 +249,7 @@ def run(args):
 
                 X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
 
-                results_dir = get_results_dir(args, args.features, hemi, model_name, subject, training_mode)
+                results_dir = get_results_dir(args, f"{args.features}_test_{args.test_features}", hemi, model_name, subject, training_mode)
 
                 results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
@@ -448,6 +448,10 @@ def get_args():
     parser.add_argument("--model", type=str, default="imagebind")
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
+
+    parser.add_argument("--test-features", type=str, default=FEATS_SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
     parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
