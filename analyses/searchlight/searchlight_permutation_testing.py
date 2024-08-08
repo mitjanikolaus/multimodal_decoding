@@ -459,7 +459,7 @@ def calc_t_values(per_subject_scores):
     return t_values
 
 
-def run(args):
+def calc_test_statistics(args):
     t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
                                  "t_values.p")
     if not os.path.isfile(t_values_path):
@@ -847,5 +847,5 @@ if __name__ == "__main__":
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
     create_null_distribution(args)
-    run(args)
+    calc_test_statistics(args)
     create_gifti_results_maps(args)
