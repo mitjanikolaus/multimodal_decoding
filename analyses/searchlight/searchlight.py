@@ -372,8 +372,10 @@ def load_per_subject_scores(args):
         f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/').replace('avg/', 'lang/'))))
+    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/').replace('avg/', 'vision/'))))
+    # paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
+    # paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     print("loading per-subject scores")
