@@ -608,7 +608,8 @@ def run(args):
                                     lang_features = get_default_lang_features(model_name)
 
                                 print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
-                                      f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features}")
+                                      f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
+                                      f"TEST FEATURES: {test_features}")
                                 print(f"train fMRI betas shape: {train_fmri_betas.shape}")
                                 print(f"test fMRI betas shape: {test_fmri_betas.shape}")
                                 print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
