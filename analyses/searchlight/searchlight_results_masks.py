@@ -91,6 +91,5 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
-    args.test_features = get_default_features(args.model) if args.test_features == FEATS_SELECT_DEFAULT else args.test_features
 
     create_masks(args)
