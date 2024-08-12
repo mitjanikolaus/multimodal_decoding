@@ -490,10 +490,8 @@ if __name__ == "__main__":
         args.vision_features = get_default_vision_features(model_name)
     if args.lang_features == FEATS_SELECT_DEFAULT:
         args.lang_features = get_default_lang_features(model_name)
+    if args.test_features == FEATS_SELECT_DEFAULT:
+        args.test_features = get_default_features(model_name)
 
     run(args)
     args.mode = mode_from_args(args)
-
-    args.modality_specific_feats_for_modality_specific_decoders = False
-    create_gifti_results_maps(args)
-
