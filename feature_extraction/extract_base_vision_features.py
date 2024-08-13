@@ -128,7 +128,7 @@ if __name__ == "__main__":
     model_name = 'google/vit-huge-patch14-224-in21k'
     feature_extractor = ViTImageProcessor.from_pretrained(model_name)
     model = ViTModel.from_pretrained(model_name)
-    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-l-16", BATCH_SIZE, device)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-h-14", BATCH_SIZE, device)
     extractor.extract_features()
 
 
