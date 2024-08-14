@@ -388,48 +388,53 @@ def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cos
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
                                       imagery_predictions=None, metric="cosine", normalize_predictions=True,
-                                      normalize_targets=False, norm_imagery_with=CAPTION):
-    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize_predictions, normalize_targets)
+                                      normalize_targets=False, norm_imagery_preds_with_test_preds=False):
+    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize_predictions,
+                                             normalize_targets)
 
-    test_set_normalizations = dict()
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
         preds_mod = predictions[stim_types == modality].copy()
         latents_mod = latents[stim_types == modality]
-        test_set_normalizations[modality] = Normalize(preds_mod.mean(axis=0), preds_mod.std(axis=0))
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions, normalize_targets)
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
+                                                     normalize_targets)
 
-    for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION], [ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]):
+    for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+                                                       [ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]):
         preds_mod = predictions[stim_types == mod_preds].copy()
         latents_mod = latents[stim_types == mod_latents]
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions, normalize_targets)
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
+                                                     normalize_targets)
 
     if imagery_latents is not None:
-        if norm_imagery_with == CAPTION:
-            norm = test_set_normalizations[CAPTION]
+        if norm_imagery_preds_with_test_preds:
+            test_preds_norm = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
         else:
-            norm = test_set_normalizations[IMAGE]
+            test_preds_norm = None
         results.update(
-            calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric, norm)
+            calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric,
+                                                  normalize_predictions, normalize_targets, test_preds_norm)
         )
 
     return results
 
 
 def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
-                                          preds_normalize=None):
+                                          normalize_predictions=True, normalize_targets=False, test_preds_norm=None):
     results = dict()
 
-    imagery_predictions = preds_normalize(imagery_predictions)
+    if test_preds_norm is not None:
+        imagery_predictions = test_preds_norm(imagery_predictions)
+        normalize_predictions = False   # Do not normalize again
 
     results[ACC_IMAGERY] = pairwise_accuracy(
-        imagery_latents, imagery_predictions, metric, False, False
+        imagery_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
     )
 
     target_latents = np.concatenate((imagery_latents, latents))
     results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(
-        target_latents, imagery_predictions, metric, False, False
+        target_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
     )
 
     return results
@@ -705,7 +710,8 @@ def run(args):
 
                                 results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
-                                    model_name, features, test_features, vision_features, lang_features, mask, args.surface,
+                                    model_name, features, test_features, vision_features, lang_features, mask,
+                                    args.surface,
                                     args.resolution)
                                 results_file_dir = os.path.join(results_dir, run_str)
                                 os.makedirs(results_file_dir, exist_ok=True)
