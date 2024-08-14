@@ -2,7 +2,6 @@ import argparse
 import sys
 import time
 import warnings
-from glob import glob
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -18,7 +17,6 @@ import pickle
 
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
@@ -28,7 +26,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     ACC_MODALITY_AGNOSTIC
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, \
-    correlation_num_voxels_acc, HEMIS, export_to_gifti, FS_HEMI_NAMES
+    correlation_num_voxels_acc
 
 DEFAULT_N_JOBS = 10
 
@@ -365,65 +363,6 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     )
 
     return scores
-
-
-def load_per_subject_scores(args):
-    per_subject_scores = {subj: dict() for subj in SUBJECTS}
-
-    results_regex = os.path.join(
-        SEARCHLIGHT_OUT_DIR,
-        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
-    )
-    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-
-    if args.modality_specific_feats_for_modality_specific_decoders:
-        paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/').replace(f'{args.features}/', 'lang/'))))
-        paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/').replace(f'{args.features}/', 'vision/'))))
-    else:
-        paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-        paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
-
-    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
-
-    print("loading per-subject scores")
-    for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
-        hemi = os.path.dirname(path_agnostic).split("/")[-2]
-        subject = os.path.dirname(path_agnostic).split("/")[-4]
-
-        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
-        scores_agnostic = results_agnostic['scores']
-        scores_captions = pickle.load(open(path_caps, 'rb'))['scores']
-        scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
-
-        nan_locations = results_agnostic['nan_locations']
-        n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
-        scores = process_scores(
-            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, args, n_neighbors
-        )
-        # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
-        # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-        # print("")
-
-        per_subject_scores[subject][hemi] = scores
-    return per_subject_scores
-
-
-def create_gifti_results_maps(args):
-    per_subject_scores = load_per_subject_scores(args)
-
-    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
-               METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
-
-    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-                               args.resolution, args.mode, "acc_scores_gifti")
-    os.makedirs(results_dir, exist_ok=True)
-
-    for metric in METRICS:
-        for hemi in HEMIS:
-            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
-            path_out = os.path.join(results_dir,  f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
-            export_to_gifti(score_hemi_avgd, path_out)
 
 
 def mode_from_args(args):

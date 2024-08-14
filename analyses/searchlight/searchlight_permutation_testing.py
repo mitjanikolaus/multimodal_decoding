@@ -18,11 +18,11 @@ from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
+from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_CAPTIONS, \
     METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_IMAGERY, \
-    METRIC_IMAGERY_WHOLE_TEST, load_per_subject_scores, process_scores, create_gifti_results_maps
-from utils import SUBJECTS, HEMIS
+    METRIC_IMAGERY_WHOLE_TEST, process_scores
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 DEFAULT_N_JOBS = 10
 
@@ -44,6 +44,70 @@ CHANCE_VALUES = {
     METRIC_IMAGERY: 0.5,
     METRIC_IMAGERY_WHOLE_TEST: 0.5,
 }
+
+
+def load_per_subject_scores(args):
+    per_subject_scores = {subj: dict() for subj in SUBJECTS}
+
+    results_regex = os.path.join(
+        SEARCHLIGHT_OUT_DIR,
+        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+    )
+    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
+
+    results_mod_specific_vision_regex = os.path.join(
+        SEARCHLIGHT_OUT_DIR,
+        f'train_images/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+    )
+    paths_mod_specific_images = np.array(sorted(glob(results_mod_specific_vision_regex)))
+
+    results_mod_specific_lang_regex = os.path.join(
+        SEARCHLIGHT_OUT_DIR,
+        f'train_captions/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+    )
+    paths_mod_specific_captions = np.array(sorted(glob(results_mod_specific_lang_regex)))
+
+    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
+
+    print("loading per-subject scores")
+    for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
+                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
+        hemi = os.path.dirname(path_agnostic).split("/")[-2]
+        subject = os.path.dirname(path_agnostic).split("/")[-4]
+
+        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
+        scores_agnostic = results_agnostic['scores']
+        scores_captions = pickle.load(open(path_caps, 'rb'))['scores']
+        scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
+
+        nan_locations = results_agnostic['nan_locations']
+        n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
+        scores = process_scores(
+            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, args, n_neighbors
+        )
+        # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
+        # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+        # print("")
+
+        per_subject_scores[subject][hemi] = scores
+    return per_subject_scores
+
+
+def create_gifti_results_maps(args):
+    per_subject_scores = load_per_subject_scores(args)
+
+    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
+               METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
+
+    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
+                               args.resolution, args.mode, "acc_scores_gifti")
+    os.makedirs(results_dir, exist_ok=True)
+
+    for metric in METRICS:
+        for hemi in HEMIS:
+            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+            path_out = os.path.join(results_dir,  f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+            export_to_gifti(score_hemi_avgd, path_out)
 
 
 def compute_adjacency_matrix(surface, values='ones'):
@@ -822,6 +886,12 @@ def get_args():
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
 
+    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-features", type=str, default=FEATS_SELECT_DEFAULT)
+
+    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-features", type=str, default=FEATS_SELECT_DEFAULT)
+
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
@@ -839,14 +909,14 @@ def get_args():
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
 
-    parser.add_argument("--modality-specific-feats-for-modality-specific-decoders", action="store_true", default=False)
-
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
+    args.mod_specific_vision_features = get_default_features(args.mod_specific_vision_model) if args.mod_specific_vision_features == FEATS_SELECT_DEFAULT else args.mod_specific_vision_features
+    args.mod_specific_lang_features = get_default_features(args.mod_specific_lang_model) if args.od_specific_lang_features == FEATS_SELECT_DEFAULT else args.mod_specific_lang_features
 
     create_null_distribution(args)
     calc_test_statistics(args)
