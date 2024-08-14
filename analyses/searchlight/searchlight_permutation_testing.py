@@ -916,7 +916,7 @@ if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
     args.mod_specific_vision_features = get_default_features(args.mod_specific_vision_model) if args.mod_specific_vision_features == FEATS_SELECT_DEFAULT else args.mod_specific_vision_features
-    args.mod_specific_lang_features = get_default_features(args.mod_specific_lang_model) if args.od_specific_lang_features == FEATS_SELECT_DEFAULT else args.mod_specific_lang_features
+    args.mod_specific_lang_features = get_default_features(args.mod_specific_lang_model) if args.mod_specific_lang_features == FEATS_SELECT_DEFAULT else args.mod_specific_lang_features
 
     create_null_distribution(args)
     calc_test_statistics(args)
