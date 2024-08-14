@@ -53,21 +53,24 @@ def load_per_subject_scores(args):
         SEARCHLIGHT_OUT_DIR,
         f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
+    print(results_regex)
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
 
     results_mod_specific_vision_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
         f'train_images/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
+    print(results_mod_specific_vision_regex)
     paths_mod_specific_images = np.array(sorted(glob(results_mod_specific_vision_regex)))
 
     results_mod_specific_lang_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
         f'train_captions/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
+    print(results_mod_specific_lang_regex)
     paths_mod_specific_captions = np.array(sorted(glob(results_mod_specific_lang_regex)))
 
-    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
+    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions), f"Len mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} {len(paths_mod_specific_captions)}"
 
     print("loading per-subject scores")
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
