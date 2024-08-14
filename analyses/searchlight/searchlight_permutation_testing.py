@@ -47,6 +47,8 @@ CHANCE_VALUES = {
 
 
 def load_per_subject_scores(args):
+    print("loading per-subject scores")
+
     per_subject_scores = {subj: dict() for subj in SUBJECTS}
 
     results_regex = os.path.join(
@@ -72,7 +74,6 @@ def load_per_subject_scores(args):
 
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions), f"Len mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} {len(paths_mod_specific_captions)}"
 
-    print("loading per-subject scores")
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                         paths_mod_specific_images), total=len(paths_mod_agnostic)):
         hemi = os.path.dirname(path_agnostic).split("/")[-2]
@@ -532,8 +533,8 @@ def calc_test_statistics(args):
                                  "t_values.p")
     if not os.path.isfile(t_values_path):
         os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
-        print(f"Calculating t-values")
         per_subject_scores = load_per_subject_scores(args)
+        print(f"Calculating t-values")
         t_values = calc_t_values(per_subject_scores)
 
         pickle.dump(t_values, open(t_values_path, 'wb'))
