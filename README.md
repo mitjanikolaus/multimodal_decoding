@@ -72,15 +72,15 @@ We generate beta values for each stimulus (image or caption) using a GLM.
 First create the matlab scripts, and then run them.
 
 ```
-python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py --stage 1
-matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/split_glm_spm_design.m');exit;"  -logfile matlab_output.txt
+python preprocessing/make_spm_design_job_mat.py --stage 1
+matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_1.m');exit;"  -logfile matlab_output.txt
 
-python preprocessing/split_glm_make_spm_level1design_job_mat_mni.py --stage 2
-matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/split_glm_spm_design_phase2.m');exit;"  -logfile matlab_output.txt
+python preprocessing/make_spm_design_job_mat.py --stage 2
+matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_2.m');exit;"  -logfile matlab_output.txt
 ```
 
 __Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
-the hardcoded `data_dir` variable!
+the hardcoded `data_dir` variable in the matlab scripts!
 
 ### (5) Transformation to surface space
 

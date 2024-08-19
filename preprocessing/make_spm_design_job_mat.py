@@ -238,7 +238,7 @@ def multi_regressors(realign_files):
 
 
 def run(args):
-    subsample_sessions = None
+    subsample_sessions = args.sessions
     # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
     spm_dir = os.path.expanduser('~/apps/spm12')
@@ -447,6 +447,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
+
     parser.add_argument("--stage", type=int, choices=[1, 2])
 
     return parser.parse_args()
