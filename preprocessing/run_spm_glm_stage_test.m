@@ -3,7 +3,7 @@ filelist = dir(fullfile(home, '/data/multimodal_decoding/fmri/betas/sub-01/unstr
 filelist = filelist([filelist.isdir]);
 
 for i = 1:numel(filelist)
-    clearvars -except i
+    clearvars -except i filelist
     data_dir = [filelist(i).folder, '/', filelist(i).name];
     i
     data_dir
