@@ -241,7 +241,6 @@ def run(args):
     subsample_sessions = args.sessions
     # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
-    spm_dir = os.path.expanduser('~/apps/spm12')
     base_task_name = 'two-stage'
     if subsample_sessions:
         task_name = f'{base_task_name}_{len(subsample_sessions)}sess_{"_".join(subsample_sessions)}'
@@ -449,7 +448,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
-    parser.add_argument("--stage", type=int, choices=[1, 2])
+    parser.add_argument("--stage", type=int, choices=[1, 2], required=True)
 
     return parser.parse_args()
 
