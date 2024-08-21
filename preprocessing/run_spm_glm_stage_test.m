@@ -14,7 +14,6 @@ for i = 1:numel(filelist)
     spm_get_defaults('cmdline',true);
 
     cd(data_dir)
-    print(data_dir)
 
     %design
     load spm_lvl1_job_stage_2;
