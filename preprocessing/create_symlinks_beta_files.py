@@ -86,6 +86,8 @@ def create_symlinks_for_beta_files(beta_dir):
             print(slink_name)
             os.symlink(beta_address, slink_name)
 
+    print(f"Created symbolic links for {len(all_slink_names)} beta files")
+
 
 def get_args():
     parser = argparse.ArgumentParser()
