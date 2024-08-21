@@ -22,6 +22,7 @@ def create_symlinks_for_beta_files(beta_dir):
         'train_captions': os.path.join(beta_dir, f'betas_train_captions'),
         'test_captions': os.path.join(beta_dir, f'betas_test_captions'),
         'imagery': os.path.join(beta_dir, f'betas_imagery'),
+        'blank': os.path.join(beta_dir, f'betas_blank'),
     }
 
     for dir in subdirs.values():
