@@ -4,6 +4,8 @@ import nibabel as nib
 from glob import glob
 import os
 
+from tqdm import tqdm
+
 from utils import SUBJECTS, FMRI_BETAS_DIR
 
 
@@ -28,7 +30,7 @@ def create_symlinks_for_beta_files(beta_dir):
         os.mkdir(dir)
 
     all_slink_names = set()
-    for beta_address in beta_file_addresses:
+    for beta_address in tqdm(beta_file_addresses):
         beta_file = nib.load(beta_address)
         beta_name = str(beta_file.header['descrip'].astype(str))
 
