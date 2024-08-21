@@ -9,7 +9,7 @@ for i=1:153
     
     run_name = sprintf('run_%03d', i);
     home = getenv('HOME');
-    data_dir = [home, '/data/multimodal_decoding/fmri/betas/sub-01/unstructured', run_name];
+    data_dir = [home, '/data/multimodal_decoding/fmri/betas/sub-01/unstructured/', run_name];
     data_dir
     cd(data_dir)
 
