@@ -2,8 +2,8 @@ home = getenv('HOME');
 filelist = dir(fullfile(home, '/data/multimodal_decoding/fmri/betas/sub-01/unstructured/run_*'));  %get list of files and folders in any subfolder
 filelist = filelist(~[filelist.isdir]);
 
-for i = 1:numel(fileList)
-    data_dir = fileList(i);
+for i = 1:numel(filelist)
+    data_dir = filelist(i);
     data_dir
     clearvars -except i
     addpath('~/apps/spm12');
