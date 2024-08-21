@@ -3,9 +3,10 @@ filelist = dir(fullfile(home, '/data/multimodal_decoding/fmri/betas/sub-01/unstr
 filelist = filelist([filelist.isdir]);
 
 for i = 1:numel(filelist)
-    data_dir = [filelist(i).folder, '/', filelist(i).name];
-    data_dir
     clearvars -except i
+    data_dir = [filelist(i).folder, '/', filelist(i).name];
+    i
+    data_dir
     addpath('~/apps/spm12');
     spm('Defaults', 'fMRI');
     setenv('SPM_HTML_BROWSER','0');
