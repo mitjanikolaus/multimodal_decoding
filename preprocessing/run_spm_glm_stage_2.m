@@ -1,16 +1,20 @@
-for i=1:153
+home = getenv('HOME');
+subject = 'sub-01'
+filelist = dir(fullfile(home, '/data/multimodal_decoding/fmri/betas/', subject, '/unstructured/run_*'));  %get list of files and folders in any subfolder
+filelist = filelist([filelist.isdir]);
+
+for i = 1:numel(filelist)
+    clearvars -except i filelist
+    data_dir = [filelist(i).folder, '/', filelist(i).name];
     i
-    clearvars -except i
+    data_dir
+
     addpath('~/apps/spm12');
     spm('Defaults', 'fMRI');
     setenv('SPM_HTML_BROWSER','0');
     spm_jobman('initcfg');
     spm_get_defaults('cmdline',true);
-    
-    run_name = sprintf('run_%03d', i);
-    home = getenv('HOME');
-    data_dir = [home, '/data/multimodal_decoding/fmri/betas/sub-01/unstructured/', run_name];
-    data_dir
+
     cd(data_dir)
 
     %design
@@ -25,7 +29,7 @@ for i=1:153
 
 
     % glm
-    clearvars -except data_dir i
+    clearvars -except data_dir i filelist
 
     % save residuals
     matlabbatch{1}.spm.stats.fmri_est.spmmat = {[data_dir '/SPM.mat']};

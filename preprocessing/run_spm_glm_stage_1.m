@@ -6,7 +6,8 @@ spm_jobman('initcfg');
 spm_get_defaults('cmdline',true);
 
 home = getenv('HOME');
-data_dir = [home,'/data/multimodal_decoding/fmri/betas/sub-01/unstructured'];
+subject = 'sub-01'
+data_dir = [home,'/data/multimodal_decoding/fmri/betas/', subject, '/unstructured'];
 cd(data_dir)
 
 %design

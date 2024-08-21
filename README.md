@@ -80,7 +80,7 @@ matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_
 ```
 
 __Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
-the hardcoded `data_dir` variable in the matlab scripts!
+the hardcoded `subject` variable in the matlab scripts!
 
 ### (5) Generation of beta values
 Next, we can create symbolic links for all beta files that are organized into separate folders for
