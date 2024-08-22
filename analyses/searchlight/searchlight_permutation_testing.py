@@ -640,7 +640,7 @@ def load_null_distr_per_subject_scores(args):
             if len(score_paths) == 0:
                 raise RuntimeError(f"No null distribution scores found: {scores_dir}")
             last_idx = int(os.path.basename(score_paths[-1])[:-2])
-            assert last_idx == len(score_paths) - 1, last_idx
+            assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
 
             def load_scores_from_pickle(paths, proc_id):
                 job_scores = []
