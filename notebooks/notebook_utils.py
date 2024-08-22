@@ -1,20 +1,22 @@
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import seaborn as sns
 from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, calc_all_pairwise_accuracy_scores, pairwise_accuracy, calc_imagery_pairwise_accuracy_scores, get_default_features, get_default_vision_features, get_default_lang_features
+from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores
 from tqdm import tqdm
 from glob import glob
 import pickle
 
-HP_KEYS = ["alpha", "model", "subject", "features", "vision_features", "lang_features", "training_mode", "mask",
+
+HP_KEYS = ["alpha", "model", "subject", "features", "test_features", "vision_features", "lang_features", "training_mode", "mask",
            "num_voxels", "surface", "resolution"]
 METRIC_NAMES = {"acc_cosine": "pairwise_acc", "acc_cosine_captions": "pairwise_acc_captions",
                 "acc_cosine_images": "pairwise_acc_images"}
 
 ACC_MEAN = "pairwise_acc_mean"
-
+ACC_CROSS_MEAN = "pairwise_acc_cross_mean"
 
 def plot_metric(data, kind="bar", x_variable="model_feat", order=None, hue_variable="model_feat", hue_order=None,
                 metric="pairwise_acc_mean", ylim=(0.5, 1), plot_legend=True, palette=None,
@@ -177,25 +179,25 @@ def add_avg_subject(df):
     df_mean["subject"] = "average"
     return pd.concat((df.copy(), df_mean))
 
-METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES]
+METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
 METRICS_ERROR_ANALYSIS = ['predictions', 'latents', 'stimulus_ids', 'stimulus_types']
 METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, 'imagery_predictions', 'imagery_latents']
 
-def update_acc_scores(results, metric="cosine"):
+
+def update_acc_scores(results, metric="cosine", normalize_predictions=True, normalize_targets=False, norm_imagery_preds_with_test_preds=False):
     results.update(
         calc_all_pairwise_accuracy_scores(
-            results["latents"], results["predictions"], results["stimulus_types"], metric=metric
+            results["latents"], results["predictions"], results["stimulus_types"],
+            imagery_latents=results["imagery_latents"] if "imagery_latents" in results else None,
+            imagery_predictions=results["imagery_predictions"] if "imagery_predictions" in results else None,
+            metric=metric, normalize_predictions=normalize_predictions, normalize_targets=normalize_targets,
+            norm_imagery_preds_with_test_preds=True
         )
     )
-    if "imagery_predictions" in results:
-        results.update(
-            calc_imagery_pairwise_accuracy_scores(
-                results["imagery_latents"], results["imagery_predictions"], results["latents"], metric=metric
-            )
-        )
     return results
 
-def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine"):
+def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine", normalize_predictions=True, normalize_targets=False,
+                     norm_imagery_preds_with_test_preds=False):
     results_root_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm/')
 
     data = []
@@ -205,7 +207,8 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
             if recompute_acc_scores:
-                results = update_acc_scores(results, metric=pairwise_acc_metric)
+                results = update_acc_scores(results, metric=pairwise_acc_metric, normalize_predictions=normalize_predictions, normalize_targets=normalize_targets,
+                                           norm_imagery_preds_with_test_preds=norm_imagery_preds_with_test_preds)
             
             for metric in metrics:
                 if metric in results.keys():
@@ -213,12 +216,20 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
                     data_item["metric"] = metric
                     data_item["value"] = results[metric]
                     data.append(data_item)
-            data_item = {k: value for k, value in results.items() if k in HP_KEYS}
-            data_item["metric"] = ACC_MEAN
-            data_item["value"] = (results[ACC_CAPTIONS] + results[ACC_IMAGES]) / 2
-            data.append(data_item)
+            data_item_acc_mean = {k: value for k, value in results.items() if k in HP_KEYS}
+            data_item_acc_mean["metric"] = ACC_MEAN
+            data_item_acc_mean["value"] = (results[ACC_CAPTIONS] + results[ACC_IMAGES]) / 2
+            data.append(data_item_acc_mean)
+
+            # data_item_acc_cross_mean = {k: value for k, value in results.items() if k in HP_KEYS}
+            # data_item_acc_cross_mean["metric"] = ACC_CROSS_MEAN
+            # data_item_acc_cross_mean["value"] = (results[ACC_CROSS_IMAGES_TO_CAPTIONS] + results[ACC_CROSS_CAPTIONS_TO_IMAGES]) / 2
+            # data.append(data_item_acc_cross_mean)
 
     df = pd.DataFrame.from_records(data)
+
+    if "test_features" in df.columns:
+        df = df[(df.test_features == df.features) | df.test_features.isna()].copy()
 
     df["training_mode"] = df.training_mode.replace(
         {"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
@@ -250,10 +261,10 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large",
                           "dino-giant"]), "lang_features"] = "n_a"
 
-    df["lang_features"] = df["lang_features"].fillna("unk")
+    # df["lang_features"] = df["lang_features"].fillna("unk")
 
     df["mask"] = df["mask"].fillna("whole_brain")
-    df["mask"] = df["mask"].apply(lambda x: x.replace("p_values_", "").replace(".p", "")) #os.path.basename(x)
+    df["mask"] = df["mask"].apply(lambda x: x.replace("p_values_", "").replace(".p", ""))
 
     df["model_feat"] = df.model + "_" + df.features
 
