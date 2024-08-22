@@ -166,5 +166,12 @@ data/
 results/
 .checkpoints/
 
+# Masks
+masks/
+masks_imagebind/
+
+# Log files
+matlab_output.txt
+
 # Jupyter
 .virtual_documents/
