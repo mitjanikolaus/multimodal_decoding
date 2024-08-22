@@ -167,8 +167,8 @@ results/
 .checkpoints/
 
 # Masks
-masks/
-masks_imagebind/
+masks
+masks_imagebind
 
 # Log files
 matlab_output.txt
