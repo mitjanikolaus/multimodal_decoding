@@ -911,8 +911,6 @@ def get_args():
 
     parser.add_argument("--metric", type=str, default=METRIC_MIN)
 
-    parser.add_argument("--create-null-distr", default=False, action="store_true")
-
     return parser.parse_args()
 
 
