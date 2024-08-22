@@ -408,29 +408,31 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
                                                      normalize_targets)
 
     if imagery_latents is not None:
-        if norm_imagery_preds_with_test_preds:
-            test_preds_norm = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
-        else:
-            test_preds_norm = None
         results.update(
-            calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric,
-                                                  normalize_predictions, normalize_targets, test_preds_norm)
+            calc_imagery_pairwise_accuracy_scores(
+                imagery_latents, imagery_predictions, latents, metric,
+                normalize_predictions, normalize_targets,
+                test_set_preds=predictions if norm_imagery_preds_with_test_preds else None
+            )
         )
 
     return results
 
 
 def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
-                                          normalize_predictions=True, normalize_targets=False, test_preds_norm=None):
+                                          normalize_predictions=True, normalize_targets=False, test_set_preds=None):
     results = dict()
-
-    if test_preds_norm is not None:
-        imagery_predictions = test_preds_norm(imagery_predictions)
-        normalize_predictions = False   # Do not normalize again
 
     results[ACC_IMAGERY] = pairwise_accuracy(
         imagery_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
     )
+
+    if test_set_preds is not None:
+        all_preds = np.concatenate((imagery_predictions, test_set_preds))
+        norm = Normalize(all_preds.mean(axis=0), all_preds.std(axis=0))
+        imagery_predictions = norm(imagery_predictions)
+
+        normalize_predictions = False  # Do not normalize again
 
     target_latents = np.concatenate((imagery_latents, latents))
     results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(
