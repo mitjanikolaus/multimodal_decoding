@@ -66,7 +66,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--features", type=str, default='avg_test_avg')
 
     parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
