@@ -1,5 +1,4 @@
 import argparse
-import copy
 import itertools
 import math
 import warnings
@@ -18,10 +17,9 @@ from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, METRIC_DIFF_CAPTIONS, \
-    METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_IMAGERY, \
-    METRIC_IMAGERY_WHOLE_TEST, process_scores
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
+    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, \
+    METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, process_scores, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 DEFAULT_N_JOBS = 10
@@ -53,26 +51,33 @@ def load_per_subject_scores(args):
 
     results_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
-        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/'
+        f'alpha_{str(args.l2_regularization_alpha)}.p'
     )
     print(results_regex)
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
 
     results_mod_specific_vision_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
-        f'train_images/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+        f'train_images/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/'
+        f'{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     print(results_mod_specific_vision_regex)
     paths_mod_specific_images = np.array(sorted(glob(results_mod_specific_vision_regex)))
 
     results_mod_specific_lang_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
-        f'train_captions/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+        f'train_captions/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/'
+        f'{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     print(results_mod_specific_lang_regex)
     paths_mod_specific_captions = np.array(sorted(glob(results_mod_specific_lang_regex)))
 
-    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions), f"Len mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} {len(paths_mod_specific_captions)}"
+    if not (len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)):
+        raise RuntimeError(
+            f"Length mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} "
+            f"{len(paths_mod_specific_captions)}"
+        )
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                         paths_mod_specific_images), total=len(paths_mod_agnostic)):
@@ -103,14 +108,13 @@ def create_gifti_results_maps(args):
     METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
                METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
 
-    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-                               args.resolution, args.mode, "acc_scores_gifti")
+    results_dir = os.path.join(get_results_dir(args), "acc_scores_gifti")
     os.makedirs(results_dir, exist_ok=True)
 
     for metric in METRICS:
         for hemi in HEMIS:
             score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
-            path_out = os.path.join(results_dir,  f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+            path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(score_hemi_avgd, path_out)
 
 
@@ -183,154 +187,6 @@ def _compute_vertex_neighborhoods(surface):
     from scipy.sparse import find
     matrix = compute_adjacency_matrix(surface)
     return [find(row)[1] for row in matrix]
-
-
-def smooth_surface_data(matrix, surf_data,
-                        iterations=1,
-                        vertex_weights=None,
-                        return_vertex_weights=False,
-                        center_surround_knob=0,
-                        match='sum'):
-    """Smooth values along the surface.
-
-    Parameters
-    ----------
-    surface : Surface-like
-        The surface on which the data `surf_data` are to be smoothed.
-    surf_data : array-like
-        The array of values at each vertex that is being smoothed. This may
-        either be a vector of length `n` or a matrix with `n` rows.  In the case
-        of fMRI data, `n` could be the number of timepoints. Each column is
-        smoothed independently.
-    iterations : :obj:`int`, optional
-        The number of times to repeat the smoothing operation (it must be a positive value).
-        Defaults to 1
-    distance_weights : :obj:`bool`, optional
-        Whether to add distance-based weighting to the smoothing. With such
-        weights, the value calculated for each vertex at each iteration is the
-        weighted sum of neighboring vertices where the weight on each neighbor
-        is the inverses of the distances to it.
-    vertex_weights : array-like or None, optional
-        A vector of weights, one per vertex. These weights are normalized and
-        applied to the smoothing after the application of center-surround
-        weights.
-    return_vector_weights : :obj:`bool`, optional
-        If `True` then `(smoothed_data, smoothed_vertex_weights)` are returned.
-        The default is `False`.
-    center_surround_knob : :obj:`float`, optional
-        The relative weighting of the center and the surround in each iteration
-        of the smoothing. If the value of the knob is `k`, then the total weight
-        of vertices that are neighbors of a given vertex (the vertex's surround)
-        is `2**k` times the weight of the vertex itself (the center). A value of
-        0 (the default) means that, in each smoothing iteration, each vertex is
-        updated with the average of its value and the average value of its
-        neighbors. A value of `-inf` results in no smoothing because the entire
-        weight is on the center, so each vertex is updated with its own value. A
-        value of `inf` results in each vertex being updated with the average of
-        its neighbors without including its own value.
-    match : { 'sum' | 'mean' | 'var' | 'dist' | None }, optional
-        What properties of the input data should be matched in the output data.
-        `None` indicates that the smoothed output should be
-        returned without transformation. If the value is `'sum'`, then the
-        output is rescaled to have the same sum as `surf_data`. If the value is
-        `'mean'`, then the output is shifted to match the mean of the input. If
-        the value is `'var'` or `'std'`, then the variance of the output is
-        matched. Finally, if the value is `'dist'`, then the mean and the
-        variance are matched. Default is `'sum'`
-
-    Returns
-    -------
-    surf_data_smooth : array
-        The array of smoothed values at each vertex.
-    Examples
-    -------
-    >>> from nilearn import datasets, surface, plotting
-    >>> fsaverage = datasets.fetch_surf_fsaverage('fsaverage')
-    >>> white_left = surface.load_surf_mesh(fsaverage.white_left)
-    >>> curv = surface.load_surf_data(fsaverage.curv_left)
-    >>> curv_smooth = surface.smooth_surface_data(surface=white_left, surf_data=curv, iterations=50)
-    >>> plotting.plot_surf(white_left, surf_map = curv_smooth)
-    """
-    # First, calculate the center and surround weights for the
-    # center-surround knob.
-    center_weight = 1 / (1 + np.exp2(-center_surround_knob))
-    surround_weight = 1 - center_weight
-    if surround_weight == 0:
-        # There's nothing to do in this case.
-        return np.array(surf_data)
-
-    # If there are vertex weights, get them ready.
-    if vertex_weights:
-        w = np.array(vertex_weights)
-        w /= np.sum(w)
-    else:
-        w = np.ones(matrix.shape[0])
-    # We need to normalize the matrix columns, and we can do this now by
-    # normalizing everything but the diagonal to the surround weight, then
-    # adding the center weight along the diagonal.
-    colsums = matrix.sum(axis=1)
-    colsums = np.asarray(colsums).flatten()
-    matrix = matrix.multiply(surround_weight / colsums[:, None])
-
-    # Add in the diagonal.
-    matrix.setdiag(center_weight)
-    # Run the iterations of smoothing.
-    data = surf_data
-    for _ in range(iterations):
-        data[np.isneginf(data)] = 1e-8  # numerical stability
-        if np.sum(np.isnan(data)) > 0:
-            data[~np.isnan(data)] = matrix.A[~np.isnan(data)][:, ~np.isnan(data)].dot(data[~np.isnan(data)])
-        else:
-            data = matrix.dot(data)
-    # Convert back into numpy array.
-    data = np.reshape(np.asarray(data), np.shape(surf_data))
-    # Rescale it if needed.
-    if match == 'sum':
-        sum0 = np.nansum(surf_data, axis=0)
-        sum1 = np.nansum(data, axis=0)
-        data = data * (sum0 / sum1)
-    elif match == 'mean':
-        mu0 = np.nansum(surf_data, axis=0)
-        mu1 = np.nansum(data, axis=0)
-        data = data + (mu0 - mu1)
-    elif match in ('var', 'std', 'variance', 'stddev', 'sd'):
-        std0 = np.nanstd(surf_data, axis=0)
-        std1 = np.nanstd(data, axis=0)
-        mu1 = np.nanmean(data, axis=0)
-        data = (data - mu1) * (std0 / std1) + mu1
-    elif match in ('dist', 'meanvar', 'meanstd', 'meansd'):
-        std0 = np.nanstd(surf_data, axis=0)
-        std1 = np.nanstd(data, axis=0)
-        mu0 = np.nanmean(surf_data, axis=0)
-        mu1 = np.nanmean(data, axis=0)
-        data = (data - mu1) * (std0 / std1) + mu0
-    elif match is not None:
-        raise ValueError(f"invalid match argument: {match}")
-    if return_vertex_weights:
-        w /= np.sum(w)
-        return (data, w)
-    else:
-        return data
-
-
-# def get_adj_matrices(resolution):
-#     adj_path = os.path.join(SEARCHLIGHT_OUT_DIR, "adjacency_matrices", resolution, "adjacency.p")
-#     if not os.path.isfile(adj_path):
-#         print("Computing adjacency matrices.")
-#         adjacency_matrices = dict()
-#         for hemi in HEMIS:
-#             os.makedirs(os.path.dirname(adj_path), exist_ok=True)
-#             fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
-#             surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-#
-#             adjacency_matrix = compute_adjacency_matrix(surface_infl, values='euclidean')
-#
-#             adjacency_matrices[hemi] = adjacency_matrix
-#         pickle.dump(adjacency_matrices, open(adj_path, 'wb'))
-#     else:
-#         adjacency_matrices = pickle.load(open(adj_path, 'rb'))
-#
-#     return adjacency_matrices
 
 
 def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
@@ -529,52 +385,26 @@ def calc_t_values(per_subject_scores):
 
 
 def calc_test_statistics(args):
-    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 "t_values.p")
+    t_values_path = os.path.join(get_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
         os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         per_subject_scores = load_per_subject_scores(args)
         print(f"Calculating t-values")
         t_values = calc_t_values(per_subject_scores)
-
         pickle.dump(t_values, open(t_values_path, 'wb'))
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
-
-    if args.smoothing_iterations > 0:
-        print("smoothing")
-        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-        smooth_t_values = copy.deepcopy(t_values)
-        for hemi in HEMIS:
-            surface_infl = surface.load_surf_mesh(fsaverage[f"infl_{hemi}"])
-            # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
-            distance_weights = True
-            values = 'inveuclidean' if distance_weights else 'ones'
-            adj_matrix = compute_adjacency_matrix(surface_infl, values=values)
-            smooth_t_values[hemi][args.metric] = smooth_surface_data(
-                adj_matrix, t_values[hemi][args.metric], match=None,
-                iterations=args.smoothing_iterations
-            )
-        t_values = smooth_t_values
-        t_values_smooth_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p")
-        pickle.dump(smooth_t_values, open(t_values_smooth_path, 'wb'))
 
     print("calculating tfce..")
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e)
 
-    tfce_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p")
+    tfce_values_path = os.path.join(get_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     pickle.dump(tfce_values, open(tfce_values_path, "wb"))
 
     null_distribution_tfce_values_file = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode,
-        f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+        get_results_dir(args),
+        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
     )
 
     print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
@@ -605,11 +435,7 @@ def calc_test_statistics(args):
     print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.4f}")
     print(f"smallest p value (right): {np.min(p_values['right'][p_values['right'] > 0]):.4f}")
 
-    p_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
-
+    p_values_path = os.path.join(get_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
@@ -789,67 +615,30 @@ def calc_t_values_null_distr(args, out_path):
     print("finished assemble")
 
 
+def get_results_dir(args):
+    return str(os.path.join(
+        SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_vision_model,
+        args.mod_specific_vision_features, args.mod_specific_lang_model, args.mod_specific_lang_features,
+        args.resolution, args.mode
+    ))
+
+
+def get_hparam_suffix(args):
+    return f"_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}"
+
+
 def create_null_distribution(args):
     tfce_values_null_distribution_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode,
-        f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+        get_results_dir(args), f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
     )
     if not os.path.isfile(tfce_values_null_distribution_path):
         t_values_null_distribution_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-            args.resolution,
-            args.mode, f"t_values_null_distribution.hdf5"
+            get_results_dir(args), f"t_values_null_distribution.hdf5"
         )
         if not os.path.isfile(t_values_null_distribution_path):
             print(f"Calculating t-values: null distribution")
             os.makedirs(os.path.dirname(t_values_null_distribution_path), exist_ok=True)
             calc_t_values_null_distr(args, t_values_null_distribution_path)
-
-        if args.smoothing_iterations > 0:
-            smooth_t_values_null_distribution_path = os.path.join(
-                SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-                args.resolution,
-                args.mode,
-                f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
-            )
-            if not os.path.isfile(smooth_t_values_null_distribution_path):
-                raise NotImplementedError("smoothing not implemented atm")
-                # print("smoothing for null distribution")
-                # def smooth_t_values(t_values, proc_id):
-                #     smooth_t_vals = []
-                #     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-                #     surface_infl = {hemi: surface.load_surf_mesh(fsaverage[f"infl_{hemi}"]) for hemi in HEMIS}
-                #     # Calculate the adjacency matrix either weighting by inverse distance or not weighting (ones)
-                #     distance_weights = True
-                #     values = 'inveuclidean' if distance_weights else 'ones'
-                #     adj_matrices = {hemi: compute_adjacency_matrix(surface_infl[hemi], values=values) for hemi in HEMIS}
-                #     iterator = tqdm(t_values) if proc_id == 0 else t_values
-                #     for t_vals in iterator:
-                #         for hemi in HEMIS:
-                #             smoothed = smooth_surface_data(
-                #                 adj_matrices[hemi],
-                #                 t_vals[hemi][args.metric],
-                #                 match=None,
-                #                 iterations=args.smoothing_iterations
-                #             )
-                #             t_vals[hemi][args.metric] = smoothed
-                #         smooth_t_vals.append(t_vals)
-                #     return smooth_t_vals
-                #
-                # n_per_job = math.ceil(args.n_permutations_group_level / args.n_jobs)
-                # all_smooth_t_vals = Parallel(n_jobs=args.n_jobs)(
-                #     delayed(smooth_t_values)(
-                #         t_values_null_distribution[id * n_per_job:(id + 1) * n_per_job],
-                #         id,
-                #     )
-                #     for id in range(args.n_jobs)
-                # )
-                # smooth_t_values_null_distribution = np.concatenate(all_smooth_t_vals)
-                # pickle.dump(smooth_t_values_null_distribution, open(smooth_t_values_null_distribution_path, 'wb'))
-
-            t_values_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
 
         print(f"Calculating tfce values for null distribution")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
@@ -888,20 +677,18 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--features", type=str, default="avg_test_avg")
 
     parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
 
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
-
-    parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
@@ -915,10 +702,8 @@ def get_args():
 
 
 if __name__ == "__main__":
+    os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
-    args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
-    args.mod_specific_vision_features = get_default_features(args.mod_specific_vision_model) if args.mod_specific_vision_features == FEATS_SELECT_DEFAULT else args.mod_specific_vision_features
-    args.mod_specific_lang_features = get_default_features(args.mod_specific_lang_model) if args.mod_specific_lang_features == FEATS_SELECT_DEFAULT else args.mod_specific_lang_features
 
     create_null_distribution(args)
     calc_test_statistics(args)

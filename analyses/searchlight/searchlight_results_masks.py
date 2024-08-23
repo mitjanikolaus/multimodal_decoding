@@ -5,18 +5,15 @@ import numpy as np
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN
-from analyses.searchlight.searchlight_permutation_testing import METRIC_CODES, calc_clusters, \
+from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT
+from analyses.searchlight.searchlight import METRIC_MIN
+from analyses.searchlight.searchlight_permutation_testing import calc_clusters, get_hparam_suffix, get_results_dir, \
     get_edge_lengths_dicts_based_on_edges
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
 def create_masks(args):
-    p_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
+    p_values_path = os.path.join(get_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
@@ -71,12 +68,16 @@ def get_args():
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
 
+    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+
+    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
-
-    parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
@@ -90,6 +91,5 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
     create_masks(args)

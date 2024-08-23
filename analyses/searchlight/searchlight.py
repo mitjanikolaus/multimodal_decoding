@@ -26,11 +26,12 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     ACC_MODALITY_AGNOSTIC
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, \
-    correlation_num_voxels_acc
+    correlation_num_voxels_acc, DATA_DIR
 
 DEFAULT_N_JOBS = 10
 
-SEARCHLIGHT_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/searchlight/")
+SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
+SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY]

@@ -9,11 +9,11 @@ import pickle
 
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
-    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST
+    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, \
+    get_results_dir, get_hparam_suffix
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
@@ -121,7 +121,10 @@ def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""
 
 def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
+    metrics = [
+        METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY,
+        METRIC_IMAGERY_WHOLE_TEST
+    ]
 
     print(f"plotting acc scores. {filename_suffix}")
     fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
@@ -171,10 +174,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
 def plot_p_values(results_path, args):
     print(f"plotting (p-values)")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    p_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
+    p_values_path = os.path.join(get_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
@@ -214,7 +214,7 @@ def plot_p_values(results_path, args):
 
 
 def run(args):
-    results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features))
     os.makedirs(results_path, exist_ok=True)
 
     plot_p_values(results_path, args)
@@ -222,20 +222,9 @@ def run(args):
     per_subject_scores = load_per_subject_scores(args)
     plot_acc_scores(per_subject_scores, args, results_path)
 
-    t_values_path = os.path.join(SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-                                 "t_values.p")
+    t_values_path = os.path.join(get_results_dir(args), "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    if args.smoothing_iterations > 0:
-        t_values_smooth_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution,
-            args.mode,
-            f"t_values_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
-        )
-        test_statistics["t-values-smoothed"] = pickle.load(open(t_values_smooth_path, 'rb'))
-    tfce_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"tfce_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
+    tfce_values_path = os.path.join(get_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
     plot_test_statistics(test_statistics, args, results_path)
 
@@ -253,19 +242,9 @@ def run(args):
         )
         null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
         t_values_smooth_null_distribution = None
-        if args.smoothing_iterations > 0:
-            smooth_t_values_null_distribution_path = os.path.join(
-                SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-                args.resolution,
-                args.mode,
-                f"t_values_null_distribution_metric_{METRIC_CODES[args.metric]}_smoothed_{args.smoothing_iterations}.p"
-            )
-            t_values_smooth_null_distribution = pickle.load(open(smooth_t_values_null_distribution_path, 'rb'))
         null_distribution_tfce_values_file = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-            args.resolution,
-            args.mode,
-            f"tfce_values_null_distribution_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
+            get_results_dir(args),
+            f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
         )
         null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
@@ -275,6 +254,7 @@ def run(args):
                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
             test_statistics["tfce-values"] = null_distribution_test_statistic[i]
             plot_test_statistics(test_statistics, args, results_path, filename_suffix=f"_null_distr_{i}")
+
 
     if args.per_subject_plots:
         metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
@@ -326,13 +306,13 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--features", type=str, default="avg_test_avg")
 
     parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-vision-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-lang-features", type=str, default="vision_test_vision")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
@@ -340,8 +320,6 @@ def get_args():
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)
-
-    parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
@@ -357,10 +335,5 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
-    args.mod_specific_vision_features = get_default_features(
-        args.mod_specific_vision_model) if args.mod_specific_vision_features == FEATS_SELECT_DEFAULT else args.mod_specific_vision_features
-    args.mod_specific_lang_features = get_default_features(
-        args.mod_specific_lang_model) if args.mod_specific_lang_features == FEATS_SELECT_DEFAULT else args.mod_specific_lang_features
 
     run(args)
