@@ -145,8 +145,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
