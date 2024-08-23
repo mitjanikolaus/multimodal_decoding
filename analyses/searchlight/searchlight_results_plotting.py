@@ -328,6 +328,12 @@ def get_args():
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
 
+    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-features", type=str, default=FEATS_SELECT_DEFAULT)
+
+    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-features", type=str, default=FEATS_SELECT_DEFAULT)
+
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
@@ -352,5 +358,9 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
     args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
+    args.mod_specific_vision_features = get_default_features(
+        args.mod_specific_vision_model) if args.mod_specific_vision_features == FEATS_SELECT_DEFAULT else args.mod_specific_vision_features
+    args.mod_specific_lang_features = get_default_features(
+        args.mod_specific_lang_model) if args.mod_specific_lang_features == FEATS_SELECT_DEFAULT else args.mod_specific_lang_features
 
     run(args)
