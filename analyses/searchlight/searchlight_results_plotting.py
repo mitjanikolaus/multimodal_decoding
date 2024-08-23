@@ -138,7 +138,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
 
-            print(f"metric: {metric} {hemi} hemi max value: {np.nanmax(score_hemi_avgd)}")
+            print(f"metric: {metric} {hemi} hemi max value: {np.nanmax(score_hemi_avgd):.2f}")
 
             for i, view in enumerate(args.views):
                 infl_mesh = fsaverage[f"infl_{hemi}"]
