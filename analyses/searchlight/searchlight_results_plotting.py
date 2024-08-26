@@ -2,6 +2,7 @@ import argparse
 import warnings
 
 import numpy as np
+from PIL import Image
 from nilearn import datasets, plotting
 import matplotlib.pyplot as plt
 import os
@@ -17,12 +18,17 @@ from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMA
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
-COLORBAR_MAX = 1
+COLORBAR_MAX = 0.8
 COLORBAR_THRESHOLD_MIN = 0.6
-COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.001
 
-CMAP = "cold_white_hot"
+COLORBAR_DIFFERENCE_MAX = 0.1
+
+COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.01
+
+CMAP = "cold_hot"
 CMAP_POS_ONLY = "autumn"
+
+P_VALUE_THRESHOLD = 0.01
 
 DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
@@ -30,109 +36,131 @@ DEFAULT_TFCE_VAL_THRESH = 10
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 
-def plot_test_statistics(test_statistics, args, results_path, filename_suffix=""):
+def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     if "t-values" in test_statistics:
         t_values = test_statistics['t-values']
-        metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+        t_values_imgs_dir = str(os.path.join(results_path, "tmp", "t_values"))
+        if subfolder:
+            t_values_imgs_dir = os.path.join(t_values_imgs_dir, subfolder)
+        os.makedirs(t_values_imgs_dir, exist_ok=True)
 
-        print(f"plotting t values for {len(metrics)} metrics {filename_suffix}")
-        fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
-        subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+        threshold = DEFAULT_T_VALUE_THRESH
+        metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+        print(f"plotting t values for {len(metrics)} metrics {subfolder}")
         cbar_max = {metric: None for metric in metrics}
-        for subfig, metric in zip(subfigs, metrics):
-            subfig.suptitle(f'{metric}', x=0, y=1.1, horizontalalignment="left")
-            axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+        for metric in metrics:
             for i, view in enumerate(args.views):
                 for j, hemi in enumerate(HEMIS):
                     scores_hemi = t_values[hemi][metric]
-                    infl_mesh = fsaverage[f"infl_{hemi}"]
                     if cbar_max[metric] is None:
                         cbar_max[metric] = np.nanmax(scores_hemi)
-                    threshold = DEFAULT_T_VALUE_THRESH
                     plotting.plot_surf_stat_map(
-                        infl_mesh,
+                        fsaverage[f"infl_{hemi}"],
                         scores_hemi,
                         hemi=hemi,
                         view=view,
                         bg_map=fsaverage[f"sulc_{hemi}"],
                         bg_on_data=True,
-                        axes=axes[i * 2 + j],
-                        colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                        colorbar=False,
                         threshold=threshold,
                         vmax=cbar_max[metric],
                         vmin=0,
                         cmap=CMAP_POS_ONLY,
                     )
-                    axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-        title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats{filename_suffix}"
-        # fig.suptitle(title)
-        # fig.tight_layout()
-        fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-        results_searchlight = os.path.join(results_path, f"{title}.png")
-        plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-        plt.close()
+                    title = f"{metric}_{view}_{hemi}"
+                    save_plot_and_crop_img(os.path.join(t_values_imgs_dir, f"{title}.png"))
+
+        # plot for cbar:
+        plotting.plot_surf_stat_map(
+            fsaverage[f"infl_{HEMIS[0]}"],
+            t_values[HEMIS[0]][metrics[0]],
+            hemi=HEMIS[0],
+            view=args.views[0],
+            bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+            bg_on_data=True,
+            colorbar=True,
+            threshold=threshold,
+            vmax=cbar_max[metrics[0]],
+            vmin=0,
+            cmap=CMAP_POS_ONLY,
+        )
+        save_plot_and_crop_img(os.path.join(t_values_imgs_dir, "colorbar.png"), crop_cbar=True)
+
 
     # plot remaining test stats
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
 
-    print(f"plotting test stats {filename_suffix}")
+    print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    fig = plt.figure(figsize=(5 * len(args.views), len(test_statistics) * 2))
-    subfigs = fig.subfigures(nrows=len(test_statistics), ncols=1)
     cbar_max = {stat: None for stat in test_statistics.keys()}
-    for subfig, (stat_name, values) in zip(subfigs, test_statistics.items()):
-        subfig.suptitle(f'{args.metric} {stat_name}', x=0, y=1.1, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+    for (stat_name, values) in test_statistics.items():
+        test_stat_imgs_dir = str(os.path.join(results_path, "tmp", f"{stat_name}"))
+        if subfolder:
+            test_stat_imgs_dir = os.path.join(test_stat_imgs_dir, subfolder)
+        os.makedirs(test_stat_imgs_dir, exist_ok=True)
+        threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH
+
         for i, view in enumerate(args.views):
             for j, hemi in enumerate(HEMIS):
                 scores_hemi = values[hemi][args.metric]
-                infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max[stat_name] is None:
                     if (stat_name == "t-values-smoothed") and (cbar_max['t-values'] is not None):
                         cbar_max[stat_name] = cbar_max['t-values']
                     else:
                         cbar_max[stat_name] = np.nanmax(scores_hemi)
-                threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH
                 plotting.plot_surf_stat_map(
-                    infl_mesh,
+                    fsaverage[f"infl_{hemi}"],
                     scores_hemi,
                     hemi=hemi,
                     view=view,
                     bg_map=fsaverage[f"sulc_{hemi}"],
                     bg_on_data=True,
-                    axes=axes[i * 2 + j],
-                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                    colorbar=False,
                     threshold=threshold,
                     vmax=cbar_max[stat_name],
                     vmin=0,
                     cmap=CMAP_POS_ONLY,
                 )
-                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_test_stats2{filename_suffix}"
-    # fig.suptitle(title)
-    # fig.tight_layout()
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(results_path, f"{title}.png")
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
+                title = f"{args.metric}_{view}_{hemi}"
+                save_plot_and_crop_img(os.path.join(test_stat_imgs_dir, f"{title}.png"))
+        # plot for cbar:
+        plotting.plot_surf_stat_map(
+            fsaverage[f"infl_{HEMIS[0]}"],
+            values[HEMIS[0]][args.metric],
+            hemi=HEMIS[0],
+            view=args.views[0],
+            bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+            bg_on_data=True,
+            colorbar=True,
+            threshold=threshold,
+            vmax=cbar_max[stat_name],
+            vmin=0,
+            cmap=CMAP_POS_ONLY,
+        )
+        save_plot_and_crop_img(os.path.join(test_stat_imgs_dir, f"colorbar_{args.metric}.png"))
 
 
-def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
+def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metrics = [
         METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY,
         METRIC_IMAGERY_WHOLE_TEST
     ]
 
-    print(f"plotting acc scores. {filename_suffix}")
-    fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
-    subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
-    for subfig, metric in zip(subfigs, metrics):
-        subfig.suptitle(f'{metric}', x=0, y=1.1, horizontalalignment="left")
-        axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+    acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
+    if subfolder:
+        acc_scores_imgs_dir = os.path.join(acc_scores_imgs_dir, subfolder)
+    os.makedirs(acc_scores_imgs_dir, exist_ok=True)
+
+    print(f"plotting acc scores. {subfolder}")
+    for metric in metrics:
         cbar_max = None
+        threshold = COLORBAR_THRESHOLD_MIN
+        if CHANCE_VALUES[metric] == 0:
+            threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
+
         for j, hemi in enumerate(HEMIS):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -141,33 +169,51 @@ def plot_acc_scores(per_subject_scores, args, results_path, filename_suffix=""):
             print(f"metric: {metric} {hemi} hemi max value: {np.nanmax(score_hemi_avgd):.2f}")
 
             for i, view in enumerate(args.views):
-                infl_mesh = fsaverage[f"infl_{hemi}"]
                 if cbar_max is None:
                     cbar_max = min(np.nanmax(score_hemi_avgd), 99)
-                threshold = COLORBAR_THRESHOLD_MIN
-                if CHANCE_VALUES[metric] == 0:
-                    threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
 
                 plotting.plot_surf_stat_map(
-                    infl_mesh,
+                    fsaverage[f"infl_{hemi}"],
                     score_hemi_avgd,
                     hemi=hemi,
                     view=view,
                     bg_map=fsaverage[f"sulc_{hemi}"],
                     bg_on_data=True,
-                    axes=axes[i * 2 + j],
-                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
+                    colorbar=False,
                     threshold=threshold,
-                    vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else None,
+                    vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_MAX,
                     vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
                     cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
                     symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
                 )
-                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_pairwise_acc{filename_suffix}"
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(results_path, f"{title}.png")
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
+                title = f"{metric}_{view}_{hemi}"
+                save_plot_and_crop_img(os.path.join(acc_scores_imgs_dir, f"{title}.png"))
+
+        plotting.plot_surf_stat_map(
+            fsaverage[f"infl_{HEMIS[0]}"],
+            score_hemi_avgd,
+            hemi=HEMIS[0],
+            view=args.views[0],
+            bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+            bg_on_data=True,
+            colorbar=True,
+            threshold=threshold,
+            vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_MAX,
+            vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
+            cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
+            symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+        )
+        save_plot_and_crop_img(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
+
+
+def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False):
+    plt.savefig(path, dpi=300, transparent=True)
+    image = Image.open(path)
+    if crop_cbar:
+        image = image.crop((image.size[0] - image.size[0] / 5, 0, image.size[0], image.size[1]))
+    if crop_to_content:
+        image = image.crop(image.getbbox())
+    image.save(path)
     plt.close()
 
 
@@ -181,40 +227,104 @@ def plot_p_values(results_path, args):
     p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
     p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
-    fig = plt.figure(figsize=(5 * len(args.views), 2))
-    fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, y=1.1, horizontalalignment="left")
-    axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
     cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
     cbar_min = 0
+    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
+    os.makedirs(p_values_imgs_dir, exist_ok=True)
+
     for i, view in enumerate(args.views):
         for j, hemi in enumerate(HEMIS):
             scores_hemi = p_values[hemi]
-            infl_mesh = fsaverage[f"infl_{hemi}"]
             plotting.plot_surf_stat_map(
-                infl_mesh,
+                fsaverage[f"infl_{hemi}"],
                 scores_hemi,
                 hemi=hemi,
                 view=view,
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 bg_on_data=True,
-                axes=axes[i * 2 + j],
-                colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                threshold=1.3,  # -log10(0.05) ~ 1.3
+                colorbar=False,
+                threshold=-np.log10(P_VALUE_THRESHOLD),
                 vmax=cbar_max,
                 vmin=cbar_min,
                 cmap=CMAP_POS_ONLY,
                 symmetric_cbar=False,
             )
-            axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-    title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_p_values"
-    fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-    results_searchlight = os.path.join(results_path, f"{title}.png")
-    plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-    plt.close()
+            title = f"{view}_{hemi}"
+            save_plot_and_crop_img(os.path.join(p_values_imgs_dir, f"{title}.png"))
+    # plot for cbar:
+    plotting.plot_surf_stat_map(
+        fsaverage[f"infl_{HEMIS[0]}"],
+        p_values[HEMIS[0]],
+        hemi=HEMIS[0],
+        view=args.views[0],
+        bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+        bg_on_data=True,
+        colorbar=True,
+        threshold=-np.log10(P_VALUE_THRESHOLD),
+        vmax=cbar_max,
+        vmin=cbar_min,
+        cmap=CMAP_POS_ONLY,
+        symmetric_cbar=False,
+    )
+    save_plot_and_crop_img(os.path.join(p_values_imgs_dir, "colorbar.png"), crop_cbar=True)
+
+
+def append_images(images, horizontally=True, padding=5):
+    if horizontally:
+        append_axis = 0
+        other_axis = 1
+    else:
+        append_axis = 1
+        other_axis = 0
+
+    imgs_dims = [0, 0]
+    imgs_dims[append_axis] = np.sum([img.size[append_axis] for img in images]) + (len(images) - 1) * padding
+    imgs_dims[other_axis] = np.max([img.size[other_axis] for img in images])
+    full_img = Image.new("RGBA", (imgs_dims[0], imgs_dims[1]))
+
+    prev_loc = [0, 0]
+    for img in images:
+        full_img.paste(img, (prev_loc[0], prev_loc[1]))
+        prev_loc[append_axis] += img.size[append_axis] + padding
+
+    return full_img
+
+
+
+def create_composite_image(results_path):
+
+    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
+    imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    img_ventral = append_images(images=imgs_ventral, horizontally=False)
+    images = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral", "medial"] for hemi in HEMIS]
+    images.append(img_ventral)
+    images.append(Image.open(os.path.join(p_values_imgs_dir, "colorbar.png")))
+    p_val_image = append_images(images)
+
+    acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
+    acc_scores_imgs = []
+    for metric in [METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+        imgs_ventral = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_ventral_{hemi}.png")) for hemi in HEMIS]
+        img_ventral = append_images(images=imgs_ventral, horizontally=False)
+        images = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_{view}_{hemi}.png")) for view in ["lateral", "medial"] for hemi in HEMIS]
+        images.append(img_ventral)
+        images.append(Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png")))
+        acc_scores_img = append_images(images)
+        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.3), int(acc_scores_img.size[1]/1.3)))
+        acc_scores_imgs.append(acc_scores_img)
+
+    acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=10)
+    acc_scores_imgs_diff = append_images(acc_scores_imgs[2:], horizontally=False, padding=10)
+
+    full_img = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff, p_val_image], horizontally=False, padding=20)
+
+    path = os.path.join(results_path, "searchlight_results.png")
+    full_img.save(path, transparent=True)
+    print("done")
 
 
 def run(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
     os.makedirs(results_path, exist_ok=True)
 
     plot_p_values(results_path, args)
@@ -228,11 +338,13 @@ def run(args):
     test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
     plot_test_statistics(test_statistics, args, results_path)
 
+    create_composite_image(results_path)
+
     if args.plot_null_distr:
         print("plotting acc maps for null distribution examples")
         per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
         for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
-            plot_acc_scores(per_subject_scores_null_distr[i], args, results_path, filename_suffix=f"_null_distr_{i}")
+            plot_acc_scores(per_subject_scores_null_distr[i], args, results_path, subfolder=f"_null_distr_{i}")
 
         print("plotting test stats for null distribution examples")
         t_values_null_distribution_path = os.path.join(
@@ -253,7 +365,7 @@ def run(args):
             if t_values_smooth_null_distribution is not None:
                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
             test_statistics["tfce-values"] = null_distribution_test_statistic[i]
-            plot_test_statistics(test_statistics, args, results_path, filename_suffix=f"_null_distr_{i}")
+            plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
 
 
     if args.per_subject_plots:
@@ -295,7 +407,7 @@ def run(args):
                         )
                         axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
 
-            title = f"{args.model}_{args.mode}_{subject}"
+            title = f"{subject}"
             fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
             results_searchlight = os.path.join(results_path, f"{title}.png")
             plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
