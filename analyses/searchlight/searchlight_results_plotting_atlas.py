@@ -52,7 +52,7 @@ def plot(args):
 
     rois_for_view = {
         "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital', 'Left-Hippocampus'],
-        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup', 'Left-Amygdala'],
+        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup'],
         "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf']
     }
 
@@ -64,7 +64,9 @@ def plot(args):
         names = [name.decode() for name in names]
         label_names_dict = destrieux_label_names()
 
-        subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
+        # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
+        subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi_fs}.test.annot")
+
         subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
         subcortical_names = [name.decode() for name in subcortical_names]
 
@@ -90,7 +92,7 @@ def plot(args):
 
             scores_hemi = p_values[hemi]
             fig_hemi = plotting.plot_surf_stat_map(
-                fsaverage[f"pial_{hemi}"],
+                fsaverage[f"infl_{hemi}"],
                 scores_hemi,
                 hemi=hemi,
                 view=view,
@@ -104,7 +106,7 @@ def plot(args):
                 symmetric_cbar=False,
             )
 
-            plotting.plot_surf_contours(fsaverage[f"pial_{hemi}"], atlas_labels, labels=label_names,
+            plotting.plot_surf_contours(fsaverage[f"infl_{hemi}"], atlas_labels, labels=label_names,
                                         levels=regions_indices, figure=fig_hemi,
                                         legend=True,
                                         colors=colors)
