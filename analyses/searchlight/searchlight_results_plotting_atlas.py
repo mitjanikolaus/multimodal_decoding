@@ -1,5 +1,6 @@
 import argparse
 
+import nibabel.freesurfer
 import numpy as np
 from nilearn import datasets, plotting
 
@@ -9,150 +10,126 @@ import pickle
 
 import seaborn as sns
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, get_default_features, FEATURE_COMBINATION_CHOICES
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight.searchlight_permutation_testing import METRIC_CODES, METRIC_MIN
-from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS
-from utils import RESULTS_DIR, HEMIS
+from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, permutation_results_dir, \
+    get_hparam_suffix
+from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
+    P_VALUE_THRESHOLD
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, HEMIS_FS, FS_HEMI_NAMES, ROOT_DIR
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
 
-def plot(args):
-    results_path = os.path.join(RESULTS_DIR, "searchlight", args.resolution, args.features)
+def destrieux_label_names():
+    long_names = {}
+    with open("atlas_data/destrieux.txt") as file:
+        for line in file:
+            line = line.rstrip()
+            long_name = " ".join(", ".join(line.split(', ')[1:]).split(' ')[1:])
+            name = line.split(', ')[1].split(' ')[0]
+            long_names[name] = long_name
 
-    p_values_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features, args.resolution, args.mode,
-        f"p_values_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}_smoothed_{args.smoothing_iterations}.p"
-    )
+    return long_names
+
+
+def plot(args):
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    p_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
+    os.makedirs(p_values_atlas_results_dir, exist_ok=True)
+
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
-    p_values['left'][p_values['left'] == 0] = np.nan
-    p_values['right'][p_values['right'] == 0] = np.nan
     p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
     p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    destrieux_atlas = datasets.fetch_atlas_surf_destrieux()
+    # labels, colors, names = nibabel.freesurfer.read_annot(HCP_ATLAS_LH)
+    # destrieux_atlas = datasets.fetch_atlas_surf_destrieux()
 
-    regions_dicts = [
-        {
-            b'G_pariet_inf-Angular': 'Angular gyrus',
-            b'G_precuneus': 'Precuneus',
-            b'G_cingul-Post-dorsal': 'Posterior-dorsal part of the cingulate gyrus (dPCC)',
-            b'G_pariet_inf-Supramar': 'Supramarginal gyrus',
-            b'S_subparietal': 'Subparietal sulcus',
-        },
-        {
-            b'Pole_temporal': 'Temporal pole',
-            b'G_front_inf-Triangul': 'Triangular part of the inferior frontal gyrus',
-            b'G_front_middle': 'Middle frontal gyrus',
-            b'S_circular_insula_inf': 'Inferior segment of the circular sulcus of the insula',
-        },
-        # {
-        #     b'G_temporal_middle': 'Middle temporal gyrus',
-        #     b'G_temporal_inf': 'Inferior temporal gyrus',
-        #     b'G_orbital': 'Orbital gyri',
-        # }
-    ]
+    rois_for_view = {
+        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital', 'Left-Hippocampus'],
+        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup', 'Left-Amygdala'],
+        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf']
+    }
 
-    # not/less relevant:
-    # b'S_circular_insula_sup': 'Superior segment of the circular sulcus of the insula',
-    # b'G_Ins_lg_and_S_cent_ins': 'Long insular gyrus and central sulcus of the insula',
-    # b'G_temp_sup-G_T_transv': 'Anterior transverse temporal gyrus (of Heschl)',
-    # b'G_temp_sup-Lateral': 'Lateral aspect of the superior temporal gyrus',
-    # b'G_front_inf-Opercular': 'Opercular part of the inferior frontal gyrus',
-    # b'S_collat_transv_ant': 'Anterior transverse collateral sulcus',
-    # b'S_parieto_occipital': 'Parieto-occipital sulcus',
-    # b'G_cuneus': 'Cuneus',
-    # b'G_and_S_cingul-Mid-Post': 'Middle-posterior part of the cingulate gyrus and sulcus (pMCC)',
-    # b'G_oc-temp_lat-fusifor': 'Lateral occipito-temporal gyrus (fusiform gyrus)',
-    # b'G_and_S_cingul-Mid-Ant': 'Middle-anterior part of the cingulate gyrus and sulcus (aMCC)',
-    # b'G_and_S_cingul-Ant': 'Anterior part of the cingulate gyrus and sulcus (ACC)',
-    # b'G_occipital_middle': 'Middle occipital gyrus',
-    # b'G_and_S_frontomargin': 'Fronto-marginal gyrus (of Wernicke) and sulcus',
+    for hemi in HEMIS:
+        hemi_fs = FS_HEMI_NAMES[hemi]
+        resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
+        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{resolution_fs}/label/{hemi_fs}.aparc.a2009s.annot")
+        atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
+        names = [name.decode() for name in names]
+        label_names_dict = destrieux_label_names()
 
-    for r, regions_dict in enumerate(regions_dicts):
-        # get indices in atlas for these labels
-        regions_indices = [
-            np.where(np.array(destrieux_atlas['labels']) == region)[0][0]
-            for region in regions_dict
-        ]
+        subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
+        subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
+        subcortical_names = [name.decode() for name in subcortical_names]
 
-        labels = list(regions_dict.values())
-        colors = sns.color_palette("Set2", n_colors=len(labels) + 1)[1:]
+        all_names = names + subcortical_names
+        all_atlas_colors = np.vstack((atlas_colors, subcortical_atlas_colors))
 
-        fig = plt.figure(figsize=(5 * len(args.views), 2))
-        # fig.suptitle(f'{args.metric}: -log10(p_value)', x=0, horizontalalignment="left")
-        axes = fig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
+        # add labels from subcortical atlas
+        offset = np.max(atlas_labels) + 1
+        # label_to_id = {id: id if id == -1 else i + offset for i, id in enumerate(label_ids)}
+        subcortical_atlas_labels_transformed = np.array([-1 if l == -1 else l + offset for l in subcortical_atlas_labels])
+        # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
+
+        atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
+
         cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
         cbar_min = 0
-        for i, view in enumerate(args.views):
-            for j, hemi in enumerate(HEMIS):
-                scores_hemi = p_values[hemi]
-                infl_mesh = fsaverage[f"infl_{hemi}"]
-                fig_hemi = plotting.plot_surf_stat_map(
-                    infl_mesh,
-                    scores_hemi,
-                    hemi=hemi,
-                    view=view,
-                    bg_map=fsaverage[f"sulc_{hemi}"],
-                    bg_on_data=True,
-                    axes=axes[i * 2 + j],
-                    colorbar=True if axes[i * 2 + j] == axes[-1] else False,
-                    threshold=1.3,  # -log10(0.05) ~ 1.3
-                    vmax=cbar_max,
-                    vmin=cbar_min,
-                    cmap=CMAP_POS_ONLY,
-                    symmetric_cbar=False,
-                )
+        for i, (view, rois) in enumerate(rois_for_view.items()):
+            regions_indices = [all_names.index(roi) for roi in rois]
+            label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
+            colors = [all_atlas_colors[i][:4] / 255 for i in regions_indices]
+            colors = [(r, g, b, 0.5) for (r, g, b, a) in colors]
+            # colors = sns.color_palette("Set2", n_colors=len(label_names) + 1)[1:]
 
-                parcellation = destrieux_atlas[f'map_{hemi}']
-                plotting.plot_surf_contours(infl_mesh, parcellation, labels=labels,
-                                            levels=regions_indices, figure=fig_hemi, axes=axes[i * 2 + j],
-                                            legend=False,
-                                            colors=colors)
+            scores_hemi = p_values[hemi]
+            fig_hemi = plotting.plot_surf_stat_map(
+                fsaverage[f"pial_{hemi}"],
+                scores_hemi,
+                hemi=hemi,
+                view=view,
+                bg_map=fsaverage[f"sulc_{hemi}"],
+                bg_on_data=True,
+                colorbar=False,
+                threshold=-np.log10(P_VALUE_THRESHOLD),
+                vmax=cbar_max,
+                vmin=cbar_min,
+                cmap=CMAP_POS_ONLY,
+                symmetric_cbar=False,
+            )
 
-                axes[i * 2 + j].set_title(f"{hemi} {view}", y=0.85, fontsize=10)
-
-        title = f"{args.model}_{args.mode}_metric_{METRIC_CODES[args.metric]}_p_values_atlas_{r}"
-        fig.subplots_adjust(left=0, right=0.85, bottom=0, wspace=-0.1, hspace=0, top=1)
-        results_searchlight = os.path.join(results_path, f"{title}.png")
-        plt.savefig(results_searchlight, dpi=300, bbox_inches='tight')
-        plt.close()
-
-
-    # from nibabel.gifti import GiftiDataArray, GiftiImage
-    # for hemi in HEMIS:
-    #     data = t_values[hemi][METRIC_MIN].astype(np.float32)
-    #     # gimage = GiftiImage(darrays=[GiftiDataArray(data, intent='z score', datatype="float32")])
-    #     # img_surf = nibabel.freesurfer.mghformat.load()
-    #     infl_mesh = fsaverage[f"infl_{hemi}"]
-    #     niimg = datasets.load_mni152_template()
-    #
-    #     gimage = MGHImage(data, affine=niimg.affine)
-    #     # nifti1.data_type_codes
-    #     # gimage.add_gifti_data_array([GiftiDataArray(data, intent='z score', datatype="float32")])
-    #
-    #     nibabel.save(gimage, f"t_values_{hemi}.nii.gz")
+            plotting.plot_surf_contours(fsaverage[f"pial_{hemi}"], atlas_labels, labels=label_names,
+                                        levels=regions_indices, figure=fig_hemi,
+                                        legend=True,
+                                        colors=colors)
+            title = f"{view}_{hemi}"
+            path = os.path.join(p_values_atlas_results_dir, f"{title}.png")
+            save_plot_and_crop_img(path)
+            print(f"saved {path}")
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--features", type=str, default="avg_test_avg")
+
+    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+
+    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default='fsaverage7')
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
-
-    parser.add_argument("--smoothing-iterations", type=int, default=0)
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
@@ -166,7 +143,5 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
-    if args.resolution != 'fsaverage5':
-        raise NotImplementedError()
+    plot(args)

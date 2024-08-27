@@ -108,7 +108,7 @@ def create_gifti_results_maps(args):
     METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
                METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
 
-    results_dir = os.path.join(get_results_dir(args), "acc_scores_gifti")
+    results_dir = os.path.join(permutation_results_dir(args), "acc_scores_gifti")
     os.makedirs(results_dir, exist_ok=True)
 
     for metric in METRICS:
@@ -385,7 +385,7 @@ def calc_t_values(per_subject_scores):
 
 
 def calc_test_statistics(args):
-    t_values_path = os.path.join(get_results_dir(args), "t_values.p")
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
         os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         per_subject_scores = load_per_subject_scores(args)
@@ -399,11 +399,11 @@ def calc_test_statistics(args):
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e)
 
-    tfce_values_path = os.path.join(get_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     pickle.dump(tfce_values, open(tfce_values_path, "wb"))
 
     null_distribution_tfce_values_file = os.path.join(
-        get_results_dir(args),
+        permutation_results_dir(args),
         f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
     )
 
@@ -435,7 +435,7 @@ def calc_test_statistics(args):
     print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.4f}")
     print(f"smallest p value (right): {np.min(p_values['right'][p_values['right'] > 0]):.4f}")
 
-    p_values_path = os.path.join(get_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
@@ -615,7 +615,7 @@ def calc_t_values_null_distr(args, out_path):
     print("finished assemble")
 
 
-def get_results_dir(args):
+def permutation_results_dir(args):
     return str(os.path.join(
         SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_vision_model,
         args.mod_specific_vision_features, args.mod_specific_lang_model, args.mod_specific_lang_features,
@@ -629,11 +629,11 @@ def get_hparam_suffix(args):
 
 def create_null_distribution(args):
     tfce_values_null_distribution_path = os.path.join(
-        get_results_dir(args), f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+        permutation_results_dir(args), f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
     )
     if not os.path.isfile(tfce_values_null_distribution_path):
         t_values_null_distribution_path = os.path.join(
-            get_results_dir(args), f"t_values_null_distribution.hdf5"
+            permutation_results_dir(args), f"t_values_null_distribution.hdf5"
         )
         if not os.path.isfile(t_values_null_distribution_path):
             print(f"Calculating t-values: null distribution")

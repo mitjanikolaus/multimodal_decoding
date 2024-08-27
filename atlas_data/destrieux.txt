@@ -27,7 +27,7 @@
 27, G_parietal_sup Superior parietal lobule (lateral part of P1)
 28, G_postcentral Postcentral gyrus
 29, G_precentral Precentral gyrus
-30, G_precuneus Precuneus (medial part of P1)
+30, G_precuneus Precuneus
 31, G_rectus Straight gyrus, Gyrus rectus
 32, G_subcallosal Subcallosal area, subcallosal gyrus
 33, G_temp_sup-G_T_transv Anterior transverse temporal gyrus (of Heschl)

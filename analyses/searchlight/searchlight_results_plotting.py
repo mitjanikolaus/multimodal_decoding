@@ -14,7 +14,7 @@ from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
     load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, \
-    get_results_dir, get_hparam_suffix
+    permutation_results_dir, get_hparam_suffix
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
@@ -220,7 +220,7 @@ def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False):
 def plot_p_values(results_path, args):
     print(f"plotting (p-values)")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    p_values_path = os.path.join(get_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
@@ -332,9 +332,9 @@ def run(args):
     per_subject_scores = load_per_subject_scores(args)
     plot_acc_scores(per_subject_scores, args, results_path)
 
-    t_values_path = os.path.join(get_results_dir(args), "t_values.p")
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    tfce_values_path = os.path.join(get_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
     plot_test_statistics(test_statistics, args, results_path)
 
@@ -355,7 +355,7 @@ def run(args):
         null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
         t_values_smooth_null_distribution = None
         null_distribution_tfce_values_file = os.path.join(
-            get_results_dir(args),
+            permutation_results_dir(args),
             f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
         )
         null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))

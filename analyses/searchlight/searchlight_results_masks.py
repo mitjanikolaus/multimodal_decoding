@@ -7,13 +7,13 @@ import pickle
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT
 from analyses.searchlight.searchlight import METRIC_MIN
-from analyses.searchlight.searchlight_permutation_testing import calc_clusters, get_hparam_suffix, get_results_dir, \
+from analyses.searchlight.searchlight_permutation_testing import calc_clusters, get_hparam_suffix, permutation_results_dir, \
     get_edge_lengths_dicts_based_on_edges
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
 def create_masks(args):
-    p_values_path = os.path.join(get_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
