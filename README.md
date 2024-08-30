@@ -35,7 +35,32 @@ python preprocessing/fmri_preprocessing.py
 The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
 the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
 
-### (2) Transformation to MNI space
+### (2) Generation of beta values
+
+We generate beta values for each stimulus (image or caption) using a GLM.
+We first create the matlab scripts using python nipype scripts, and then run them:
+
+```
+python preprocessing/make_spm_design_job_mat.py --stage 1
+cd preprossing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_1 sub-01;exit;"  -logfile matlab_output.txt && cd -
+
+python preprocessing/make_spm_design_job_mat.py --stage 2
+cd preprossing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_2 sub-01;exit;"  -logfile matlab_output.txt &&  cd -
+```
+
+__Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
+the arguments when calling the matlab scripts!
+
+#### Organization of beta values
+Next, we can create symbolic links for all beta files that are organized into separate folders for
+images/captions/imagery as well as train/test trials and contain the corresponding COCO ID in their name.
+
+```
+python preprocessing/create_symlinks_beta_files.py
+```
+
+
+### (3) Transformation to MNI space
 
 First, we're running recon-all to generate cortical reconstructions for all subjects:
 ```
@@ -55,7 +80,7 @@ python preprocessing/transform_to_mni.py
 ```
 
 
-### (3) Gray Matter Masks
+### (4) Gray Matter Masks
 
 Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
@@ -72,32 +97,8 @@ python preprocessing/create_gray_matter_masks.py
 Finally, the aforementioned script is also converting the mask to MNI space. The final masks are saved to
 `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask.nii`.
 
-### (4) Generation of beta values
 
-We generate beta values for each stimulus (image or caption) using a GLM.
-
-First create the matlab scripts, and then run them.
-
-```
-python preprocessing/make_spm_design_job_mat.py --stage 1
-matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_1.m');exit;"  -logfile matlab_output.txt
-
-python preprocessing/make_spm_design_job_mat.py --stage 2
-matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_2.m');exit;"  -logfile matlab_output.txt
-```
-
-__Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
-the hardcoded `subject` variable in the matlab scripts!
-
-### (5) Generation of beta values
-Next, we can create symbolic links for all beta files that are organized into separate folders for
-images/captions/imagery as well as train/test trials and contain the corresponding COCO ID in their name.
-
-```
-python preprocessing/create_symlinks_beta_files.py
-```
-
-### (6) Transformation to surface space
+### (5) Transformation to surface space
 
 ```
 python preprocessing/transform_to_surface.py
