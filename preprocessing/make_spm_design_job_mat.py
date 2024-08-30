@@ -5,20 +5,17 @@
 ###########################################
 import argparse
 
-from numpy.lib.function_base import copy
-from scipy.io import matlab, savemat, loadmat
+from scipy.io import savemat
 import numpy as np
 from numpy.core.records import fromarrays
 import os
 import nibabel as nib
 from glob import glob
-import csv
-import pickle
 from nipype.interfaces.base import Bunch
 import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_RAW_BIDS_DATA_DIR, \
+from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_RAW_BIDS_DATA_DIR, \
     FMRI_PREPROCESSED_DATA_DIR
 
 
@@ -252,11 +249,12 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_fmri_mni_space_dir = os.path.join(FMRI_PREPROCESSED_MNI_DATA_DIR, subject)
+        subject_id = f"_subject_id_{subject}"
+        preprocessed_fmri_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "preprocess_workflow", subject_id)
         datasink_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
-        raw_fmri_subj_data_dir = os.path.join(FMRI_RAW_BIDS_DATA_DIR, subject)
+        raw_fmri_subj_data_dir = str(os.path.join(FMRI_RAW_BIDS_DATA_DIR, subject))
 
-        save_dir = os.path.join(FMRI_BETAS_DIR, subject, "unstructured")
+        save_dir = str(os.path.join(FMRI_BETAS_DIR, subject, "unstructured"))
 
         #####################
         # 1- fmri parameters:
@@ -333,10 +331,10 @@ def run(args):
                 # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
                 session_list = subsample_sessions
             else:
-                n_sessions = len(glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*')))
+                n_sessions = len(glob(os.path.join(preprocessed_fmri_dir, '_session_id_*')))
                 session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
             for sess_idx in session_list:
-                sess_dir = os.path.join(preprocessed_fmri_mni_space_dir, f'ses-{sess_idx}')
+                sess_dir = os.path.join(preprocessed_fmri_dir, f'_session_id_ses-{sess_idx}', 'coregister')
                 n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
                 for run_idx in range(1, n_runs + 1):
                     run_file = os.path.join(sess_dir,
@@ -388,12 +386,12 @@ def run(args):
                 # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
                 session_list = subsample_sessions
             else:
-                n_sessions = len(glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*')))
+                n_sessions = len(glob(os.path.join(preprocessed_fmri_dir, '_session_id_*')))
                 session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
 
             res_start = 0
             for sess_idx in session_list:
-                sess_dir = os.path.join(preprocessed_fmri_mni_space_dir, f'ses-{sess_idx}')
+                sess_dir = os.path.join(preprocessed_fmri_dir, f'_session_id_ses-{sess_idx}', 'coregister')
                 n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
                 for run_idx in range(1, n_runs + 1):
                     run_scans = []
