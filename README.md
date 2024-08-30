@@ -61,10 +61,10 @@ We first create the matlab scripts using python nipype scripts, and then run the
 
 ```
 python preprocessing/make_spm_design_job_mat.py --stage 1
-cd preprossing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_1 sub-01;exit;"  -logfile matlab_output.txt && cd -
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_1 sub-01;exit;"  -logfile matlab_output.txt && cd -
 
 python preprocessing/make_spm_design_job_mat.py --stage 2
-cd preprossing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_2 sub-01;exit;"  -logfile matlab_output.txt &&  cd -
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_2 sub-01;exit;"  -logfile matlab_output.txt &&  cd -
 ```
 
 __Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
