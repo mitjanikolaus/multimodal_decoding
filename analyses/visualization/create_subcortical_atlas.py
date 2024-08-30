@@ -10,6 +10,8 @@ import seaborn as sns
 
 if __name__ == "__main__":
     # labels: "/usr/local/freesurfer/7.4.1/FreeSurferColorLUT.txt"
+    test = nib.load(f'atlas_data/test_atlas_lh.gii')
+
 
     mgz_orig = nib.load(f'{FREESURFER_HOME_DIR}/subjects/fsaverage/mri/aparc.a2009s+aseg.mgz')
     # mgz_orig = nib.load(f'{FREESURFER_HOME_DIR}/subjects/fsaverage/mri/aparc+aseg.mgz')
@@ -28,6 +30,8 @@ if __name__ == "__main__":
         surface_annot = surface.vol_to_surf(mgz_orig, pial_mesh, interpolation='nearest', n_samples=1).astype(np.int32)
         surface_annot[surface_annot > 85] = 0 #TODO right hemi
         surface_annot[surface_annot == 0] = -1
+        print(len(surface_annot[surface_annot == -1]))
+        print(len(surface_annot[surface_annot == 17]))
 
         label_ids = np.unique(surface_annot)
         print(label_ids)
