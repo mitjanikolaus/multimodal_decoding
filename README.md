@@ -42,7 +42,14 @@ First, we're running recon-all to generate cortical reconstructions for all subj
 python preprocessing/recon_script.py
 ```
 
-Then, we can convert all data to MNI space:
+Then, we create an LTA (Linear Transform Archive) file for conversion of functional scans from the subject space to MNI
+space (repeat this for all subjects).
+```
+tkregisterfv --mov ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii --s sub-01 --regheader --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-01/spm2fs
+```
+
+
+Finally, we can convert all data to MNI space:
 ```
 python preprocessing/transform_to_mni.py
 ```
