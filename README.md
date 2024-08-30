@@ -35,7 +35,26 @@ python preprocessing/fmri_preprocessing.py
 The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
 the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
 
-### (2) Generation of beta values
+
+### (2) Gray Matter Masks
+
+Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
+We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
+included. 
+
+As a first step, we took the corrected T1w image of the first session for each subject
+(e.g. `~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii`) and segment it using
+SPM. (The output of this step is part of the raw data folder, so you don't have to repeat it.)
+Then, we take the c1 (gray matter) segmentation (e.g. `c1sub-01_ses-01_run-01_T1W.nii`) and use the following script to
+create a binary mask.
+```
+python preprocessing/create_gray_matter_masks.py
+```
+
+The final masks are saved to `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_orig.nii`.
+
+
+### (3) Generation of beta values
 
 We generate beta values for each stimulus (image or caption) using a GLM.
 We first create the matlab scripts using python nipype scripts, and then run them:
@@ -79,23 +98,8 @@ Finally, we can convert all data to MNI space:
 python preprocessing/transform_to_mni.py
 ```
 
-
-### (4) Gray Matter Masks
-
-Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
-We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
-included. 
-
-As a first step, we took the corrected T1w image of the first session for each subject
-(e.g. `~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii`) and segment it using
-SPM. (The output of this step is part of the raw data folder, so you don't have to repeat it.)
-Then, we take the c1 (gray matter) segmentation (e.g. `c1sub-01_ses-01_run-01_T1W.nii`) and use the following script to
-create a binary mask.
-```
-python preprocessing/create_gray_matter_masks.py
-```
-Finally, the aforementioned script is also converting the mask to MNI space. The final masks are saved to
-`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask.nii`.
+The aforementioned script is also converting the mask to MNI space. The final masks are saved to
+`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_mni.nii`.
 
 
 ### (5) Transformation to surface space

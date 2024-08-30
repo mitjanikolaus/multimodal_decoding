@@ -7,6 +7,7 @@ from glob import glob
 
 from tqdm import tqdm
 
+from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR
 
 
@@ -38,6 +39,22 @@ def run(args):
                 raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
 
 
+def convert_mask_to_mni(mask_file, subject, out_file):
+    print('Converting mask to MNI space')
+    reg_file = f'{FREESURFER_BASE_DIR}/regfiles/{subject}/spm2fs.change-name.lta'
+    conv_cmd = f'mri_vol2vol --mov "{mask_file}" --reg "{reg_file}" --o "{out_file}" --tal --talres 2 --interp nearest'
+    result_code = os.system(conv_cmd)
+    if result_code != 0:
+        raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
+
+
+def transform_graymatter_masks(args):
+    for subject in args.subjects:
+        mask_image_path = get_graymatter_mask_path(subject)
+        mask_image_path_mni = get_graymatter_mask_path(subject, mni=True)
+        convert_mask_to_mni(mask_image_path, subject, mask_image_path_mni)
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -48,5 +65,5 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-
+    transform_graymatter_masks(args)
     run(args)
