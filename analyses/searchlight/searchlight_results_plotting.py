@@ -309,7 +309,7 @@ def create_composite_image(results_path):
         images.append(img_ventral)
         images.append(Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png")))
         acc_scores_img = append_images(images)
-        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.3), int(acc_scores_img.size[1]/1.3)))
+        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.1), int(acc_scores_img.size[1]/1.1)))
         acc_scores_imgs.append(acc_scores_img)
 
     acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=10)
