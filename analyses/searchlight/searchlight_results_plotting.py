@@ -139,7 +139,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
             vmin=0,
             cmap=CMAP_POS_ONLY,
         )
-        save_plot_and_crop_img(os.path.join(test_stat_imgs_dir, f"colorbar_{args.metric}.png"))
+        save_plot_and_crop_img(os.path.join(test_stat_imgs_dir, f"colorbar_{args.metric}.png"), crop_cbar=True)
 
 
 def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
