@@ -203,7 +203,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
             cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
             symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
         )
-        save_plot_and_crop_img(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
+        save_plot_and_crop_img(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
 
 def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False):
