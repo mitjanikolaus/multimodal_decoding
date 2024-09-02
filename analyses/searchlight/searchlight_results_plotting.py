@@ -40,7 +40,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     if "t-values" in test_statistics:
         t_values = test_statistics['t-values']
-        t_values_imgs_dir = str(os.path.join(results_path, "tmp", "t_values"))
+        t_values_imgs_dir = str(os.path.join(results_path, "tmp", "t-values"))
         if subfolder:
             t_values_imgs_dir = os.path.join(t_values_imgs_dir, subfolder)
         os.makedirs(t_values_imgs_dir, exist_ok=True)
@@ -292,7 +292,6 @@ def append_images(images, horizontally=True, padding=5):
 
 
 def create_composite_image(results_path):
-
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
     imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
     img_ventral = append_images(images=imgs_ventral, horizontally=False)
