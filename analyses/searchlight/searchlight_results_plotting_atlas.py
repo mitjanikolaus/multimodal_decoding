@@ -5,6 +5,7 @@ import numpy as np
 from nilearn import datasets, plotting
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import os
 import pickle
 
@@ -51,10 +52,20 @@ def plot(args):
     # destrieux_atlas = datasets.fetch_atlas_surf_destrieux()
 
     rois_for_view = {
-        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital', 'Left-Hippocampus'],
+        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital'], #, 'Left-Hippocampus'
         "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup'],
-        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf']
+        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor'] #, 'G_temporal_inf']
     }
+
+    unique_rois = set()
+    for r in rois_for_view.values():
+        unique_rois.update(r)
+    all_colors = {r: c for r, c in zip(unique_rois, sns.color_palette(n_colors=len(unique_rois) + 1)[1:])}
+
+    patches = [mpatches.Patch(color=color, label=label) for label, color in all_colors.items()]
+    plt.legend(handles=patches)
+    path = os.path.join(p_values_atlas_results_dir, f"legend.png")
+    plt.savefig(path)
 
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
@@ -67,28 +78,29 @@ def plot(args):
         # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
         subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi_fs}.test.annot")
 
-        subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
-        subcortical_names = [name.decode() for name in subcortical_names]
+        # subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
+        # subcortical_names = [name.decode() for name in subcortical_names]
 
-        all_names = names + subcortical_names
-        all_atlas_colors = np.vstack((atlas_colors, subcortical_atlas_colors))
+        # names = names + subcortical_names
+        # atlas_colors = np.vstack((atlas_colors, subcortical_atlas_colors))
 
         # add labels from subcortical atlas
-        offset = np.max(atlas_labels) + 1
+        # offset = np.max(atlas_labels) + 1
         # label_to_id = {id: id if id == -1 else i + offset for i, id in enumerate(label_ids)}
-        subcortical_atlas_labels_transformed = np.array([-1 if l == -1 else l + offset for l in subcortical_atlas_labels])
+        # subcortical_atlas_labels_transformed = np.array([-1 if l == -1 else l + offset for l in subcortical_atlas_labels])
         # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
 
-        atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
+        # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
         cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
         cbar_min = 0
         for i, (view, rois) in enumerate(rois_for_view.items()):
-            regions_indices = [all_names.index(roi) for roi in rois]
+            regions_indices = [names.index(roi) for roi in rois]
             label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
-            colors = [all_atlas_colors[i][:4] / 255 for i in regions_indices]
-            colors = [(r, g, b, 0.5) for (r, g, b, a) in colors]
-            # colors = sns.color_palette("Set2", n_colors=len(label_names) + 1)[1:]
+            # colors = [atlas_colors[i][:4] / 255 for i in regions_indices]
+            # colors = [(r, g, b, 0.5) for (r, g, b, a) in colors]
+            colors = [all_colors[r] for r in rois]
+            print(colors)
 
             scores_hemi = p_values[hemi]
             fig_hemi = plotting.plot_surf_stat_map(
@@ -108,13 +120,15 @@ def plot(args):
 
             plotting.plot_surf_contours(fsaverage[f"infl_{hemi}"], atlas_labels, labels=label_names,
                                         levels=regions_indices, figure=fig_hemi,
-                                        legend=True,
+                                        legend=False,
                                         colors=colors)
             title = f"{view}_{hemi}"
             path = os.path.join(p_values_atlas_results_dir, f"{title}.png")
             save_plot_and_crop_img(path)
             print(f"saved {path}")
 
+# def save_separate_img_and_legend()
+# save_plot_and_crop_img
 
 def get_args():
     parser = argparse.ArgumentParser()
