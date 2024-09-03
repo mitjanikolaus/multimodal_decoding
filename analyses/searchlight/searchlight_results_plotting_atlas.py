@@ -2,6 +2,7 @@ import argparse
 
 import nibabel.freesurfer
 import numpy as np
+from PIL import Image
 from nilearn import datasets, plotting
 
 import matplotlib.pyplot as plt
@@ -33,6 +34,20 @@ def destrieux_label_names():
 
     return long_names
 
+def save_legend(legend_dict, p_values_atlas_results_dir):
+    patches = [mpatches.Patch(color=color, label=label) for label, color in legend_dict.items()]
+
+    plt.figure(figsize=(30, 10))
+    plt.legend(handles=patches, ncol=2, prop={'size': 20})
+    plt.gca().set_axis_off()
+
+    path = os.path.join(p_values_atlas_results_dir, f"legend.png")
+
+    plt.savefig(path, dpi=300, transparent=True)
+    image = Image.open(path)
+    image = image.crop(image.getbbox())
+    image.save(path)
+    plt.close()
 
 def plot(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
@@ -57,15 +72,16 @@ def plot(args):
         "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor'] #, 'G_temporal_inf']
     }
 
+
     unique_rois = set()
     for r in rois_for_view.values():
         unique_rois.update(r)
-    all_colors = {r: c for r, c in zip(unique_rois, sns.color_palette(n_colors=len(unique_rois) + 1)[1:])}
 
-    patches = [mpatches.Patch(color=color, label=label) for label, color in all_colors.items()]
-    plt.legend(handles=patches)
-    path = os.path.join(p_values_atlas_results_dir, f"legend.png")
-    plt.savefig(path)
+    label_names_dict = destrieux_label_names()
+    all_colors = {label_names_dict[r]: c for r, c in zip(unique_rois, sns.color_palette(n_colors=len(unique_rois) + 1)[1:])}
+
+    save_legend(all_colors, p_values_atlas_results_dir)
+    # plt.savefig(path)
 
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
@@ -73,7 +89,6 @@ def plot(args):
         atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{resolution_fs}/label/{hemi_fs}.aparc.a2009s.annot")
         atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
         names = [name.decode() for name in names]
-        label_names_dict = destrieux_label_names()
 
         # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
         subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi_fs}.test.annot")
@@ -99,8 +114,7 @@ def plot(args):
             label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
             # colors = [atlas_colors[i][:4] / 255 for i in regions_indices]
             # colors = [(r, g, b, 0.5) for (r, g, b, a) in colors]
-            colors = [all_colors[r] for r in rois]
-            print(colors)
+            colors = [all_colors[l] for l in label_names]
 
             scores_hemi = p_values[hemi]
             fig_hemi = plotting.plot_surf_stat_map(

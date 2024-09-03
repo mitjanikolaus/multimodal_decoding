@@ -317,7 +317,9 @@ def create_composite_image(results_path):
     acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=10)
     acc_scores_imgs_diff = append_images(acc_scores_imgs[2:], horizontally=False, padding=10)
 
-    full_img = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff, p_val_image], horizontally=False, padding=20)
+    roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
+
+    full_img = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff, p_val_image, roi_legend], horizontally=False, padding=20)
 
     path = os.path.join(results_path, "searchlight_results.png")
     full_img.save(path, transparent=True)
