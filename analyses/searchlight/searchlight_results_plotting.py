@@ -12,12 +12,12 @@ from tqdm import tqdm
 
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
-    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, METRIC_CODES, \
+    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, \
     permutation_results_dir, get_hparam_suffix
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
+DEFAULT_VIEWS = ["medial"]  # ["lateral", "medial", "ventral"]
 COLORBAR_MAX = 0.8
 COLORBAR_THRESHOLD_MIN = 0.6
 
@@ -290,38 +290,41 @@ def append_images(images, horizontally=True, padding=5):
     return full_img
 
 
-
 def create_composite_image(results_path):
-    # p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
-    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
+    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
+    # p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
 
-    imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
-    img_ventral = append_images(images=imgs_ventral, horizontally=False)
-    images = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral", "medial"] for hemi in HEMIS]
-    images.append(img_ventral)
-    images.append(Image.open(os.path.join(p_values_imgs_dir, "colorbar.png")))
-    p_val_image = append_images(images)
+    # images = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi in HEMIS]
+    # imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    # img_ventral = append_images(images=imgs_ventral, horizontally=False)
+    # images.append(img_ventral)
+    # images = append_images(images)
+    images = [Image.open(os.path.join(p_values_imgs_dir, f"medial_left.png"))]
+
+    p_val_image = append_images(images + [Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))], padding=50)
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
     for metric in [METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-        imgs_ventral = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_ventral_{hemi}.png")) for hemi in HEMIS]
-        img_ventral = append_images(images=imgs_ventral, horizontally=False)
-        images = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_{view}_{hemi}.png")) for view in ["lateral", "medial"] for hemi in HEMIS]
-        images.append(img_ventral)
-        images.append(Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png")))
-        acc_scores_img = append_images(images)
-        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.1), int(acc_scores_img.size[1]/1.1)))
+        images = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_{view}_{hemi}.png")) for view in ["medial"] for hemi in HEMIS]
+        # imgs_ventral = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_ventral_{hemi}.png")) for hemi in HEMIS]
+        # img_ventral = append_images(images=imgs_ventral, horizontally=False)
+        # images.append(img_ventral)
+        # images = append_images(images)
+        images = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_medial_left.png"))]
+
+        acc_scores_img = append_images(images + [Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))], padding=50)
+        # acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.1), int(acc_scores_img.size[1]/1.1)))
         acc_scores_imgs.append(acc_scores_img)
 
     acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=10)
     acc_scores_imgs_diff = append_images(acc_scores_imgs[2:], horizontally=False, padding=10)
 
-    roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
+    # roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
 
-    full_img = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff, p_val_image, roi_legend], horizontally=False, padding=20)
+    full_img = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff, p_val_image], horizontally=False, padding=20)
 
-    path = os.path.join(results_path, "searchlight_results.png")
+    path = os.path.join(results_path, "searchlight_methods.png")
     full_img.save(path, transparent=True)
     print("done")
 
@@ -330,16 +333,16 @@ def run(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
     os.makedirs(results_path, exist_ok=True)
 
-    # plot_p_values(results_path, args)
-    #
-    # per_subject_scores = load_per_subject_scores(args)
-    # plot_acc_scores(per_subject_scores, args, results_path)
-    #
-    # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    # test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    # test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    # plot_test_statistics(test_statistics, args, results_path)
+    plot_p_values(results_path, args)
+
+    per_subject_scores = load_per_subject_scores(args)
+    plot_acc_scores(per_subject_scores, args, results_path)
+
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    plot_test_statistics(test_statistics, args, results_path)
 
     create_composite_image(results_path)
 
