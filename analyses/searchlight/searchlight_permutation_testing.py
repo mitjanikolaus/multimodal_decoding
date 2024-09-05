@@ -117,6 +117,11 @@ def create_gifti_results_maps(args):
             path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(score_hemi_avgd, path_out)
 
+            for subj in SUBJECTS:
+                score_hemi = per_subject_scores[subj][hemi][metric]
+                path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+                export_to_gifti(score_hemi, path_out)
+
 
 def compute_adjacency_matrix(surface, values='ones'):
     """Computes the adjacency matrix for a surface.
@@ -705,6 +710,7 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
+    create_gifti_results_maps(args)
+
     create_null_distribution(args)
     calc_test_statistics(args)
-    create_gifti_results_maps(args)
