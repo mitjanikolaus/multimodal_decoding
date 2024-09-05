@@ -120,6 +120,7 @@ def create_gifti_results_maps(args):
             for subj in SUBJECTS:
                 score_hemi = per_subject_scores[subj][hemi][metric]
                 path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+                os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 export_to_gifti(score_hemi, path_out)
 
 
