@@ -290,9 +290,10 @@ def append_images(images, horizontally=True, padding=5):
     return full_img
 
 
-def create_composite_image(results_path):
+def create_composite_image(args):
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
-    # p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
 
     # images = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi in HEMIS]
     # imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
@@ -333,18 +334,18 @@ def run(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
     os.makedirs(results_path, exist_ok=True)
 
-    plot_p_values(results_path, args)
+    # plot_p_values(results_path, args)
+    #
+    # per_subject_scores = load_per_subject_scores(args)
+    # plot_acc_scores(per_subject_scores, args, results_path)
+    #
+    # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    # test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    # test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    # plot_test_statistics(test_statistics, args, results_path)
 
-    per_subject_scores = load_per_subject_scores(args)
-    plot_acc_scores(per_subject_scores, args, results_path)
-
-    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    plot_test_statistics(test_statistics, args, results_path)
-
-    create_composite_image(results_path)
+    create_composite_image(args)
 
     if args.plot_null_distr:
         print("plotting acc maps for null distribution examples")
