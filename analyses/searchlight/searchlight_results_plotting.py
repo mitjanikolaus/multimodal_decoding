@@ -294,36 +294,31 @@ def create_composite_image(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
 
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
-
-    # images = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi in HEMIS]
-    # imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
-    # img_ventral = append_images(images=imgs_ventral, horizontally=False)
-    # images.append(img_ventral)
-    # images = append_images(images)
-    images = [Image.open(os.path.join(p_values_imgs_dir, f"medial_left.png"))]
-
-    p_val_image = append_images(images + [Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))], padding=50)
+    p_val_img = Image.open(os.path.join(p_values_imgs_dir, f"medial_left.png"))
+    offset_size = (p_val_img.size[0], p_val_img.size[1])
+    image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
+    cbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
+    p_val_image = append_images([image_whitespace, p_val_img, cbar], padding=50)
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
     for metric in [METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
-        images = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_{view}_{hemi}.png")) for view in ["medial"] for hemi in HEMIS]
-        # imgs_ventral = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_ventral_{hemi}.png")) for hemi in HEMIS]
-        # img_ventral = append_images(images=imgs_ventral, horizontally=False)
-        # images.append(img_ventral)
-        # images = append_images(images)
-        images = [Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_medial_left.png"))]
+        images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_medial_left.png"))
+        cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
+        if metric in [METRIC_IMAGES, METRIC_CAPTIONS]:
+            acc_scores_img = append_images([images, cbar], padding=50)
+        else:
+            acc_scores_img = append_images([cbar, images], padding=50)
 
-        acc_scores_img = append_images(images + [Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))], padding=50)
         # acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.1), int(acc_scores_img.size[1]/1.1)))
         acc_scores_imgs.append(acc_scores_img)
 
-    acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=10)
-    acc_scores_imgs_diff = append_images(acc_scores_imgs[2:], horizontally=False, padding=10)
+    acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=500)
+    acc_scores_imgs_diff = append_images(acc_scores_imgs[2:], horizontally=False, padding=500)
 
-    # roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
+    acc_imgs = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff], padding=800)
 
-    full_img = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff, p_val_image], horizontally=False, padding=20)
+    full_img = append_images([acc_imgs, p_val_image], horizontally=False, padding=500)
 
     path = os.path.join(results_path, "searchlight_methods.png")
     full_img.save(path, transparent=True)
