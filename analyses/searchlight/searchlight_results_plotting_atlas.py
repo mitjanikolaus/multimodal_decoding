@@ -1,12 +1,13 @@
 import argparse
+from warnings import warn
 
-import matplotlib
 import nibabel.freesurfer
 import numpy as np
 from PIL import Image
-from matplotlib.colors import Normalize, to_rgba
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from nilearn import datasets, plotting
+from matplotlib.cm import ScalarMappable
+from matplotlib.colorbar import make_axes
+from matplotlib.colors import ListedColormap
+from nilearn import datasets
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -14,18 +15,19 @@ import os
 import pickle
 
 import seaborn as sns
-from nilearn._utils import compare_version
-from nilearn.plotting import plot_surf
-from nilearn.plotting.surf_plotting import _get_faces_on_edge
+from nilearn.plotting.cm import mix_colormaps
+from nilearn.plotting.img_plotting import get_colorbar_and_data_ranges
+from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
+    _get_ticks_matplotlib, _threshold_and_rescale, _compute_surf_map_faces_matplotlib, _get_view_plot_surf_matplotlib, \
+    _compute_facecolors_matplotlib
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
-from analyses.searchlight.searchlight import METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS
 from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, permutation_results_dir, \
     get_hparam_suffix
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     P_VALUE_THRESHOLD, append_images
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, HEMIS_FS, FS_HEMI_NAMES, ROOT_DIR
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -60,106 +62,319 @@ def save_legend(legend_dict, p_values_atlas_results_dir):
     plt.close()
 
 
-def _get_faces_within_edge(faces, parc_idx):
-    """Identify which faces lie within a parcellation ROI \
-    defined by the indices in parc_idx.
+def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_on_data=False, keep_bg=False,
+                                 hemi='left', view='lateral', cmap=None,
+                                 colorbar=False, avg_method='mean', threshold=None,
+                                 alpha='auto', vmin=None, vmax=None, cbar_vmin=None,
+                                 cbar_vmax=None, cbar_tick_format='%.2g',
+                                 title=None, output_file=None, darkness=0.7,
+                                 axes=None, figure=None, categorical_cmap=False):
+    """Help for plot_surf.
 
-    Parameters
-    ----------
-    faces : numpy.ndarray of shape (n, 3), indices of the mesh faces
-
-    parc_idx : numpy.ndarray, indices of the vertices
-        of the region to be plotted
-
+    This function handles surface plotting when the selected
+    engine is matplotlib.
     """
-    # count how many vertices belong to the given parcellation in each face
-    verts_per_face = np.isin(faces, parc_idx).sum(axis=1)
+    _default_figsize = [4, 5]
+    limits = [coords.min(), coords.max()]
 
-    return verts_per_face >= 1
+    # Get elevation and azimut from view
+    elev, azim = _get_view_plot_surf_matplotlib(hemi, view)
 
-
-def plot_surf_contours_filled(surf_mesh, roi_map, axes=None, figure=None, levels=None,
-                              labels=None, colors=None, legend=False, cmap='tab20',
-                              title=None, output_file=None, foreground_alpha=0.5, **kwargs):
-    """Plot ROIs on a surface, optionally over a statistical map.
-    """
-    if figure is None and axes is None:
-        figure = plot_surf(surf_mesh, **kwargs)
-        axes = figure.axes[0]
-    if figure is None:
-        figure = axes.get_figure()
-    if axes is None:
-        axes = figure.axes[0]
-    if axes.name != '3d':
-        raise ValueError('Axes must be 3D.')
-    # test if axes contains Poly3DCollection, if not initialize surface
-    if not axes.collections or not isinstance(axes.collections[0],
-                                              Poly3DCollection):
-        _ = plot_surf(surf_mesh, axes=axes, **kwargs)
-
-    _, faces = load_surf_mesh(surf_mesh)
-
-    check_extensions(roi_map, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS)
-    roi = load_surf_data(roi_map)
-
-    if levels is None:
-        levels = np.unique(roi_map)
-    if colors is None:
-        n_levels = len(levels)
-        vmax = n_levels
+    # if no cmap is given, set to matplotlib default
+    if cmap is None:
+        cmap = plt.get_cmap(plt.rcParamsDefault['image.cmap'])
+    # if cmap is given as string, translate to matplotlib cmap
+    elif isinstance(cmap, str):
         cmap = plt.get_cmap(cmap)
-        norm = Normalize(vmin=0, vmax=vmax)
-        colors = [cmap(norm(color_i)) for color_i in range(vmax)]
+
+    figsize = _default_figsize
+    # Leave space for colorbar
+    if colorbar:
+        figsize[0] += .7
+    # initiate figure and 3d axes
+    if axes is None:
+        if figure is None:
+            figure = plt.figure(figsize=figsize)
+        axes = figure.add_axes((0, 0, 1, 1), projection="3d")
     else:
-        try:
-            colors = [to_rgba(color, alpha=foreground_alpha) for color in colors]
-        except ValueError:
-            raise ValueError('All elements of colors need to be either a'
-                             ' matplotlib color string or RGBA values.')
+        if figure is None:
+            figure = axes.get_figure()
+    axes.set_xlim(*limits)
+    axes.set_ylim(*limits)
+    axes.view_init(elev=elev, azim=azim)
+    axes.set_axis_off()
 
-    if labels is None:
-        labels = [None] * len(levels)
-    if not (len(levels) == len(labels) == len(colors)):
-        raise ValueError('Levels, labels, and colors '
-                         'argument need to be either the same length or None.')
+    # plot mesh without data
+    p3dcollec = axes.plot_trisurf(coords[:, 0], coords[:, 1], coords[:, 2],
+                                  triangles=faces, linewidth=0.1,
+                                  antialiased=False,
+                                  color='white')
 
-    patch_list = []
-    for level, color, label in zip(levels, colors, labels):
-        roi_indices = np.where(roi == level)[0]
-        faces_outside = _get_faces_within_edge(faces, roi_indices)
-        # Fix: Matplotlib version 3.3.2 to 3.3.3
-        # Attribute _facecolors3d changed to _facecolor3d in
-        # matplotlib version 3.3.3
-        if compare_version(matplotlib.__version__, "<", "3.3.3"):
-            axes.collections[0]._facecolors3d[faces_outside] = color
-            if axes.collections[0]._edgecolors3d.size == 0:
-                axes.collections[0].set_edgecolor(
-                    axes.collections[0]._facecolors3d
-                )
-            axes.collections[0]._edgecolors3d[faces_outside] = color
+    # reduce viewing distance to remove space around mesh
+    axes.set_box_aspect(None, zoom=1.3)
+
+    if keep_bg:
+        bg_face_colors = figure.axes[0].collections[0]._facecolor3d
+    else:
+        bg_face_colors = _compute_facecolors_matplotlib(
+            bg_map, faces, coords.shape[0], darkness, alpha
+        )
+    if surf_map is not None:
+        surf_map_faces = _compute_surf_map_faces_matplotlib(
+            surf_map, faces, avg_method, coords.shape[0],
+            bg_face_colors.shape[0]
+        )
+
+        if categorical_cmap:
+            surf_map_face_colors = cmap(surf_map_faces.astype(int))
+            surf_map_faces, kept_indices, vmin, vmax = _threshold_and_rescale(
+                surf_map_faces, threshold, vmin, vmax
+            )
         else:
-            axes.collections[0]._facecolor3d[faces_outside] = color
-            if axes.collections[0]._edgecolor3d.size == 0:
-                axes.collections[0].set_edgecolor(
-                    axes.collections[0]._facecolor3d
-                )
-            axes.collections[0]._edgecolor3d[faces_outside] = color
-        if label and legend:
-            patch_list.append(mpatches.Patch(color=color, label=label))
-    # plot legend only if indicated and labels provided
-    if legend and np.any([lbl is not None for lbl in labels]):
-        figure.legend(handles=patch_list)
-        # if legends, then move title to the left
-    if title is None and hasattr(figure._suptitle, "_text"):
-        title = figure._suptitle._text
-    if title:
+            surf_map_faces, kept_indices, vmin, vmax = _threshold_and_rescale(
+                surf_map_faces, threshold, vmin, vmax
+            )
+            surf_map_face_colors = cmap(surf_map_faces)
+
+        # set transparency of voxels under threshold to 0
+        surf_map_face_colors[~kept_indices, 3] = 0
+
+        if bg_on_data:
+            # if need be, set transparency of voxels above threshold to 0.7
+            # so that background map becomes visible
+            surf_map_face_colors[kept_indices, 3] = 0.7
+
+        face_colors = mix_colormaps(
+            surf_map_face_colors,
+            bg_face_colors
+        )
+
+        if colorbar:
+            cbar_vmin = cbar_vmin if cbar_vmin is not None else vmin
+            cbar_vmax = cbar_vmax if cbar_vmax is not None else vmax
+            ticks = _get_ticks_matplotlib(cbar_vmin, cbar_vmax,
+                                          cbar_tick_format, threshold)
+            our_cmap, norm = _get_cmap_matplotlib(cmap,
+                                                  vmin,
+                                                  vmax,
+                                                  cbar_tick_format,
+                                                  threshold)
+            bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)
+
+            # we need to create a proxy mappable
+            proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
+            proxy_mappable.set_array(surf_map_faces)
+            cax, _ = make_axes(axes, location='right', fraction=.15,
+                               shrink=.5, pad=.0, aspect=10.)
+            figure.colorbar(
+                proxy_mappable, cax=cax, ticks=ticks,
+                boundaries=bounds, spacing='proportional',
+                format=cbar_tick_format, orientation='vertical')
+
+        p3dcollec.set_facecolors(face_colors)
+        p3dcollec.set_edgecolors(face_colors)
+
+    if title is not None:
         axes.set_title(title)
     # save figure if output file is given
     if output_file is not None:
         figure.savefig(output_file)
-        plt.close(figure)
+        plt.close()
     else:
         return figure
+
+
+def plot_surf_custom(
+        surf_mesh, surf_map=None, hemi='left', view='lateral', engine='matplotlib', cmap=None, symmetric_cmap=False,
+        colorbar=False, avg_method=None, threshold=None, alpha=None, vmin=None, vmax=None, cbar_vmin=None,
+        cbar_vmax=None, cbar_tick_format="auto", title=None, title_font_size=18, output_file=None, axes=None,
+        figure=None, bg_map=None, bg_on_data=False, keep_bg=False, darkness=0.7, categorical_cmap=False,
+):
+    """Plot surfaces with optional background and data."""
+
+    parameters_not_implemented_in_plotly = {
+        "avg_method": avg_method,
+        "figure": figure,
+        "axes": axes,
+        "cbar_vmin": cbar_vmin,
+        "cbar_vmax": cbar_vmax,
+        "alpha": alpha
+    }
+
+    check_extensions(surf_map, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS)
+
+    if engine == 'plotly':
+        for parameter, value in parameters_not_implemented_in_plotly.items():
+            if value is not None:
+                warn(
+                    (f"'{parameter}' is not implemented "
+                     "for the plotly engine.\n"
+                     f"Got '{parameter} = {value}'.\n"
+                     f"Use '{parameter} = None' to silence this warning."))
+
+    coords, faces = load_surf_mesh(surf_mesh)
+
+    if engine == 'matplotlib':
+        # setting defaults
+        if avg_method is None:
+            avg_method = 'mean'
+        if alpha is None:
+            alpha = 'auto'
+
+        if cbar_tick_format == "auto":
+            cbar_tick_format = '%.2g'
+        fig = _plot_surf_matplotlib_custom(
+            coords, faces, surf_map=surf_map, hemi=hemi,
+            view=view, cmap=cmap, colorbar=colorbar, avg_method=avg_method,
+            threshold=threshold, alpha=alpha, darkness=darkness,
+            vmin=vmin, vmax=vmax, cbar_vmin=cbar_vmin,
+            cbar_vmax=cbar_vmax, cbar_tick_format=cbar_tick_format,
+            title=title, bg_map=bg_map, bg_on_data=bg_on_data, keep_bg=keep_bg,
+            output_file=output_file, axes=axes, figure=figure, categorical_cmap=categorical_cmap)
+
+    elif engine == 'plotly':
+        raise NotImplementedError()
+
+    else:
+        raise ValueError(f"Unknown plotting engine {engine}. "
+                         "Please use either 'matplotlib' or "
+                         "'plotly'.")
+
+    return fig
+
+
+def plot_surf_stat_map_custom(
+        surf_mesh, stat_map, hemi='left', view='lateral', engine='matplotlib', threshold=None, alpha=None, vmin=None,
+        vmax=None, cmap='cold_hot', colorbar=True, symmetric_cbar="auto", cbar_tick_format="auto", title=None,
+        title_font_size=18, output_file=None, axes=None, figure=None, avg_method=None,
+        bg_map=None, bg_on_data=False, keep_bg=False, categorical_cmap=False, **kwargs
+):
+    """Plot a stats map on a surface :term:`mesh` with optional background.    """
+    check_extensions(stat_map, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS)
+    loaded_stat_map = load_surf_data(stat_map)
+
+    # Call get_colorbar_and_data_ranges to derive symmetric vmin, vmax
+    # And colorbar limits depending on symmetric_cbar settings
+    cbar_vmin, cbar_vmax, vmin, vmax = get_colorbar_and_data_ranges(
+        loaded_stat_map,
+        vmin=vmin,
+        vmax=vmax,
+        symmetric_cbar=symmetric_cbar,
+    )
+    # Set to None the values that are not used by plotly
+    # to avoid warnings thrown by plot_surf
+    if engine == "plotly":
+        cbar_vmin = None
+        cbar_vmax = None
+
+    display = plot_surf_custom(
+        surf_mesh, surf_map=loaded_stat_map,
+        hemi=hemi,
+        view=view, engine=engine, avg_method=avg_method, threshold=threshold,
+        cmap=cmap, symmetric_cmap=True, colorbar=colorbar,
+        cbar_tick_format=cbar_tick_format, alpha=alpha,
+        vmax=vmax, vmin=vmin,
+        title=title, title_font_size=title_font_size, output_file=output_file,
+        axes=axes, figure=figure, cbar_vmin=cbar_vmin,
+        bg_map=bg_map, bg_on_data=bg_on_data, keep_bg=keep_bg,
+        cbar_vmax=cbar_vmax, categorical_cmap=categorical_cmap, **kwargs
+    )
+    return display
+
+
+def plot_surf_roi_custom(surf_mesh,
+                         roi_map,
+                         bg_map=None,
+                         hemi='left',
+                         view='lateral',
+                         engine='matplotlib',
+                         avg_method=None,
+                         threshold=1e-14,
+                         alpha=None,
+                         vmin=None,
+                         vmax=None,
+                         cmap=None,
+                         cbar_tick_format="auto",
+                         bg_on_data=False,
+                         title=None,
+                         title_font_size=18,
+                         output_file=None,
+                         axes=None,
+                         figure=None,
+                         darkness=0.7,
+                         categorical_cmap=False,
+                         **kwargs):
+    """Plot ROI on a surface :term:`mesh` with optional background."""
+
+    if engine == "matplotlib" and avg_method is None:
+        avg_method = "median"
+
+    # preload roi and mesh to determine vmin, vmax and give more useful error
+    # messages in case of wrong inputs
+    check_extensions(roi_map, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS)
+    roi = load_surf_data(roi_map)
+
+    idx_not_na = ~np.isnan(roi)
+    if vmin is None:
+        vmin = np.nanmin(roi)
+    if vmax is None:
+        vmax = 1 + np.nanmax(roi)
+
+    mesh = load_surf_mesh(surf_mesh)
+
+    if roi.ndim != 1:
+        raise ValueError('roi_map can only have one dimension but has '
+                         f'{roi.ndim} dimensions')
+    if roi.shape[0] != mesh[0].shape[0]:
+        raise ValueError('roi_map does not have the same number of vertices '
+                         'as the mesh. If you have a list of indices for the '
+                         'ROI you can convert them into a ROI map like this:\n'
+                         'roi_map = np.zeros(n_vertices)\n'
+                         'roi_map[roi_idx] = 1')
+    if (roi < 0).any():
+        warn(
+            (
+                'Negative values in roi_map will no longer be allowed in'
+                ' Nilearn version 0.13'
+            ),
+            DeprecationWarning,
+        )
+    if not np.array_equal(roi[idx_not_na], roi[idx_not_na].astype(int)):
+        warn(
+            (
+                'Non-integer values in roi_map will no longer be allowed in'
+                ' Nilearn version 0.13'
+            ),
+            DeprecationWarning,
+        )
+
+    if cbar_tick_format == "auto":
+        cbar_tick_format = "." if engine == "plotly" else "%i"
+
+    display = plot_surf_custom(mesh,
+                               surf_map=roi,
+                               bg_map=bg_map,
+                               hemi=hemi,
+                               view=view,
+                               engine=engine,
+                               avg_method=avg_method,
+                               threshold=threshold,
+                               cmap=cmap,
+                               cbar_tick_format=cbar_tick_format,
+                               alpha=alpha,
+                               bg_on_data=bg_on_data,
+                               vmin=vmin,
+                               vmax=vmax,
+                               title=title,
+                               title_font_size=title_font_size,
+                               output_file=output_file,
+                               axes=axes,
+                               figure=figure,
+                               darkness=darkness,
+                               categorical_cmap=categorical_cmap,
+                               **kwargs)
+
+    return display
 
 
 def plot(args):
@@ -176,14 +391,11 @@ def plot(args):
 
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    # labels, colors, names = nibabel.freesurfer.read_annot(HCP_ATLAS_LH)
-    # destrieux_atlas = datasets.fetch_atlas_surf_destrieux()
-
     rois_for_view = {
         "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital'],
         # , 'Left-Hippocampus'
         "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup'],
-        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor']  # , 'G_temporal_inf']
+        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor' , 'G_temporal_inf']
     }
 
     unique_rois = set()
@@ -191,8 +403,14 @@ def plot(args):
         unique_rois.update(r)
 
     label_names_dict = destrieux_label_names()
+    colors_without_yellow_paired = [0, 1, 2, 3, 8, 9, 11]
+    color_palette = [sns.color_palette("Paired")[i] for i in colors_without_yellow_paired]
+    colors_without_yellow_set2 = [0, 3, 7]
+    color_palette += [sns.color_palette("Set2")[i] for i in colors_without_yellow_set2]
+    assert len(unique_rois) <= len(color_palette), f"number of ROIS: {len(unique_rois)}"
+
     all_colors = {label_names_dict[r]: c for r, c in
-                  zip(unique_rois, sns.color_palette(n_colors=len(unique_rois) + 1)[1:])}
+                  zip(unique_rois, color_palette)}
 
     save_legend(all_colors, p_values_atlas_results_dir)
     # plt.savefig(path)
@@ -228,14 +446,22 @@ def plot(args):
             label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
             # colors = [atlas_colors[i][:4] / 255 for i in regions_indices]
             # colors = [(r, g, b, 0.5) for (r, g, b, a) in colors]
-            colors = [all_colors[l] for l in label_names]
+            # colors = [all_colors[l] for l in label_names]
 
-            scores_hemi = p_values[hemi]
-            fig = plotting.plot_surf_stat_map(
+            colors = [all_colors[label_names[regions_indices.index(i)]] if i in regions_indices else (0, 0, 0, 0) for i
+                      in range(np.nanmax(atlas_labels))]
+            cmap = ListedColormap(colors)
+            atlas_labels_current_view = np.array([l if l in regions_indices else np.nan for l in atlas_labels])
+            fig = plot_surf_roi_custom(
+                fsaverage[f"infl_{hemi}"], roi_map=atlas_labels_current_view,
+                bg_map=fsaverage[f"sulc_{hemi}"], hemi=hemi,
+                view=view, alpha=0.5, cmap=cmap,
+                bg_on_data=True, darkness=0.4, categorical_cmap=True,
+            )
+
+            plot_surf_stat_map_custom(
                 fsaverage[f"infl_{hemi}"],
-                scores_hemi,
-                bg_map=fsaverage[f"sulc_{hemi}"],
-                bg_on_data=True,
+                p_values[hemi],
                 hemi=hemi,
                 view=view,
                 colorbar=False,
@@ -243,14 +469,8 @@ def plot(args):
                 vmax=cbar_max,
                 vmin=cbar_min,
                 cmap=CMAP_POS_ONLY,
-                symmetric_cbar=False,
-                darkness=0.7,
-            )
-
-            plot_surf_contours_filled(
-                fsaverage[f"infl_{hemi}"], atlas_labels, labels=label_names,
-                levels=regions_indices, figure=fig,
-                legend=False, colors=colors, foreground_alpha=0.05
+                figure=fig,
+                keep_bg=True,
             )
 
             title = f"{view}_{hemi}"
@@ -263,8 +483,10 @@ def create_composite_image(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
 
-    images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi in HEMIS]
-    images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi in HEMIS]
+    images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+                      in HEMIS]
+    images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+                     in HEMIS]
 
     imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
     img_ventral = append_images(images=imgs_ventral, horizontally=False)
