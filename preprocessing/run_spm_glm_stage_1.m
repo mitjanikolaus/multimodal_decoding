@@ -10,6 +10,8 @@ function []=run_spm_glm_stage_1(subject)
     defaults.stats.maxmem = 2^34;
     defaults.stats.resmem = true;
 
+    maxNumCompThreads
+
     home = getenv('HOME');
     data_dir = [home,'/data/multimodal_decoding/fmri/betas/', subject, '/unstructured'];
     cd(data_dir)
