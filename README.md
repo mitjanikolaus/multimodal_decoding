@@ -103,6 +103,11 @@ python preprocessing/create_symlinks_beta_files.py
 python preprocessing/transform_to_surface.py
 ```
 
+## New Pilot Preprocessing
+
+```
+python preprocessing/fmri_preprocessing.py --subjects sub-01 --raw-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_BIDS/ --anatomical-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_Processing/ --output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/
+```
 
 ## DNN Feature extraction 
 

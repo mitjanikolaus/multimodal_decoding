@@ -16,7 +16,7 @@ import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_RAW_BIDS_DATA_DIR, \
-    FMRI_PREPROCESSED_DATA_DIR
+    FMRI_PREPROCESSED_DATA_DIR, FMRI_ANATOMICAL_DATA_DIR
 
 
 ##############
@@ -249,11 +249,11 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_fmri_mni_space_dir = os.path.join(FMRI_PREPROCESSED_MNI_DATA_DIR, subject)
-        datasink_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
-        raw_fmri_subj_data_dir = os.path.join(FMRI_RAW_BIDS_DATA_DIR, subject)
+        preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
+        datasink_dir = os.path.join(args.preprocessed_data_dir, "datasink")
+        raw_fmri_subj_data_dir = os.path.join(args.raw_data_dir, subject)
 
-        save_dir = os.path.join(FMRI_BETAS_DIR, subject, "unstructured")
+        save_dir = os.path.join(args.output_dir, subject, "unstructured")
 
         #####################
         # 1- fmri parameters:
@@ -446,6 +446,15 @@ def get_args():
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
     parser.add_argument("--stage", type=int, choices=[1, 2], required=True)
+
+    parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+
+    parser.add_argument("--anatomical-data-dir", type=str, default=FMRI_ANATOMICAL_DATA_DIR)
+
+    parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
+
 
     return parser.parse_args()
 

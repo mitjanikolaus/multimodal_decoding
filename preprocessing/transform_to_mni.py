@@ -17,9 +17,9 @@ def run(args):
         print(subject)
         nipype_subject_name = f'_subject_id_{subject}'
 
-        vol_dir = f'{FMRI_PREPROCESSED_DATA_DIR}/preprocess_workflow/{nipype_subject_name}'
+        vol_dir = f'{args.preprocessed_data_dir}/preprocess_workflow/{nipype_subject_name}'
         reg_file = f'{FREESURFER_BASE_DIR}/regfiles/{subject}/spm2fs.change-name.lta'
-        out_dir = f'{FMRI_PREPROCESSED_MNI_DATA_DIR}/{subject}'
+        out_dir = f'{args.output_dir}/{subject}'
 
         os.makedirs(out_dir, exist_ok=True)
 
@@ -42,6 +42,10 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+
+    parser.add_argument("--output-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+
 
     return parser.parse_args()
 
