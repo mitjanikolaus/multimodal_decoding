@@ -106,7 +106,22 @@ python preprocessing/transform_to_surface.py
 ## New Pilot Preprocessing
 
 ```
-python preprocessing/fmri_preprocessing.py --subjects sub-01 --raw-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_BIDS/ --anatomical-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_Processing/ --output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/
+python preprocessing/fmri_preprocessing.py --subjects sub-01 \
+--raw-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_BIDS/ \
+--anatomical-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_Processing/ \
+--output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/
+
+python preprocessing/transform_to_mni.py --subjects sub-01 \
+--preprocessed-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/ \
+--output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/mni305
+
+python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01 \
+--raw-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_BIDS/ \
+--preprocessed-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/ \
+--mni-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/mni305 \
+--anatomical-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_Processing/
+--output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/betas
+
 ```
 
 ## DNN Feature extraction 
