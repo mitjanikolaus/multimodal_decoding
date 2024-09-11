@@ -21,7 +21,7 @@ from nipype.interfaces import matlab
 from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
     FMRI_ANATOMICAL_DATA_DIR
 
-matlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
+matlab.MatlabCommand.set_default_paths(os.path.expanduser(os.path.join('~','apps','spm12')))
 
 
 def print_session_names(sessions):
