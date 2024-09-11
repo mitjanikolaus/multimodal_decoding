@@ -9,7 +9,6 @@
 import argparse
 import os
 import numpy as np
-from os.path import join as opj
 from nipype.interfaces.spm import SliceTiming, Realign, Coregister
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
@@ -17,11 +16,12 @@ from nipype.pipeline.engine import Workflow, Node
 from nipype import MapNode
 from nipype.algorithms.misc import Gunzip
 
-import nipype.interfaces.matlab as mlab
+from nipype.interfaces import matlab
 
-from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR
+from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
+    FMRI_ANATOMICAL_DATA_DIR
 
-mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
+matlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
 
 
 def print_session_names(sessions):
@@ -45,12 +45,11 @@ def run(args):
     print()
 
     # list subject sessions
-    data_root = FMRI_RAW_BIDS_DATA_DIR
-    anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
+    data_root = args.raw_data_dir
+    anat_root = args.anatomical_data_dir
     sessions = dict()
     for subj in subjects:
-        sess = []
-        folders = os.listdir(opj(data_root, subj))
+        folders = os.listdir(os.path.join(data_root, subj))
         sessions[subj] = sorted(folders)
     print_session_names(sessions)
 
@@ -59,10 +58,10 @@ def run(args):
     for subj in subjects:
         for ses in sessions[subj]:
             rns = []
-            files = os.listdir(opj(data_root, subj, ses, 'func'))
+            files = os.listdir(os.path.join(data_root, subj, ses, 'func'))
             for file in files:
                 if file.endswith("bold.nii.gz"):
-                    rns.append(opj(data_root, subj, ses, 'func', file[:-12]))
+                    rns.append(os.path.join(data_root, subj, ses, 'func', file[:-12]))
             runs[(subj, ses)] = sorted(rns)
     print_run_names(runs)
 
@@ -125,8 +124,8 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = opj('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
-    func_file = opj('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
+    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
+    func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
         SelectFiles({'anat': anat_file}, base_directory=anat_root), name="selectfiles_anat"
@@ -137,11 +136,11 @@ def run(args):
     )
 
     # Working directory
-    workflow_dir = FMRI_PREPROCESSED_DATA_DIR
-    os.makedirs(workflow_dir, exist_ok=True)
+    print(f"\nSelected output directory: {args.output_dir}")
+    os.makedirs(args.output_dir, exist_ok=True)
 
     # Datasink - creates an extra output folder for storing the desired files
-    datasink_node = Node(DataSink(base_directory=workflow_dir, container='datasink'), name="datasink")
+    datasink_node = Node(DataSink(base_directory=args.output_dir, container='datasink'), name="datasink")
 
     # Remove nipype's prefix for the files and folders in the datasink
     substitutions = [('_subject_id_', ''), ('_session_id_', '')]
@@ -152,7 +151,7 @@ def run(args):
     #################################################
     # create the workflow
     preproc = Workflow(name='preprocess_workflow')
-    preproc.base_dir = workflow_dir
+    preproc.base_dir = args.output_dir
     # preproc.config['execution'] = {} # you can add configurations here
 
     # connect info source to file selectors
@@ -193,6 +192,10 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--anatomical-data-dir", type=str, default=FMRI_ANATOMICAL_DATA_DIR)
+
+    parser.add_argument("--output-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
     return parser.parse_args()
 
