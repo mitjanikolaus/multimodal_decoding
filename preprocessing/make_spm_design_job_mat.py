@@ -5,15 +5,12 @@
 ###########################################
 import argparse
 
-from numpy.lib.function_base import copy
-from scipy.io import matlab, savemat, loadmat
+from scipy.io import savemat
 import numpy as np
 from numpy.core.records import fromarrays
 import os
 import nibabel as nib
 from glob import glob
-import csv
-import pickle
 from nipype.interfaces.base import Bunch
 import pandas as pd
 
