@@ -238,14 +238,14 @@ def load_event_files_stage2(tsv_files, task_name, log_files=None):
 N_REALIGNMENT_AXES = 6
 REALIGNMENT_AXES_IDX = range(1, N_REALIGNMENT_AXES + 1)
 
+
 def define_multi_regressors(realign_files):
     n_runs = len(realign_files)
-
     reg_names = [f'UR{i}' for i in range(1, n_runs)]  # run regressors (1 less than total number of runs)
     reg_names += [f'Realign{i}' for i in REALIGNMENT_AXES_IDX]
 
     run_arrays = []
-    realign_arrays = [[]] * N_REALIGNMENT_AXES
+    realign_arrays = [[] for _ in range(N_REALIGNMENT_AXES)]
     total_size = 0
     for ridx in range(n_runs):
         realign = np.loadtxt(realign_files[ridx])
@@ -263,8 +263,14 @@ def define_multi_regressors(realign_files):
     for aidx in range(N_REALIGNMENT_AXES):
         realign_arrays[aidx] = np.concatenate(realign_arrays[aidx])[:, np.newaxis]
 
-    reg_arrays = np.array(run_arrays+realign_arrays, dtype=object)
-    return fromarrays([reg_names, reg_arrays], names=['name', 'val'])
+    reg_arrays = np.concatenate((run_arrays, realign_arrays))
+
+    # fill an empty np array of type object, otherwise the size check for the rec array doesn't pass
+    x = np.empty(len(reg_arrays), dtype=object)
+    for i in range(len(reg_arrays)):
+        x[i] = reg_arrays[i]
+
+    return fromarrays([reg_names, x], names=['name', 'val'])
 
 
 def run(args):
@@ -314,7 +320,7 @@ def run(args):
         mthresh = 0.8
 
         # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject)
+        mask = get_graymatter_mask_path(subject, preprocessed_data_dir=args.preprocessed_data_dir)
 
         # serial correlation (don't change)
         CVI = 'AR(1)'
