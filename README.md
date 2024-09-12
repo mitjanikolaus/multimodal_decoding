@@ -123,6 +123,8 @@ python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01 \
 --output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/betas \
 --task-name video_demo
 
+matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_new_pilot.m');exit;"  -logfile matlab_output_new_pilot.txt
+
 ```
 
 ## DNN Feature extraction 
