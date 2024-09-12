@@ -19,9 +19,10 @@ from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI
     FMRI_PREPROCESSED_DATA_DIR, FMRI_ANATOMICAL_DATA_DIR
 
 
-##############
-# EVENT Loader
-##############
+TASK_COCO = "coco"
+TASK_NEW_PILOT = "video_demo"
+
+
 def get_condition_names(df, glm_stage):
     r"""
     determines the condition name for each trial (each row of df)
@@ -51,7 +52,7 @@ def get_condition_names(df, glm_stage):
                 if trial['trial_type'] == 2 and trial['train_test'] == 2:
                     conditions.append(f"test_caption_{trial['condition_name']}")
             else:
-                raise Exception(f'Uncondition Trial: {trial}')
+                raise Exception(f'Unknown condition for trial: {trial}')
     elif glm_stage == 2:
         for index, trial in df.iterrows():
             if trial['stim_name'] == 'Fix':
@@ -75,11 +76,38 @@ def get_condition_names(df, glm_stage):
                 if trial['trial_type'] == 2 and trial['train_test'] == 2:
                     conditions.append('null')
             else:
-                raise Exception(f'Uncondition Trial: {trial}')
+                raise Exception(f'Unknown condition for trial: {trial}')
     return conditions
 
 
-def preprocess_event_files(event_files, glm_stage):
+def get_condition_names_pilot(df, glm_stage):
+    r"""
+    determines the condition name for each trial (each row of df)
+    """
+    df = df.reset_index()
+    conditions = []
+    if glm_stage == 1:
+        for index, trial in df.iterrows():
+            if trial['trial_type'] == 0:
+                assert trial['stim_name'] == 'Fix'
+                conditions.append('fixation')
+            elif trial['one_back'] != 0:
+                conditions.append('oneback')
+            elif trial['trial_type'] == 1: # test img
+                conditions.append(f"pilot_test_image_{trial['ID']}")
+            elif trial['trial_type'] == 2: # filler img
+                conditions.append(f"pilot_filler_image_{trial['ID']}")
+            elif trial['trial_type'] == 10: # test caption
+                conditions.append(f"pilot_test_caption_{trial['ID']}")
+            elif trial['trial_type'] == 20: # filler caption
+                conditions.append(f"pilot_filler_caption_{trial['ID']}")
+
+    elif glm_stage == 2:
+        raise Exception(f'No stage 2 for pilot')
+    return conditions
+
+
+def preprocess_event_files(event_files, glm_stage, task_name):
     r"""
     loads all event tsv files into a single pandas dataframe.
     - fixes onset times
@@ -92,15 +120,18 @@ def preprocess_event_files(event_files, glm_stage):
     for r_idx, event_file in enumerate(event_files):
         df = pd.read_csv(event_file, sep='\t')
         df['onset'] += onset_shift
-        df['glm_condition'] = get_condition_names(df, glm_stage)
+        if task_name == TASK_COCO:
+            df['glm_condition'] = get_condition_names(df, glm_stage)
+        elif task_name == TASK_NEW_PILOT:
+            df['glm_condition'] = get_condition_names_pilot(df, glm_stage)
+        else:
+            raise RuntimeError("Unknown task: ", task_name)
 
         if glm_stage == 1:
             run_reg_data = np.zeros((df.shape[0], len(run_reg_names)))
             if r_idx < len(run_reg_names):
                 run_reg_data[:, r_idx] = 1
             run_reg_df = pd.DataFrame(run_reg_data, columns=run_reg_names)
-            # for reg_idx, reg_name in enumerate(run_reg_names):
-            #     df[reg_name] = run_reg_data[:,reg_idx]
             df = pd.concat([df, run_reg_df], axis=1)
 
         onset_shift = df['onset'].iloc[-1] + df['duration'].iloc[-1]  # new onset_shift for the next run
@@ -110,10 +141,11 @@ def preprocess_event_files(event_files, glm_stage):
     return pd.concat(data, ignore_index=True)
 
 
-def load_event_files_stage1(tsv_files, log_file=None):
-    events_df = preprocess_event_files(tsv_files, glm_stage=1)
+def load_event_files_stage1(tsv_files, task_name, log_file=None):
+    events_df = preprocess_event_files(tsv_files, glm_stage=1, task_name=task_name)
     condition_names = sorted(list(set(events_df['glm_condition'])))
-    condition_names.remove('null')
+    if 'null' in condition_names:
+        condition_names.remove('null')
 
     print(condition_names)
     print("Number of conditions:", len(condition_names))
@@ -150,11 +182,11 @@ def load_event_files_stage1(tsv_files, log_file=None):
     return subject_info
 
 
-def load_event_files_stage2(tsv_files, log_files=None):
+def load_event_files_stage2(tsv_files, task_name, log_files=None):
     subject_infos = []
 
     for tsvf_idx, tsvf in enumerate(tsv_files):
-        events_df = preprocess_event_files([tsvf], glm_stage=2)
+        events_df = preprocess_event_files([tsvf], glm_stage=2, task_name=task_name)
         condition_names = sorted(list(set(events_df['glm_condition'])))
         condition_names.remove('null')
 
@@ -203,20 +235,22 @@ def load_event_files_stage2(tsv_files, log_files=None):
         subject_infos.append(subject_info)
     return subject_infos
 
+N_REALIGNMENT_AXES = 6
+REALIGNMENT_AXES_IDX = range(1, N_REALIGNMENT_AXES + 1)
 
-def multi_regressors(realign_files):
+def define_multi_regressors(realign_files):
     n_runs = len(realign_files)
 
     reg_names = [f'UR{i}' for i in range(1, n_runs)]  # run regressors (1 less than total number of runs)
-    reg_names += [f'Realign{i}' for i in range(1, 7)]  # 6 realignment axes
+    reg_names += [f'Realign{i}' for i in REALIGNMENT_AXES_IDX]
 
     run_arrays = []
-    realign_arrays = [[] for i in range(1, 7)]
+    realign_arrays = [[]] * N_REALIGNMENT_AXES
     total_size = 0
     for ridx in range(n_runs):
         realign = np.loadtxt(realign_files[ridx])
         total_size += realign.shape[0]
-        for aidx in range(6):
+        for aidx in range(N_REALIGNMENT_AXES):
             realign_arrays[aidx].append(realign[:, aidx])
 
     run_start = 0
@@ -226,11 +260,10 @@ def multi_regressors(realign_files):
         run_start += realign_arrays[0][ridx].shape[0]
         run_arrays.append(arr)
 
-    for aidx in range(6):
+    for aidx in range(N_REALIGNMENT_AXES):
         realign_arrays[aidx] = np.concatenate(realign_arrays[aidx])[:, np.newaxis]
 
-    reg_arrays = np.array([[]] + run_arrays + realign_arrays, dtype=object)
-    reg_arrays = reg_arrays[1:].astype(dtype=object, copy=True)
+    reg_arrays = np.array(run_arrays+realign_arrays, dtype=object)
     return fromarrays([reg_names, reg_arrays], names=['name', 'val'])
 
 
@@ -327,37 +360,42 @@ def run(args):
             event_files = []
             realign_files = []
             if subsample_sessions:
-                # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
-                session_list = subsample_sessions
+                sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
+                session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
             else:
-                n_sessions = len(glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*')))
-                session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
-            for sess_idx in session_list:
-                sess_dir = os.path.join(preprocessed_fmri_mni_space_dir, f'ses-{sess_idx}')
-                n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
-                for run_idx in range(1, n_runs + 1):
-                    run_file = os.path.join(sess_dir,
-                                            f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
-                    event_files.append(os.path.join(raw_fmri_subj_data_dir, f"ses-{sess_idx}", "func",
-                                                    f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
-                    realign_files.append(
-                        os.path.join(
-                            datasink_dir, 'realignment', subject, f'ses-{sess_idx}',
-                            f'rp_a{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.txt'
-                        )
+                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
+                sessions = [path.split(os.sep)[-1] for path in session_dirs]
+            for session, session_dir in zip(sessions, session_dirs):
+                n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+                runs = [f'run-{id:02d}' for id in range(1, n_runs+1)]
+                for run in runs:
+                    run_file = os.path.join(
+                        session_dir,
+                        f'rara{subject}_{session}_task-{args.task_name}_{run}_bold.nii'
                     )
+                    event_file = os.path.join(
+                        raw_fmri_subj_data_dir, session, "func",
+                        f"{subject}_{session}_task-{args.task_name}_{run}_events.tsv"
+                    )
+                    event_files.append(event_file)
+                    realign_file = os.path.join(
+                        datasink_dir, 'realignment', subject, session,
+                        f'rp_a{subject}_{session}_task-{args.task_name}_{run}_bold.txt'
+                    )
+                    realign_files.append(realign_file)
                     run_nii = nib.load(run_file)
-                    run_size = run_nii.shape[-1]
-                    for s in range(1, run_size + 1):
-                        scans.append(f"{run_file},{s}")
+                    n_images = run_nii.shape[-1]
+                    scan_names = [f"{run_file},{s}" for s in range(1, n_images + 1)]  # matlab indexing starts with 1
+                    scans.extend(scan_names)
             fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
 
             # multi regressors
-            fmri_spec['sess']['regress'] = multi_regressors(realign_files)
+            fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
 
             # conditions
             conditions = load_event_files_stage1(
                 event_files,
+                task_name=args.task_name,
                 log_file=os.path.join(save_dir, 'dmlog_stage_1.tsv'))
 
             fmri_spec['sess']['cond'] = fromarrays(
@@ -392,18 +430,19 @@ def run(args):
             for sess_idx in session_list:
                 sess_dir = os.path.join(preprocessed_fmri_mni_space_dir, f'ses-{sess_idx}')
                 n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
-                for run_idx in range(1, n_runs + 1):
+                runs = [f'run-{id:02d}' for id in range(1, n_runs+1)]
+                for run in runs:
                     run_scans = []
                     run_file = os.path.join(sess_dir,
-                                            f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
+                                            f'rara{subject}_ses-{sess_idx}_task-{args.task_name}_{run}_bold.nii')
                     res_file = save_dir
                     event_files.append(os.path.join(raw_fmri_subj_data_dir, f"ses-{sess_idx}", "func",
-                                                    f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
+                                                    f"{subject}_ses-{sess_idx}_task-{args.task_name}_{run}_events.tsv"))
                     run_nii = nib.load(run_file)
-                    run_size = run_nii.shape[-1]
-                    for s in range(1, run_size + 1):
+                    n_images = run_nii.shape[-1]
+                    for s in range(1, n_images + 1):
                         run_scans.append(os.path.join(res_file, f'Res_{(res_start + s):04d}.nii'))
-                    res_start += run_size
+                    res_start += n_images
                     scans.append(run_scans)
 
                     fmri_spec = get_base_fmri_spec()
@@ -421,6 +460,7 @@ def run(args):
             # conditions
             all_conditions = load_event_files_stage2(
                 event_files,
+                task_name=args.task_name,
                 log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs])
 
             for spec_idx, conditions in enumerate(all_conditions):
@@ -451,10 +491,11 @@ def get_args():
     parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
     parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
 
+    parser.add_argument("--task-name", type=str, default="coco", choices=[TASK_COCO, TASK_NEW_PILOT])
+
     parser.add_argument("--anatomical-data-dir", type=str, default=FMRI_ANATOMICAL_DATA_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
-
 
     return parser.parse_args()
 

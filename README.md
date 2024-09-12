@@ -120,7 +120,8 @@ python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01 \
 --preprocessed-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/ \
 --mni-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/mni305 \
 --anatomical-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_Processing/ \
---output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/betas
+--output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/betas \
+--task-name video_demo
 
 ```
 
