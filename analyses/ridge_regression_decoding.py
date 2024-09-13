@@ -13,8 +13,9 @@ from glob import glob
 import pickle
 from tqdm import trange
 
+from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
-    VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
+    VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
     LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS
 
 AVG_FEATS = 'avg'
@@ -272,8 +273,7 @@ def get_fmri_data_paths(subject, mode):
 def get_fmri_voxel_data(subject, mode):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
 
-    gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
-    gray_matter_mask_img = nib.load(gray_matter_mask_path)
+    gray_matter_mask_img = nib.load(get_graymatter_mask_path(subject))
     gray_matter_mask_data = gray_matter_mask_img.get_fdata()
     gray_matter_mask = gray_matter_mask_data == 1
     print(f"Gray matter mask size: {gray_matter_mask.sum()}")
