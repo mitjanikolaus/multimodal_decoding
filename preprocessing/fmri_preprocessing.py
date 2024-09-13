@@ -93,7 +93,6 @@ def run(args):
     ##############
     # Gunzip to unpack tar.gz
     gunzip_func_node = MapNode(Gunzip(), iterfield=['in_file'], name='gunzip_func')
-    # gunzip_anat_node = Node(Gunzip(), name = 'gunzip_anat')   # new corrected anat files are not gz
 
     # Slice timing correction
     stc_node = Node(
@@ -161,7 +160,6 @@ def run(args):
     preproc.connect([(infosrc_subjects, selectfiles_sessions, [('subject_id', 'subject_id')])])
 
     # connect file selectors to gunzip
-    # preproc.connect([(selectfiles_anat, gunzip_anat_node, [('anat', 'in_file')])])
     preproc.connect([(selectfiles_sessions, gunzip_func_node, [('func', 'in_file')])])
 
     # connect gunzip to STC
@@ -174,7 +172,6 @@ def run(args):
     preproc.connect([(realign_node, coregister_node, [('mean_image', 'source')])])
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
-    # preproc.connect([(gunzip_anat_node, coregister_node, [('out_file', 'target')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
