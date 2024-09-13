@@ -8,91 +8,55 @@ from tqdm import tqdm
 
 from utils import SUBJECTS, FMRI_BETAS_DIR
 
+SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank', 'pilot_image',
+          'pilot_caption', 'pilot_filler_image', 'pilot_filler_caption']
+
+SUFFIX = "*bf(1)"
+
+
+def get_subdir(split_name, beta_dir):
+    subdir = os.path.join(beta_dir, f"betas_{split_name}")
+    if not os.path.isdir(subdir):
+        os.makedirs(subdir)
+    return subdir
+
 
 def create_symlinks_for_beta_files(beta_dir):
     r"""
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
     """
-    beta_file_addresses = list(
-        sorted(glob(os.path.join(beta_dir, f'unstructured', '**', 'beta_*.nii'), recursive=True)))
-    subdirs = {
-        'train_images': os.path.join(beta_dir, f'betas_train_images'),
-        'test_images': os.path.join(beta_dir, f'betas_test_images'),
-        'train_captions': os.path.join(beta_dir, f'betas_train_captions'),
-        'test_captions': os.path.join(beta_dir, f'betas_test_captions'),
-        'imagery': os.path.join(beta_dir, f'betas_imagery'),
-        'blank': os.path.join(beta_dir, f'betas_blank'),
-    }
-
-    for dir in subdirs.values():
-        if os.path.exists(dir):
-            raise RuntimeError(f"Output dir already exists, please remove it before running this script: ", dir)
-        os.mkdir(dir)
+    beta_base_dir = os.path.join(beta_dir, 'unstructured')
+    beta_file_addresses = sorted(glob(os.path.join(beta_base_dir, '**', 'beta_*.nii'), recursive=True))
 
     all_slink_names = set()
-    for beta_address in tqdm(beta_file_addresses):
-        beta_file = nib.load(beta_address)
-        beta_name = str(beta_file.header['descrip'].astype(str))
+    for beta_path in tqdm(beta_file_addresses):
+        beta_file = nib.load(beta_path)
+        beta_name = beta_file.header['descrip'].item().decode()
 
-        slink_name = None
+        for split_name in SPLITS:
+            if split_name in beta_name:
+                if split_name == 'blank':
+                    slink_name = os.path.join(get_subdir(split_name, beta_dir), f"beta_blank.nii")
+                else:
+                    stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
+                    prefix = 'I' if 'image' in split_name else 'C' if 'caption' in split_name else ''
+                    slink_name = os.path.join(get_subdir(split_name, beta_dir), f"beta_{prefix}{stim_id:06d}.nii")
 
-        index = beta_name.find('blank')
-        if index != -1:
-            slink_name = os.path.join(subdirs['blank'], f"beta_blank.nii")
+                if slink_name in all_slink_names:
+                    raise Exception(f'slink already defined: {slink_name}')
+                all_slink_names.add(slink_name)
+                beta_relative_path = f"..{os.sep}{beta_path.replace(beta_dir, '')}"
+                os.symlink(beta_relative_path, slink_name)
 
-        index = beta_name.find('imagery_')
-        if index != -1:
-            if slink_name is not None:
-                raise Exception(f'slink already defined: {slink_name}')
-            endidx = beta_name.find('*bf(1)')
-            slink_name = os.path.join(subdirs['imagery'], f"beta_{beta_name[index:endidx]}.nii")
-
-        index = beta_name.find('test_image')
-        if index != -1:
-            if slink_name is not None:
-                raise Exception(f'slink already defined: {slink_name}')
-            endidx = beta_name.find('*bf(1)')
-            stim_id = int(beta_name[index + 11:endidx])
-            slink_name = os.path.join(subdirs['test_images'], f"beta_I{stim_id:06d}.nii")
-
-        index = beta_name.find('train_image')
-        if index != -1:
-            if slink_name is not None:
-                raise Exception(f'slink already defined: {slink_name}')
-            endidx = beta_name.find('*bf(1)')
-            stim_id = int(beta_name[index + 12:endidx])
-            slink_name = os.path.join(subdirs['train_images'], f"beta_I{stim_id:06d}.nii")
-
-        index = beta_name.find('test_caption')
-        if index != -1:
-            if slink_name is not None:
-                raise Exception(f'slink already defined: {slink_name}')
-            endidx = beta_name.find('*bf(1)')
-            stim_id = int(beta_name[index + 13:endidx])
-            slink_name = os.path.join(subdirs['test_captions'], f"beta_C{stim_id:06d}.nii")
-
-        index = beta_name.find('train_caption')
-        if index != -1:
-            if slink_name is not None:
-                raise Exception(f'slink already defined: {slink_name}')
-            endidx = beta_name.find('*bf(1)')
-            stim_id = int(beta_name[index + 14:endidx])
-            slink_name = os.path.join(subdirs['train_captions'], f"beta_C{stim_id:06d}.nii")
-
-        if slink_name:
-            if slink_name in all_slink_names:
-                raise Exception(f'slink already defined: {slink_name}')
-            all_slink_names.add(slink_name)
-            print(slink_name)
-            os.symlink(beta_address, slink_name)
-
+    print(all_slink_names)
     print(f"Created symbolic links for {len(all_slink_names)} beta files")
 
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     return parser.parse_args()
 
@@ -100,4 +64,4 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
     for subject in args.subjects:
-        create_symlinks_for_beta_files(os.path.join(FMRI_BETAS_DIR, subject))
+        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject))
