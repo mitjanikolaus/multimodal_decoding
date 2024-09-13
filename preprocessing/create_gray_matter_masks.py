@@ -16,6 +16,8 @@ def convert_mask_to_mni(mask_file, subject, out_file):
     if result_code != 0:
         raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
     print(f"Saved MNI mask to {out_file}")
+    mask_mni = nib.load(out_file)
+    print(f"MNI space gray matter mask size: {mask_mni.get_fdata().sum()}")
 
 
 def get_graymatter_mask_path(subject, data_dir=FMRI_GRAYMATTER_MASKS_DATA_DIR):
@@ -35,6 +37,7 @@ def run(args):
         c1_img_data = c1_img.get_fdata()
         data_masked = c1_img_data.copy()
         data_masked[data_masked > 0] = 1
+        print(f"Subject-space gray matter mask size: {data_masked.sum()}")
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
         mask_image_path = os.path.join(args.output_dir, subject, f'mask_orig.nii')
