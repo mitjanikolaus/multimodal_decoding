@@ -3,7 +3,8 @@ import argparse
 import os
 import nibabel as nib
 
-from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_ANATOMICAL_DATA_DIR
+from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_ANATOMICAL_DATA_DIR, \
+    FMRI_GRAYMATTER_MASKS_DATA_DIR
 
 
 def convert_mask_to_mni(mask_file, subject, out_file):
@@ -17,8 +18,8 @@ def convert_mask_to_mni(mask_file, subject, out_file):
     print(f"Saved MNI mask to {out_file}")
 
 
-def get_graymatter_mask_path(subject, preprocessed_data_dir=FMRI_PREPROCESSED_DATA_DIR):
-    mni_mask_image_path = os.path.join(preprocessed_data_dir, 'graymatter_masks', subject, f'mask.nii')
+def get_graymatter_mask_path(subject, preprocessed_data_dir=FMRI_GRAYMATTER_MASKS_DATA_DIR):
+    mni_mask_image_path = os.path.join(preprocessed_data_dir, subject, f'mask.nii')
     return mni_mask_image_path
 
 
@@ -36,7 +37,7 @@ def run(args):
         data_masked[data_masked > 0] = 1
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
-        mask_image_path = os.path.join(args.output_dir, 'graymatter_masks', subject, f'mask_orig.nii')
+        mask_image_path = os.path.join(args.output_dir, subject, f'mask_orig.nii')
         os.makedirs(os.path.dirname(mask_image_path), exist_ok=True)
         nib.save(mask_img, mask_image_path)
         print(f"Saved subject-space mask to {mask_image_path}")
@@ -49,7 +50,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--anatomical-data-dir", type=str, default=FMRI_ANATOMICAL_DATA_DIR)
-    parser.add_argument("--output-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--output-dir", type=str, default=FMRI_GRAYMATTER_MASKS_DATA_DIR)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 

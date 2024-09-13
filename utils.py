@@ -26,6 +26,7 @@ FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
 FMRI_RAW_BIDS_PILOT_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids_pilot")
 
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
+FMRI_GRAYMATTER_MASKS_DATA_DIR = os.path.join(FMRI_DATA_DIR, "graymatter_masks")
 FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni305")
 FMRI_SURFACE_LEVEL_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
