@@ -108,7 +108,6 @@ python preprocessing/transform_to_surface.py
 ```
 python preprocessing/fmri_preprocessing.py --subjects sub-01 \
 --raw-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_BIDS/ \
---anatomical-data-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/VIDEO_DEMO_Processing/ \
 --output-dir ~/data/multimodal_decoding/SEMREPS_PILOT_VIDEO_DEMO/preprocessed/
 
 python preprocessing/transform_to_mni.py --subjects sub-01 \
