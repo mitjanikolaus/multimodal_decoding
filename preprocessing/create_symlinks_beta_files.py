@@ -47,7 +47,7 @@ def create_symlinks_for_beta_files(beta_dir):
                     raise Exception(f'slink already defined: {slink_name}')
                 all_slink_names.add(slink_name)
                 beta_relative_path = beta_path.replace(beta_dir, '')
-                if beta_relative_path.startswith(os.sep):
+                if not beta_relative_path.startswith(os.sep):
                     beta_relative_path = os.sep + beta_relative_path
                 beta_relative_path = f"..{beta_relative_path}"
                 os.symlink(beta_relative_path, slink_name)
