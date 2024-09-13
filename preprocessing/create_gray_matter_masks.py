@@ -35,11 +35,11 @@ def run(args):
         data_masked[data_masked > 0] = 1
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
-        mask_image_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, 'graymatter_masks', subject, f'mask_orig.nii')
+        mask_image_path = os.path.join(args.output_dir, 'graymatter_masks', subject, f'mask_orig.nii')
         os.makedirs(os.path.dirname(mask_image_path), exist_ok=True)
         nib.save(mask_img, mask_image_path)
 
-        mni_mask_image_path = get_graymatter_mask_path(subject, args.preprocessed_data_dir)
+        mni_mask_image_path = get_graymatter_mask_path(subject, args.output_dir)
         convert_mask_to_mni(mask_image_path, subject, mni_mask_image_path)
 
 
@@ -47,7 +47,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--anatomical-data-dir", type=str, default=FMRI_ANATOMICAL_DATA_DIR)
-    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--output-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 

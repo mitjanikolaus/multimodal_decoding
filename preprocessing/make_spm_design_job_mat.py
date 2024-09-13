@@ -16,7 +16,7 @@ import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_RAW_BIDS_DATA_DIR, \
-    FMRI_PREPROCESSED_DATA_DIR, FMRI_ANATOMICAL_DATA_DIR
+    FMRI_PREPROCESSED_DATA_DIR
 
 
 TASK_COCO = "coco"
@@ -498,8 +498,6 @@ def get_args():
     parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
 
     parser.add_argument("--task-name", type=str, default="coco", choices=[TASK_COCO, TASK_NEW_PILOT])
-
-    parser.add_argument("--anatomical-data-dir", type=str, default=FMRI_ANATOMICAL_DATA_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 
