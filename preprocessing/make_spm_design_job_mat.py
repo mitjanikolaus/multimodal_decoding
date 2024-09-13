@@ -16,8 +16,7 @@ import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_RAW_BIDS_DATA_DIR, \
-    FMRI_PREPROCESSED_DATA_DIR
-
+    FMRI_PREPROCESSED_DATA_DIR, FMRI_GRAYMATTER_MASKS_DATA_DIR
 
 TASK_COCO = "coco"
 TASK_NEW_PILOT = "video_demo"
@@ -289,7 +288,7 @@ def run(args):
     for subject in args.subjects:
         print(subject)
         preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
-        datasink_dir = os.path.join(args.preprocessed_data_dir, "datasink")
+        realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
         raw_fmri_subj_data_dir = os.path.join(args.raw_data_dir, subject)
 
         save_dir = os.path.join(args.output_dir, subject, "unstructured")
@@ -320,7 +319,7 @@ def run(args):
         mthresh = 0.8
 
         # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject, preprocessed_data_dir=args.preprocessed_data_dir)
+        mask = get_graymatter_mask_path(subject, data_dir=args.graymatter_masks_dir)
 
         # serial correlation (don't change)
         CVI = 'AR(1)'
@@ -385,7 +384,7 @@ def run(args):
                     )
                     event_files.append(event_file)
                     realign_file = os.path.join(
-                        datasink_dir, 'realignment', subject, session,
+                        realignment_data_dir, subject, session,
                         f'rp_a{subject}_{session}_task-{args.task_name}_{run}_bold.txt'
                     )
                     realign_files.append(realign_file)
@@ -496,6 +495,8 @@ def get_args():
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
     parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
     parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+
+    parser.add_argument("--graymatter-masks-dir", type=str, default=FMRI_GRAYMATTER_MASKS_DATA_DIR)
 
     parser.add_argument("--task-name", type=str, default="coco", choices=[TASK_COCO, TASK_NEW_PILOT])
 

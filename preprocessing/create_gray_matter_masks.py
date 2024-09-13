@@ -18,8 +18,8 @@ def convert_mask_to_mni(mask_file, subject, out_file):
     print(f"Saved MNI mask to {out_file}")
 
 
-def get_graymatter_mask_path(subject, preprocessed_data_dir=FMRI_GRAYMATTER_MASKS_DATA_DIR):
-    mni_mask_image_path = os.path.join(preprocessed_data_dir, subject, f'mask.nii')
+def get_graymatter_mask_path(subject, data_dir=FMRI_GRAYMATTER_MASKS_DATA_DIR):
+    mni_mask_image_path = os.path.join(data_dir, subject, f'mask.nii')
     return mni_mask_image_path
 
 
