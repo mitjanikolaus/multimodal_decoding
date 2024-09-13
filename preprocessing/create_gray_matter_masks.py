@@ -26,6 +26,8 @@ def run(args):
         c1_img_data = c1_img.get_fdata()
         data_masked = c1_img_data.copy()
         data_masked[data_masked > 0] = 1
+        print(f"Subject-space gray matter mask size: {data_masked.sum()}")
+
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
         mask_image_path = get_graymatter_mask_path(subject, mni=False)
