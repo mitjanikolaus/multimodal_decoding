@@ -22,87 +22,83 @@ TASK_COCO = "coco"
 TASK_NEW_PILOT = "video_demo"
 
 
-def get_condition_names(df, glm_stage):
-    r"""
-    determines the condition name for each trial (each row of df)
-    """
-    df = df.reset_index()
+def get_condition_names(trial, glm_stage):
     conditions = []
     if glm_stage == 1:
-        for index, trial in df.iterrows():
-            if trial['stim_name'] == 'Fix':
-                if trial['trial_type'] == -1:
-                    conditions.append('blank')
-                elif trial['trial_type'] == 0:
-                    conditions.append('fixation')
-            elif trial['stim_name'] == 'ImgInst':
-                conditions.append('imginst')
-            elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
-                conditions.append(f"imagery_{trial['imagery_scene']}")
-            elif trial['one_back'] != 0:
-                conditions.append('oneback')
-            elif trial['condition_name'] != 0:
-                if trial['trial_type'] == 1 and trial['train_test'] == 1:
-                    conditions.append('null')
-                if trial['trial_type'] == 2 and trial['train_test'] == 1:
-                    conditions.append('null')
-                if trial['trial_type'] == 1 and trial['train_test'] == 2:
-                    conditions.append(f"test_image_{trial['condition_name']}")
-                if trial['trial_type'] == 2 and trial['train_test'] == 2:
-                    conditions.append(f"test_caption_{trial['condition_name']}")
-            else:
-                raise Exception(f'Unknown condition for trial: {trial}')
+        if trial['stim_name'] == 'Fix':
+            if trial['trial_type'] == -1:
+                conditions.append('blank')
+            elif trial['trial_type'] == 0:
+                conditions.append('fixation')
+        elif trial['stim_name'] == 'ImgInst':
+            conditions.append('imginst')
+        elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
+            conditions.append(f"imagery_{trial['imagery_scene']}")
+        elif trial['one_back'] != 0:
+            conditions.append('oneback')
+        elif trial['condition_name'] != 0:
+            if trial['trial_type'] == 1 and trial['train_test'] == 1:
+                conditions.append('null')
+            if trial['trial_type'] == 2 and trial['train_test'] == 1:
+                conditions.append('null')
+            if trial['trial_type'] == 1 and trial['train_test'] == 2:
+                conditions.append(f"test_image_{trial['condition_name']}")
+            if trial['trial_type'] == 2 and trial['train_test'] == 2:
+                conditions.append(f"test_caption_{trial['condition_name']}")
+        else:
+            raise Exception(f'Unknown condition for trial: {trial}')
     elif glm_stage == 2:
-        for index, trial in df.iterrows():
-            if trial['stim_name'] == 'Fix':
-                if trial['trial_type'] == -1:
-                    conditions.append('null')
-                elif trial['trial_type'] == 0:
-                    conditions.append('null')
-            elif trial['stim_name'] == 'ImgInst':
+        if trial['stim_name'] == 'Fix':
+            if trial['trial_type'] == -1:
                 conditions.append('null')
-            elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
+            elif trial['trial_type'] == 0:
                 conditions.append('null')
-            elif trial['one_back'] != 0:
+        elif trial['stim_name'] == 'ImgInst':
+            conditions.append('null')
+        elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
+            conditions.append('null')
+        elif trial['one_back'] != 0:
+            conditions.append('null')
+        elif trial['condition_name'] != 0:
+            if trial['trial_type'] == 1 and trial['train_test'] == 1:
+                conditions.append(f"train_image_{trial['condition_name']}")
+            if trial['trial_type'] == 2 and trial['train_test'] == 1:
+                conditions.append(f"train_caption_{trial['condition_name']}")
+            if trial['trial_type'] == 1 and trial['train_test'] == 2:
                 conditions.append('null')
-            elif trial['condition_name'] != 0:
-                if trial['trial_type'] == 1 and trial['train_test'] == 1:
-                    conditions.append(f"train_image_{trial['condition_name']}")
-                if trial['trial_type'] == 2 and trial['train_test'] == 1:
-                    conditions.append(f"train_caption_{trial['condition_name']}")
-                if trial['trial_type'] == 1 and trial['train_test'] == 2:
-                    conditions.append('null')
-                if trial['trial_type'] == 2 and trial['train_test'] == 2:
-                    conditions.append('null')
-            else:
-                raise Exception(f'Unknown condition for trial: {trial}')
+            if trial['trial_type'] == 2 and trial['train_test'] == 2:
+                conditions.append('null')
+        else:
+            raise Exception(f'Unknown condition for trial: {trial}')
     return conditions
 
 
-def get_condition_names_pilot(df, glm_stage):
-    r"""
-    determines the condition name for each trial (each row of df)
-    """
-    df = df.reset_index()
+def get_condition_names_pilot(trial, glm_stage):
     conditions = []
     if glm_stage == 1:
-        for index, trial in df.iterrows():
-            if trial['trial_type'] == 0:
-                assert trial['stim_name'] == 'Fix'
-                conditions.append('fixation')
-            elif trial['one_back'] != 0:
-                conditions.append('oneback')
-            elif trial['trial_type'] == 1:  # test img
-                conditions.append(f"pilot_image_{trial['ID']}")
-            elif trial['trial_type'] == 2:  # filler img
-                conditions.append(f"pilot_filler_image_{trial['ID']}")
-            elif trial['trial_type'] == 10:  # test caption
-                conditions.append(f"pilot_caption_{trial['ID']}")
-            elif trial['trial_type'] == 20:  # filler caption
-                conditions.append(f"pilot_filler_caption_{trial['ID']}")
+        if trial['subj_resp'] == 1:  # button press
+            conditions.append('subj_resp')
 
+        if trial['trial_type'] == 0:
+            assert trial['stim_name'] == 'Fix'
+            conditions.append('fixation')
+        elif trial['trial_type'] == 1:  # test img
+            conditions.append(f"pilot_image_{trial['ID']}")
+        elif trial['trial_type'] == 2:  # filler img
+            conditions.append(f"pilot_filler_image_{trial['ID']}")
+        elif trial['trial_type'] == 10:  # test caption
+            conditions.append(f"pilot_caption_{trial['ID']}")
+        elif trial['trial_type'] == 20:  # filler caption
+            conditions.append(f"pilot_filler_caption_{trial['ID']}")
     elif glm_stage == 2:
         raise Exception(f'No stage 2 for pilot')
+
+    if len(conditions) == 0:
+        raise Exception(f'No conditions for trial: {trial}')
+    if len(conditions) == 2:
+        assert "subj_resp" in conditions
+    if len(conditions) > 2:
+        raise Exception(f'More than 2 conditions for trial: {trial}')
     return conditions
 
 
@@ -120,9 +116,9 @@ def preprocess_event_files(event_files, glm_stage, task_name):
         df = pd.read_csv(event_file, sep='\t')
         df['onset'] += onset_shift
         if task_name == TASK_COCO:
-            df['glm_condition'] = get_condition_names(df, glm_stage)
+            df['glm_conditions'] = df.apply(get_condition_names, glm_stage=glm_stage, axis=1)
         elif task_name == TASK_NEW_PILOT:
-            df['glm_condition'] = get_condition_names_pilot(df, glm_stage)
+            df['glm_conditions'] = df.apply(get_condition_names_pilot, glm_stage=glm_stage, axis=1)
         else:
             raise RuntimeError("Unknown task: ", task_name)
 
@@ -142,7 +138,7 @@ def preprocess_event_files(event_files, glm_stage, task_name):
 
 def load_event_files_stage1(tsv_files, task_name, log_file=None):
     events_df = preprocess_event_files(tsv_files, glm_stage=1, task_name=task_name)
-    condition_names = sorted(list(set(events_df['glm_condition'])))
+    condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
     if 'null' in condition_names:
         condition_names.remove('null')
 
@@ -161,11 +157,14 @@ def load_event_files_stage1(tsv_files, task_name, log_file=None):
 
     events_df = events_df.reset_index()
     for index, trial in events_df.iterrows():
-        cond = trial['glm_condition']
-        if cond != 'null':
-            onsets[cond].append(trial['onset'])
-            durs[cond].append(trial['duration'])
+        conditions = trial['glm_conditions']
+        for condition in conditions:
+            if condition != 'null':
+                onsets[condition].append(trial['onset'])
+                durs[condition].append(trial['duration'])
 
+    print("Number of scans per condition: ")
+    print({name: len(conds) for name, conds in sorted(onsets.items())})
     subject_info = Bunch(
         conditions=np.array(condition_names, dtype=object),
         onsets=np.array([np.array(onsets[k])[:, np.newaxis] for k in condition_names], dtype=object),
@@ -184,7 +183,7 @@ def load_event_files_stage2(tsv_files, task_name, log_files=None):
 
     for tsvf_idx, tsvf in enumerate(tsv_files):
         events_df = preprocess_event_files([tsvf], glm_stage=2, task_name=task_name)
-        condition_names = sorted(list(set(events_df['glm_condition'])))
+        condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
         condition_names.remove('null')
 
         print(condition_names)
@@ -202,10 +201,11 @@ def load_event_files_stage2(tsv_files, task_name, log_files=None):
 
         events_df = events_df.reset_index()
         for index, trial in events_df.iterrows():
-            cond = trial['glm_condition']
-            if cond != 'null':
-                onsets[cond].append(trial['onset'])
-                durs[cond].append(trial['duration'])
+            conditions = trial['glm_conditions']
+            for condition in conditions:
+                if condition != 'null':
+                    onsets[condition].append(trial['onset'])
+                    durs[condition].append(trial['duration'])
 
         temp_condition_names = ['dummy'] + condition_names[:]
         onsets['dummy'] = [0, 0]
