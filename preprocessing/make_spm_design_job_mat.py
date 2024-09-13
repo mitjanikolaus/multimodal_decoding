@@ -94,11 +94,11 @@ def get_condition_names_pilot(df, glm_stage):
             elif trial['one_back'] != 0:
                 conditions.append('oneback')
             elif trial['trial_type'] == 1: # test img
-                conditions.append(f"pilot_test_image_{trial['ID']}")
+                conditions.append(f"pilot_image_{trial['ID']}")
             elif trial['trial_type'] == 2: # filler img
                 conditions.append(f"pilot_filler_image_{trial['ID']}")
             elif trial['trial_type'] == 10: # test caption
-                conditions.append(f"pilot_test_caption_{trial['ID']}")
+                conditions.append(f"pilot_caption_{trial['ID']}")
             elif trial['trial_type'] == 20: # filler caption
                 conditions.append(f"pilot_filler_caption_{trial['ID']}")
 
