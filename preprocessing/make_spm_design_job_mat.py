@@ -326,6 +326,7 @@ def run(args):
                 sessions = [path.split(os.sep)[-1] for path in session_dirs]
             print(f"Sessions: {sessions}")
             for session, session_dir in zip(sessions, session_dirs):
+                session_id = session.replace('_session_id_', '')
                 print(f"Scanning for runs in {session_dir}")
                 n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
                 runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
@@ -333,17 +334,17 @@ def run(args):
                 for run in runs:
                     event_file = os.path.join(
                         raw_fmri_subj_data_dir, f"{session}", "func",
-                        f"{subject}_{session}_task-coco_{run}_events.tsv"
+                        f"{subject}_{session_id}_task-coco_{run}_events.tsv"
                     )
                     event_files.append(event_file)
                     realign_file = os.path.join(
                         realignment_data_dir, subject, f'{session}',
-                        f'rp_a{subject}_{session}_task-coco_{run}_bold.txt'
+                        f'rp_a{subject}_{session_id}_task-coco_{run}_bold.txt'
                     )
                     realign_files.append(realign_file)
                     run_file = os.path.join(
                         session_dir,
-                        f'rara{subject}_{session}_task-coco_{run}_bold.nii'
+                        f'rara{subject}_{session_id}_task-coco_{run}_bold.nii'
                     )
                     run_nii = nib.load(run_file)
                     run_size = run_nii.shape[-1]
@@ -390,6 +391,7 @@ def run(args):
             res_start = 0
             print(f"Sessions: {sessions}")
             for session, session_dir in zip(sessions, session_dirs):
+                session_id = session.replace('_session_id_', '')
                 print(f"Scanning for runs in {session_dir}")
                 n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
                 runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
@@ -398,12 +400,12 @@ def run(args):
                     run_scans = []
                     event_file = os.path.join(
                         raw_fmri_subj_data_dir, f"{session}", "func",
-                        f"{subject}_{session}_task-coco_{run}_events.tsv"
+                        f"{subject}_{session_id}_task-coco_{run}_events.tsv"
                     )
                     event_files.append(event_file)
                     run_file = os.path.join(
                         session_dir,
-                        f'rara{subject}_{session}_task-coco_{run}_bold.nii'
+                        f'rara{subject}_{session_id}_task-coco_{run}_bold.nii'
                     )
                     run_nii = nib.load(run_file)
                     run_size = run_nii.shape[-1]
