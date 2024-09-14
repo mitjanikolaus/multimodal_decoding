@@ -323,7 +323,7 @@ def run(args):
                 session_dirs = [os.path.join(preprocessed_fmri_dir, session, 'coregister_downsampled') for session in sessions]
             else:
                 print(f"Scanning for sessions in {preprocessed_fmri_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_dir, 'ses-*', 'coregister_downsampled'))
+                session_dirs = glob(os.path.join(preprocessed_fmri_dir, '_session_id_ses-*', 'coregister_downsampled'))
                 sessions = [path.split(os.sep)[-1] for path in session_dirs]
             print(f"Sessions: {sessions}")
             for session, session_dir in zip(sessions, session_dirs):
@@ -386,7 +386,7 @@ def run(args):
                 session_dirs = [os.path.join(preprocessed_fmri_dir, session, 'coregister_downsampled') for session in sessions]
             else:
                 print(f"Scanning for sessions in {preprocessed_fmri_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_dir, 'ses-*', 'coregister_downsampled'))
+                session_dirs = glob(os.path.join(preprocessed_fmri_dir, '_session_id_ses-*', 'coregister_downsampled'))
                 sessions = [path.split(os.sep)[-1] for path in session_dirs]
 
             res_start = 0
