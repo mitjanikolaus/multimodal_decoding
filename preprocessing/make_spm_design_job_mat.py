@@ -16,32 +16,27 @@ import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_RAW_BIDS_DATA_DIR, \
-    FMRI_PREPROCESSED_DATA_DIR
+    FMRI_PREPROCESSED_DATA_DIR, nipype_subject_id
 
 
-##############
-# EVENT Loader
-##############
-def get_condition_names(df, glm_stage):
-    r"""
-    determines the condition name for each trial (each row of df)
-    """
-    df = df.reset_index()
+def get_condition_names(trial, glm_stage):
     conditions = []
     if glm_stage == 1:
-        for index, trial in df.iterrows():
-            if trial['stim_name'] == 'Fix':
-                if trial['trial_type'] == -1:
-                    conditions.append('blank')
-                elif trial['trial_type'] == 0:
-                    conditions.append('fixation')
-            elif trial['stim_name'] == 'ImgInst':
-                conditions.append('imginst')
-            elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
-                conditions.append(f"imagery_{trial['imagery_scene']}")
-            elif trial['one_back'] != 0:
-                conditions.append('oneback')
-            elif trial['condition_name'] != 0:
+        if trial['stim_name'] == 'Fix':
+            if trial['trial_type'] == -1:
+                conditions.append('blank')
+            elif trial['trial_type'] == 0:
+                conditions.append('fixation')
+        elif trial['stim_name'] == 'ImgInst':
+            conditions.append('imginst')
+        elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
+            conditions.append(f"imagery_{trial['imagery_scene']}")
+        else:
+            if trial['one_back'] != 0:
+                conditions.append('one_back')
+            if trial['subj_resp'] != 0:
+                conditions.append('subj_resp')
+            if trial['condition_name'] != 0:
                 if trial['trial_type'] == 1 and trial['train_test'] == 1:
                     conditions.append('null')
                 if trial['trial_type'] == 2 and trial['train_test'] == 1:
@@ -50,22 +45,19 @@ def get_condition_names(df, glm_stage):
                     conditions.append(f"test_image_{trial['condition_name']}")
                 if trial['trial_type'] == 2 and trial['train_test'] == 2:
                     conditions.append(f"test_caption_{trial['condition_name']}")
-            else:
-                raise Exception(f'Uncondition Trial: {trial}')
+
     elif glm_stage == 2:
-        for index, trial in df.iterrows():
-            if trial['stim_name'] == 'Fix':
-                if trial['trial_type'] == -1:
-                    conditions.append('null')
-                elif trial['trial_type'] == 0:
-                    conditions.append('null')
-            elif trial['stim_name'] == 'ImgInst':
+        if trial['stim_name'] == 'Fix':
+            if trial['trial_type'] == -1:
                 conditions.append('null')
-            elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
+            elif trial['trial_type'] == 0:
                 conditions.append('null')
-            elif trial['one_back'] != 0:
-                conditions.append('null')
-            elif trial['condition_name'] != 0:
+        elif trial['stim_name'] == 'ImgInst':
+            conditions.append('null')
+        elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
+            conditions.append('null')
+        else:
+            if trial['condition_name'] != 0:
                 if trial['trial_type'] == 1 and trial['train_test'] == 1:
                     conditions.append(f"train_image_{trial['condition_name']}")
                 if trial['trial_type'] == 2 and trial['train_test'] == 1:
@@ -74,8 +66,9 @@ def get_condition_names(df, glm_stage):
                     conditions.append('null')
                 if trial['trial_type'] == 2 and trial['train_test'] == 2:
                     conditions.append('null')
-            else:
-                raise Exception(f'Uncondition Trial: {trial}')
+
+    if len(conditions) == 0:
+        raise Exception(f'Unknown condition for trial: {trial}')
     return conditions
 
 
@@ -92,15 +85,13 @@ def preprocess_event_files(event_files, glm_stage):
     for r_idx, event_file in enumerate(event_files):
         df = pd.read_csv(event_file, sep='\t')
         df['onset'] += onset_shift
-        df['glm_condition'] = get_condition_names(df, glm_stage)
+        df['glm_conditions'] = df.apply(get_condition_names, glm_stage=glm_stage, axis=1)
 
         if glm_stage == 1:
             run_reg_data = np.zeros((df.shape[0], len(run_reg_names)))
             if r_idx < len(run_reg_names):
                 run_reg_data[:, r_idx] = 1
             run_reg_df = pd.DataFrame(run_reg_data, columns=run_reg_names)
-            # for reg_idx, reg_name in enumerate(run_reg_names):
-            #     df[reg_name] = run_reg_data[:,reg_idx]
             df = pd.concat([df, run_reg_df], axis=1)
 
         onset_shift = df['onset'].iloc[-1] + df['duration'].iloc[-1]  # new onset_shift for the next run
@@ -112,8 +103,9 @@ def preprocess_event_files(event_files, glm_stage):
 
 def load_event_files_stage1(tsv_files, log_file=None):
     events_df = preprocess_event_files(tsv_files, glm_stage=1)
-    condition_names = sorted(list(set(events_df['glm_condition'])))
-    condition_names.remove('null')
+    condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
+    if 'null' in condition_names:
+        condition_names.remove('null')
 
     print(condition_names)
     print("Number of conditions:", len(condition_names))
@@ -132,10 +124,11 @@ def load_event_files_stage1(tsv_files, log_file=None):
 
     events_df = events_df.reset_index()
     for index, trial in events_df.iterrows():
-        cond = trial['glm_condition']
-        if cond != 'null':
-            onsets[cond].append(trial['onset'])
-            durs[cond].append(trial['duration'])
+        conditions = trial['glm_conditions']
+        for condition in conditions:
+            if condition != 'null':
+                onsets[condition].append(trial['onset'])
+                durs[condition].append(trial['duration'])
 
     subject_info = Bunch(
         conditions=np.array(condition_names, dtype=object),
@@ -155,8 +148,9 @@ def load_event_files_stage2(tsv_files, log_files=None):
 
     for tsvf_idx, tsvf in enumerate(tsv_files):
         events_df = preprocess_event_files([tsvf], glm_stage=2)
-        condition_names = sorted(list(set(events_df['glm_condition'])))
-        condition_names.remove('null')
+        condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
+        if 'null' in condition_names:
+            condition_names.remove('null')
 
         print(condition_names)
         print("Number of conditions:", len(condition_names))
@@ -170,15 +164,14 @@ def load_event_files_stage2(tsv_files, log_files=None):
         onsets = {cond: [] for cond in condition_names}
         durs = {cond: [] for cond in condition_names}
         orth = {cond: 0.0 for cond in condition_names}
-        # orth['train_image'] = 0.0
-        # orth['train_caption'] = 0.0
 
         events_df = events_df.reset_index()
         for index, trial in events_df.iterrows():
-            cond = trial['glm_condition']
-            if cond != 'null':
-                onsets[cond].append(trial['onset'])
-                durs[cond].append(trial['duration'])
+            conditions = trial['glm_conditions']
+            for condition in conditions:
+                if condition != 'null':
+                    onsets[condition].append(trial['onset'])
+                    durs[condition].append(trial['duration'])
 
         temp_condition_names = ['dummy'] + condition_names[:]
         onsets['dummy'] = [0, 0]
@@ -190,8 +183,6 @@ def load_event_files_stage2(tsv_files, log_files=None):
 
         subject_info = Bunch(
             conditions=np.array(condition_names, dtype=object),
-            # onsets=np.array([np.array(onsets[k], dtype=object)[:,np.newaxis] for k in condition_names], dtype=object),
-            # durations=np.array([np.array(durs[k],dtype=object)[:,np.newaxis] for k in condition_names], dtype=object),
             onsets=temp_onsets,
             durations=temp_durations,
             orthogonalizations=np.array([orth[k] for k in condition_names], dtype=object),
@@ -204,19 +195,22 @@ def load_event_files_stage2(tsv_files, log_files=None):
     return subject_infos
 
 
-def multi_regressors(realign_files):
-    n_runs = len(realign_files)
+N_REALIGNMENT_AXES = 6
+REALIGNMENT_AXES_IDX = range(1, N_REALIGNMENT_AXES + 1)
 
+
+def define_multi_regressors(realign_files):
+    n_runs = len(realign_files)
     reg_names = [f'UR{i}' for i in range(1, n_runs)]  # run regressors (1 less than total number of runs)
-    reg_names += [f'Realign{i}' for i in range(1, 7)]  # 6 realignment axes
+    reg_names += [f'Realign{i}' for i in REALIGNMENT_AXES_IDX]
 
     run_arrays = []
-    realign_arrays = [[] for i in range(1, 7)]
+    realign_arrays = [[] for _ in range(N_REALIGNMENT_AXES)]
     total_size = 0
     for ridx in range(n_runs):
         realign = np.loadtxt(realign_files[ridx])
         total_size += realign.shape[0]
-        for aidx in range(6):
+        for aidx in range(N_REALIGNMENT_AXES):
             realign_arrays[aidx].append(realign[:, aidx])
 
     run_start = 0
@@ -226,35 +220,33 @@ def multi_regressors(realign_files):
         run_start += realign_arrays[0][ridx].shape[0]
         run_arrays.append(arr)
 
-    for aidx in range(6):
+    for aidx in range(N_REALIGNMENT_AXES):
         realign_arrays[aidx] = np.concatenate(realign_arrays[aidx])[:, np.newaxis]
 
-    reg_arrays = np.array([[]] + run_arrays + realign_arrays, dtype=object)
-    reg_arrays = reg_arrays[1:].astype(dtype=object, copy=True)
-    return fromarrays([reg_names, reg_arrays], names=['name', 'val'])
+    reg_arrays = np.concatenate((run_arrays, realign_arrays))
+
+    # fill an empty np array of type object, otherwise the size check for the rec array doesn't pass
+    x = np.empty(len(reg_arrays), dtype=object)
+    for i in range(len(reg_arrays)):
+        x[i] = reg_arrays[i]
+
+    return fromarrays([reg_names, x], names=['name', 'val'])
 
 
 def run(args):
     subsample_sessions = args.sessions
     # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
-    base_task_name = 'two-stage'
-    if subsample_sessions:
-        task_name = f'{base_task_name}_{len(subsample_sessions)}sess_{"_".join(subsample_sessions)}'
-    else:
-        task_name = f'{base_task_name}'
-
-    print(task_name)
     print("Stage: ", args.stage)
 
     for subject in args.subjects:
         print(subject)
-        subject_id = f"_subject_id_{subject}"
-        preprocessed_fmri_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "preprocess_workflow", subject_id)
-        datasink_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
-        raw_fmri_subj_data_dir = str(os.path.join(FMRI_RAW_BIDS_DATA_DIR, subject))
+        subject_id = nipype_subject_id(subject)
+        preprocessed_fmri_dir = os.path.join(args.preprocessed_data_dir, "preprocess_workflow", subject_id)
+        realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
+        raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
-        save_dir = str(os.path.join(FMRI_BETAS_DIR, subject, "unstructured"))
+        output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
 
         #####################
         # 1- fmri parameters:
@@ -319,33 +311,40 @@ def run(args):
         if args.stage == 1:
             fmri_spec = get_base_fmri_spec()
 
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            fmri_spec['dir'] = np.array([save_dir], dtype=object)
+            os.makedirs(output_dir, exist_ok=True)
+            fmri_spec['dir'] = np.array([output_dir], dtype=object)
 
             # listing scans
             scans = []
             event_files = []
             realign_files = []
             if subsample_sessions:
-                # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
-                session_list = subsample_sessions
+                sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
+                session_dirs = [os.path.join(preprocessed_fmri_dir, session, 'coregister_downsampled') for session in sessions]
             else:
-                n_sessions = len(glob(os.path.join(preprocessed_fmri_dir, '_session_id_*')))
-                session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
-            for sess_idx in session_list:
-                sess_dir = os.path.join(preprocessed_fmri_dir, f'_session_id_ses-{sess_idx}', 'coregister')
-                n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
+                print(f"Scanning for sessions in {preprocessed_fmri_dir}")
+                session_dirs = glob(os.path.join(preprocessed_fmri_dir, 'ses-*', 'coregister_downsampled'))
+                sessions = [path.split(os.sep)[-1] for path in session_dirs]
+            print(f"Sessions: {sessions}")
+            for session, session_dir in zip(sessions, session_dirs):
+                print(f"Scanning for runs in {session_dir}")
+                n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+                runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
+                print(f"Runs: {runs}")
                 for run_idx in range(1, n_runs + 1):
-                    run_file = os.path.join(sess_dir,
-                                            f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
-                    event_files.append(os.path.join(raw_fmri_subj_data_dir, f"ses-{sess_idx}", "func",
-                                                    f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
-                    realign_files.append(
-                        os.path.join(
-                            datasink_dir, 'realignment', subject, f'ses-{sess_idx}',
-                            f'rp_a{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.txt'
-                        )
+                    event_file = os.path.join(
+                        raw_fmri_subj_data_dir, f"{session}", "func",
+                        f"{subject}_{session}_task-coco_run-{run_idx:02d}_events.tsv"
+                    )
+                    event_files.append(event_file)
+                    realign_file = os.path.join(
+                        realignment_data_dir, subject, f'{session}',
+                        f'rp_a{subject}_{session}_task-coco_run-{run_idx:02d}_bold.txt'
+                    )
+                    realign_files.append(realign_file)
+                    run_file = os.path.join(
+                        session_dir,
+                        f'rara{subject}_{session}_task-coco_run-{run_idx:02d}_bold.nii'
                     )
                     run_nii = nib.load(run_file)
                     run_size = run_nii.shape[-1]
@@ -354,12 +353,12 @@ def run(args):
             fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
 
             # multi regressors
-            fmri_spec['sess']['regress'] = multi_regressors(realign_files)
+            fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
 
             # conditions
             conditions = load_event_files_stage1(
                 event_files,
-                log_file=os.path.join(save_dir, 'dmlog_stage_1.tsv'))
+                log_file=os.path.join(output_dir, 'dmlog_stage_1.tsv'))
 
             fmri_spec['sess']['cond'] = fromarrays(
                 [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
@@ -373,7 +372,7 @@ def run(args):
             jobs['jobs'][0]['spm'] = dict()
             jobs['jobs'][0]['spm']['stats'] = dict()
             jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
-            savemat(os.path.join(save_dir, 'spm_lvl1_job_stage_1.mat'), jobs)
+            savemat(os.path.join(output_dir, 'spm_lvl1_job_stage_1.mat'), jobs)
 
         elif args.stage == 2:
             # listing scans
@@ -383,32 +382,40 @@ def run(args):
             stage_2_save_dirs = []
 
             if subsample_sessions:
-                # n_sessions = len(glob(os.path.join(data_dir,'*('+ ','.join([f'ses-{s}' for s in subsample_sessions]) +')')))
-                session_list = subsample_sessions
+                sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
+                session_dirs = [os.path.join(preprocessed_fmri_dir, session, 'coregister_downsampled') for session in sessions]
             else:
-                n_sessions = len(glob(os.path.join(preprocessed_fmri_dir, '_session_id_*')))
-                session_list = [f'{i:02d}' for i in range(1, n_sessions + 1)]
+                print(f"Scanning for sessions in {preprocessed_fmri_dir}")
+                session_dirs = glob(os.path.join(preprocessed_fmri_dir, 'ses-*', 'coregister_downsampled'))
+                sessions = [path.split(os.sep)[-1] for path in session_dirs]
 
             res_start = 0
-            for sess_idx in session_list:
-                sess_dir = os.path.join(preprocessed_fmri_dir, f'_session_id_ses-{sess_idx}', 'coregister')
-                n_runs = len(glob(os.path.join(sess_dir, 'rarasub*run*_bold.nii')))
+            print(f"Sessions: {sessions}")
+            for session, session_dir in zip(sessions, session_dirs):
+                print(f"Scanning for runs in {session_dir}")
+                n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+                runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
+                n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
                 for run_idx in range(1, n_runs + 1):
                     run_scans = []
-                    run_file = os.path.join(sess_dir,
-                                            f'rara{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_bold.nii')
-                    res_file = save_dir
-                    event_files.append(os.path.join(raw_fmri_subj_data_dir, f"ses-{sess_idx}", "func",
-                                                    f"{subject}_ses-{sess_idx}_task-coco_run-{run_idx:02d}_events.tsv"))
+                    event_file = os.path.join(
+                        raw_fmri_subj_data_dir, f"{session}", "func",
+                        f"{subject}_{session}_task-coco_run-{run_idx:02d}_events.tsv"
+                    )
+                    event_files.append(event_file)
+                    run_file = os.path.join(
+                        session_dir,
+                        f'rara{subject}_{session}_task-coco_run-{run_idx:02d}_bold.nii'
+                    )
                     run_nii = nib.load(run_file)
                     run_size = run_nii.shape[-1]
                     for s in range(1, run_size + 1):
-                        run_scans.append(os.path.join(res_file, f'Res_{(res_start + s):04d}.nii'))
+                        run_scans.append(os.path.join(output_dir, f'Res_{(res_start + s):04d}.nii'))
                     res_start += run_size
                     scans.append(run_scans)
 
                     fmri_spec = get_base_fmri_spec()
-                    save_dir_stage2 = os.path.join(save_dir, f'run_{len(scans):03d}')
+                    save_dir_stage2 = os.path.join(output_dir, f'run_{len(scans):03d}')
                     if not os.path.exists(save_dir_stage2):
                         os.makedirs(save_dir_stage2)
                     stage_2_save_dirs.append(save_dir_stage2)
@@ -417,12 +424,13 @@ def run(args):
                     stage_2_fmri_specs.append(fmri_spec)
 
             # multi regressors
-            # fmri_spec['sess']['regress'] = multi_regressors(realign_files)
+            # fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
 
             # conditions
             all_conditions = load_event_files_stage2(
                 event_files,
-                log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs])
+                log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs]
+            )
 
             for spec_idx, conditions in enumerate(all_conditions):
                 stage_2_fmri_specs[spec_idx]['sess']['cond'] = fromarrays(
@@ -447,6 +455,11 @@ def get_args():
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
     parser.add_argument("--stage", type=int, choices=[1, 2], required=True)
+
+    parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+
+    parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 
     return parser.parse_args()
 

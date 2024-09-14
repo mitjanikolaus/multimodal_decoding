@@ -48,6 +48,10 @@ FUSED_CLS_FEAT_KEY = "fused_cls_features"
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
 
+def nipype_subject_id(subject):
+    return f'_subject_id_{subject}'
+
+
 def model_features_file_path(model_name):
     return os.path.join(NN_FEATURES_DIR, f"{model_name.lower()}.p")
 
