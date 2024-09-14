@@ -53,8 +53,14 @@ python preprocessing/create_gray_matter_masks.py
 
 The final masks are saved to `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_orig.nii`.
 
+### (3) Downsampling
+Next we downsample the functional scans as well as the graymatter masks, otherwise the calculation of beta values
+is too computationally expensive. The dowsampling increases the voxel size from 1mm<sup>3</sup> to 2mm<sup>3</sup>.
+```
+python preprocessing/downsample_data.py
+```
 
-### (3) Generation of beta values
+### (4) Generation of beta values
 
 We generate beta values for each stimulus (image or caption) using a GLM.
 We first create the matlab scripts using python nipype scripts, and then run them:
