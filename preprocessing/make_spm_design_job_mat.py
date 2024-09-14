@@ -338,7 +338,7 @@ def run(args):
                     )
                     event_files.append(event_file)
                     realign_file = os.path.join(
-                        realignment_data_dir, subject, f'{session}',
+                        realignment_data_dir, subject, session_id,
                         f'rp_a{subject}_{session_id}_task-coco_{run}_bold.txt'
                     )
                     realign_files.append(realign_file)
@@ -399,7 +399,7 @@ def run(args):
                 for run in runs:
                     run_scans = []
                     event_file = os.path.join(
-                        raw_fmri_subj_data_dir, f"{session}", "func",
+                        raw_fmri_subj_data_dir, session, "func",
                         f"{subject}_{session_id}_task-coco_{run}_events.tsv"
                     )
                     event_files.append(event_file)
