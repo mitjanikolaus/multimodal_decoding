@@ -7,18 +7,38 @@ from nibabel import affines
 from nilearn.image import resample_img
 from tqdm import tqdm
 
-from utils import SUBJECTS, FMRI_PREPROCESSED_DATA_DIR
+from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from utils import SUBJECTS, FMRI_PREPROCESSED_DATA_DIR, nipype_subject_id
 
 DIMS_ORIGINAL_SPACE = (170, 240, 240)
 DIMS_MNI_305_2MM = (76, 76, 93)
 VOXEL_SIZE_MNI_305_2MM = (2, 2, 2)
 
 
-def nipype_subject_id(subject):
-    return f'_subject_id_{subject}'
+def downsample_graymatter_masks(args):
+    print("downsampling graymatter masks")
+    for subject in args.subjects:
+        print(subject)
+
+        graymatter_mask_path = get_graymatter_mask_path(subject, downsampled=False)
+        mask = nib.load(graymatter_mask_path)
+        assert mask.shape[:3] == DIMS_ORIGINAL_SPACE
+
+        target_affine = affines.rescale_affine(
+            mask.affine, shape=DIMS_ORIGINAL_SPACE, zooms=VOXEL_SIZE_MNI_305_2MM, new_shape=DIMS_MNI_305_2MM
+        )
+
+        resampled_mask = resample_img(
+            mask, target_shape=DIMS_MNI_305_2MM, target_affine=target_affine, interpolation='nearest'
+        )
+
+        out_path = get_graymatter_mask_path(subject, downsampled=True)
+
+        nib.save(resampled_mask, out_path)
 
 
-def run(args):
+def downsample_functional_scans(args):
+    print("downsampling functional scans")
     for subject in args.subjects:
         print(subject)
 
@@ -77,4 +97,5 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    run(args)
+    downsample_graymatter_masks(args)
+    downsample_functional_scans(args)
