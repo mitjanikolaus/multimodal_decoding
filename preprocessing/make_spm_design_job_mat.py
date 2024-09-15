@@ -68,7 +68,7 @@ def get_condition_names(trial, glm_stage):
                     conditions.append('null')
 
     if len(conditions) == 0:
-        raise Exception(f'Unknown condition for trial: {trial}')
+        print(f'Unknown condition for trial: {trial}')
     return conditions
 
 
