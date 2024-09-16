@@ -254,14 +254,16 @@ def get_fmri_data_paths(subject, mode):
         split_name = path.split(os.sep)[-2]
         file_name = os.path.basename(path)
         stim_id = int(file_name.replace('beta_', '').replace('.nii', ''))
-        stim_ids.append(stim_id)
-
         if 'imagery' in split_name:
             stim_types.append(IMAGERY)
+            stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
         elif 'image' in split_name:
             stim_types.append(IMAGE)
         elif 'caption' in split_name:
             stim_types.append(CAPTION)
+
+        stim_ids.append(stim_id)
+
 
     stim_ids = np.array(stim_ids)
     stim_types = np.array(stim_types)
