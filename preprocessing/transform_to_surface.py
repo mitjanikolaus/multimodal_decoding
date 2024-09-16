@@ -13,7 +13,7 @@ def create_lta_file(subject):
     print("creating lta file")
     reg_file_path = os.path.join(FMRI_REGFILES_DIR, subject, 'spm2fs')
     os.makedirs(os.path.dirname(reg_file_path), exist_ok=True)
-    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject), '_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii') #_downsampled #TODO
+    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject), '_session_id_ses-01/coregister_downsampled/rameanasub-01_ses-01_task-coco_run-01_bold.nii')
     conv_cmd = f'tkregisterfv --mov {vol_file_path} --s {subject} --regheader --reg {reg_file_path}'
     print(conv_cmd)
     result_code = os.system(conv_cmd)
