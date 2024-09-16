@@ -48,11 +48,13 @@ def run(args):
             beta_files = sorted(glob(os.path.join(base_dir, split_name, f'beta*.nii')))
             for beta_file in tqdm(beta_files):
                 file_name = os.path.basename(beta_file)
-                out_file_name = file_name.replace('.nii', '.gii')
-                out_vol = os.path.join(base_output_dir, split_name, out_file_name)
 
                 for hemi in HEMIS_FS:
-                    conv_cmd = f'mri_vol2surf --mov "{beta_file}" --reg "{reg_file_path}" --o "{out_vol}" --hemi {hemi} --trgsubject fsaverage'
+                    out_file_name = file_name.replace('.nii', f'_{hemi}.gii')
+
+                    out_path = os.path.join(base_output_dir, split_name, out_file_name)
+
+                    conv_cmd = f'mri_vol2surf --mov "{beta_file}" --reg "{reg_file_path}" --o "{out_path}" --hemi {hemi} --trgsubject fsaverage'
                     result_code = os.system(conv_cmd)
                     if result_code != 0:
                         raise RuntimeError(f"mri_vol2surf failed with error code {result_code}")
