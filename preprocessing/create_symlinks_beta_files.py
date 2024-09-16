@@ -39,8 +39,7 @@ def create_symlinks_for_beta_files(betas_dir):
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
                 else:
                     stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
-                    prefix = 'I' if 'image' in split_name else 'C' if 'caption' in split_name else ''
-                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{prefix}{stim_id:06d}.nii")
+                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
 
                 if slink_name in all_slink_names:
                     raise Exception(f'slink already defined: {slink_name}')
