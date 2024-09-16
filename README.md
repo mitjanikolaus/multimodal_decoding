@@ -66,15 +66,15 @@ We generate beta values for each stimulus (image or caption) using a GLM.
 We first create the matlab scripts using python nipype scripts, and then run them:
 
 ```
-python preprocessing/make_spm_design_job_mat.py --stage 1
+python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_1 sub-01;exit;"  -logfile matlab_output.txt && cd -
 
-python preprocessing/make_spm_design_job_mat.py --stage 2
+python preprocessing/make_spm_design_job_mat.py --stage 2 --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_2 sub-01;exit;"  -logfile matlab_output.txt &&  cd -
 ```
 
-__Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
-the arguments when calling the matlab scripts!
+__Note:__ Repeat these steps separately for each subject by adapting the subject identifier (`sub-01`) for both matlab and python
+scripts!
 
 #### Organization of beta values
 Next, we can create symbolic links for all beta files that are organized into separate folders for
@@ -97,16 +97,6 @@ space (repeat this for all subjects).
 ```
 tkregisterfv --mov ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii --s sub-01 --regheader --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-01/spm2fs
 ```
-
-
-Finally, we can convert all data to MNI space:
-```
-python preprocessing/transform_to_mni.py
-```
-
-The aforementioned script is also converting the mask to MNI space. The final masks are saved to
-`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_mni.nii`.
-
 
 ### (5) Transformation to surface space
 

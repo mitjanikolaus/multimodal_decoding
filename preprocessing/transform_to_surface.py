@@ -1,121 +1,76 @@
 import argparse
-
-import numpy as np
-from nilearn import datasets
-from nilearn.surface import surface
-
 import os
-import pickle
+from glob import glob
 
-from analyses.ridge_regression_decoding import get_fmri_data_paths, IMAGERY
-from analyses.searchlight.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
-from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
+from tqdm import tqdm
+
+from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, HEMIS_FS, FMRI_REGFILES_DIR, \
+    FMRI_PREPROCESSED_DATA_DIR, nipype_subject_id
 
 
-def get_graymatter_mask(subject):
-    fmri_data_dir = os.path.join(FMRI_BETAS_DIR, subject)
-    gray_matter_mask_address = os.path.join(fmri_data_dir, f'unstructured', 'mask.nii')
-    return gray_matter_mask_address
+def create_lta_file(subject):
+    print("creating lta file")
+    reg_file_path = os.path.join(FMRI_REGFILES_DIR, subject, 'spm2fs')
+    os.makedirs(os.path.dirname(reg_file_path), exist_ok=True)
+    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject), '_session_id_ses-01/coregister_downsampled/rameanasub-01_ses-01_task-coco_run-01_bold.nii')
+    conv_cmd = f'tkregisterfv --mov {vol_file_path} --s {subject} --regheader --reg {reg_file_path}'
+    print(conv_cmd)
+    result_code = os.system(conv_cmd)
+    suffix = '.change-name.lta'
+    out_path = reg_file_path + suffix
+    assert os.path.isfile(out_path), f"LTA file creation with above command failed with error code: {result_code}"
+    return out_path
 
 
 def run(args):
+    os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
+
     for subject in args.subjects:
-        print("\n", subject)
-        train_fmri, train_stim_ids, train_stim_types = get_fmri_data_paths(subject, "train")
-        test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(subject, "test")
-        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(subject, IMAGERY)
+        print(subject)
 
-        pickle.dump(train_stim_ids, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_train.p"), 'wb'))
-        pickle.dump(train_stim_types, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_train.p"), 'wb'))
-        pickle.dump(test_stim_ids, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_test.p"), 'wb'))
-        pickle.dump(test_stim_types, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_test.p"), 'wb'))
-        pickle.dump(imagery_stim_ids, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_imagery.p"), 'wb'))
-        pickle.dump(imagery_stim_types, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_imagery.p"), 'wb'))
+        reg_file_path = create_lta_file(subject)
 
-        assert np.all(test_stim_types[INDICES_TEST_STIM_IMAGE] == "image")
-        assert np.all(test_stim_types[INDICES_TEST_STIM_CAPTION] == "caption")
-        assert np.all(test_stim_ids == IDS_TEST_STIM)
+        out_dir = os.path.join(args.output_dir, subject)
 
-        assert np.all(imagery_stim_ids == [i[1] for i in IMAGERY_SCENES[subject]])
+        os.makedirs(out_dir, exist_ok=True)
 
-        gray_matter_mask = get_graymatter_mask(subject)
+        base_output_dir = os.path.join(args.output_dir, subject)
 
-        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-        for hemi in args.hemis:
-            print("Hemisphere: ", hemi)
-            pial_mesh = fsaverage[f"pial_{hemi}"]
+        base_dir = os.path.join(FMRI_BETAS_DIR, subject)
+        betas_split_dirs = os.listdir(base_dir)
+        if 'unstructured' in betas_split_dirs:
+            betas_split_dirs.remove('unstructured')
 
-            print("transforming to surface.. (train part 1)", end=" ")
-            X = surface.vol_to_surf(train_fmri[:2500], pial_mesh, mask_img=gray_matter_mask).T
-            print("done.")
-            results_file_name_1 = f"{subject}_{hemi}_train_1.p"
-            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_1), 'wb'))
-            print("saved.")
+        for split_name in betas_split_dirs:
+            print("processing: ", split_name)
+            os.makedirs(os.path.join(base_output_dir, split_name), exist_ok=True)
 
-            print("transforming to surface.. (train part 2)", end=" ")
-            pial_mesh = fsaverage[f"pial_{hemi}"]
-            X = surface.vol_to_surf(train_fmri[2500:5000], pial_mesh, mask_img=gray_matter_mask).T
-            print("done.")
-            results_file_name_2 = f"{subject}_{hemi}_train_2.p"
-            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_2), 'wb'))
-            print("saved.")
+            beta_files = sorted(glob(os.path.join(base_dir, split_name, f'beta*.nii')))
+            for beta_file in tqdm(beta_files):
+                file_name = os.path.basename(beta_file)
+                out_file_name = file_name.replace('.nii', '.gii')
+                out_vol = os.path.join(base_output_dir, split_name, out_file_name)
 
-            print("transforming to surface.. (train part 3)", end=" ")
-            pial_mesh = fsaverage[f"pial_{hemi}"]
-            X = surface.vol_to_surf(train_fmri[5000:7500], pial_mesh, mask_img=gray_matter_mask).T
-            print("done.")
-            results_file_name_3 = f"{subject}_{hemi}_train_3.p"
-            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_3), 'wb'))
-            print("saved.")
-
-            print("transforming to surface.. (train part 4)", end=" ")
-            pial_mesh = fsaverage[f"pial_{hemi}"]
-            X = surface.vol_to_surf(train_fmri[7500:], pial_mesh, mask_img=gray_matter_mask).T
-            print("done.")
-            results_file_name_4 = f"{subject}_{hemi}_train_4.p"
-            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_4), 'wb'))
-            print("saved.")
-
-            X_1 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_1), 'rb'))
-            X_2 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_2), 'rb'))
-            X_3 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_3), 'rb'))
-            X_4 = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_4), 'rb'))
-            results_file_name = f"{subject}_{hemi}_{args.resolution}_train.p"
-            pickle.dump(np.concatenate((X_1, X_2, X_3, X_4)), open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name), 'wb'))
-            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_1))
-            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_2))
-            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_3))
-            os.remove(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name_4))
-
-            print("transforming to surface.. (test)", end=" ")
-            X = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask).T
-            print("done.")
-            results_file_name = f"{subject}_{hemi}_{args.resolution}_test.p"
-            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name), 'wb'))
-            print("saved.")
-
-            print("transforming to surface.. (imagery)", end=" ")
-            X = surface.vol_to_surf(imagery_fmri, pial_mesh, mask_img=gray_matter_mask).T
-            print("done.")
-            results_file_name = f"{subject}_{hemi}_{args.resolution}_imagery.p"
-            pickle.dump(X, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, results_file_name), 'wb'))
-            print("saved.")
+                for hemi in HEMIS_FS:
+                    conv_cmd = f'mri_vol2surf --mov "{beta_file}" --reg "{reg_file_path}" --o "{out_vol}" --hemi {hemi} --trgsubject fsaverage'
+                    result_code = os.system(conv_cmd)
+                    if result_code != 0:
+                        raise RuntimeError(f"mri_vol2surf failed with error code {result_code}")
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--output-dir", type=str, default=FMRI_SURFACE_LEVEL_DIR)
 
-    parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(FMRI_SURFACE_LEVEL_DIR, exist_ok=True)
 
     run(args)
