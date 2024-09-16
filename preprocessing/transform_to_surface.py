@@ -4,6 +4,7 @@ from glob import glob
 
 from tqdm import tqdm
 
+from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, HEMIS_FS, FMRI_REGFILES_DIR, \
     FMRI_PREPROCESSED_DATA_DIR, nipype_subject_id
 
@@ -12,7 +13,7 @@ def create_lta_file(subject):
     print("creating lta file")
     reg_file_path = os.path.join(FMRI_REGFILES_DIR, subject, 'spm2fs')
     os.makedirs(os.path.dirname(reg_file_path), exist_ok=True)
-    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject), '_session_id_ses-01/coregister_downsampled/rameanasub-01_ses-01_task-coco_run-01_bold.nii')
+    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject), '_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii') #_downsampled #TODO
     conv_cmd = f'tkregisterfv --mov {vol_file_path} --s {subject} --regheader --reg {reg_file_path}'
     print(conv_cmd)
     result_code = os.system(conv_cmd)
@@ -20,6 +21,20 @@ def create_lta_file(subject):
     out_path = reg_file_path + suffix
     assert os.path.isfile(out_path), f"LTA file creation with above command failed with error code: {result_code}"
     return out_path
+
+
+def transform_to_surf(beta_file, output_dir, reg_file_path):
+    file_name = os.path.basename(beta_file)
+
+    for hemi in HEMIS_FS:
+        out_file_name = file_name.replace('.nii', f'_{hemi}.gii')
+
+        out_path = os.path.join(output_dir, out_file_name)
+
+        conv_cmd = f'mri_vol2surf --mov "{beta_file}" --reg "{reg_file_path}" --o "{out_path}" --hemi {hemi} --trgsubject fsaverage'
+        result_code = os.system(conv_cmd)
+        if result_code != 0:
+            raise RuntimeError(f"mri_vol2surf failed with error code {result_code}")
 
 
 def run(args):
@@ -31,33 +46,31 @@ def run(args):
         reg_file_path = create_lta_file(subject)
 
         out_dir = os.path.join(args.output_dir, subject)
-
         os.makedirs(out_dir, exist_ok=True)
+
 
         base_output_dir = os.path.join(args.output_dir, subject)
 
-        base_dir = os.path.join(FMRI_BETAS_DIR, subject)
-        betas_split_dirs = os.listdir(base_dir)
-        if 'unstructured' in betas_split_dirs:
-            betas_split_dirs.remove('unstructured')
+        mask_output_dir = os.path.join(base_output_dir, 'mask')
+        os.makedirs(mask_output_dir, exist_ok=True)
 
-        for split_name in betas_split_dirs:
-            print("processing: ", split_name)
-            os.makedirs(os.path.join(base_output_dir, split_name), exist_ok=True)
+        mask_path = get_graymatter_mask_path(subject)
+        transform_to_surf(mask_path, mask_output_dir, reg_file_path)
 
-            beta_files = sorted(glob(os.path.join(base_dir, split_name, f'beta*.nii')))
-            for beta_file in tqdm(beta_files):
-                file_name = os.path.basename(beta_file)
 
-                for hemi in HEMIS_FS:
-                    out_file_name = file_name.replace('.nii', f'_{hemi}.gii')
-
-                    out_path = os.path.join(base_output_dir, split_name, out_file_name)
-
-                    conv_cmd = f'mri_vol2surf --mov "{beta_file}" --reg "{reg_file_path}" --o "{out_path}" --hemi {hemi} --trgsubject fsaverage'
-                    result_code = os.system(conv_cmd)
-                    if result_code != 0:
-                        raise RuntimeError(f"mri_vol2surf failed with error code {result_code}")
+        # base_dir = os.path.join(FMRI_BETAS_DIR, subject)
+        # betas_split_dirs = os.listdir(base_dir)
+        # if 'unstructured' in betas_split_dirs:
+        #     betas_split_dirs.remove('unstructured')
+        #
+        # for split_name in betas_split_dirs:
+        #     print("processing: ", split_name)
+        #     os.makedirs(os.path.join(base_output_dir, split_name), exist_ok=True)
+        #
+        #     beta_files = sorted(glob(os.path.join(base_dir, split_name, f'beta*.nii')))
+        #     output_dir = os.path.join(base_output_dir, split_name)
+        #     for beta_file in tqdm(beta_files):
+        #         transform_to_surf(beta_file, output_dir, reg_file_path)
 
 
 def get_args():
