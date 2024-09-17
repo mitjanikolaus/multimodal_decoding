@@ -85,20 +85,14 @@ python preprocessing/create_symlinks_beta_files.py
 ```
 
 
-### (3) Transformation to MNI space
+### (5) Transformation to surface space
 
 First, we're running recon-all to generate cortical reconstructions for all subjects:
 ```
 python preprocessing/recon_script.py
 ```
 
-Then, we create an LTA (Linear Transform Archive) file for conversion of functional scans from the subject space to MNI
-space (repeat this for all subjects).
-```
-tkregisterfv --mov ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii --s sub-01 --regheader --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-01/spm2fs
-```
-
-### (5) Transformation to surface space
+Then, we can convert all data to surface space:
 
 ```
 python preprocessing/transform_to_surface.py
