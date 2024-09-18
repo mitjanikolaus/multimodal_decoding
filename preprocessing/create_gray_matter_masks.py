@@ -5,8 +5,8 @@ import nibabel as nib
 from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_RAW_DATA_DIR, FMRI_DATA_DIR
 
 
-def get_graymatter_mask_path(subject, mni=False, downsampled=True):
-    file_suffix = "_mni" if mni else "_orig"
+def get_graymatter_mask_path(subject, downsampled=True):
+    file_suffix = "_orig"
     file_suffix += "_downsampled" if downsampled else ""
 
     mni_mask_image_path = os.path.join(

@@ -11,12 +11,13 @@ from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
-from tqdm import trange
+from tqdm import trange, tqdm
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS
+    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, FS_HEMI_NAMES
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -36,8 +37,8 @@ NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
 DEFAULT_N_PRE_DISPATCH = 5
 
-MOD_SPECIFIC_IMAGES = "train_images"
-MOD_SPECIFIC_CAPTIONS = "train_captions"
+MOD_SPECIFIC_IMAGES = "train_image"
+MOD_SPECIFIC_CAPTIONS = "train_caption"
 MODE_AGNOSTIC = "train"
 TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
@@ -244,16 +245,26 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
     return nn_latent_transform
 
 
-def get_fmri_data_paths(subject, mode):
-    fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', '*.nii')
-    fmri_betas_paths = np.array(sorted(glob(fmri_addresses_regex)))
+def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None):
+    if surface:
+        if hemi is None or resolution is None:
+            raise ValueError("Hemi and resolution needs to be specified to load surface-level data")
+        filename_suffix = f"*_{hemi}.gii"
+        fmri_addresses_regex = os.path.join(
+            FMRI_SURFACE_LEVEL_DIR, subject, f'betas_{mode}*', resolution, filename_suffix
+        )
+    else:
+        filename_suffix = "*.nii"
+        fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', filename_suffix)
+
+    fmri_betas_paths = sorted(glob(fmri_addresses_regex))
 
     stim_ids = []
     stim_types = []
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
         file_name = os.path.basename(path)
-        stim_id = int(file_name.replace('beta_', '').replace('.nii', ''))
+        stim_id = int(file_name.replace('beta_', '').replace(filename_suffix[1:], ''))
         if 'imagery' in split_name:
             stim_types.append(IMAGERY)
             stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
@@ -264,7 +275,6 @@ def get_fmri_data_paths(subject, mode):
 
         stim_ids.append(stim_id)
 
-
     stim_ids = np.array(stim_ids)
     stim_types = np.array(stim_types)
 
@@ -274,7 +284,7 @@ def get_fmri_data_paths(subject, mode):
 def get_fmri_voxel_data(subject, mode):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
 
-    gray_matter_mask_path = get_graymatter_mask_path(subject, mni=False)
+    gray_matter_mask_path = get_graymatter_mask_path(subject)
     gray_matter_mask_img = nib.load(gray_matter_mask_path)
     gray_matter_mask_data = gray_matter_mask_img.get_fdata()
     gray_matter_mask = gray_matter_mask_data == 1
@@ -507,27 +517,25 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
 
 
 def get_fmri_surface_data(subject, mode, resolution):
-    base_mode = mode.split('_')[0]
-    print(f"loading {base_mode} fmri data.. ", end="")
-    fmri_betas = {
-        hemi: pickle.load(
-            open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in HEMIS
-    }
-    print("done.")
-    stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
-    stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
+    fmri_betas = {hemi: [] for hemi in HEMIS}
+    stim_ids = []
+    stim_types = []
+    for hemi in HEMIS:
+        fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(
+            subject, mode, surface=True, hemi=FS_HEMI_NAMES[hemi], resolution=resolution
+        )
 
-    if mode == MOD_SPECIFIC_CAPTIONS:
-        for hemi in HEMIS:
-            fmri_betas[hemi] = fmri_betas[hemi][stim_types == CAPTION]
-        stim_ids = stim_ids[stim_types == CAPTION]
-        stim_types = stim_types[stim_types == CAPTION]
-    elif mode == MOD_SPECIFIC_IMAGES:
-        for hemi in HEMIS:
-            fmri_betas[hemi] = fmri_betas[hemi][stim_types == IMAGE]
-        stim_ids = stim_ids[stim_types == IMAGE]
-        stim_types = stim_types[stim_types == IMAGE]
+        for i, (path, id, type) in tqdm(enumerate(zip(fmri_betas_paths, stim_ids, stim_types)),
+                                        desc="loading fmri surface data"):
+            sample = nib.load(path)
+            sample = sample.get_fdata().astype('float32').reshape(-1)
+            fmri_betas[hemi].append(sample)
+            if hemi == HEMIS[0]:
+                stim_ids.append(id)
+                stim_types.append(type)
+            else:
+                assert stim_ids[i] == id
+                assert stim_types[i] == type
 
     return fmri_betas, stim_ids, stim_types
 
@@ -730,7 +738,7 @@ def get_args():
                         choices=TRAIN_MODE_CHOICES)
 
     parser.add_argument("--surface", action="store_true", default=False)
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],

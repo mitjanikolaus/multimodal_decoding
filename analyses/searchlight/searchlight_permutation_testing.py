@@ -17,9 +17,11 @@ from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
+from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, \
     METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, process_scores, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 DEFAULT_N_JOBS = 10
@@ -59,7 +61,7 @@ def load_per_subject_scores(args):
 
     results_mod_specific_vision_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
-        f'train_images/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/'
+        f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/'
         f'{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     print(results_mod_specific_vision_regex)
@@ -67,7 +69,7 @@ def load_per_subject_scores(args):
 
     results_mod_specific_lang_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
-        f'train_captions/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/'
+        f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/'
         f'{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
     )
     print(results_mod_specific_lang_regex)
@@ -453,8 +455,8 @@ def load_null_distr_per_subject_scores(args):
     )
     per_subject_scores_null_distr = []
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace('train/', 'train_captions/'))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace('train/', 'train_images/'))))
+    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace(MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS))))
+    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace(MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES))))
     assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
@@ -693,7 +695,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
     parser.add_argument("--tfce-h", type=float, default=2.0)

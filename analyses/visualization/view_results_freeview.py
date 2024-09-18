@@ -4,6 +4,7 @@ import os
 from analyses.ridge_regression_decoding import get_default_features, FEATS_SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY_WHOLE_TEST, METRIC_IMAGERY
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
 
 METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
@@ -60,7 +61,7 @@ def get_args():
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--n-clusters", type=int, default=10)

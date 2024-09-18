@@ -15,6 +15,7 @@ from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMA
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, \
     permutation_results_dir, get_hparam_suffix
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
 DEFAULT_VIEWS = ["medial"]  # ["lateral", "medial", "ventral"]
@@ -430,7 +431,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)

@@ -27,6 +27,7 @@ from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, per
     get_hparam_suffix
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     P_VALUE_THRESHOLD, append_images
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
@@ -417,8 +418,8 @@ def plot(args):
 
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
-        resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
-        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{resolution_fs}/label/{hemi_fs}.aparc.a2009s.annot")
+        # resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
+        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{args.resolution}/label/{hemi_fs}.aparc.a2009s.annot")
         atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
         names = [name.decode() for name in names]
 
@@ -523,7 +524,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
     parser.add_argument("--tfce-h", type=float, default=2.0)

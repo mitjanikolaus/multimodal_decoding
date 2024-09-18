@@ -24,6 +24,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
     get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CAPTIONS, ACC_IMAGES, \
     ACC_MODALITY_AGNOSTIC
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, \
     correlation_num_voxels_acc, DATA_DIR
@@ -402,7 +403,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
