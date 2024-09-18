@@ -1,8 +1,3 @@
-###########################################
-# makes a mat file for spm level1design
-# - first GLM for the split case
-# - with or without wbf
-###########################################
 import argparse
 
 from scipy.io import savemat
