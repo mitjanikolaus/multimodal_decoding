@@ -3,6 +3,8 @@ import time
 
 import numpy as np
 import nibabel as nib
+from nilearn.datasets import fetch_atlas_destrieux_2009
+from nilearn.image import resample_to_img
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.linear_model import Ridge
@@ -57,6 +59,99 @@ CAPTION = "caption"
 IMAGERY = "imagery"
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
+
+REGIONS_LOW_LEVEL_VISUAL = [
+    'L G_and_S_occipital_inf',
+    'L G_occipital_middle',
+    'L G_occipital_sup',
+    'L Pole_occipital',
+    'L S_oc_middle_and_Lunatus',
+    'L S_oc_sup_and_transversal',
+    'L S_occipital_ant',
+    'R G_and_S_occipital_inf',
+    'R G_occipital_middle',
+    'R G_occipital_sup',
+    'R Pole_occipital',
+    'R S_oc_middle_and_Lunatus',
+    'R S_oc_sup_and_transversal',
+    'R S_occipital_ant',
+    'L S_calcarine',
+    'R S_calcarine',
+    'L G_cuneus',
+    'R G_cuneus',
+    'L G_oc-temp_med-Lingual',
+    'R G_oc-temp_med-Lingual',
+]
+
+REGIONS_HIGH_LEVEL_VISUAL = [
+    'L G_oc-temp_lat-fusifor',
+    'R G_oc-temp_lat-fusifor',
+    'L G_oc-temp_med-Parahip',
+    'R G_oc-temp_med-Parahip',
+    'L S_oc-temp_lat',
+    'R S_oc-temp_lat',
+    'L G_temporal_inf',
+    'L G_temporal_middle',
+    'L S_temporal_inf',
+    'R G_temporal_inf',
+    'R G_temporal_middle',
+    'R S_temporal_inf',
+    'L S_collat_transv_post',
+    'R S_collat_transv_post',
+    'L S_parieto_occipital',
+    'R S_parieto_occipital',
+    'L S_oc-temp_med_and_Lingual',
+    'R S_oc-temp_med_and_Lingual',
+]
+
+REGIONS_LANGUAGE = [
+    'L G_front_inf-Opercular',  # left inferior frontal gyrus
+    'L G_front_inf-Orbital',  # left orbital inferior frontal gyrus
+    'L G_front_inf-Triangul',  # left inferior frontal gyrus
+    'L G_pariet_inf-Angular',  # left angular gyrus
+    'L G_front_middle',  # left middle frontal gyrus
+    'L G_temp_sup-Lateral',  # lateral aspect of the superior temporal gyrus: middle-anterior temporal lobe
+    'L G_temp_sup-Plan_tempo',  # Planum temporale of the superior temporal gyrus
+    'L G_temp_sup-Plan_polar',  # Planum polare of the superior temporal gyrus
+    'L G_and_S_subcentral',  # Subcentral gyrus (central operculum) and sulci
+    'L S_temporal_sup',  # Superior temporal sulcus
+    'L S_temporal_transverse',  # Transverse temporal sulcus
+    'L G_temp_sup-G_T_transv',  # Anterior transverse temporal gyrus
+    'L G_pariet_inf-Supramar',  # Supramarginal gyrus
+    'L G_Ins_lg_and_S_cent_ins',  # Insula
+    'L G_insular_short',  # Insula
+    'L S_circular_insula_ant',  # Insula
+    'L S_circular_insula_inf',  # Insula
+    'L S_circular_insula_sup',  # Insula
+]
+
+MASK_ANATOMICAL_LANGUAGE = "anatomical_lang"
+MASK_ANATOMICAL_VISUAL = "anatomical_visual"
+MASK_ANATOMICAL_VISUAL_LOW_LEVEL = "anatomical_visual_low_level"
+MASK_ANATOMICAL_VISUAL_HIGH_LEVEL = "anatomical_visual_high_level"
+
+
+def get_anatomical_mask(roi_mask_name, ref_img):
+    destrieux_atlas = fetch_atlas_destrieux_2009()
+
+    label_to_id_dict = {label[1]: int(label[0]) for label in destrieux_atlas['labels']}
+    atlas_map = nib.load(destrieux_atlas.maps)
+    atlas_map = resample_to_img(atlas_map, ref_img, interpolation='nearest').get_fdata()
+
+    if roi_mask_name == MASK_ANATOMICAL_VISUAL_LOW_LEVEL:
+        region_names = [label for label in REGIONS_LOW_LEVEL_VISUAL]
+    elif roi_mask_name == MASK_ANATOMICAL_VISUAL_HIGH_LEVEL:
+        region_names = [label for label in REGIONS_HIGH_LEVEL_VISUAL]
+    elif roi_mask_name == MASK_ANATOMICAL_LANGUAGE:
+        region_names = [label for label in REGIONS_LANGUAGE]
+    elif roi_mask_name == MASK_ANATOMICAL_VISUAL:
+        region_names = [label for label in REGIONS_LOW_LEVEL_VISUAL + REGIONS_HIGH_LEVEL_VISUAL]
+    else:
+        raise RuntimeError("Unknown mask: ", roi_mask_name)
+
+    ids = [label_to_id_dict[label] for label in region_names]
+    roi_mask = np.isin(atlas_map, ids)
+    return roi_mask
 
 
 def get_default_features(model_name, logging=True):
@@ -270,7 +365,7 @@ def get_fmri_data_paths(subject, mode):
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_fmri_voxel_data(subject, mode):
+def get_fmri_voxel_data(subject, mode, mask_name):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
 
     gray_matter_mask_img = nib.load(get_graymatter_mask_path(subject))
@@ -278,27 +373,36 @@ def get_fmri_voxel_data(subject, mode):
     gray_matter_mask = gray_matter_mask_data == 1
     print(f"Gray matter mask size: {gray_matter_mask.sum()}")
 
+    mask = gray_matter_mask
+    if mask_name is not None:
+        roi_mask = get_anatomical_mask(mask_name, ref_img=gray_matter_mask_img)
+        print(f"Applying ROI {mask_name} mask of size {roi_mask.sum()}")
+        print(f"Overlap with gray matter mask: {(roi_mask & gray_matter_mask).sum()}")
+        mask = roi_mask & gray_matter_mask
+
     fmri_betas = []
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
-        sample = sample[gray_matter_mask].astype('float32').reshape(-1)
+        sample = sample[mask].astype('float32').reshape(-1)
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_betas_mean_std_path(subject, mode, mask_name):
+def get_fmri_betas_mean_std_path(subject, mode, surface_mask_name, mask_name):
     mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
     bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
+    if surface_mask_name is not None:
+        bold_std_mean_name += f'_surf_mask_{surface_mask_name}'
     if mask_name is not None:
         bold_std_mean_name += f'_mask_{mask_name}'
     return os.path.join(mean_std_dir, bold_std_mean_name)
 
 
-def load_fmri_betas_transform(subject, mode, mask_name=None):
-    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, mask_name)
+def load_fmri_betas_transform(subject, mode, surface_mask_name=None, mask_name=None):
+    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, surface_mask_name, mask_name)
 
     bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
     fmri_betas_transform = Normalize(bold_mean_std['mean'], bold_mean_std['std'])
@@ -484,19 +588,23 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface, resolution):
+def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface_mask, surface,
+                resolution):
     run_str = f"{model_name}_{features}_test_{test_features}"
     run_str += f"_{vision_features}"
     run_str += f"_{lang_features}"
 
     if mask is not None:
-        if mask.startswith("functional_") or mask.startswith("anatomical_"):
-            run_str += f"_mask_{mask}"
-        elif "p_values" in mask:
-            mask_name = os.path.basename(mask).replace(".p", "")
-            run_str += f"_mask_{mask_name}"
+        run_str += f"_mask_{mask}"
+
+    if surface_mask is not None:
+        if surface_mask.startswith("functional_") or surface_mask.startswith("anatomical_"):
+            run_str += f"_surface_mask_{surface_mask}"
+        elif "p_values" in surface_mask:
+            mask_name = os.path.basename(surface_mask).replace(".p", "")
+            run_str += f"_surface_mask_{mask_name}"
         else:
-            raise RuntimeError(f"Unsupported mask: {mask}")
+            raise RuntimeError(f"Unsupported mask: {surface_mask}")
 
     if surface:
         run_str += f"_surface_{resolution}"
@@ -530,12 +638,12 @@ def get_fmri_surface_data(subject, mode, resolution):
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_data(subject, mode, surface=False, resolution=None):
+def get_fmri_data(subject, mode, surface=False, resolution=None, mask_name=None):
     if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
         fmri_betas = np.concatenate((fmri_betas[HEMIS[0]], fmri_betas[HEMIS[1]]), axis=1)
     else:
-        fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(subject, mode)
+        fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(subject, mode, mask_name)
 
     return fmri_betas, stim_ids, stim_types
 
@@ -545,11 +653,11 @@ def load_surface_mask(mask_path):
     return mask
 
 
-def apply_mask_and_clean(mask_name, betas_list, args):
-    if mask_name is not None:
+def apply_surface_mask_and_clean(surface_mask, betas_list, args):
+    if surface_mask is not None:
         if not args.surface:
             raise NotImplementedError()
-        mask = load_surface_mask(mask_name)
+        mask = load_surface_mask(surface_mask)
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
@@ -558,15 +666,16 @@ def apply_mask_and_clean(mask_name, betas_list, args):
     return betas_list
 
 
-def normalize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask_name):
-    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, mask_name)
+def normalize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode,
+                         surface_mask_name, mask_name):
+    bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, surface_mask_name, mask_name)
     os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
 
     mean_std = {'mean': train_fmri_betas.mean(axis=0),
                 'std': train_fmri_betas.std(axis=0)}
     pickle.dump(mean_std, open(bold_std_mean_path, 'wb'))
 
-    fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
+    fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, surface_mask_name, mask_name)
 
     train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
@@ -583,26 +692,30 @@ def run(args):
                 training_mode,
                 surface=args.surface,
                 resolution=args.resolution,
+                mask_name=args.voxel_space_mask,
             )
             test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
                 subject,
                 TESTING_MODE,
                 surface=args.surface,
                 resolution=args.resolution,
+                mask_name=args.voxel_space_mask,
             )
             imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
                 subject,
                 IMAGERY,
                 surface=args.surface,
                 resolution=args.resolution,
+                mask_name=args.voxel_space_mask,
             )
-            for mask in args.masks:
-                mask = None if mask in ["none", "None"] else mask
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
-                    mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
+            for surface_mask in args.surface_masks:
+                surface_mask = None if surface_mask in ["none", "None"] else surface_mask
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_surface_mask_and_clean(
+                    surface_mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = normalize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, surface_mask,
+                    args.voxel_space_mask,
                 )
 
                 for model_name in args.models:
@@ -622,7 +735,8 @@ def run(args):
                                 if lang_features == FEATS_SELECT_DEFAULT:
                                     lang_features = get_default_lang_features(model_name)
 
-                                print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                                print(f"\nTRAIN MODE: {training_mode} | MASK: {args.voxel_space_mask} | SURFACE MASK: "
+                                      f"{surface_mask} | SUBJECT: {subject} | "
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
                                       f"TEST FEATURES: {test_features}")
                                 print(f"train fMRI betas shape: {train_fmri_betas.shape}")
@@ -682,7 +796,8 @@ def run(args):
                                     "vision_features": vision_features,
                                     "lang_features": lang_features,
                                     "training_mode": training_mode,
-                                    "mask": mask,
+                                    "surface_mask": surface_mask,
+                                    "voxel_space_mask": args.voxel_space_mask,
                                     "num_voxels": test_fmri_betas.shape[1],
                                     "cv_results": clf.cv_results_,
                                     "stimulus_ids": test_stim_ids,
@@ -712,9 +827,8 @@ def run(args):
 
                                 results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
-                                    model_name, features, test_features, vision_features, lang_features, mask,
-                                    args.surface,
-                                    args.resolution)
+                                    model_name, features, test_features, vision_features, lang_features,
+                                    args.voxel_space_mask, surface_mask, args.surface, args.resolution)
                                 results_file_dir = os.path.join(results_dir, run_str)
                                 os.makedirs(results_file_dir, exist_ok=True)
 
@@ -736,12 +850,15 @@ def get_args():
     parser.add_argument("--test-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
+    parser.add_argument("--voxel-space-mask", type=str, default=None,
+                        choices=[MASK_ANATOMICAL_LANGUAGE, MASK_ANATOMICAL_VISUAL_LOW_LEVEL,
+                                 MASK_ANATOMICAL_VISUAL_HIGH_LEVEL, MASK_ANATOMICAL_VISUAL])
+    parser.add_argument("--surface-masks", type=str, nargs='+', default=[None])
+
     parser.add_argument("--vision-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=VISION_FEAT_COMBINATION_CHOICES)
     parser.add_argument("--lang-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=LANG_FEAT_COMBINATION_CHOICES)
-
-    parser.add_argument("--masks", type=str, nargs='+', default=[None])
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
