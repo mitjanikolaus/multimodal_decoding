@@ -9,10 +9,10 @@ def get_graymatter_mask_path(subject, downsampled=True):
     file_suffix = "_orig"
     file_suffix += "_downsampled" if downsampled else ""
 
-    mni_mask_image_path = os.path.join(
+    mask_image_path = os.path.join(
         FMRI_DATA_DIR, 'graymatter_masks', subject, f'mask{file_suffix}.nii'
     )
-    return mni_mask_image_path
+    return mask_image_path
 
 
 def run(args):
@@ -33,7 +33,7 @@ def run(args):
 
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
-        mask_image_path = get_graymatter_mask_path(subject, mni=False, downsampled=False)
+        mask_image_path = get_graymatter_mask_path(subject, downsampled=False)
         os.makedirs(os.path.dirname(mask_image_path), exist_ok=True)
         nib.save(mask_img, mask_image_path)
 
