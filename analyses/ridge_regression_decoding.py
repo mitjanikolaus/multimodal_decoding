@@ -526,7 +526,7 @@ def get_fmri_surface_data(subject, mode, resolution):
             subject, mode, surface=True, hemi=FS_HEMI_NAMES[hemi], resolution=resolution
         )
 
-        for path in tqdm(fmri_betas_paths, desc=f"loading fmri surface {mode} {hemi} data"):
+        for path in tqdm(fmri_betas_paths, desc=f"loading fmri surface {mode} {hemi} hemi data"):
             gifti_img = nib.load(path)
             gifti_img_data = gifti_img.agg_data()
             fmri_betas[hemi].append(gifti_img_data)
