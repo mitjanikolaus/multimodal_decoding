@@ -253,6 +253,7 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
         fmri_addresses_regex = os.path.join(
             FMRI_SURFACE_LEVEL_DIR, subject, f'betas_{mode}*', resolution, filename_suffix
         )
+        print(f"betas regex: {fmri_addresses_regex}")
     else:
         filename_suffix = "*.nii"
         fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', filename_suffix)
