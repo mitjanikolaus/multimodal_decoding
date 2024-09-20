@@ -518,7 +518,7 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
 
 
 def get_fmri_surface_data(subject, mode, resolution):
-    fmri_betas = {hemi: [] for hemi in HEMIS}
+    fmri_betas = dict()
     stim_ids = None
     stim_types = None
     for hemi in HEMIS:
@@ -526,16 +526,19 @@ def get_fmri_surface_data(subject, mode, resolution):
             subject, mode, surface=True, hemi=FS_HEMI_NAMES[hemi], resolution=resolution
         )
 
+        betas = []
         for path in tqdm(fmri_betas_paths, desc=f"loading fmri surface {mode} {hemi} hemi data"):
             gifti_img = nib.load(path)
             gifti_img_data = gifti_img.agg_data()
-            fmri_betas[hemi].append(gifti_img_data)
+            betas.append(gifti_img_data)
         if stim_ids is None:
             stim_ids = ids
             stim_types = types
         else:
             assert np.all(stim_ids == ids), f"{mode}: Mismatching stimuli for left and right hemi"
             assert np.all(stim_types == types), f"{mode}: Mismatching stim types for left and right hemi"
+
+        fmri_betas[hemi] = np.array(betas)
 
     return fmri_betas, stim_ids, stim_types
 
