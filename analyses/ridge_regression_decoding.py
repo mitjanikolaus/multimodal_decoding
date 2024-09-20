@@ -526,7 +526,7 @@ def get_fmri_surface_data(subject, mode, resolution):
         )
 
         for i, (path, id, type) in tqdm(enumerate(zip(fmri_betas_paths, stim_ids, stim_types)),
-                                        desc="loading fmri surface data"):
+                                        desc=f"loading fmri surface {mode} data"):
             sample = nib.load(path)
             sample = sample.get_fdata().astype('float32').reshape(-1)
             fmri_betas[hemi].append(sample)
