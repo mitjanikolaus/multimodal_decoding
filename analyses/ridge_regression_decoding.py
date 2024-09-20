@@ -251,15 +251,13 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
             raise ValueError("Hemi and resolution needs to be specified to load surface-level data")
         filename_suffix = f"*_{hemi}.gii"
         fmri_addresses_regex = os.path.join(
-            FMRI_SURFACE_LEVEL_DIR, subject, f'betas_{mode}*', resolution, filename_suffix
+            FMRI_SURFACE_LEVEL_DIR, resolution, subject, f'betas_{mode}*', filename_suffix
         )
-        print(f"betas regex: {fmri_addresses_regex}")
     else:
         filename_suffix = "*.nii"
         fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', filename_suffix)
 
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
-    print(f"found betas: {fmri_betas_paths}")
 
     stim_ids = []
     stim_types = []
@@ -274,6 +272,8 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
             stim_types.append(IMAGE)
         elif 'caption' in split_name:
             stim_types.append(CAPTION)
+        else:
+            raise RuntimeError(f"Unknown split name: {split_name}")
 
         stim_ids.append(stim_id)
 

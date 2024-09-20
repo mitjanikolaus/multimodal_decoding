@@ -27,7 +27,7 @@ def transform_to_surf(vol_file, output_dir, reg_file_path, resolution):
 
     for hemi in HEMIS_FS:
         out_file_name = file_name.replace('.nii', f'_{hemi}.gii')
-        out_path = os.path.join(output_dir, resolution, out_file_name)
+        out_path = os.path.join(output_dir, out_file_name)
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
         conv_cmd = f'mri_vol2surf --mov "{vol_file}" --reg "{reg_file_path}" --o "{out_path}" --hemi {hemi} --trgsubject {resolution} --projfrac 0.5'
@@ -38,7 +38,8 @@ def transform_to_surf(vol_file, output_dir, reg_file_path, resolution):
 
 def transform_graymatter_mask(subject, reg_file_path, resolution):
     mask_path = get_graymatter_mask_path(subject)
-    transform_to_surf(mask_path, os.path.dirname(mask_path), reg_file_path, resolution)
+    output_dir = os.path.join(os.path.dirname(mask_path), resolution)
+    transform_to_surf(mask_path, output_dir, reg_file_path, resolution)
 
 
 def run(args):
@@ -51,7 +52,6 @@ def run(args):
 
         transform_graymatter_mask(subject, reg_file_path, args.resolution)
 
-        base_output_dir = os.path.join(args.output_dir, subject)
 
         base_dir = os.path.join(FMRI_BETAS_DIR, subject)
         betas_split_dirs = os.listdir(base_dir)
@@ -60,10 +60,10 @@ def run(args):
 
         for split_name in betas_split_dirs:
             print("processing: ", split_name)
-            os.makedirs(os.path.join(base_output_dir, split_name), exist_ok=True)
-
             beta_files = sorted(glob(os.path.join(base_dir, split_name, f'beta*.nii')))
-            output_dir = os.path.join(base_output_dir, split_name)
+            output_dir = os.path.join(args.output_dir, args.resolution, subject, split_name)
+            os.makedirs(output_dir, exist_ok=True)
+
             for beta_file in tqdm(beta_files):
                 transform_to_surf(beta_file, output_dir, reg_file_path, args.resolution)
 
