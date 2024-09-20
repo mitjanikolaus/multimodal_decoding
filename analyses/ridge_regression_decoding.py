@@ -259,6 +259,7 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
         fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', filename_suffix)
 
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
+    print(f"found betas: {fmri_betas_paths}")
 
     stim_ids = []
     stim_types = []
