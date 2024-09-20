@@ -536,7 +536,7 @@ def get_fmri_surface_data(subject, mode, resolution):
             stim_types = types
         else:
             assert stim_ids == ids, f"{mode}: Mismatching stimuli for left and right hemi"
-            assert stim_types == types f"{mode}: Mismatching stim types for left and right hemi"
+            assert stim_types == types, f"{mode}: Mismatching stim types for left and right hemi"
 
     return fmri_betas, stim_ids, stim_types
 
