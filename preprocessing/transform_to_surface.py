@@ -14,8 +14,9 @@ def create_lta_file(subject):
     print("creating lta file")
     reg_file_path = os.path.join(FMRI_REGFILES_DIR, subject, 'spm2fs_downsampled.lta')
     os.makedirs(os.path.dirname(reg_file_path), exist_ok=True)
-    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject), f'_session_id_ses-01/coregister_downsampled/rameana{subject}_ses-01_task-coco_run-01_bold.nii')
-    conv_cmd =  f"mri_coreg --s {subject} --mov {vol_file_path} --reg {reg_file_path}"
+    vol_file_path = os.path.join(FMRI_PREPROCESSED_DATA_DIR, f'preprocess_workflow', nipype_subject_id(subject),
+                                 f'_session_id_ses-01/coregister_downsampled/rameana{subject}_ses-01_task-coco_run-01_bold.nii')
+    conv_cmd = f"mri_coreg --s {subject} --mov {vol_file_path} --reg {reg_file_path}"
     print(conv_cmd)
     result_code = os.system(conv_cmd)
     assert os.path.isfile(reg_file_path), f"LTA file creation with above command failed with error code: {result_code}"
@@ -52,15 +53,14 @@ def run(args):
 
         transform_graymatter_mask(subject, reg_file_path, args.resolution)
 
-
-        base_dir = os.path.join(FMRI_BETAS_DIR, subject)
-        betas_split_dirs = os.listdir(base_dir)
+        subject_dir = os.path.join(FMRI_BETAS_DIR, subject)
+        betas_split_dirs = os.listdir(subject_dir)
         if 'unstructured' in betas_split_dirs:
             betas_split_dirs.remove('unstructured')
 
         for split_name in betas_split_dirs:
             print("processing: ", split_name)
-            beta_files = sorted(glob(os.path.join(base_dir, split_name, f'beta*.nii')))
+            beta_files = sorted(glob(os.path.join(subject_dir, split_name, f'beta*.nii')))
             output_dir = os.path.join(args.output_dir, args.resolution, subject, split_name)
             os.makedirs(output_dir, exist_ok=True)
 
@@ -77,7 +77,6 @@ def get_args():
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_SURFACE_LEVEL_DIR)
-
 
     return parser.parse_args()
 
