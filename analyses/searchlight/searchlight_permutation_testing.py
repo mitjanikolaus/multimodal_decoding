@@ -718,5 +718,5 @@ if __name__ == "__main__":
 
     create_gifti_results_maps(args)
 
-    create_null_distribution(args)
-    calc_test_statistics(args)
+    # create_null_distribution(args)
+    # calc_test_statistics(args)
