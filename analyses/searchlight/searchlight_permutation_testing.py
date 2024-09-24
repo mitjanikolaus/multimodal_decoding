@@ -49,7 +49,7 @@ CHANCE_VALUES = {
 def load_per_subject_scores(args):
     print("loading per-subject scores")
 
-    per_subject_scores = {subj: dict() for subj in SUBJECTS}
+    per_subject_scores = {subj: dict() for subj in args.subjects}
 
     results_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
@@ -115,11 +115,11 @@ def create_gifti_results_maps(args):
 
     for metric in METRICS:
         for hemi in HEMIS:
-            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
             path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(score_hemi_avgd, path_out)
 
-            for subj in SUBJECTS:
+            for subj in args.subjects:
                 score_hemi = per_subject_scores[subj][hemi][metric]
                 path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
@@ -373,7 +373,7 @@ def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
-            data = np.array([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS])
+            data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
@@ -505,7 +505,7 @@ def load_null_distr_per_subject_scores(args):
             distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
             distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
             if len(per_subject_scores_null_distr) <= i:
-                per_subject_scores_null_distr.append({subj: dict() for subj in SUBJECTS})
+                per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations, subject, hemi, args)
             per_subject_scores_null_distr[i][subject][hemi] = scores
     return per_subject_scores_null_distr
@@ -526,7 +526,7 @@ def calc_t_values_null_distr(args, out_path):
     else:
         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
-    def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path):
+    def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path, subjects):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
 
         with h5py.File(tmp_file_path, 'w') as f:
@@ -534,7 +534,7 @@ def calc_t_values_null_distr(args, out_path):
             for hemi in HEMIS:
                 dsets[hemi] = dict()
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
-                    tvals_shape = (len(permutations), per_subject_scores[0][SUBJECTS[0]][hemi][METRIC_IMAGES].size)
+                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][METRIC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
             iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
@@ -545,7 +545,7 @@ def calc_t_values_null_distr(args, out_path):
                     for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
                         data = np.array(
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                             zip(permutation, SUBJECTS)])
+                             zip(permutation, args.subjects)])
                         popmean = CHANCE_VALUES[metric]
                         t_values[hemi][metric] = calc_image_t_values(data, popmean)
                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
@@ -560,13 +560,13 @@ def calc_t_values_null_distr(args, out_path):
                                 t_values[hemi][METRIC_CAPTIONS]),
                             axis=0)
 
-    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(SUBJECTS))
+    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[0][SUBJECTS[0]]['left'][METRIC_IMAGES].shape[0]
+    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]]['left'][METRIC_IMAGES].shape[0]
     enough_data = {
         hemi: np.argwhere(
-            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][METRIC_IMAGES] for subj in SUBJECTS])).sum(
+            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][METRIC_IMAGES] for subj in args.subjects])).sum(
                 axis=0) > 2)[:, 0]
         for hemi in HEMIS
     }  # at least 3 datapoints
@@ -580,8 +580,8 @@ def calc_t_values_null_distr(args, out_path):
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
     for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr)):
         for job_id in range(args.n_jobs):
-            scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in SUBJECTS})
-        for subj in SUBJECTS:
+            scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
+        for subj in args.subjects:
             for hemi in HEMIS:
                 for metric in scores[subj][hemi].keys():
                     for job_id in range(args.n_jobs):
@@ -598,6 +598,7 @@ def calc_t_values_null_distr(args, out_path):
             permutations,
             id,
             tmp_filenames[id],
+            args.subjects,
         )
         for id in range(args.n_jobs)
     )
@@ -683,6 +684,8 @@ def create_null_distribution(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default="avg_test_avg")

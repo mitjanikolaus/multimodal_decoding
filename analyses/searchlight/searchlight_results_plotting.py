@@ -420,6 +420,8 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
+
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
