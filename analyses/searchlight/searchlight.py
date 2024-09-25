@@ -37,7 +37,6 @@ TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] 
 
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY]
 
-
 METRIC_CAPTIONS = 'captions'
 METRIC_IMAGES = 'images'
 METRIC_AGNOSTIC = 'agnostic'
@@ -78,12 +77,14 @@ def train_and_test(
             shuffled_indices = create_shuffled_indices(seed)
             y_test_shuffled = y_test[shuffled_indices]
 
-            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES)
+            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES,
+                                                       comp_mod_agnostic_scores=False, comp_cross_decoding_scores=False)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
+    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery,
+                                               comp_mod_agnostic_scores=False)
 
     return scores
 
@@ -106,7 +107,8 @@ def custom_group_iter_search_light(
     results = []
     t0 = time.time()
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
-        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
+        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
+                                imagery_ids=imagery_ids,
                                 null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
         results.append(scores)
         if print_interval > 0:
@@ -252,7 +254,8 @@ def run(args):
 
                 X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
 
-                results_dir = get_results_dir(args, f"{args.features}_test_{args.test_features}", hemi, model_name, subject, training_mode)
+                results_dir = get_results_dir(args, f"{args.features}_test_{args.test_features}", hemi, model_name,
+                                              subject, training_mode)
 
                 results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
@@ -329,7 +332,8 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
-    if "plot_n_neighbors_correlation_graph" in args and args.plot_n_neighbors_correlation_graph and (n_neighbors is not None) and (subj is not None):
+    if "plot_n_neighbors_correlation_graph" in args and args.plot_n_neighbors_correlation_graph and (
+            n_neighbors is not None) and (subj is not None):
         correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
 
     scores_specific_captions = dict()
@@ -347,7 +351,8 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
             [score[metric] for score in scores_images])
 
     scores[METRIC_IMAGERY_WHOLE_TEST] = np.repeat(np.nan, nan_locations.shape)
-    scores[METRIC_IMAGERY_WHOLE_TEST][~nan_locations] = np.array([score[ACC_IMAGERY_WHOLE_TEST] for score in scores_agnostic])
+    scores[METRIC_IMAGERY_WHOLE_TEST][~nan_locations] = np.array(
+        [score[ACC_IMAGERY_WHOLE_TEST] for score in scores_agnostic])
 
     scores[METRIC_DIFF_IMAGES] = np.array(
         [ai - si for ai, ac, si, sc in

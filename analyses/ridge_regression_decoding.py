@@ -401,9 +401,16 @@ def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cos
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
                                       imagery_predictions=None, metric="cosine", normalize_predictions=True,
-                                      normalize_targets=False, norm_imagery_preds_with_test_preds=False):
-    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize_predictions,
-                                             normalize_targets)
+                                      normalize_targets=False, norm_imagery_preds_with_test_preds=False,
+                                      comp_mod_agnostic_scores=True, comp_cross_decoding_scores=True):
+    results = dict()
+    if comp_mod_agnostic_scores:
+        results.update(
+            pairwise_accuracy_mod_agnostic(
+                latents, predictions, stim_types, metric, normalize_predictions,
+                normalize_targets
+            )
+        )
 
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
         preds_mod = predictions[stim_types == modality].copy()
@@ -412,13 +419,15 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
                                                      normalize_targets)
 
-    for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
-                                                       [ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]):
-        preds_mod = predictions[stim_types == mod_preds].copy()
-        latents_mod = latents[stim_types == mod_latents]
+    if comp_cross_decoding_scores:
+        for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+                                                           [ACC_CROSS_CAPTIONS_TO_IMAGES,
+                                                            ACC_CROSS_IMAGES_TO_CAPTIONS]):
+            preds_mod = predictions[stim_types == mod_preds].copy()
+            latents_mod = latents[stim_types == mod_latents]
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
-                                                     normalize_targets)
+            results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
+                                                         normalize_targets)
 
     if imagery_latents is not None:
         results.update(
