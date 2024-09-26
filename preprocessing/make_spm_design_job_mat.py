@@ -56,6 +56,8 @@ def get_condition_names(trial, glm_stage):
             conditions.append('null')
         elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
             conditions.append('null')
+        elif trial['one_back'] != 0:
+            conditions.append('null')
         else:
             if trial['condition_name'] != 0:
                 if trial['trial_type'] == 1 and trial['train_test'] == 1:
