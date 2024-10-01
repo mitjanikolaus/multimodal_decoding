@@ -45,14 +45,10 @@ CHANCE_VALUES = {
 }
 
 
-def load_per_subject_scores(args):
-    print("loading per-subject scores")
-
-    per_subject_scores = {subj: dict() for subj in args.subjects}
-
+def get_results_paths(args):
     results_regex = os.path.join(
         SEARCHLIGHT_OUT_DIR,
-        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/'
+        f'{MODE_AGNOSTIC}/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/'
         f'alpha_{str(args.l2_regularization_alpha)}.p'
     )
     print(results_regex)
@@ -79,6 +75,15 @@ def load_per_subject_scores(args):
             f"Length mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} "
             f"{len(paths_mod_specific_captions)}"
         )
+
+    return paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions
+
+
+def load_per_subject_scores(args):
+    print("loading per-subject scores")
+
+    per_subject_scores = {subj: dict() for subj in args.subjects}
+    paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions = get_results_paths(args)
 
     for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                         paths_mod_specific_images), total=len(paths_mod_agnostic)):
@@ -447,24 +452,8 @@ def calc_test_statistics(args):
 
 
 def load_null_distr_per_subject_scores(args):
-    alpha = args.l2_regularization_alpha
-    results_regex = os.path.join(
-        SEARCHLIGHT_OUT_DIR,
-        f'train/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/alpha_{str(alpha)}.p'
-    )
     per_subject_scores_null_distr = []
-    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
-    paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace(MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS))))
-    paths_mod_specific_images = np.array(sorted(glob(results_regex.replace(MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES))))
-    if not (len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)):
-        raise RuntimeError(
-            f"Length mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} "
-            f"{len(paths_mod_specific_captions)}\n"
-            f"{paths_mod_agnostic}\n"
-            f"{paths_mod_specific_images}\n"
-            f"{paths_mod_specific_captions}"
-        )
-
+    paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions = get_results_paths(args)
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
