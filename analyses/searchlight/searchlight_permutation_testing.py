@@ -20,7 +20,7 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
-    METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, process_scores, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
+    process_scores, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
@@ -40,8 +40,6 @@ CHANCE_VALUES = {
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_MIN: 0,
-    METRIC_IMAGERY: 0.5,
-    METRIC_IMAGERY_WHOLE_TEST: 0.5,
 }
 
 
@@ -111,8 +109,7 @@ def load_per_subject_scores(args):
 def create_gifti_results_maps(args):
     per_subject_scores = load_per_subject_scores(args)
 
-    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
-               METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
+    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 
     results_dir = os.path.join(permutation_results_dir(args), "acc_scores_gifti")
     os.makedirs(results_dir, exist_ok=True)
