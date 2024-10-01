@@ -456,7 +456,15 @@ def load_null_distr_per_subject_scores(args):
     paths_mod_agnostic = np.array(sorted(glob(results_regex)))
     paths_mod_specific_captions = np.array(sorted(glob(results_regex.replace(MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS))))
     paths_mod_specific_images = np.array(sorted(glob(results_regex.replace(MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES))))
-    assert len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)
+    if not (len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)):
+        raise RuntimeError(
+            f"Length mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} "
+            f"{len(paths_mod_specific_captions)}\n"
+            f"{paths_mod_agnostic}\n"
+            f"{paths_mod_specific_images}\n"
+            f"{paths_mod_specific_captions}"
+        )
+
 
     for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
                                                    paths_mod_specific_images):
