@@ -20,9 +20,9 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
-    process_scores, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
+    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, BASE_METRICS
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, correlation_num_voxels_acc
 
 DEFAULT_N_JOBS = 10
 
@@ -75,6 +75,50 @@ def get_results_paths(args):
         )
 
     return paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions
+
+
+def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
+    scores = dict()
+
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[-1]
+        scores[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
+
+    if "plot_n_neighbors_correlation_graph" in args and args.plot_n_neighbors_correlation_graph and (
+            n_neighbors is not None) and (subj is not None):
+        correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
+
+    scores_specific_captions = dict()
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[-1]
+        scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_specific_captions[score_name][~nan_locations] = np.array(
+            [score[metric] for score in scores_captions])
+
+    scores_specific_images = dict()
+    for metric in BASE_METRICS:
+        score_name = metric.split("_")[-1]
+        scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+        scores_specific_images[score_name][~nan_locations] = np.array(
+            [score[metric] for score in scores_images])
+
+    scores[METRIC_DIFF_IMAGES] = np.array(
+        [ai - si for ai, ac, si, sc in
+         zip(scores[METRIC_IMAGES],
+             scores[METRIC_CAPTIONS],
+             scores_specific_images[METRIC_IMAGES],
+             scores_specific_captions[METRIC_CAPTIONS])]
+    )
+    scores[METRIC_DIFF_CAPTIONS] = np.array(
+        [ac - sc for ai, ac, si, sc in
+         zip(scores[METRIC_IMAGES],
+             scores[METRIC_CAPTIONS],
+             scores_specific_images[METRIC_IMAGES],
+             scores_specific_captions[METRIC_CAPTIONS])]
+    )
+
+    return scores
 
 
 def load_per_subject_scores(args):
