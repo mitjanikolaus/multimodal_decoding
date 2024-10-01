@@ -17,10 +17,11 @@ from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC
+from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC, ACC_CAPTIONS, \
+    ACC_IMAGES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
-    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, BASE_METRICS
+    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, correlation_num_voxels_acc
 
@@ -41,6 +42,8 @@ CHANCE_VALUES = {
     METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
     METRIC_MIN: 0,
 }
+
+BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
 
 
 def get_results_paths(args):

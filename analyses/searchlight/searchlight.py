@@ -22,7 +22,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
-    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CAPTIONS, ACC_IMAGES
+    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, DATA_DIR
@@ -32,8 +32,6 @@ DEFAULT_N_JOBS = 10
 SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
-
-BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
 
 METRIC_CAPTIONS = 'captions'
 METRIC_IMAGES = 'images'
