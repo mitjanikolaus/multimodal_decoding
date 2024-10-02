@@ -393,8 +393,7 @@ def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     rois_for_view = {
-        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital'],
-        # , 'Left-Hippocampus'
+        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital', 'G_oc-temp_med-Parahip'],
         "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup'],
         "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor' , 'G_temporal_inf']
     }
