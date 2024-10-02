@@ -7,7 +7,7 @@ from PIL import Image
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import make_axes
 from matplotlib.colors import ListedColormap
-from nilearn import datasets
+from nilearn import datasets, plotting
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -415,6 +415,8 @@ def plot(args):
     save_legend(all_colors, p_values_atlas_results_dir)
     # plt.savefig(path)
 
+    cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
+    cbar_min = 0
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
         # resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
@@ -439,8 +441,6 @@ def plot(args):
 
         # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
-        cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
-        cbar_min = 0
         for i, (view, rois) in enumerate(rois_for_view.items()):
             regions_indices = [names.index(roi) for roi in rois]
             label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
@@ -477,6 +477,20 @@ def plot(args):
             path = os.path.join(p_values_atlas_results_dir, f"{title}.png")
             save_plot_and_crop_img(path)
             print(f"saved {path}")
+
+    # plot for cbar:
+    plotting.plot_surf_stat_map(
+        fsaverage[f"infl_{HEMIS[0]}"],
+        p_values[HEMIS[0]],
+        hemi=HEMIS[0],
+        view=args.views[0],
+        colorbar=True,
+        threshold=-np.log10(P_VALUE_THRESHOLD),
+        vmax=cbar_max,
+        vmin=cbar_min,
+        cmap=CMAP_POS_ONLY,
+    )
+    save_plot_and_crop_img(os.path.join(p_values_atlas_results_dir, "colorbar.png"), crop_cbar=True)
 
 
 def create_composite_image(args):
