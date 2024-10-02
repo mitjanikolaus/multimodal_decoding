@@ -403,10 +403,10 @@ def plot(args):
         unique_rois.update(r)
 
     label_names_dict = destrieux_label_names()
-    colors_without_yellow_paired = [0, 1, 2, 3, 8, 9, 11]
-    color_palette = [sns.color_palette("Paired")[i] for i in colors_without_yellow_paired]
-    colors_without_yellow_set2 = [0, 3, 7]
-    color_palette += [sns.color_palette("Set2")[i] for i in colors_without_yellow_set2]
+    colors_without_yellow_red_paired = [0, 1, 2, 3, 8, 9, 11]
+    color_palette = [sns.color_palette("Paired")[i] for i in colors_without_yellow_red_paired]
+    colors_without_yellow_red_set2 = [0, 3, 4, 7]
+    color_palette += [sns.color_palette("Set2")[i] for i in colors_without_yellow_red_set2]
     assert len(unique_rois) <= len(color_palette), f"number of ROIS: {len(unique_rois)}"
 
     all_colors = {label_names_dict[r]: c for r, c in
