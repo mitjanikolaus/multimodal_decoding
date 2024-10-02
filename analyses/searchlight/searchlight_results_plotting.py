@@ -13,8 +13,7 @@ from tqdm import tqdm
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
-    load_null_distr_per_subject_scores, METRIC_MIN, METRIC_AGNOSTIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, \
-    permutation_results_dir, get_hparam_suffix
+    load_null_distr_per_subject_scores, METRIC_MIN, permutation_results_dir, get_hparam_suffix
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
@@ -146,9 +145,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
 def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metrics = [
-        METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY,
-        METRIC_IMAGERY_WHOLE_TEST
-    ]
+        METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     if subfolder:
