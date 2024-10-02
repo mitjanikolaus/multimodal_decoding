@@ -29,6 +29,7 @@ def create_symlinks_for_beta_files(betas_dir):
     beta_file_addresses = sorted(glob(os.path.join(betas_base_dir, '**', 'beta_*.nii'), recursive=True))
 
     all_slink_names = set()
+    all_beta_relative_paths = set()
     for beta_path in tqdm(beta_file_addresses):
         beta_file = nib.load(beta_path)
         beta_name = beta_file.header['descrip'].item().decode()
@@ -48,6 +49,9 @@ def create_symlinks_for_beta_files(betas_dir):
                 if not beta_relative_path.startswith(os.sep):
                     beta_relative_path = os.sep + beta_relative_path
                 beta_relative_path = f"..{beta_relative_path}"
+                if beta_relative_path in all_beta_relative_paths:
+                    raise Exception(f'link target already processed: {beta_relative_path}')
+                all_beta_relative_paths.add(beta_relative_path)
                 os.symlink(beta_relative_path, slink_name)
 
     print(all_slink_names)
