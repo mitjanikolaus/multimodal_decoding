@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from utils import SUBJECTS, FMRI_BETAS_DIR
 
-SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank', 'pilot_image',
+SPLITS = ['train_images', 'train_captions', 'test_captions', 'test_images', 'imagery', 'blank', 'pilot_image',
           'pilot_caption', 'pilot_filler_image', 'pilot_filler_caption']
 
 SUFFIX = "*bf(1)"
