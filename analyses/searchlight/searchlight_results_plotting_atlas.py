@@ -407,7 +407,7 @@ def plot(args):
     color_palette = [sns.color_palette("Paired")[i] for i in colors_without_yellow_red_paired]
     colors_without_yellow_red_set2 = [0, 3, 4, 7]
     color_palette += [sns.color_palette("Set2")[i] for i in colors_without_yellow_red_set2]
-    assert len(unique_rois) <= len(color_palette), f"number of ROIS: {len(unique_rois)}"
+    assert len(unique_rois) <= len(color_palette), f"not enought colors for {len(unique_rois)} ROIS"
 
     all_colors = {label_names_dict[r]: c for r, c in
                   zip(unique_rois, color_palette)}
