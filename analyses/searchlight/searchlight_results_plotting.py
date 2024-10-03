@@ -162,7 +162,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
         for j, hemi in enumerate(HEMIS):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
-                score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in SUBJECTS], axis=0)
+                score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
 
             print(f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_avgd):.2f} | max: {np.nanmax(score_hemi_avgd):.2f}")
 
