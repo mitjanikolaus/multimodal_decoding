@@ -47,29 +47,37 @@ BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
 
 
 def get_results_paths(args):
-    results_regex = os.path.join(
-        SEARCHLIGHT_OUT_DIR,
-        f'{MODE_AGNOSTIC}/{args.model}/{args.features}/*/{args.resolution}/*/{args.mode}/'
-        f'alpha_{str(args.l2_regularization_alpha)}.p'
-    )
-    print(results_regex)
-    paths_mod_agnostic = np.array(sorted(glob(results_regex)))
+    paths_mod_agnostic = []
+    paths_mod_specific_images = []
+    paths_mod_specific_captions = []
+    for subject in args.subjects:
+        results_regex = os.path.join(
+            SEARCHLIGHT_OUT_DIR,
+            f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/*/{args.mode}/'
+            f'alpha_{str(args.l2_regularization_alpha)}.p'
+        )
+        print(results_regex)
+        paths_mod_agnostic.extend(glob(results_regex))
 
-    results_mod_specific_vision_regex = os.path.join(
-        SEARCHLIGHT_OUT_DIR,
-        f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/*/{args.resolution}/*/'
-        f'{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
-    )
-    print(results_mod_specific_vision_regex)
-    paths_mod_specific_images = np.array(sorted(glob(results_mod_specific_vision_regex)))
+        results_mod_specific_vision_regex = os.path.join(
+            SEARCHLIGHT_OUT_DIR,
+            f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'  
+            f'{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+        )
+        print(results_mod_specific_vision_regex)
+        paths_mod_specific_images.extend(glob(results_mod_specific_vision_regex))
 
-    results_mod_specific_lang_regex = os.path.join(
-        SEARCHLIGHT_OUT_DIR,
-        f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/*/{args.resolution}/*/'
-        f'{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
-    )
-    print(results_mod_specific_lang_regex)
-    paths_mod_specific_captions = np.array(sorted(glob(results_mod_specific_lang_regex)))
+        results_mod_specific_lang_regex = os.path.join(
+            SEARCHLIGHT_OUT_DIR,
+            f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
+            f'{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+        )
+        print(results_mod_specific_lang_regex)
+        paths_mod_specific_captions.extend(glob(results_mod_specific_lang_regex))
+
+    paths_mod_agnostic = np.array(sorted(paths_mod_agnostic))
+    paths_mod_specific_images = np.array(sorted(paths_mod_specific_images))
+    paths_mod_specific_captions = np.array(sorted(paths_mod_specific_captions))
 
     if not (len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)):
         raise RuntimeError(
