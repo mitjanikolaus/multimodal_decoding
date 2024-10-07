@@ -379,7 +379,7 @@ def plot_surf_roi_custom(surf_mesh,
 
 
 def plot(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     p_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
     os.makedirs(p_values_atlas_results_dir, exist_ok=True)
 
@@ -494,7 +494,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
 
     images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi

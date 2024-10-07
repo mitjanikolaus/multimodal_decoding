@@ -289,7 +289,7 @@ def append_images(images, horizontally=True, padding=5):
 
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
 
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
     p_val_img = Image.open(os.path.join(p_values_imgs_dir, f"medial_left.png"))
@@ -324,7 +324,7 @@ def create_composite_image(args):
 
 
 def run(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     os.makedirs(results_path, exist_ok=True)
 
     plot_p_values(results_path, args)
