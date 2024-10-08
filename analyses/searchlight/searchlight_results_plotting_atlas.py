@@ -530,6 +530,35 @@ def create_composite_image(args):
 
     path = os.path.join(results_path, "searchlight_results.png")
     p_val_image.save(path, transparent=True)
+
+
+    # without atlas
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
+
+    images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+                      in HEMIS]
+    images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+                     in HEMIS]
+
+    imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    img_ventral = append_images(images=imgs_ventral, horizontally=False)
+
+    img_medial = append_images(images=images_medial)
+
+    img_row_2 = append_images(images=[img_medial, img_ventral])
+
+    img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
+    img_lateral = append_images(images=images_lateral)
+
+    img_row_1 = append_images([img_lateral, img_colorbar], padding=20)
+
+    roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
+
+    p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
+
+    path = os.path.join(results_path, "searchlight_results_no_atlas.png")
+    p_val_image.save(path, transparent=True)
     print("done")
 
 
@@ -563,5 +592,5 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    plot(args)
+    # plot(args)
     create_composite_image(args)
