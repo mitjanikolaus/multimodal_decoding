@@ -592,5 +592,5 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    # plot(args)
+    plot(args)
     create_composite_image(args)
