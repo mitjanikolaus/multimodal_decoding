@@ -293,10 +293,11 @@ def create_composite_image(args):
 
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
     p_val_img = Image.open(os.path.join(p_values_imgs_dir, f"medial_left.png"))
-    offset_size = (int(p_val_img.size[0]/1.5), p_val_img.size[1])
-    image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
+    # offset_size = (int(p_val_img.size[0]/10), p_val_img.size[1])
+    # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
     cbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
-    p_val_image = append_images([image_whitespace, p_val_img, cbar], padding=50)
+    p_val_image = append_images([cbar, p_val_img], padding=150)     #image_whitespace
+    p_val_image = p_val_image.resize((int(p_val_image.size[0] * 1.1), int(p_val_image.size[1] * 1.1)))
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
@@ -316,7 +317,7 @@ def create_composite_image(args):
 
     acc_imgs = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff], padding=400)
 
-    full_img = append_images([acc_imgs, p_val_image], horizontally=False, padding=300)
+    full_img = append_images([acc_imgs, p_val_image], horizontally=False, padding=400)
 
     path = os.path.join(results_path, "searchlight_methods.png")
     full_img.save(path, transparent=True)
