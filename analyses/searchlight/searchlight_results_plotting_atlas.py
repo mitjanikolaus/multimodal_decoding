@@ -553,9 +553,7 @@ def create_composite_image(args):
 
     img_row_1 = append_images([img_lateral, img_colorbar], padding=20)
 
-    roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
-
-    p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
+    p_val_image = append_images([img_row_1, img_row_2], padding=5, horizontally=False)
 
     path = os.path.join(results_path, "searchlight_results_no_atlas.png")
     p_val_image.save(path, transparent=True)
