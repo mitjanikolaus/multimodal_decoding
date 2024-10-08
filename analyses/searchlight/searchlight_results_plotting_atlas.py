@@ -395,11 +395,11 @@ def plot(args):
     rois_for_view = {
         "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
                    'G_oc-temp_med-Parahip', 'S_pericallosal'],
-        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup', 'S_front_inf',
-                    'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_front_inf-Orbital', 'G_orbital',
-                    'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'],
-        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf', 'G_front_inf-Orbital', 'G_orbital',
-                    'Pole_temporal']
+        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'S_temporal_sup', 'S_front_inf',
+                    'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_orbital',
+                    'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], #, 'G_temporal_inf' , 'G_front_inf-Orbital'
+        "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_orbital',
+                    'Pole_temporal'] #'G_oc-temp_lat-fusifor', 'G_front_inf-Orbital'
     }
 
     unique_rois = set()
