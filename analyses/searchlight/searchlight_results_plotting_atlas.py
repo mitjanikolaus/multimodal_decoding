@@ -397,8 +397,9 @@ def plot(args):
                    'G_oc-temp_med-Parahip', 'S_pericallosal'],
         "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup', 'S_front_inf',
                     'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_front_inf-Orbital', 'G_orbital',
-                    'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen'],
-        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf', 'G_front_inf-Orbital', 'G_orbital']
+                    'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'],
+        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf', 'G_front_inf-Orbital', 'G_orbital',
+                    'Pole_temporal']
     }
 
     unique_rois = set()

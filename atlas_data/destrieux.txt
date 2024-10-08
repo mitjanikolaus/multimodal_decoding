@@ -20,7 +20,7 @@
 20, G_occipital_sup Superior occipital gyrus
 21, G_oc-temp_lat-fusifor Lateral occipito-temporal gyrus (fusiform gyrus)
 22, G_oc-temp_med-Lingual Lingual gyrus, ligual part of the medial occipito-temporal gyrus
-23, G_oc-temp_med-Parahip Parahippocampal gyrus, parahippocampal part of the medial occipito-temporal gyrus
+23, G_oc-temp_med-Parahip Parahippocampal gyrus
 24, G_orbital Orbital gyri
 25, G_pariet_inf-Angular Angular gyrus
 26, G_pariet_inf-Supramar Supramarginal gyrus
@@ -33,7 +33,7 @@
 33, G_temp_sup-G_T_transv Anterior transverse temporal gyrus (of Heschl)
 34, G_temp_sup-Lateral Lateral aspect of the superior temporal gyrus
 35, G_temp_sup-Plan_polar Planum polare of the superior temporal gyrus
-36, G_temp_sup-Plan_tempo Planum temporale or temporal plane of the superior temporal gyrus
+36, G_temp_sup-Plan_tempo Planum temporale
 37, G_temporal_inf Inferior temporal gyrus
 38, G_temporal_middle Middle temporal gyrus
 39, Lat_Fis-ant-Horizont Horizontal ramus of the anterior segment of the lateral sulcus
