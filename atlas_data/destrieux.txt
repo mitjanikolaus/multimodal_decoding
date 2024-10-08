@@ -63,7 +63,7 @@
 63, S_orbital_med-olfact Medial orbital sulcus (olfactory sulcus)
 64, S_orbital-H_Shaped Orbital sulci (H-shaped sulci)
 65, S_parieto_occipital Parieto-occipital sulcus
-66, S_pericallosal Pericallosal sulcus (S of corpus callosum)
+66, S_pericallosal Pericallosal sulcus (Sulcus of corpus callosum)
 67, S_postcentral Postcentral sulcus
 68, S_precentral-inf-part Inferior part of the precentral sulcus
 69, S_precentral-sup-part Superior part of the precentral sulcus

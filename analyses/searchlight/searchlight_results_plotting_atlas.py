@@ -393,9 +393,12 @@ def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     rois_for_view = {
-        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital', 'G_oc-temp_med-Parahip'],
-        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup'],
-        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor' , 'G_temporal_inf']
+        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
+                   'G_oc-temp_med-Parahip', 'S_pericallosal'],
+        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup', 'S_front_inf',
+                    'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_front_inf-Orbital', 'G_orbital',
+                    'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen'],
+        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor', 'G_temporal_inf', 'G_front_inf-Orbital', 'G_orbital']
     }
 
     unique_rois = set()
@@ -403,11 +406,17 @@ def plot(args):
         unique_rois.update(r)
 
     label_names_dict = destrieux_label_names()
-    colors_without_yellow_red_paired = [0, 1, 2, 3, 8, 9, 11]
-    color_palette = [sns.color_palette("Paired")[i] for i in colors_without_yellow_red_paired]
-    colors_without_yellow_red_set2 = [0, 3, 4, 7]
-    color_palette += [sns.color_palette("Set2")[i] for i in colors_without_yellow_red_set2]
-    assert len(unique_rois) <= len(color_palette), f"not enought colors for {len(unique_rois)} ROIS"
+    color_palette = [(183, 242, 34), (127, 176, 4),
+                     (174, 245, 176), (10, 250, 16), (4, 186, 8), (2, 110, 5), (1, 74, 3),
+                     (193, 247, 233), (5, 245, 183), (1, 140, 104),
+                     (145, 231, 242), (5, 220, 247), (0, 120, 135),
+                     (115, 137, 245), (7, 48, 245), (2, 29, 158),
+                     (174, 92, 237), (140, 7, 242), (76, 3, 133),
+                     (245, 105, 242), (250, 5, 245), (125, 2, 122),
+                     (242, 34, 152)]
+    color_palette = [(x[0] / 255, x[1] / 255, x[2] / 255) for x in color_palette]
+
+    assert len(unique_rois) <= len(color_palette), f"not enough colors for {len(unique_rois)} ROIS"
 
     all_colors = {label_names_dict[r]: c for r, c in
                   zip(unique_rois, color_palette)}
