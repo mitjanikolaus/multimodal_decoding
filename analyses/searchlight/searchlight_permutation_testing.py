@@ -427,20 +427,24 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
                 x)].mean() > popmean else 0 for x in iterator]
         )
     else:
+        misses = 0
         t_vals = []
         for x in iterator:
-            if x[~np.isnan(x)].mean() > popmean:
-                key = hashlib.sha1(x[~np.isnan(x)]).hexdigest()
+            x_no_nan = x[~np.isnan(x)]
+            if x_no_nan.mean() > popmean:
+                key = hashlib.sha1(np.sort(x_no_nan)).hexdigest()
                 if key in t_vals_cache:
                     t_vals.append(t_vals_cache[key])
                 else:
-                    t_val = stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0]
+                    misses += 1
+                    t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
                     t_vals.append(t_val)
                     t_vals_cache[key] = t_val
             else:
                 # mean is below popmean, t value won't be significant
                 t_vals.append(0)
 
+        print("misses: ", misses)
         return np.array(t_vals)
 
 
