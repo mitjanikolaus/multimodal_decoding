@@ -418,6 +418,7 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
 
 
 def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2):
+    data = data.round(precision)
     iterator = tqdm(data.T) if use_tqdm else data.T
     if t_vals_cache is None:
         # use heuristic that mean needs to be greater than popmean to speed up calculation
@@ -429,7 +430,7 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
         t_vals = []
         for x in iterator:
             if x[~np.isnan(x)].mean() > popmean:
-                key = hashlib.sha1(x[~np.isnan(x)].round(precision)).hexdigest()
+                key = hashlib.sha1(x[~np.isnan(x)]).hexdigest()
                 if key in t_vals_cache:
                     t_vals.append(t_vals_cache[key])
                 else:
