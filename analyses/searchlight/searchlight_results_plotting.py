@@ -17,7 +17,7 @@ from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMA
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import RESULTS_DIR, SUBJECTS, HEMIS
 
-DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
+DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 0.8
 COLORBAR_THRESHOLD_MIN = 0.6
 
