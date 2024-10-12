@@ -431,7 +431,6 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
             if x[~np.isnan(x)].mean() > popmean:
                 key = hashlib.sha1(x[~np.isnan(x)].round(precision)).hexdigest()
                 if key in t_vals_cache:
-                    print("hit!")
                     t_vals.append(t_vals_cache[key])
                 else:
                     t_val = stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0]
