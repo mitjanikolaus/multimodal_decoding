@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import itertools
 import math
 import warnings
@@ -61,7 +62,7 @@ def get_results_paths(args):
 
         results_mod_specific_vision_regex = os.path.join(
             SEARCHLIGHT_OUT_DIR,
-            f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'  
+            f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
             f'{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
         )
         print(results_mod_specific_vision_regex)
@@ -416,13 +417,31 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False):
+def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2):
     iterator = tqdm(data.T) if use_tqdm else data.T
-    # use heuristic that mean needs to be greater than popmean to speed up calculation
-    return np.array(
-        [stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if x[~np.isnan(
-            x)].mean() > popmean else 0 for x in iterator]
-    )
+    if t_vals_cache is None:
+        # use heuristic that mean needs to be greater than popmean to speed up calculation
+        return np.array(
+            [stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0] if x[~np.isnan(
+                x)].mean() > popmean else 0 for x in iterator]
+        )
+    else:
+        t_vals = []
+        for x in iterator:
+            if x[~np.isnan(x)].mean() > popmean:
+                key = hashlib.sha1(x[~np.isnan(x)].round(precision)).hexdigest()
+                if key in t_vals_cache:
+                    print("hit!")
+                    t_vals.append(t_vals_cache[key])
+                else:
+                    t_val = stats.ttest_1samp(x[~np.isnan(x)], popmean=popmean, alternative="greater")[0]
+                    t_vals.append(t_val)
+                    t_vals_cache[key] = t_val
+            else:
+                # mean is below popmean, t value won't be significant
+                t_vals.append(0)
+
+        return np.array(t_vals)
 
 
 def calc_t_values(per_subject_scores):
@@ -587,6 +606,7 @@ def calc_t_values_null_distr(args, out_path):
 
             iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
                 permutations)
+            t_vals_cache = {}
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
@@ -595,7 +615,7 @@ def calc_t_values_null_distr(args, out_path):
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(permutation, args.subjects)])
                         popmean = CHANCE_VALUES[metric]
-                        t_values[hemi][metric] = calc_image_t_values(data, popmean)
+                        t_values[hemi][metric] = calc_image_t_values(data, popmean, t_vals_cache=t_vals_cache)
                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
 
                     with warnings.catch_warnings():
