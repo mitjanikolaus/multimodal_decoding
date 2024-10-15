@@ -516,8 +516,8 @@ def calc_test_statistics(args):
                 p_value = 1 - (len(null_distribution_tfce_values) - 1) / (len(null_distribution_tfce_values))
             p_values[hemi][vertex] = p_value
 
-    print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.4f}")
-    print(f"smallest p value (right): {np.min(p_values['right'][p_values['right'] > 0]):.4f}")
+    print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.5f}")
+    print(f"smallest p value (right): {np.min(p_values['right'][p_values['right'] > 0]):.5f}")
 
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     pickle.dump(p_values, open(p_values_path, mode='wb'))
