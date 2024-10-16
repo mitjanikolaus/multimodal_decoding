@@ -163,6 +163,7 @@ def load_per_subject_scores(args):
 
 
 def create_gifti_results_maps(args):
+    print("Creating gifti results maps")
     per_subject_scores = load_per_subject_scores(args)
 
     METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
@@ -785,6 +786,7 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
-    create_gifti_results_maps(args)
     create_null_distribution(args)
     calc_test_statistics(args)
+    create_gifti_results_maps(args)
+
