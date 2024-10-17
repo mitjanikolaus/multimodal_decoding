@@ -47,59 +47,13 @@ CHANCE_VALUES = {
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
 
 
-def get_results_paths(args):
-    paths_mod_agnostic = []
-    paths_mod_specific_images = []
-    paths_mod_specific_captions = []
-    for subject in args.subjects:
-        results_regex = os.path.join(
-            SEARCHLIGHT_OUT_DIR,
-            f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/*/{args.mode}/'
-            f'alpha_{str(args.l2_regularization_alpha)}.p'
-        )
-        print(results_regex)
-        paths_mod_agnostic.extend(glob(results_regex))
-
-        results_mod_specific_vision_regex = os.path.join(
-            SEARCHLIGHT_OUT_DIR,
-            f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
-            f'{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
-        )
-        print(results_mod_specific_vision_regex)
-        paths_mod_specific_images.extend(glob(results_mod_specific_vision_regex))
-
-        results_mod_specific_lang_regex = os.path.join(
-            SEARCHLIGHT_OUT_DIR,
-            f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
-            f'{args.resolution}/*/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
-        )
-        print(results_mod_specific_lang_regex)
-        paths_mod_specific_captions.extend(glob(results_mod_specific_lang_regex))
-
-    paths_mod_agnostic = np.array(sorted(paths_mod_agnostic))
-    paths_mod_specific_images = np.array(sorted(paths_mod_specific_images))
-    paths_mod_specific_captions = np.array(sorted(paths_mod_specific_captions))
-
-    if not (len(paths_mod_agnostic) == len(paths_mod_specific_images) == len(paths_mod_specific_captions)):
-        raise RuntimeError(
-            f"Length mismatch: {len(paths_mod_agnostic)} {len(paths_mod_specific_images)} "
-            f"{len(paths_mod_specific_captions)}"
-        )
-
-    return paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions
-
-
-def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, n_neighbors=None,
-                   plot_n_neighbors_correlation_graph=False):
+def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
     scores = dict()
 
     for metric in BASE_METRICS:
         score_name = metric.split("_")[-1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
-
-    if plot_n_neighbors_correlation_graph:
-        correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
 
     scores_specific_captions = dict()
     for metric in BASE_METRICS:
@@ -137,29 +91,48 @@ def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
-    paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions = get_results_paths(args)
+    per_subject_n_neighbors =  {subj: dict() for subj in args.subjects}
+    per_subject_nan_locations =  {subj: dict() for subj in args.subjects}
 
-    for path_agnostic, path_caps, path_imgs in tqdm(zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                        paths_mod_specific_images), total=len(paths_mod_agnostic)):
-        hemi = os.path.dirname(path_agnostic).split("/")[-2]
-        subject = os.path.dirname(path_agnostic).split("/")[-4]
+    for subject in tqdm(args.subjects):
+        for hemi in args.hemis:
+            results_agnostic_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
+                f'alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
+            scores_agnostic = results_agnostic['scores']
+            nan_locations = results_agnostic['nan_locations']
+            n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
+            per_subject_n_neighbors[subject][hemi] = n_neighbors
+            per_subject_nan_locations[subject][hemi] = nan_locations
 
-        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
-        scores_agnostic = results_agnostic['scores']
-        scores_captions = pickle.load(open(path_caps, 'rb'))['scores']
-        scores_images = pickle.load(open(path_imgs, 'rb'))['scores']
+            results_mod_specific_vision_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
+                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            scores_captions = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
 
-        nan_locations = results_agnostic['nan_locations']
-        n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
-        scores = process_scores(
-            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, n_neighbors,
-            plot_n_neighbors_correlation_graph=plot_n_neighbors_correlation_graph
-        )
-        # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
-        # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
-        # print("")
+            results_mod_specific_lang_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
+                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            scores_images = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
 
-        per_subject_scores[subject][hemi] = scores
+            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
+
+            # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
+            # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
+            # print("")
+
+            per_subject_scores[subject][hemi] = scores
+
+    if plot_n_neighbors_correlation_graph:
+        correlation_num_voxels_acc(per_subject_scores, per_subject_nan_locations, per_subject_n_neighbors, args)
+
     return per_subject_scores
 
 
@@ -505,57 +478,69 @@ def calc_test_statistics(args):
 
 def load_null_distr_per_subject_scores(args):
     per_subject_scores_null_distr = []
-    paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions = get_results_paths(args)
 
-    for path_agnostic, path_caps, path_imgs in zip(paths_mod_agnostic, paths_mod_specific_captions,
-                                                   paths_mod_specific_images):
-        hemi = os.path.dirname(path_agnostic).split("/")[-2]
-        subject = os.path.dirname(path_agnostic).split("/")[-4]
-
-        results_agnostic = pickle.load(open(path_agnostic, 'rb'))
-        nan_locations = results_agnostic['nan_locations']
-
-        def load_null_distr_scores(base_path):
-            scores_dir = os.path.join(base_path, "null_distr")
-            print(f'loading scores from {scores_dir}')
-            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-            if len(score_paths) == 0:
-                raise RuntimeError(f"No null distribution scores found: {scores_dir}")
-            last_idx = int(os.path.basename(score_paths[-1])[:-2])
-            assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
-
-            def load_scores_from_pickle(paths, proc_id):
-                job_scores = []
-                iterator = tqdm(paths) if proc_id == 0 else paths
-                for path in iterator:
-                    scores = pickle.load(open(path, "rb"))
-                    job_scores.append(scores)
-                return job_scores
-
-            n_per_job = math.ceil(len(score_paths) / args.n_jobs)
-            all_scores = Parallel(n_jobs=args.n_jobs)(
-                delayed(load_scores_from_pickle)(
-                    score_paths[id * n_per_job:(id + 1) * n_per_job],
-                    id,
-                )
-                for id in range(args.n_jobs)
+    for subject in tqdm(args.subjects):
+        for hemi in args.hemis:
+            results_agnostic_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
+                f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            return np.concatenate(all_scores)
+            results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
+            nan_locations = results_agnostic['nan_locations']
 
-        null_distribution_agnostic = load_null_distr_scores(os.path.dirname(path_agnostic))
-        null_distribution_images = load_null_distr_scores(os.path.dirname(path_imgs))
-        null_distribution_captions = load_null_distr_scores(os.path.dirname(path_caps))
+            results_mod_specific_vision_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
+                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            results_mod_specific_lang_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
+                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+            )
 
-        num_permutations = len(null_distribution_agnostic[0])
-        print('final per subject scores null distribution dict creation:')
-        for i in tqdm(range(num_permutations)):
-            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
-            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-            distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
-            if len(per_subject_scores_null_distr) <= i:
-                per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
-            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations, subject, hemi)
-            per_subject_scores_null_distr[i][subject][hemi] = scores
+            def load_null_distr_scores(base_path):
+                scores_dir = os.path.join(base_path, "null_distr")
+                print(f'loading scores from {scores_dir}')
+                score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+                if len(score_paths) == 0:
+                    raise RuntimeError(f"No null distribution scores found: {scores_dir}")
+                last_idx = int(os.path.basename(score_paths[-1])[:-2])
+                assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
+
+                def load_scores_from_pickle(paths, proc_id):
+                    job_scores = []
+                    iterator = tqdm(paths) if proc_id == 0 else paths
+                    for path in iterator:
+                        scores = pickle.load(open(path, "rb"))
+                        job_scores.append(scores)
+                    return job_scores
+
+                n_per_job = math.ceil(len(score_paths) / args.n_jobs)
+                all_scores = Parallel(n_jobs=args.n_jobs)(
+                    delayed(load_scores_from_pickle)(
+                        score_paths[id * n_per_job:(id + 1) * n_per_job],
+                        id,
+                    )
+                    for id in range(args.n_jobs)
+                )
+                return np.concatenate(all_scores)
+
+            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_agnostic_file))
+            null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_vision_file))
+            null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_lang_file))
+
+            num_permutations = len(null_distribution_agnostic[0])
+            print('final per subject scores null distribution dict creation:')
+            for i in tqdm(range(num_permutations)):
+                distr = [null_distr[i] for null_distr in null_distribution_agnostic]
+                distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
+                distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
+                if len(per_subject_scores_null_distr) <= i:
+                    per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
+                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+                per_subject_scores_null_distr[i][subject][hemi] = scores
     return per_subject_scores_null_distr
 
 

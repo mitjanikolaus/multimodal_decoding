@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from networkx.classes import all_neighbors
 from scipy.stats import pearsonr
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -227,25 +228,33 @@ ACC_IMAGERY = "pairwise_acc_imagery"
 ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 
-def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
-    for metric in ["captions", "images"]:
-        corr = pearsonr(n_neighbors, scores[metric][~nan_locations])
+def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
+    all_scores = []
+    all_neighbors = []
+    for subject in args.subjects:
+        for hemi in args.hemis:
+            for metric in ["captions", "images"]:
+                nans = nan_locations[subject][hemi]
+                all_scores.append(scores[subject][hemi][metric][~nans])
+                all_neighbors.append(n_neighbors[subject][hemi])
 
-        sns.histplot(x=n_neighbors, y=scores[metric][~nan_locations])
-        plt.xlabel("number of voxels")
-        plt.ylabel("pairwise accuracy (mean)")
-        plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-        plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}_{metric}.png",
-                    dpi=300)
+    corr = pearsonr(all_neighbors, all_scores)
 
-        plt.figure()
-        sns.regplot(x=n_neighbors, y=scores[metric][~nan_locations], x_bins=30)
-        plt.xlabel("number of voxels")
-        plt.ylabel("pairwise accuracy (mean)")
-        plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-        plt.savefig(
-            f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}_{metric}.png",
-            dpi=300)
+    sns.histplot(x=n_neighbors, y=scores[metric][~nan_locations])
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
+                dpi=300)
+
+    plt.figure()
+    sns.regplot(x=n_neighbors, y=scores[metric][~nan_locations], x_bins=30)
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig(
+        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned.png",
+        dpi=300)
 
 
 def export_to_gifti(scores, path):
