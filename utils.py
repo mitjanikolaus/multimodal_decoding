@@ -244,7 +244,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
     df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(125, 1750, 250),
                                       labels=list(range(250, 1550, 250)))
 
-    plt.figure(figsize=(20, 7))
+    plt.figure()
     sns.barplot(data=df, x="n_neighbors_binned", y="scores")
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
