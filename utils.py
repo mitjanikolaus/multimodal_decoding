@@ -242,12 +242,10 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
 
     df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
     df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(25, 1625, 50),
-                                      labels=[f'{l}-{l + 50}' for l in range(25, 1575, 50)])
+                                      labels=[f'{l + 25}' for l in range(25, 1575, 50)])
 
-    plt.figure(figsize=(20, 5))
+    plt.figure(figsize=(20, 7))
     g = sns.barplot(data=df, x="n_neighbors_binned", y="scores")
-    g.set_xticklabels(g.get_xticklabels(), rotation=85)
-    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
