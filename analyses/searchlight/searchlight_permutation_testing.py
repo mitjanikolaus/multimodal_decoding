@@ -95,7 +95,7 @@ def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
     per_subject_nan_locations =  {subj: dict() for subj in args.subjects}
 
     for subject in tqdm(args.subjects):
-        for hemi in args.hemis:
+        for hemi in HEMIS:
             results_agnostic_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
                 f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
@@ -480,7 +480,7 @@ def load_null_distr_per_subject_scores(args):
     per_subject_scores_null_distr = []
 
     for subject in tqdm(args.subjects):
-        for hemi in args.hemis:
+        for hemi in HEMIS:
             results_agnostic_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
                 f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
@@ -752,5 +752,3 @@ if __name__ == "__main__":
 
     create_null_distribution(args)
     calc_test_statistics(args)
-    create_gifti_results_maps(args)
-

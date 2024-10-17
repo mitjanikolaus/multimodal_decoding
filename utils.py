@@ -232,7 +232,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
     all_scores = []
     all_neighbors = []
     for subject in args.subjects:
-        for hemi in args.hemis:
+        for hemi in HEMIS:
             for metric in ["captions", "images"]:
                 nans = nan_locations[subject][hemi]
                 all_scores.append(scores[subject][hemi][metric][~nans])
