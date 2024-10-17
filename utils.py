@@ -8,8 +8,6 @@ from nibabel import GiftiImage
 from nibabel.gifti import GiftiDataArray
 from nibabel.nifti1 import intent_codes, data_type_codes
 
-from analyses.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
-
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
@@ -217,6 +215,16 @@ NUM_TEST_STIMULI = len(IDS_IMAGES_TEST) * 2
 INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
 INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
 IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
+
+ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
+ACC_CAPTIONS = "pairwise_acc_captions"
+ACC_IMAGES = "pairwise_acc_images"
+
+ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
+ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
+
+ACC_IMAGERY = "pairwise_acc_imagery"
+ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 
 def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):

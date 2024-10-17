@@ -17,7 +17,9 @@ from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, FS_HEMI_NAMES
+    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, FS_HEMI_NAMES, ACC_CAPTIONS, ACC_IMAGES, \
+    ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
+    ACC_MODALITY_AGNOSTIC
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -42,16 +44,6 @@ MOD_SPECIFIC_CAPTIONS = "train_caption"
 MODE_AGNOSTIC = "train"
 TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
-
-ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
-ACC_CAPTIONS = "pairwise_acc_captions"
-ACC_IMAGES = "pairwise_acc_images"
-
-ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
-ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
-
-ACC_IMAGERY = "pairwise_acc_imagery"
-ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 IMAGE = "image"
 CAPTION = "caption"
