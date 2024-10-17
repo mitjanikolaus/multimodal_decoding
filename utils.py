@@ -240,7 +240,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
 
     corr = pearsonr(all_neighbors, all_scores)
 
-    sns.histplot(x=all_neighbors, y=all_scores)
+    sns.histplot(x=all_neighbors, y=all_scores, binwidth=50)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
