@@ -24,7 +24,7 @@ from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIF
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, correlation_num_voxels_acc
+from utils import SUBJECTS, HEMIS, correlation_num_voxels_acc
 
 DEFAULT_N_JOBS = 10
 

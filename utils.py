@@ -228,7 +228,7 @@ ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 
 def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
-    for metric in [ACC_CAPTIONS, ACC_IMAGES]:
+    for metric in ["captions", "images"]:
         corr = pearsonr(n_neighbors, scores[metric][~nan_locations])
 
         sns.histplot(x=n_neighbors, y=scores[metric][~nan_locations])
