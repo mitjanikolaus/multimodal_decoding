@@ -245,11 +245,12 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
                                       labels=[f'{l + 25}' for l in range(25, 1575, 50)])
 
     plt.figure(figsize=(20, 7))
-    g = sns.barplot(data=df, x="n_neighbors_binned", y="scores")
+    sns.barplot(data=df, x="n_neighbors_binned", y="scores")
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
                 dpi=300)
+    print(df.groupby('n_neighbors_binned').aggregate({"scores": "mean"}))
 
     sns.histplot(x=all_neighbors, y=all_scores)
     plt.xlabel("number of voxels")
