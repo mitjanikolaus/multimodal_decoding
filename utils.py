@@ -259,15 +259,6 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
     plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_hist.png",
                 dpi=300)
 
-    plt.figure()
-    sns.regplot(x=all_neighbors, y=all_scores, x_bins=10)
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(
-        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned.png",
-        dpi=300)
-
 
 def export_to_gifti(scores, path):
     data = scores.astype(np.float32)
