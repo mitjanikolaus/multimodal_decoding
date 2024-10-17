@@ -241,8 +241,8 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
     corr = pearsonr(all_neighbors, all_scores)
 
     df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
-    df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(25, 1600, 50),
-                                      labels=[f'{l}-{l + 50}' for l in range(25, 1501, 50)])
+    df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(25, 1625, 50),
+                                      labels=[f'{l}-{l + 50}' for l in range(25, 1576, 50)])
 
     plt.figure(figsize=(20, 5))
     g = sns.barplot(data=df, x="n_neighbors_binned", y="scores")
