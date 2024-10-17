@@ -89,7 +89,8 @@ def get_results_paths(args):
     return paths_mod_agnostic, paths_mod_specific_images, paths_mod_specific_captions
 
 
-def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
+def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, n_neighbors=None,
+                   plot_n_neighbors_correlation_graph=False):
     scores = dict()
 
     for metric in BASE_METRICS:
@@ -97,8 +98,7 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
-    if "plot_n_neighbors_correlation_graph" in args and args.plot_n_neighbors_correlation_graph and (
-            n_neighbors is not None) and (subj is not None):
+    if plot_n_neighbors_correlation_graph:
         correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
 
     scores_specific_captions = dict()
@@ -133,7 +133,7 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     return scores
 
 
-def load_per_subject_scores(args):
+def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -152,7 +152,8 @@ def load_per_subject_scores(args):
         nan_locations = results_agnostic['nan_locations']
         n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
         scores = process_scores(
-            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, args, n_neighbors
+            scores_agnostic, scores_captions, scores_images, nan_locations, subject, hemi, n_neighbors,
+            plot_n_neighbors_correlation_graph=plot_n_neighbors_correlation_graph
         )
         # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
         # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
@@ -160,28 +161,6 @@ def load_per_subject_scores(args):
 
         per_subject_scores[subject][hemi] = scores
     return per_subject_scores
-
-
-def create_gifti_results_maps(args):
-    print("Creating gifti results maps")
-    per_subject_scores = load_per_subject_scores(args)
-
-    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
-
-    results_dir = os.path.join(permutation_results_dir(args), "acc_scores_gifti")
-    os.makedirs(results_dir, exist_ok=True)
-
-    for metric in METRICS:
-        for hemi in HEMIS:
-            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
-            path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
-            export_to_gifti(score_hemi_avgd, path_out)
-
-            for subj in args.subjects:
-                score_hemi = per_subject_scores[subj][hemi][metric]
-                path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
-                os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                export_to_gifti(score_hemi, path_out)
 
 
 def compute_adjacency_matrix(surface, values='ones'):
@@ -575,7 +554,7 @@ def load_null_distr_per_subject_scores(args):
             distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
             if len(per_subject_scores_null_distr) <= i:
                 per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
-            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations, subject, hemi, args)
+            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations, subject, hemi)
             per_subject_scores_null_distr[i][subject][hemi] = scores
     return per_subject_scores_null_distr
 
