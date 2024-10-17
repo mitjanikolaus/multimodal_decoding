@@ -250,7 +250,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
     plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
                 dpi=300)
 
-    sns.histplot(x=all_neighbors, y=all_scores, binwidth=50)
+    sns.histplot(x=all_neighbors, y=all_scores)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
