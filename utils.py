@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 from networkx.classes import all_neighbors
 from scipy.stats import pearsonr
 import seaborn as sns
@@ -27,7 +28,6 @@ FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 FMRI_SURFACE_LEVEL_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
 FMRI_REGFILES_DIR = os.path.join(FMRI_DATA_DIR, "regfiles")
-
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
@@ -240,11 +240,21 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
 
     corr = pearsonr(all_neighbors, all_scores)
 
+    df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
+    df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(0, 1600, 50),
+                                      labels=[f'{l}-{l + 50}' for l in range(0, 1501, 50)])
+
+    sns.barplot(data=df, x="n_neighbors_binned", y="scores")
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
+                dpi=300)
+
     sns.histplot(x=all_neighbors, y=all_scores, binwidth=50)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
+    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_hist.png",
                 dpi=300)
 
     plt.figure()
