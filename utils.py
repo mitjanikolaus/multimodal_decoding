@@ -240,7 +240,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
 
     corr = pearsonr(all_neighbors, all_scores)
 
-    sns.histplot(x=n_neighbors, y=scores[metric][~nan_locations])
+    sns.histplot(x=all_neighbors, y=all_scores)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
@@ -248,7 +248,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
                 dpi=300)
 
     plt.figure()
-    sns.regplot(x=n_neighbors, y=scores[metric][~nan_locations], x_bins=30)
+    sns.regplot(x=all_neighbors, y=all_scores, x_bins=30)
     plt.xlabel("number of voxels")
     plt.ylabel("pairwise accuracy (mean)")
     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
