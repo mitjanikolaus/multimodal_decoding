@@ -53,7 +53,7 @@
 53, S_front_middle Middle frontal sulcus
 54, S_front_sup Superior frontal sulcus
 55, S_interm_prim-Jensen Sulcus intermedius primus (of Jensen)
-56, S_intrapariet_and_P_trans Intraparietal sulcus (interparietal sulcus) and transverse parietal sulci
+56, S_intrapariet_and_P_trans Intraparietal sulcus and transverse parietal sulci
 57, S_oc_middle_and_Lunatus Middle occipital sulcus and lunatus sulcus
 58, S_oc_sup_and_transversal Superior occipital sulcus and transverse occipital sulcus
 59, S_occipital_ant Anterior occipital sulcus and preoccipital notch (temporo-occipital incisure)

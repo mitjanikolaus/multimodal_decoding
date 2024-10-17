@@ -400,7 +400,7 @@ def plot(args):
                     'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], #, 'G_temporal_inf' , 'G_front_inf-Orbital'
         "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_orbital',
                     'Pole_temporal'], #'G_oc-temp_lat-fusifor', 'G_front_inf-Orbital'
-        "posterior": ['G_pariet_inf-Angular']
+        "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup', 'S_intrapariet_and_P_trans', 'G_occipital_sup']
     }
 
     unique_rois = set()
@@ -524,9 +524,9 @@ def create_composite_image(args):
     img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
     img_lateral = append_images(images=images_lateral)
 
-    img_row_1 = append_images([img_lateral, img_medial])
+    img_row_1 = append_images([img_lateral, img_posterior])
+    img_row_2 = append_images([img_medial, img_ventral])
 
-    img_row_2 = append_images([img_posterior, img_ventral])
     img_row_2 = append_images([img_row_2, img_colorbar], padding = 20)
 
     roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
