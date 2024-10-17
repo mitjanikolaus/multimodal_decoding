@@ -235,8 +235,8 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
         for hemi in HEMIS:
             for metric in ["captions", "images"]:
                 nans = nan_locations[subject][hemi]
-                all_scores.append(scores[subject][hemi][metric][~nans])
-                all_neighbors.append(n_neighbors[subject][hemi])
+                all_scores.extend(scores[subject][hemi][metric][~nans])
+                all_neighbors.extend(n_neighbors[subject][hemi])
 
     corr = pearsonr(all_neighbors, all_scores)
 
