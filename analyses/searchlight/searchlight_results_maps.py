@@ -1,32 +1,12 @@
 import argparse
-import hashlib
-import itertools
-import math
-import warnings
-
-import h5py
 import numpy as np
-from joblib import Parallel, delayed
-from nilearn import datasets
 import os
-from glob import glob
-import pickle
-
-from nilearn.surface import surface
-from scipy import stats
-from scipy.sparse import csr_matrix
-from scipy.spatial.distance import cdist
-from tqdm import tqdm
-
-from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC, ACC_CAPTIONS, \
-    ACC_IMAGES
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
-    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
+from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, \
+    METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from analyses.searchlight.searchlight_permutation_testing import load_per_subject_scores, permutation_results_dir
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, correlation_num_voxels_acc
-
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
 def create_gifti_results_maps(args):

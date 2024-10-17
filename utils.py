@@ -8,6 +8,8 @@ from nibabel import GiftiImage
 from nibabel.gifti import GiftiDataArray
 from nibabel.nifti1 import intent_codes, data_type_codes
 
+from analyses.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
@@ -218,23 +220,24 @@ IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 
 
 def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
-    corr = pearsonr(n_neighbors, scores['agnostic'][~nan_locations])
+    for metric in [ACC_CAPTIONS, ACC_IMAGES]:
+        corr = pearsonr(n_neighbors, scores[metric][~nan_locations])
 
-    sns.histplot(x=n_neighbors, y=scores['agnostic'][~nan_locations])
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png",
-                dpi=300)
+        sns.histplot(x=n_neighbors, y=scores[metric][~nan_locations])
+        plt.xlabel("number of voxels")
+        plt.ylabel("pairwise accuracy (mean)")
+        plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+        plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}_{metric}.png",
+                    dpi=300)
 
-    plt.figure()
-    sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(
-        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png",
-        dpi=300)
+        plt.figure()
+        sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
+        plt.xlabel("number of voxels")
+        plt.ylabel("pairwise accuracy (mean)")
+        plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+        plt.savefig(
+            f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}_{metric}.png",
+            dpi=300)
 
 
 def export_to_gifti(scores, path):
