@@ -557,9 +557,9 @@ def create_composite_image(args):
     img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
     img_lateral = append_images(images=images_lateral)
 
-    img_row_1 = append_images([img_lateral, img_medial])
+    img_row_1 = append_images([img_lateral, img_posterior])
+    img_row_2 = append_images([img_medial, img_ventral])
 
-    img_row_2 = append_images([img_posterior, img_ventral])
     img_row_2 = append_images([img_row_2, img_colorbar], padding=20)
 
     p_val_image = append_images([img_row_1, img_row_2], padding=5, horizontally=False)
