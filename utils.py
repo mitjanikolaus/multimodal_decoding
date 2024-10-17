@@ -239,7 +239,7 @@ def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
                     dpi=300)
 
         plt.figure()
-        sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
+        sns.regplot(x=n_neighbors, y=scores[metric][~nan_locations], x_bins=30)
         plt.xlabel("number of voxels")
         plt.ylabel("pairwise accuracy (mean)")
         plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
