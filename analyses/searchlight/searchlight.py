@@ -277,9 +277,8 @@ def run(args):
                 elif args.n_neighbors is not None:
                     distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
                     results_dict["distances"] = distances
-                    print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
-                    print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
-                    print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
+                    print(f"Max radius {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+                    print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
                 else:
                     raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
