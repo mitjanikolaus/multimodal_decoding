@@ -440,8 +440,8 @@ def calc_test_statistics(args):
     pickle.dump(tfce_values, open(tfce_values_path, "wb"))
 
     for hemi in HEMIS:
-        print(f"mean tfce value ({hemi}) hemi: {np.nanmean(tfce_values[hemi][args.metric]):.2f}")
-        print(f"max tfce value ({hemi}) hemi: {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
+        print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
+        print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
 
     null_distribution_tfce_values_file = os.path.join(
         permutation_results_dir(args),
