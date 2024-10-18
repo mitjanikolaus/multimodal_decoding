@@ -30,7 +30,7 @@ from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_S
 
 DEFAULT_N_JOBS = 10
 
-SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
+SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight_old_preprecessing")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
