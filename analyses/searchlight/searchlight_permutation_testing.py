@@ -467,11 +467,11 @@ def calc_test_statistics(args):
         print("calculating p values..")
         for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
             test_stat = tfce_values[hemi][args.metric][vertex]
-            value_indices = np.argwhere(max_test_statistic_distr > test_stat)
-            if len(value_indices) > 0:
-                p_value = 1 - value_indices[0].item() / len(null_distribution_tfce_values)
-            else:
+            value_index = np.searchsorted(max_test_statistic_distr, test_stat)
+            if value_index >= len(max_test_statistic_distr):
                 p_value = 1 - (len(null_distribution_tfce_values) - 1) / (len(null_distribution_tfce_values))
+            else:
+                p_value = 1 - value_index / len(null_distribution_tfce_values)
             p_values[hemi][vertex] = p_value
 
         print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
