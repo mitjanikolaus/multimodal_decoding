@@ -439,6 +439,10 @@ def calc_test_statistics(args):
     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     pickle.dump(tfce_values, open(tfce_values_path, "wb"))
 
+    for hemi in HEMIS:
+        print(f"mean tfce value ({hemi}) hemi: {np.nanmean(tfce_values[hemi][args.metric]):.2f}")
+        print(f"max tfce value ({hemi}) hemi: {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
+
     null_distribution_tfce_values_file = os.path.join(
         permutation_results_dir(args),
         f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
@@ -460,7 +464,8 @@ def calc_test_statistics(args):
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
-        for vertex in np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]:
+        print("calculating p values..")
+        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
             test_stat = tfce_values[hemi][args.metric][vertex]
             value_indices = np.argwhere(max_test_statistic_distr > test_stat)
             if len(value_indices) > 0:
@@ -469,8 +474,7 @@ def calc_test_statistics(args):
                 p_value = 1 - (len(null_distribution_tfce_values) - 1) / (len(null_distribution_tfce_values))
             p_values[hemi][vertex] = p_value
 
-    print(f"smallest p value (left): {np.min(p_values['left'][p_values['left'] > 0]):.5f}")
-    print(f"smallest p value (right): {np.min(p_values['right'][p_values['right'] > 0]):.5f}")
+        print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
 
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     pickle.dump(p_values, open(p_values_path, mode='wb'))
