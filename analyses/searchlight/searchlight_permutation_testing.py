@@ -91,8 +91,8 @@ def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
-    per_subject_n_neighbors =  {subj: dict() for subj in args.subjects}
-    per_subject_nan_locations =  {subj: dict() for subj in args.subjects}
+    per_subject_n_neighbors = {subj: dict() for subj in args.subjects}
+    per_subject_nan_locations = {subj: dict() for subj in args.subjects}
 
     for subject in tqdm(args.subjects):
         for hemi in HEMIS:
@@ -113,14 +113,14 @@ def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
                 f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            scores_captions = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
+            scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
 
             results_mod_specific_lang_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
                 f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            scores_images = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
+            scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
 
             scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
 
