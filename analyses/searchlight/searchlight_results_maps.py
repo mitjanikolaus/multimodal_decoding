@@ -1,6 +1,12 @@
 import argparse
 import numpy as np
 import os
+
+import pandas as pd
+from matplotlib import pyplot as plt
+import seaborn as sns
+from scipy.stats import pearsonr
+
 from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, \
     METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
@@ -9,23 +15,64 @@ from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
+def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
+    all_scores = []
+    all_neighbors = []
+    for subject in args.subjects:
+        for hemi in HEMIS:
+            for metric in ["captions", "images"]:
+                nans = nan_locations[subject][hemi]
+                all_scores.extend(scores[subject][hemi][metric][~nans])
+                all_neighbors.extend(n_neighbors[subject][hemi])
+
+    corr = pearsonr(all_neighbors, all_scores)
+
+    df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
+    df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(125, 1750, 250),
+                                      labels=list(range(250, 1550, 250)))
+
+    plt.figure()
+    sns.barplot(data=df, x="n_neighbors_binned", y="scores")
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.savefig(os.path.join(results_dir, "searchlight_correlation_num_voxels_acc.png"),
+                dpi=300)
+    print(df.groupby('n_neighbors_binned').aggregate({"scores": "mean"}))
+
+    sns.histplot(x=all_neighbors, y=all_scores)
+    plt.xlabel("number of voxels")
+    plt.ylabel("pairwise accuracy (mean)")
+    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+    plt.savefig(os.path.join(results_dir, "searchlight_correlation_num_voxels_acc_hist.png"),
+                dpi=300)
+
+
 def create_gifti_results_maps(args):
-    print("Creating gifti results maps")
-    per_subject_scores = load_per_subject_scores(args, plot_n_neighbors_correlation_graph=True)
-
-    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
-
     results_dir = os.path.join(permutation_results_dir(args), "acc_scores_gifti")
     os.makedirs(results_dir, exist_ok=True)
 
+    print("Creating gifti results maps")
+    subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
+        args,
+        return_nan_locations_and_n_neighbors=True
+    )
+    plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
+
+    for hemi in HEMIS:
+        n_neighbors_hemi_avgd = np.nanmean([n_neighbors[subj][hemi] for subj in args.subjects], axis=0)
+        path_out = os.path.join(results_dir, f"n_vertices_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(n_neighbors_hemi_avgd, path_out)
+
+    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+
     for metric in METRICS:
         for hemi in HEMIS:
-            score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
+            score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
             path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(score_hemi_avgd, path_out)
 
             for subj in args.subjects:
-                score_hemi = per_subject_scores[subj][hemi][metric]
+                score_hemi = subject_scores[subj][hemi][metric]
                 path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 export_to_gifti(score_hemi, path_out)

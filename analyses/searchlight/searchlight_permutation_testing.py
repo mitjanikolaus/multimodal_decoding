@@ -24,7 +24,7 @@ from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIF
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import SUBJECTS, HEMIS, correlation_num_voxels_acc
+from utils import SUBJECTS, HEMIS
 
 DEFAULT_N_JOBS = 10
 
@@ -87,7 +87,7 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
     return scores
 
 
-def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
+def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -130,10 +130,11 @@ def load_per_subject_scores(args, plot_n_neighbors_correlation_graph=False):
 
             per_subject_scores[subject][hemi] = scores
 
-    if plot_n_neighbors_correlation_graph:
-        correlation_num_voxels_acc(per_subject_scores, per_subject_nan_locations, per_subject_n_neighbors, args)
 
-    return per_subject_scores
+    if return_nan_locations_and_n_neighbors:
+        return per_subject_scores, per_subject_nan_locations, per_subject_n_neighbors
+    else:
+        return per_subject_scores
 
 
 def compute_adjacency_matrix(surface, values='ones'):

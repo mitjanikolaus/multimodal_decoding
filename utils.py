@@ -228,38 +228,6 @@ ACC_IMAGERY = "pairwise_acc_imagery"
 ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 
-def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, args):
-    all_scores = []
-    all_neighbors = []
-    for subject in args.subjects:
-        for hemi in HEMIS:
-            for metric in ["captions", "images"]:
-                nans = nan_locations[subject][hemi]
-                all_scores.extend(scores[subject][hemi][metric][~nans])
-                all_neighbors.extend(n_neighbors[subject][hemi])
-
-    corr = pearsonr(all_neighbors, all_scores)
-
-    df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
-    df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(125, 1750, 250),
-                                      labels=list(range(250, 1550, 250)))
-
-    plt.figure()
-    sns.barplot(data=df, x="n_neighbors_binned", y="scores")
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc.png",
-                dpi=300)
-    print(df.groupby('n_neighbors_binned').aggregate({"scores": "mean"}))
-
-    sns.histplot(x=all_neighbors, y=all_scores)
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_hist.png",
-                dpi=300)
-
-
 def export_to_gifti(scores, path):
     data = scores.astype(np.float32)
     gimage = GiftiImage(
