@@ -5,7 +5,6 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
-from networkx.classes import all_neighbors
 from scipy.stats import pearsonr
 
 from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, \
