@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
+from networkx.classes import all_neighbors
 from scipy.stats import pearsonr
 
 from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, \
@@ -58,8 +59,13 @@ def create_gifti_results_maps(args):
     )
     if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
         for hemi in HEMIS:
-            print([len(n_neighbors[subj][hemi]) for subj in args.subjects])
-            n_neighbors_hemi_avgd = np.nanmean([n_neighbors[subj][hemi] for subj in args.subjects], axis=0)
+            all_n_neighbors = []
+            for subject in args.subjects:
+                n_neighbors = np.zeros(shape=nan_locations[subject][hemi].shape)
+                n_neighbors[~nan_locations[subject][hemi]] = n_neighbors[subject][hemi]
+                all_n_neighbors.append(n_neighbors)
+            all_n_neighbors = np.stack(n_neighbors)
+            n_neighbors_hemi_avgd = np.nanmean(all_n_neighbors, axis=0)
             path_out = os.path.join(results_dir, f"n_vertices_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(n_neighbors_hemi_avgd, path_out)
 
