@@ -62,9 +62,6 @@ def create_gifti_results_maps(args):
             all_n_neighbors = []
             for subject in args.subjects:
                 neighbors = np.zeros(shape=nan_locations[subject][hemi].shape)
-                print(neighbors.shape)
-                print(nan_locations[subject][hemi].shape)
-                print(nan_locations[subject][hemi][~nan_locations[subject][hemi]].shape)
                 neighbors[~nan_locations[subject][hemi]] = n_neighbors[subject][hemi]
                 all_n_neighbors.append(neighbors)
             all_n_neighbors = np.stack(all_n_neighbors)
