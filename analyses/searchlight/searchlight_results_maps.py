@@ -61,13 +61,13 @@ def create_gifti_results_maps(args):
         for hemi in HEMIS:
             all_n_neighbors = []
             for subject in args.subjects:
-                n_neighbors = np.zeros(shape=nan_locations[subject][hemi].shape)
-                print(n_neighbors.shape)
+                neighbors = np.zeros(shape=nan_locations[subject][hemi].shape)
+                print(neighbors.shape)
                 print(nan_locations[subject][hemi].shape)
                 print(nan_locations[subject][hemi][~nan_locations[subject][hemi]].shape)
-                n_neighbors[~nan_locations[subject][hemi]] = n_neighbors[subject][hemi]
-                all_n_neighbors.append(n_neighbors)
-            all_n_neighbors = np.stack(n_neighbors)
+                neighbors[~nan_locations[subject][hemi]] = n_neighbors[subject][hemi]
+                all_n_neighbors.append(neighbors)
+            all_n_neighbors = np.stack(all_n_neighbors)
             n_neighbors_hemi_avgd = np.nanmean(all_n_neighbors, axis=0)
             path_out = os.path.join(results_dir, f"n_vertices_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(n_neighbors_hemi_avgd, path_out)
