@@ -76,7 +76,7 @@ def create_gifti_results_maps(args):
         for hemi in HEMIS:
             if metric in subject_scores[args.subjects[0]][hemi]:
                 score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
-                print(f"{metric} mean over subjects: {np.nanmean(score_hemi_avgd)}")
+                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_avgd)}")
                 path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
                 export_to_gifti(score_hemi_avgd, path_out)
 
