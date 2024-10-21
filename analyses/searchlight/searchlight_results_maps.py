@@ -56,7 +56,8 @@ def create_gifti_results_maps(args):
         args,
         return_nan_locations_and_n_neighbors=True
     )
-    plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
+    if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
+        plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
     for hemi in HEMIS:
         n_neighbors_hemi_avgd = np.nanmean([n_neighbors[subj][hemi] for subj in args.subjects], axis=0)
