@@ -47,7 +47,7 @@ CHANCE_VALUES = {
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
 
 
-def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations):
+def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
     scores = dict()
 
     for metric in BASE_METRICS:
@@ -55,34 +55,35 @@ def process_scores(scores_agnostic, scores_captions, scores_images, nan_location
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
-    scores_specific_captions = dict()
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_specific_captions[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_captions])
+    if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
+        scores_specific_captions = dict()
+        for metric in BASE_METRICS:
+            score_name = metric.split("_")[-1]
+            scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
+            scores_specific_captions[score_name][~nan_locations] = np.array(
+                [score[metric] for score in scores_mod_specific_captions])
 
-    scores_specific_images = dict()
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_specific_images[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_images])
+        scores_specific_images = dict()
+        for metric in BASE_METRICS:
+            score_name = metric.split("_")[-1]
+            scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
+            scores_specific_images[score_name][~nan_locations] = np.array(
+                [score[metric] for score in scores_mod_specific_images])
 
-    scores[METRIC_DIFF_IMAGES] = np.array(
-        [ai - si for ai, ac, si, sc in
-         zip(scores[METRIC_IMAGES],
-             scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
-    )
-    scores[METRIC_DIFF_CAPTIONS] = np.array(
-        [ac - sc for ai, ac, si, sc in
-         zip(scores[METRIC_IMAGES],
-             scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
-    )
+        scores[METRIC_DIFF_IMAGES] = np.array(
+            [ai - si for ai, ac, si, sc in
+             zip(scores[METRIC_IMAGES],
+                 scores[METRIC_CAPTIONS],
+                 scores_specific_images[METRIC_IMAGES],
+                 scores_specific_captions[METRIC_CAPTIONS])]
+        )
+        scores[METRIC_DIFF_CAPTIONS] = np.array(
+            [ac - sc for ai, ac, si, sc in
+             zip(scores[METRIC_IMAGES],
+                 scores[METRIC_CAPTIONS],
+                 scores_specific_images[METRIC_IMAGES],
+                 scores_specific_captions[METRIC_CAPTIONS])]
+        )
 
     return scores
 
@@ -113,14 +114,20 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
                 f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
+            if os.path.isfile(results_mod_specific_vision_file):
+                scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
+            else:
+                scores_images = None
 
             results_mod_specific_lang_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
                 f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
+            if os.path.isfile(results_mod_specific_lang_file):
+                scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
+            else:
+                scores_captions = None
 
             scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
 

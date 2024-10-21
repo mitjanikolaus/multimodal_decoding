@@ -54,7 +54,7 @@ def create_gifti_results_maps(args):
     print("Creating gifti results maps")
     subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
         args,
-        return_nan_locations_and_n_neighbors=True
+        return_nan_locations_and_n_neighbors=True,
     )
     if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
         for hemi in HEMIS:
@@ -74,15 +74,16 @@ def create_gifti_results_maps(args):
 
     for metric in METRICS:
         for hemi in HEMIS:
-            score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
-            path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
-            export_to_gifti(score_hemi_avgd, path_out)
+            if metric in subject_scores[args.subjects[0]][hemi]:
+                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
+                path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+                export_to_gifti(score_hemi_avgd, path_out)
 
-            for subj in args.subjects:
-                score_hemi = subject_scores[subj][hemi][metric]
-                path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
-                os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                export_to_gifti(score_hemi, path_out)
+                for subj in args.subjects:
+                    score_hemi = subject_scores[subj][hemi][metric]
+                    path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+                    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+                    export_to_gifti(score_hemi, path_out)
 
 
 def get_args():
