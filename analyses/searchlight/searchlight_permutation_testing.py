@@ -117,6 +117,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
             if os.path.isfile(results_mod_specific_vision_file):
                 scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
             else:
+                print(f"Missing modality-specific results: {results_mod_specific_vision_file}")
                 scores_images = None
 
             results_mod_specific_lang_file = os.path.join(
@@ -127,6 +128,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
             if os.path.isfile(results_mod_specific_lang_file):
                 scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
             else:
+                print(f"Missing modality-specific results: {results_mod_specific_lang_file}")
                 scores_captions = None
 
             scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
