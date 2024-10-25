@@ -5,14 +5,30 @@ import nibabel as nib
 from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_RAW_DATA_DIR, FMRI_DATA_DIR
 
 
-def get_graymatter_mask_path(subject, downsampled=True):
+def get_graymatter_mask_path(subject, mni=True):
     file_suffix = "_orig"
-    file_suffix += "_downsampled" if downsampled else ""
+    file_suffix += "_mni" if mni else ""
 
     mask_image_path = os.path.join(
         FMRI_DATA_DIR, 'graymatter_masks', subject, f'mask{file_suffix}.nii'
     )
     return mask_image_path
+
+
+def convert_mask_to_mni(subject):
+    print('Converting mask to MNI space')
+    mask_file = get_graymatter_mask_path(subject, mni=False)
+    out_file = get_graymatter_mask_path(subject, mni=True)
+
+    reg_file = f'{FREESURFER_BASE_DIR}/regfiles/{subject}/spm2fs.change-name.lta'
+    os.makedirs(os.path.dirname(out_file), exist_ok=True)
+    conv_cmd = f'mri_vol2vol --mov "{mask_file}" --reg "{reg_file}" --o "{out_file}" --tal --talres 2 --interp nearest'
+    result_code = os.system(conv_cmd)
+    if result_code != 0:
+        raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
+    print(f"Saved MNI mask to {out_file}")
+    mask_mni = nib.load(out_file)
+    print(f"MNI space gray matter mask size: {mask_mni.get_fdata().sum()}")
 
 
 def run(args):
@@ -33,9 +49,11 @@ def run(args):
 
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
-        mask_image_path = get_graymatter_mask_path(subject, downsampled=False)
+        mask_image_path = get_graymatter_mask_path(subject, mni=False)
         os.makedirs(os.path.dirname(mask_image_path), exist_ok=True)
         nib.save(mask_img, mask_image_path)
+
+        convert_mask_to_mni(subject)
 
 
 def get_args():

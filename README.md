@@ -35,8 +35,28 @@ python preprocessing/fmri_preprocessing.py
 The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
 the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
 
+### (2) Transformation to MNI space
 
-### (2) Gray Matter Masks
+First, we're running recon-all to generate cortical reconstructions for all subjects:
+```
+python preprocessing/recon_script.py
+```
+
+Then, we create an LTA (Linear Transform Archive) file for conversion of functional scans from the subject space to MNI
+space (repeat this for all subjects).
+```
+tkregisterfv --mov ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii --s sub-01 --regheader --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-01/spm2fs
+```
+
+
+Finally, we can convert all data to MNI space:
+```
+python preprocessing/transform_to_mni.py
+```
+
+Note: The mni conversion also increases the voxel size from 1mm<sup>3</sup> to 2mm<sup>3</sup>.
+
+### (3) Gray Matter Masks
 
 Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
@@ -50,15 +70,8 @@ create a binary mask.
 ```
 python preprocessing/create_gray_matter_masks.py
 ```
-
-The final masks are saved to `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_orig.nii`.
-
-### (3) Downsampling
-Next we downsample the functional scans as well as the graymatter masks, otherwise the calculation of beta values
-is too computationally expensive. The dowsampling increases the voxel size from 1mm<sup>3</sup> to 2mm<sup>3</sup>.
-```
-python preprocessing/downsample_data.py
-```
+Finally, the aforementioned script is also converting the mask to MNI space. The final masks are saved to
+`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_mni.nii`.
 
 ### (4) Generation of beta values
 
@@ -84,15 +97,9 @@ images/captions/imagery as well as train/test trials and contain the correspondi
 python preprocessing/create_symlinks_beta_files.py
 ```
 
-
 ### (5) Transformation to surface space
 
-First, we're running recon-all to generate cortical reconstructions for all subjects:
-```
-python preprocessing/recon_script.py
-```
-
-Then, we can convert all data to surface space:
+Then, we can convert all data to surface space to perform the searchlight analyses:
 
 ```
 python preprocessing/transform_to_surface.py

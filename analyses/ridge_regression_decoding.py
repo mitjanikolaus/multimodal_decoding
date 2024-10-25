@@ -519,27 +519,27 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
 
 
 def get_fmri_surface_data(subject, mode, resolution):
-    fmri_betas = dict()
-    stim_ids = None
-    stim_types = None
-    for hemi in HEMIS:
-        fmri_betas_paths, ids, types = get_fmri_data_paths(
-            subject, mode, surface=True, hemi=FS_HEMI_NAMES[hemi], resolution=resolution
-        )
+    base_mode = mode.split('_')[0]
+    print(f"loading {base_mode} fmri data.. ", end="")
+    fmri_betas = {
+        hemi: pickle.load(
+            open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
+        in HEMIS
+    }
+    print("done.")
+    stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
+    stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
 
-        betas = []
-        for path in tqdm(fmri_betas_paths, desc=f"loading fmri surface {mode} {hemi} hemi data"):
-            gifti_img = nib.load(path)
-            gifti_img_data = gifti_img.agg_data()
-            betas.append(gifti_img_data)
-        if stim_ids is None:
-            stim_ids = ids
-            stim_types = types
-        else:
-            assert np.all(stim_ids == ids), f"{mode}: Mismatching stimuli for left and right hemi"
-            assert np.all(stim_types == types), f"{mode}: Mismatching stim types for left and right hemi"
-
-        fmri_betas[hemi] = np.array(betas)
+    if mode == MOD_SPECIFIC_CAPTIONS:
+        for hemi in HEMIS:
+            fmri_betas[hemi] = fmri_betas[hemi][stim_types == CAPTION]
+        stim_ids = stim_ids[stim_types == CAPTION]
+        stim_types = stim_types[stim_types == CAPTION]
+    elif mode == MOD_SPECIFIC_IMAGES:
+        for hemi in HEMIS:
+            fmri_betas[hemi] = fmri_betas[hemi][stim_types == IMAGE]
+        stim_ids = stim_ids[stim_types == IMAGE]
+        stim_types = stim_types[stim_types == IMAGE]
 
     return fmri_betas, stim_ids, stim_types
 

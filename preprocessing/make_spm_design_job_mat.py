@@ -16,7 +16,7 @@ import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FMRI_BETAS_DIR, FMRI_RAW_BIDS_DATA_DIR, \
-    FMRI_PREPROCESSED_DATA_DIR, nipype_subject_id
+        FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR
 
 
 def get_condition_names(trial, glm_stage):
@@ -35,7 +35,7 @@ def get_condition_names(trial, glm_stage):
             if trial['one_back'] != 0:
                 conditions.append('one_back')
             if trial['subj_resp'] != 0:
-                conditions.append('subj_resp')
+                    conditions.append('subj_resp')
             if trial['condition_name'] != 0:
                 if trial['trial_type'] == 1 and trial['train_test'] == 1:
                     conditions.append('null')
@@ -243,8 +243,7 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        subject_id = nipype_subject_id(subject)
-        preprocessed_fmri_dir = os.path.join(args.preprocessed_data_dir, "preprocess_workflow", subject_id)
+        preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
         realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
         raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
@@ -321,10 +320,10 @@ def run(args):
             realign_files = []
             if subsample_sessions:
                 sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
-                session_dirs = [os.path.join(preprocessed_fmri_dir, session, 'coregister_downsampled') for session in sessions]
+                session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
             else:
-                print(f"Scanning for sessions in {preprocessed_fmri_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_dir, '_session_id_ses-*', 'coregister_downsampled'))
+                print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
+                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, '_session_id_ses-*'))
                 sessions = [path.split(os.sep)[-2].replace('_session_id_', '') for path in session_dirs]
             print(f"Sessions: {sessions}")
             for session, session_dir in zip(sessions, session_dirs):
@@ -383,10 +382,10 @@ def run(args):
 
             if subsample_sessions:
                 sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
-                session_dirs = [os.path.join(preprocessed_fmri_dir, session, 'coregister_downsampled') for session in sessions]
+                session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
             else:
-                print(f"Scanning for sessions in {preprocessed_fmri_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_dir, '_session_id_ses-*', 'coregister_downsampled'))
+                print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
+                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, '_session_id_ses-*'))
                 sessions = [path.split(os.sep)[-2].replace('_session_id_', '') for path in session_dirs]
             res_start = 0
             print(f"Sessions: {sessions}")
@@ -457,6 +456,7 @@ def get_args():
 
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
     parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 
