@@ -106,11 +106,6 @@ def get_args():
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
-    parser.add_argument("--tfce-h", type=float, default=2.0)
-    parser.add_argument("--tfce-e", type=float, default=1.0)
-
-    parser.add_argument("--metric", type=str, default=METRIC_MIN)
-
     return parser.parse_args()
 
 
