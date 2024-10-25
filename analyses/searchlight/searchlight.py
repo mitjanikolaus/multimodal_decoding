@@ -22,20 +22,16 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
-    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CAPTIONS, ACC_IMAGES, \
-    ACC_MODALITY_AGNOSTIC
+    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 
-from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, \
-    correlation_num_voxels_acc, DATA_DIR
+from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, DATA_DIR
 
 DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
-
-BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_MODALITY_AGNOSTIC, ACC_IMAGERY]
-
 
 METRIC_CAPTIONS = 'captions'
 METRIC_IMAGES = 'images'
@@ -77,12 +73,14 @@ def train_and_test(
             shuffled_indices = create_shuffled_indices(seed)
             y_test_shuffled = y_test[shuffled_indices]
 
-            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES)
+            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES,
+                                                       comp_mod_agnostic_scores=False, comp_cross_decoding_scores=False)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
+    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery,
+                                               comp_mod_agnostic_scores=False)
 
     return scores
 
@@ -105,7 +103,8 @@ def custom_group_iter_search_light(
     results = []
     t0 = time.time()
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
-        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
+        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
+                                imagery_ids=imagery_ids,
                                 null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
         results.append(scores)
         if print_interval > 0:
@@ -251,7 +250,8 @@ def run(args):
 
                 X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
 
-                results_dir = get_results_dir(args, f"{args.features}_test_{args.test_features}", hemi, model_name, subject, training_mode)
+                results_dir = get_results_dir(args, f"{args.features}_test_{args.test_features}", hemi, model_name,
+                                              subject, training_mode)
 
                 results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
@@ -277,9 +277,8 @@ def run(args):
                 elif args.n_neighbors is not None:
                     distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
                     results_dict["distances"] = distances
-                    print(f"Max distance among {args.n_neighbors} neighbors: {distances.max():.2f}mm")
-                    print(f"Mean distance among {args.n_neighbors} neighbors: {distances.mean():.2f}mm")
-                    print(f"Mean max distance: {distances.max(axis=1).mean():.2f}mm")
+                    print(f"Max radius {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+                    print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
                 else:
                     raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
@@ -320,52 +319,6 @@ def run(args):
                 pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
 
 
-def process_scores(scores_agnostic, scores_captions, scores_images, nan_locations, subj, hemi, args, n_neighbors=None):
-    scores = dict()
-
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
-
-    if "plot_n_neighbors_correlation_graph" in args and args.plot_n_neighbors_correlation_graph and (n_neighbors is not None) and (subj is not None):
-        correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi)
-
-    scores_specific_captions = dict()
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_specific_captions[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_captions])
-
-    scores_specific_images = dict()
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores_specific_images[score_name][~nan_locations] = np.array(
-            [score[metric] for score in scores_images])
-
-    scores[METRIC_IMAGERY_WHOLE_TEST] = np.repeat(np.nan, nan_locations.shape)
-    scores[METRIC_IMAGERY_WHOLE_TEST][~nan_locations] = np.array([score[ACC_IMAGERY_WHOLE_TEST] for score in scores_agnostic])
-
-    scores[METRIC_DIFF_IMAGES] = np.array(
-        [ai - si for ai, ac, si, sc in
-         zip(scores[METRIC_IMAGES],
-             scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
-    )
-    scores[METRIC_DIFF_CAPTIONS] = np.array(
-        [ac - sc for ai, ac, si, sc in
-         zip(scores[METRIC_IMAGES],
-             scores[METRIC_CAPTIONS],
-             scores_specific_images[METRIC_IMAGES],
-             scores_specific_captions[METRIC_CAPTIONS])]
-    )
-
-    return scores
-
-
 def mode_from_args(args):
     if args.radius is not None:
         return f"radius_{args.radius}"
@@ -402,7 +355,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 

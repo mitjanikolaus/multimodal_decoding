@@ -11,11 +11,15 @@ from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
-from tqdm import trange
+from tqdm import trange, tqdm
 
+from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
-    VISION_CLS_FEAT_KEY, ROOT_DIR, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS
+    VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
+    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, FS_HEMI_NAMES, ACC_CAPTIONS, ACC_IMAGES, \
+    ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
+    ACC_MODALITY_AGNOSTIC
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -35,21 +39,11 @@ NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
 DEFAULT_N_PRE_DISPATCH = 5
 
-MOD_SPECIFIC_IMAGES = "train_images"
-MOD_SPECIFIC_CAPTIONS = "train_captions"
+MOD_SPECIFIC_IMAGES = "train_image"
+MOD_SPECIFIC_CAPTIONS = "train_caption"
 MODE_AGNOSTIC = "train"
 TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
-
-ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
-ACC_CAPTIONS = "pairwise_acc_captions"
-ACC_IMAGES = "pairwise_acc_images"
-
-ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
-ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
-
-ACC_IMAGERY = "pairwise_acc_imagery"
-ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 IMAGE = "image"
 CAPTION = "caption"
@@ -243,24 +237,35 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
     return nn_latent_transform
 
 
-def get_fmri_data_paths(subject, mode):
-    fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', '*.nii')
-    fmri_betas_paths = np.array(sorted(glob(fmri_addresses_regex)))
+def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None):
+    if surface:
+        if hemi is None or resolution is None:
+            raise ValueError("Hemi and resolution needs to be specified to load surface-level data")
+        filename_suffix = f"*_{hemi}.gii"
+        fmri_addresses_regex = os.path.join(
+            FMRI_SURFACE_LEVEL_DIR, resolution, subject, f'betas_{mode}*', filename_suffix
+        )
+    else:
+        filename_suffix = "*.nii"
+        fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', filename_suffix)
 
+    fmri_betas_paths = sorted(glob(fmri_addresses_regex))
     stim_ids = []
     stim_types = []
     for path in fmri_betas_paths:
+        split_name = path.split(os.sep)[-2]
         file_name = os.path.basename(path)
-        if 'I' in file_name:  # Image
-            stim_id = int(file_name[file_name.find('I') + 1:-4])
-            stim_types.append(IMAGE)
-        elif 'C' in file_name:  # Caption
-            stim_id = int(file_name[file_name.find('C') + 1:-4])
-            stim_types.append(CAPTION)
-        else:  # imagery
-            stim_id_idx = int(file_name[file_name.find('.nii') - 1:-4])
-            stim_id = IMAGERY_SCENES[subject][stim_id_idx - 1][1]
+        stim_id = int(file_name.replace('beta_', '').replace(filename_suffix[1:], ''))
+        if 'imagery' in split_name:
             stim_types.append(IMAGERY)
+            stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
+        elif 'image' in split_name:
+            stim_types.append(IMAGE)
+        elif 'caption' in split_name:
+            stim_types.append(CAPTION)
+        else:
+            raise RuntimeError(f"Unknown split name: {split_name}")
+
         stim_ids.append(stim_id)
 
     stim_ids = np.array(stim_ids)
@@ -272,7 +277,7 @@ def get_fmri_data_paths(subject, mode):
 def get_fmri_voxel_data(subject, mode):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
 
-    gray_matter_mask_path = os.path.join(FMRI_BETAS_DIR, subject, f'unstructured', 'mask.nii')
+    gray_matter_mask_path = get_graymatter_mask_path(subject)
     gray_matter_mask_img = nib.load(gray_matter_mask_path)
     gray_matter_mask_data = gray_matter_mask_img.get_fdata()
     gray_matter_mask = gray_matter_mask_data == 1
@@ -388,9 +393,16 @@ def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cos
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
                                       imagery_predictions=None, metric="cosine", normalize_predictions=True,
-                                      normalize_targets=False, norm_imagery_preds_with_test_preds=False):
-    results = pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric, normalize_predictions,
-                                             normalize_targets)
+                                      normalize_targets=False, norm_imagery_preds_with_test_preds=False,
+                                      comp_mod_agnostic_scores=True, comp_cross_decoding_scores=True):
+    results = dict()
+    if comp_mod_agnostic_scores:
+        results.update(
+            pairwise_accuracy_mod_agnostic(
+                latents, predictions, stim_types, metric, normalize_predictions,
+                normalize_targets
+            )
+        )
 
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
         preds_mod = predictions[stim_types == modality].copy()
@@ -399,13 +411,15 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
                                                      normalize_targets)
 
-    for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
-                                                       [ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]):
-        preds_mod = predictions[stim_types == mod_preds].copy()
-        latents_mod = latents[stim_types == mod_latents]
+    if comp_cross_decoding_scores:
+        for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+                                                           [ACC_CROSS_CAPTIONS_TO_IMAGES,
+                                                            ACC_CROSS_IMAGES_TO_CAPTIONS]):
+            preds_mod = predictions[stim_types == mod_preds].copy()
+            latents_mod = latents[stim_types == mod_latents]
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
-                                                     normalize_targets)
+            results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
+                                                         normalize_targets)
 
     if imagery_latents is not None:
         results.update(
@@ -505,27 +519,27 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
 
 
 def get_fmri_surface_data(subject, mode, resolution):
-    base_mode = mode.split('_')[0]
-    print(f"loading {base_mode} fmri data.. ", end="")
-    fmri_betas = {
-        hemi: pickle.load(
-            open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in HEMIS
-    }
-    print("done.")
-    stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
-    stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
+    fmri_betas = dict()
+    stim_ids = None
+    stim_types = None
+    for hemi in HEMIS:
+        fmri_betas_paths, ids, types = get_fmri_data_paths(
+            subject, mode, surface=True, hemi=FS_HEMI_NAMES[hemi], resolution=resolution
+        )
 
-    if mode == MOD_SPECIFIC_CAPTIONS:
-        for hemi in HEMIS:
-            fmri_betas[hemi] = fmri_betas[hemi][stim_types == CAPTION]
-        stim_ids = stim_ids[stim_types == CAPTION]
-        stim_types = stim_types[stim_types == CAPTION]
-    elif mode == MOD_SPECIFIC_IMAGES:
-        for hemi in HEMIS:
-            fmri_betas[hemi] = fmri_betas[hemi][stim_types == IMAGE]
-        stim_ids = stim_ids[stim_types == IMAGE]
-        stim_types = stim_types[stim_types == IMAGE]
+        betas = []
+        for path in tqdm(fmri_betas_paths, desc=f"loading fmri surface {mode} {hemi} hemi data"):
+            gifti_img = nib.load(path)
+            gifti_img_data = gifti_img.agg_data()
+            betas.append(gifti_img_data)
+        if stim_ids is None:
+            stim_ids = ids
+            stim_types = types
+        else:
+            assert np.all(stim_ids == ids), f"{mode}: Mismatching stimuli for left and right hemi"
+            assert np.all(stim_types == types), f"{mode}: Mismatching stim types for left and right hemi"
+
+        fmri_betas[hemi] = np.array(betas)
 
     return fmri_betas, stim_ids, stim_types
 
@@ -728,7 +742,7 @@ def get_args():
                         choices=TRAIN_MODE_CHOICES)
 
     parser.add_argument("--surface", action="store_true", default=False)
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
     parser.add_argument("--features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],

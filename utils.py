@@ -1,5 +1,7 @@
 import os
 import numpy as np
+import pandas as pd
+from networkx.classes import all_neighbors
 from scipy.stats import pearsonr
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -23,9 +25,9 @@ FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
 FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
 FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
-FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni305")
-FMRI_SURFACE_LEVEL_DIR = os.path.join(DATA_DIR, "fmri_surface_level")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
+FMRI_SURFACE_LEVEL_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
+FMRI_REGFILES_DIR = os.path.join(FMRI_DATA_DIR, "regfiles")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
@@ -46,6 +48,10 @@ FUSED_MEAN_FEAT_KEY = "fused_mean_features"
 FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
+
+
+def nipype_subject_id(subject):
+    return f'_subject_id_{subject}'
 
 
 def model_features_file_path(model_name):
@@ -211,25 +217,15 @@ INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
 INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
 IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 
+ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
+ACC_CAPTIONS = "pairwise_acc_captions"
+ACC_IMAGES = "pairwise_acc_images"
 
-def correlation_num_voxels_acc(scores, nan_locations, n_neighbors, subj, hemi):
-    corr = pearsonr(n_neighbors, scores['agnostic'][~nan_locations])
+ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
+ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
 
-    sns.histplot(x=n_neighbors, y=scores['agnostic'][~nan_locations])
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_{subj}_{hemi}.png",
-                dpi=300)
-
-    plt.figure()
-    sns.regplot(x=n_neighbors, y=scores['agnostic'][~nan_locations], x_bins=30)
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(
-        f"results/searchlight_num_voxels_correlations/searchlight_correlation_num_voxels_acc_binned_{subj}_{hemi}.png",
-        dpi=300)
+ACC_IMAGERY = "pairwise_acc_imagery"
+ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
 
 def export_to_gifti(scores, path):

@@ -35,27 +35,8 @@ python preprocessing/fmri_preprocessing.py
 The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
 the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
 
-### (2) Transformation to MNI space
 
-First, we're running recon-all to generate cortical reconstructions for all subjects:
-```
-python preprocessing/recon_script.py
-```
-
-Then, we create an LTA (Linear Transform Archive) file for conversion of functional scans from the subject space to MNI
-space (repeat this for all subjects).
-```
-tkregisterfv --mov ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii --s sub-01 --regheader --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-01/spm2fs
-```
-
-
-Finally, we can convert all data to MNI space:
-```
-python preprocessing/transform_to_mni.py
-```
-
-
-### (3) Gray Matter Masks
+### (2) Gray Matter Masks
 
 Gray matter masks are used to perform the analysis only on voxels that belong to gray matter.
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
@@ -69,27 +50,33 @@ create a binary mask.
 ```
 python preprocessing/create_gray_matter_masks.py
 ```
-Finally, the aforementioned script is also converting the mask to MNI space. The final masks are saved to
-`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask.nii`.
+
+The final masks are saved to `~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_orig.nii`.
+
+### (3) Downsampling
+Next we downsample the functional scans as well as the graymatter masks, otherwise the calculation of beta values
+is too computationally expensive. The dowsampling increases the voxel size from 1mm<sup>3</sup> to 2mm<sup>3</sup>.
+```
+python preprocessing/downsample_data.py
+```
 
 ### (4) Generation of beta values
 
 We generate beta values for each stimulus (image or caption) using a GLM.
-
-First create the matlab scripts, and then run them.
+We first create the matlab scripts using python nipype scripts, and then run them:
 
 ```
-python preprocessing/make_spm_design_job_mat.py --stage 1
-matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_1.m');exit;"  -logfile matlab_output.txt
+python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_1 sub-01;exit;"  -logfile matlab_output.txt && cd -
 
-python preprocessing/make_spm_design_job_mat.py --stage 2
-matlab -nodisplay -nosplash -nodesktop -r "run('preprocessing/run_spm_glm_stage_2.m');exit;"  -logfile matlab_output.txt
+python preprocessing/make_spm_design_job_mat.py --stage 2 --subjects sub-01
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_2 sub-01;exit;"  -logfile matlab_output.txt &&  cd -
 ```
 
-__Note:__ Both matlab scripts only processes the first subject (sub-01), to process the other subjects you need to adapt
-the hardcoded `subject` variable in the matlab scripts!
+__Note:__ Repeat these steps separately for each subject by adapting the subject identifier (`sub-01`) for both matlab and python
+scripts!
 
-### (5) Generation of beta values
+#### Organization of beta values
 Next, we can create symbolic links for all beta files that are organized into separate folders for
 images/captions/imagery as well as train/test trials and contain the corresponding COCO ID in their name.
 
@@ -97,7 +84,15 @@ images/captions/imagery as well as train/test trials and contain the correspondi
 python preprocessing/create_symlinks_beta_files.py
 ```
 
-### (6) Transformation to surface space
+
+### (5) Transformation to surface space
+
+First, we're running recon-all to generate cortical reconstructions for all subjects:
+```
+python preprocessing/recon_script.py
+```
+
+Then, we can convert all data to surface space:
 
 ```
 python preprocessing/transform_to_surface.py

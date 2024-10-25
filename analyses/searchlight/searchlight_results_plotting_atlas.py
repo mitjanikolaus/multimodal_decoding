@@ -7,7 +7,7 @@ from PIL import Image
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import make_axes
 from matplotlib.colors import ListedColormap
-from nilearn import datasets
+from nilearn import datasets, plotting
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -27,6 +27,7 @@ from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, per
     get_hparam_suffix
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     P_VALUE_THRESHOLD, append_images
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
@@ -378,7 +379,7 @@ def plot_surf_roi_custom(surf_mesh,
 
 
 def plot(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     p_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
     os.makedirs(p_values_atlas_results_dir, exist_ok=True)
 
@@ -392,10 +393,14 @@ def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     rois_for_view = {
-        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital'],
-        # , 'Left-Hippocampus'
-        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'G_temporal_inf', 'S_temporal_sup'],
-        "ventral": ['S_oc-temp_lat', 'G_oc-temp_lat-fusifor' , 'G_temporal_inf']
+        "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
+                   'G_oc-temp_med-Parahip', 'S_pericallosal'],
+        "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'S_temporal_sup', 'S_front_inf',
+                    'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_orbital',
+                    'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], #, 'G_temporal_inf' , 'G_front_inf-Orbital'
+        "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_orbital',
+                    'Pole_temporal'], #'G_oc-temp_lat-fusifor', 'G_front_inf-Orbital'
+        "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup', 'S_intrapariet_and_P_trans', 'G_occipital_sup']
     }
 
     unique_rois = set()
@@ -403,11 +408,17 @@ def plot(args):
         unique_rois.update(r)
 
     label_names_dict = destrieux_label_names()
-    colors_without_yellow_paired = [0, 1, 2, 3, 8, 9, 11]
-    color_palette = [sns.color_palette("Paired")[i] for i in colors_without_yellow_paired]
-    colors_without_yellow_set2 = [0, 3, 7]
-    color_palette += [sns.color_palette("Set2")[i] for i in colors_without_yellow_set2]
-    assert len(unique_rois) <= len(color_palette), f"number of ROIS: {len(unique_rois)}"
+    color_palette = [(183, 242, 34), (127, 176, 4),
+                     (174, 245, 176), (10, 250, 16), (4, 186, 8), (2, 110, 5), (1, 74, 3),
+                     (193, 247, 233), (5, 245, 183), (1, 140, 104),
+                     (145, 231, 242), (5, 220, 247), (0, 120, 135),
+                     (115, 137, 245), (7, 48, 245), (2, 29, 158),
+                     (174, 92, 237), (140, 7, 242), (76, 3, 133),
+                     (245, 105, 242), (250, 5, 245), (125, 2, 122),
+                     (242, 34, 152)]
+    color_palette = [(x[0] / 255, x[1] / 255, x[2] / 255) for x in color_palette]
+
+    assert len(unique_rois) <= len(color_palette), f"not enough colors for {len(unique_rois)} ROIS"
 
     all_colors = {label_names_dict[r]: c for r, c in
                   zip(unique_rois, color_palette)}
@@ -415,10 +426,12 @@ def plot(args):
     save_legend(all_colors, p_values_atlas_results_dir)
     # plt.savefig(path)
 
+    cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
+    cbar_min = 0
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
-        resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
-        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{resolution_fs}/label/{hemi_fs}.aparc.a2009s.annot")
+        # resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
+        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{args.resolution}/label/{hemi_fs}.aparc.a2009s.annot")
         atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
         names = [name.decode() for name in names]
 
@@ -439,8 +452,6 @@ def plot(args):
 
         # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
-        cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
-        cbar_min = 0
         for i, (view, rois) in enumerate(rois_for_view.items()):
             regions_indices = [names.index(roi) for roi in rois]
             label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
@@ -478,33 +489,82 @@ def plot(args):
             save_plot_and_crop_img(path)
             print(f"saved {path}")
 
+    # plot for cbar:
+    plotting.plot_surf_stat_map(
+        fsaverage[f"infl_{HEMIS[0]}"],
+        p_values[HEMIS[0]],
+        hemi=HEMIS[0],
+        view=args.views[0],
+        colorbar=True,
+        threshold=-np.log10(P_VALUE_THRESHOLD),
+        vmax=cbar_max,
+        vmin=cbar_min,
+        cmap=CMAP_POS_ONLY,
+    )
+    save_plot_and_crop_img(os.path.join(p_values_atlas_results_dir, "colorbar.png"), crop_cbar=True)
+
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
 
     images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
                       in HEMIS]
     images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
                      in HEMIS]
+    images_posterior = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
+                     in HEMIS]
 
     imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
     img_ventral = append_images(images=imgs_ventral, horizontally=False)
 
     img_medial = append_images(images=images_medial)
-
-    img_row_2 = append_images(images=[img_medial, img_ventral])
+    img_posterior = append_images(images=images_posterior)
 
     img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
     img_lateral = append_images(images=images_lateral)
 
-    img_row_1 = append_images([img_lateral, img_colorbar], padding=20)
+    img_row_1 = append_images([img_lateral, img_posterior])
+    img_row_2 = append_images([img_medial, img_ventral])
+
+    img_row_2 = append_images([img_row_2, img_colorbar], padding = 20)
 
     roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
 
     p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
 
     path = os.path.join(results_path, "searchlight_results.png")
+    p_val_image.save(path, transparent=True)
+
+
+    # without atlas
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
+
+    images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+                      in HEMIS]
+    images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+                     in HEMIS]
+    images_posterior = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
+                     in HEMIS]
+
+    imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    img_ventral = append_images(images=imgs_ventral, horizontally=False)
+
+    img_medial = append_images(images=images_medial)
+    img_posterior = append_images(images=images_posterior)
+
+    img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
+    img_lateral = append_images(images=images_lateral)
+
+    img_row_1 = append_images([img_lateral, img_posterior])
+    img_row_2 = append_images([img_medial, img_ventral])
+
+    img_row_2 = append_images([img_row_2, img_colorbar], padding=20)
+
+    p_val_image = append_images([img_row_1, img_row_2], padding=5, horizontally=False)
+
+    path = os.path.join(results_path, "searchlight_results_no_atlas.png")
     p_val_image.save(path, transparent=True)
     print("done")
 
@@ -523,7 +583,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
     parser.add_argument("--tfce-h", type=float, default=2.0)

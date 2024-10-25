@@ -5,15 +5,20 @@ import numpy as np
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT
 from analyses.searchlight.searchlight import METRIC_MIN
-from analyses.searchlight.searchlight_permutation_testing import calc_clusters, get_hparam_suffix, permutation_results_dir, \
-    get_edge_lengths_dicts_based_on_edges
+from analyses.searchlight.searchlight_permutation_testing import calc_clusters, get_hparam_suffix, \
+    permutation_results_dir, get_edge_lengths_dicts_based_on_edges
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
 def create_masks(args):
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    masks_path = os.path.join(os.path.dirname(p_values_path), "masks")
+    os.makedirs(masks_path, exist_ok=True)
+    p_values_gifti_path = os.path.join(os.path.dirname(p_values_path), "p_values_gifti")
+    os.makedirs(p_values_gifti_path, exist_ok=True)
+
     p_values = pickle.load(open(p_values_path, "rb"))
 
     # transform to plottable magnitudes:
@@ -21,16 +26,19 @@ def create_masks(args):
     log_10_p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
     log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
-    masks_path = os.path.join(os.path.dirname(p_values_path), "masks")
-    os.makedirs(masks_path, exist_ok=True)
-
-    p_values_gifti_path = os.path.join(os.path.dirname(p_values_path), "p_values_gifti")
-    os.makedirs(p_values_gifti_path, exist_ok=True)
-
     for hemi in HEMIS:
-        path_out = os.path.join(p_values_gifti_path, f"{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(permutation_results_dir(args), f"p_values_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(log_10_p_values[hemi], path_out)
 
+    # tfce values
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    tfce_values = pickle.load(open(tfce_values_path, "rb"))
+
+    for hemi in HEMIS:
+        path_out = os.path.join(permutation_results_dir(args), f"tfce_values_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(tfce_values[hemi][METRIC_MIN], path_out)
+
+    # p value masks
     masks = copy.deepcopy(p_values)
     for hemi in HEMIS:
         masks[hemi][p_values[hemi] < args.threshold] = 1
@@ -76,7 +84,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
 
     parser.add_argument("--tfce-h", type=float, default=2.0)

@@ -1,9 +1,10 @@
 import argparse
 import os
 
-from analyses.ridge_regression_decoding import get_default_features, FEATS_SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY_WHOLE_TEST, METRIC_IMAGERY
+from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir
+from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
 
 METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
@@ -22,16 +23,14 @@ def run(args):
     for hemi_fs in HEMIS_FS:
         cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
 
+        results_dir = permutation_results_dir(args)
         mask_paths = [os.path.join(
-            searchlight_dir,
-            f"train/{args.model}/{args.features}/{args.resolution}/{args.mode}/p_values_gifti/{hemi_fs}.gii")
+            results_dir, f"tfce_values_{hemi_fs}.gii")
         ]
-        mask_paths += [os.path.join(
-            searchlight_dir,
-            f"train/{args.model}/{args.features}/{args.resolution}/{args.mode}/p_values_gifti/thresh_{thresh}_{hemi_fs}"
-            f"_cluster_{i}.gii")
-            for i in range(args.n_clusters)
-        ]
+        # mask_paths += [os.path.join(
+        #     results_dir, "p_values_gifti", f"thresh_{thresh}_{hemi_fs}_cluster_{i}.gii")
+        #     for i in range(args.n_clusters)
+        # ]
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
@@ -56,11 +55,19 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--p-values-threshold", type=float, default=0.0001)
+    parser.add_argument("--p-values-threshold", type=float, default=0.05)
+
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT)
+    parser.add_argument("--features", type=str, default="avg_test_avg")
+
+    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+
+    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+
     parser.add_argument("--mode", type=str, default='n_neighbors_200')
-    parser.add_argument("--resolution", type=str, default='fsaverage7')
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--n-clusters", type=int, default=10)
@@ -72,6 +79,5 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    args.features = get_default_features(args.model) if args.features == FEATS_SELECT_DEFAULT else args.features
 
     run(args)
