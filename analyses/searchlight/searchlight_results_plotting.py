@@ -28,8 +28,6 @@ COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.02
 CMAP = "cold_hot"
 CMAP_POS_ONLY = "autumn"
 
-P_VALUE_THRESHOLD = 0.01
-
 DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
 
@@ -92,6 +90,21 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
 
+    # calculate p-value threshold
+    null_distribution_tfce_values_file = os.path.join(
+        permutation_results_dir(args),
+        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+    )
+    print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
+    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+    max_test_statistic_distr = sorted([
+        np.nanmax(np.concatenate((n[HEMIS[0]][args.metric], n[HEMIS[1]][args.metric])))
+        for n in null_distribution_tfce_values
+    ])
+    significance_cutoff = np.quantile(max_test_statistic_distr, 1-args.p_value_threshold)
+    print(f"{len(null_distribution_tfce_values)} permutations")
+    print(f"tfce value significance cutoff for p<{args.p_value_threshold} (across hemis): {significance_cutoff}")
+
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     cbar_max = {stat: None for stat in test_statistics.keys()}
@@ -100,8 +113,8 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
         if subfolder:
             test_stat_imgs_dir = os.path.join(test_stat_imgs_dir, subfolder)
         os.makedirs(test_stat_imgs_dir, exist_ok=True)
-        threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else DEFAULT_TFCE_VAL_THRESH
 
+        threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else significance_cutoff
         for i, view in enumerate(args.views):
             for j, hemi in enumerate(HEMIS):
                 scores_hemi = values[hemi][args.metric]
@@ -241,7 +254,7 @@ def plot_p_values(results_path, args):
                 bg_map=fsaverage[f"sulc_{hemi}"],
                 bg_on_data=True,
                 colorbar=False,
-                threshold=-np.log10(P_VALUE_THRESHOLD),
+                threshold=-np.log10(args.p_value_threshold),
                 vmax=cbar_max,
                 vmin=cbar_min,
                 cmap=CMAP_POS_ONLY,
@@ -258,7 +271,7 @@ def plot_p_values(results_path, args):
         bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
         bg_on_data=True,
         colorbar=True,
-        threshold=-np.log10(P_VALUE_THRESHOLD),
+        threshold=-np.log10(args.p_value_threshold),
         vmax=cbar_max,
         vmin=cbar_min,
         cmap=CMAP_POS_ONLY,
@@ -291,13 +304,13 @@ def append_images(images, horizontally=True, padding=5):
 def create_composite_image(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
 
-    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
-    p_val_img = Image.open(os.path.join(p_values_imgs_dir, f"medial_left.png"))
+    tfce_values_img_dir = str(os.path.join(results_path, "tmp", "tfce-values"))
+    tfce_val_img = Image.open(os.path.join(tfce_values_img_dir, f"{args.metric}_medial_left.png"))
     # offset_size = (int(p_val_img.size[0]/10), p_val_img.size[1])
     # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
-    cbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
-    p_val_image = append_images([cbar, p_val_img], padding=150)     #image_whitespace
-    p_val_image = p_val_image.resize((int(p_val_image.size[0] * 1.1), int(p_val_image.size[1] * 1.1)))
+    cbar = Image.open(os.path.join(tfce_values_img_dir, f"colorbar_{args.metric}.png"))
+    tfce_val_img = append_images([cbar, tfce_val_img], padding=150)     #image_whitespace
+    tfce_val_img = tfce_val_img.resize((int(tfce_val_img.size[0] * 1.1), int(tfce_val_img.size[1] * 1.1)))
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
@@ -317,7 +330,7 @@ def create_composite_image(args):
 
     acc_imgs = append_images([acc_scores_imgs_acc, acc_scores_imgs_diff], padding=400)
 
-    full_img = append_images([acc_imgs, p_val_image], horizontally=False, padding=400)
+    full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=400)
 
     path = os.path.join(results_path, "searchlight_methods.png")
     full_img.save(path, transparent=True)
@@ -444,6 +457,8 @@ def get_args():
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 
     parser.add_argument("--plot-n-neighbors-correlation-graph", action="store_true", default=False)
+
+    parser.add_argument("--p-value-threshold", type=float, default=0.01)
 
     return parser.parse_args()
 
