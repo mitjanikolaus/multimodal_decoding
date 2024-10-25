@@ -36,55 +36,55 @@ PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    if "t-values" in test_statistics:
-        t_values = test_statistics['t-values']
-        t_values_imgs_dir = str(os.path.join(results_path, "tmp", "t-values"))
-        if subfolder:
-            t_values_imgs_dir = os.path.join(t_values_imgs_dir, subfolder)
-        os.makedirs(t_values_imgs_dir, exist_ok=True)
-
-        threshold = DEFAULT_T_VALUE_THRESH
-        metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
-        print(f"plotting t values for {len(metrics)} metrics {subfolder}")
-        cbar_max = {metric: None for metric in metrics}
-        for metric in metrics:
-            print(metric)
-            for i, view in enumerate(args.views):
-                for j, hemi in enumerate(HEMIS):
-                    scores_hemi = t_values[hemi][metric]
-                    if cbar_max[metric] is None:
-                        cbar_max[metric] = np.nanmax(scores_hemi)
-                    plotting.plot_surf_stat_map(
-                        fsaverage[f"infl_{hemi}"],
-                        scores_hemi,
-                        hemi=hemi,
-                        view=view,
-                        bg_map=fsaverage[f"sulc_{hemi}"],
-                        bg_on_data=True,
-                        colorbar=False,
-                        threshold=threshold,
-                        vmax=cbar_max[metric],
-                        vmin=0,
-                        cmap=CMAP_POS_ONLY,
-                    )
-                    title = f"{metric}_{view}_{hemi}"
-                    save_plot_and_crop_img(os.path.join(t_values_imgs_dir, f"{title}.png"))
-
-        # plot for cbar:
-        plotting.plot_surf_stat_map(
-            fsaverage[f"infl_{HEMIS[0]}"],
-            t_values[HEMIS[0]][metrics[0]],
-            hemi=HEMIS[0],
-            view=args.views[0],
-            bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
-            bg_on_data=True,
-            colorbar=True,
-            threshold=threshold,
-            vmax=cbar_max[metrics[0]],
-            vmin=0,
-            cmap=CMAP_POS_ONLY,
-        )
-        save_plot_and_crop_img(os.path.join(t_values_imgs_dir, "colorbar.png"), crop_cbar=True)
+    # if "t-values" in test_statistics:
+    #     t_values = test_statistics['t-values']
+    #     t_values_imgs_dir = str(os.path.join(results_path, "tmp", "t-values"))
+    #     if subfolder:
+    #         t_values_imgs_dir = os.path.join(t_values_imgs_dir, subfolder)
+    #     os.makedirs(t_values_imgs_dir, exist_ok=True)
+    #
+    #     threshold = DEFAULT_T_VALUE_THRESH
+    #     metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+    #     print(f"plotting t values for {len(metrics)} metrics {subfolder}")
+    #     cbar_max = {metric: None for metric in metrics}
+    #     for metric in metrics:
+    #         print(metric)
+    #         for i, view in enumerate(args.views):
+    #             for j, hemi in enumerate(HEMIS):
+    #                 scores_hemi = t_values[hemi][metric]
+    #                 if cbar_max[metric] is None:
+    #                     cbar_max[metric] = np.nanmax(scores_hemi)
+    #                 plotting.plot_surf_stat_map(
+    #                     fsaverage[f"infl_{hemi}"],
+    #                     scores_hemi,
+    #                     hemi=hemi,
+    #                     view=view,
+    #                     bg_map=fsaverage[f"sulc_{hemi}"],
+    #                     bg_on_data=True,
+    #                     colorbar=False,
+    #                     threshold=threshold,
+    #                     vmax=cbar_max[metric],
+    #                     vmin=0,
+    #                     cmap=CMAP_POS_ONLY,
+    #                 )
+    #                 title = f"{metric}_{view}_{hemi}"
+    #                 save_plot_and_crop_img(os.path.join(t_values_imgs_dir, f"{title}.png"))
+    #
+    #     # plot for cbar:
+    #     plotting.plot_surf_stat_map(
+    #         fsaverage[f"infl_{HEMIS[0]}"],
+    #         t_values[HEMIS[0]][metrics[0]],
+    #         hemi=HEMIS[0],
+    #         view=args.views[0],
+    #         bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+    #         bg_on_data=True,
+    #         colorbar=True,
+    #         threshold=threshold,
+    #         vmax=cbar_max[metrics[0]],
+    #         vmin=0,
+    #         cmap=CMAP_POS_ONLY,
+    #     )
+    #     save_plot_and_crop_img(os.path.join(t_values_imgs_dir, "colorbar.png"), crop_cbar=True)
 
 
     # plot remaining test stats
