@@ -20,7 +20,7 @@ def create_masks(args):
     os.makedirs(tfce_values_gitfi_path, exist_ok=True)
     for hemi in HEMIS:
         path_out = os.path.join(tfce_values_gitfi_path, f"{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(tfce_values[hemi], path_out)
+        export_to_gifti(tfce_values[hemi][METRIC_MIN], path_out)
 
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     masks_path = os.path.join(os.path.dirname(p_values_path), "masks")
