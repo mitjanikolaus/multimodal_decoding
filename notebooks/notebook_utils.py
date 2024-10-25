@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores
+from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS
 from tqdm import tqdm
 from glob import glob
 import pickle
@@ -232,7 +232,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
         df = df[(df.test_features == df.features) | df.test_features.isna()].copy()
 
     df["training_mode"] = df.training_mode.replace(
-        {"train": "modality-agnostic", "train_captions": "captions", "train_images": "images"})
+        {MODE_AGNOSTIC: "modality-agnostic", MOD_SPECIFIC_CAPTIONS: "captions", MOD_SPECIFIC_IMAGES: "images"})
 
     if "surface" in df.columns:
         df["surface"] = df.surface.fillna(False)
