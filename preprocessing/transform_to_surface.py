@@ -10,7 +10,9 @@ import pickle
 from analyses.ridge_regression_decoding import get_fmri_data_paths, IMAGERY
 from analyses.searchlight.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
+from utils import IMAGERY_SCENES, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
+
+DEFAULT_RESOLUTION =  "fsaverage7"
 
 
 def run(args):
@@ -101,7 +103,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
-    parser.add_argument("--resolution", type=str, default="fsaverage7")
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
     return parser.parse_args()
