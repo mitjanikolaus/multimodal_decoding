@@ -1,6 +1,17 @@
 # multimodal_decoding
 
+## Searchlight analysis
 
+Modality-agnostic decoder:
+```
+python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --n-jobs 15
+
+```
+Modality-specific decoders:
+```
+python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --features vision --test-features vision --training-mode train_images --n-jobs 15
+python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --features lang --test-features lang --training-mode train_captions --n-jobs 15
+```
 ## Visualization with freeview
 
 
