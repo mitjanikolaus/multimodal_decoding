@@ -25,12 +25,12 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = [os.path.join(
-            results_dir, "p_values_gifti", f"{hemi_fs}.gii")
+            results_dir, f"tfce_values_{hemi_fs}.gii")
         ]
-        mask_paths += [os.path.join(
-            results_dir, "p_values_gifti", f"thresh_{thresh}_{hemi_fs}_cluster_{i}.gii")
-            for i in range(args.n_clusters)
-        ]
+        # mask_paths += [os.path.join(
+        #     results_dir, "p_values_gifti", f"thresh_{thresh}_{hemi_fs}_cluster_{i}.gii")
+        #     for i in range(args.n_clusters)
+        # ]
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
