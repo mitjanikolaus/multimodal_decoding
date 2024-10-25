@@ -144,12 +144,6 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
     else:
         return per_subject_scores
 
-            for subj in SUBJECTS:
-                score_hemi = per_subject_scores[subj][hemi][metric]
-                path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
-                os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                export_to_gifti(score_hemi, path_out)
-
 
 def compute_adjacency_matrix(surface, values='ones'):
     """Computes the adjacency matrix for a surface.
