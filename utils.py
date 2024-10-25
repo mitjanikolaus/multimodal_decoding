@@ -49,6 +49,8 @@ FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
+DEFAULT_RESOLUTION =  "fsaverage7"
+
 
 def nipype_subject_id(subject):
     return f'_subject_id_{subject}'

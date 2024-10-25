@@ -12,9 +12,6 @@ from analyses.searchlight.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TE
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import IMAGERY_SCENES, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
 
-DEFAULT_RESOLUTION =  "fsaverage7"
-
-
 def run(args):
     for subject in args.subjects:
         print("\n", subject)

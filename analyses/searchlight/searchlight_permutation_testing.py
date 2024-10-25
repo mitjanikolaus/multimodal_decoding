@@ -23,8 +23,7 @@ from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIF
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import SUBJECTS, HEMIS
+from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION
 
 DEFAULT_N_JOBS = 10
 

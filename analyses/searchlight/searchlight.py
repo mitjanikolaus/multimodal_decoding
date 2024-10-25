@@ -23,9 +23,9 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
     get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 
-from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, DATA_DIR
+from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, DATA_DIR, \
+    DEFAULT_RESOLUTION
 
 DEFAULT_N_JOBS = 10
 

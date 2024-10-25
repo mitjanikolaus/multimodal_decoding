@@ -4,8 +4,7 @@ import os
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY_WHOLE_TEST, METRIC_IMAGERY
 from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION
 
 METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
            METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]

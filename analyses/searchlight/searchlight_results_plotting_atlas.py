@@ -26,9 +26,8 @@ from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFE
 from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, permutation_results_dir, \
     get_hparam_suffix
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
-    P_VALUE_THRESHOLD, append_images
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR
+    append_images
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")

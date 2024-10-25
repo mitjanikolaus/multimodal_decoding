@@ -7,12 +7,11 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy.stats import pearsonr
 
-from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, \
+from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_CAPTIONS, \
     METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from analyses.searchlight.searchlight_permutation_testing import load_per_subject_scores, permutation_results_dir
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION
 
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):

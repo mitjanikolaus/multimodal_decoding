@@ -8,8 +8,7 @@ import pickle
 from analyses.searchlight.searchlight import METRIC_MIN
 from analyses.searchlight.searchlight_permutation_testing import calc_clusters, get_hparam_suffix, \
     permutation_results_dir, get_edge_lengths_dicts_based_on_edges
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
+from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION
 
 
 def create_masks(args):

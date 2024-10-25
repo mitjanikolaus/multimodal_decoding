@@ -11,15 +11,14 @@ from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
-from tqdm import trange, tqdm
+from tqdm import trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, FS_HEMI_NAMES, ACC_CAPTIONS, ACC_IMAGES, \
+    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_MODALITY_AGNOSTIC
+    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'

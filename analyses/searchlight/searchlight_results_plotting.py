@@ -14,8 +14,7 @@ from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_MIN, permutation_results_dir, get_hparam_suffix
-from preprocessing.transform_to_surface import DEFAULT_RESOLUTION
-from utils import RESULTS_DIR, SUBJECTS, HEMIS
+from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 0.8
