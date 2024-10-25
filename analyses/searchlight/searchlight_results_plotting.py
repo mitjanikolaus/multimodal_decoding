@@ -48,6 +48,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
         print(f"plotting t values for {len(metrics)} metrics {subfolder}")
         cbar_max = {metric: None for metric in metrics}
         for metric in metrics:
+            print(metric)
             for i, view in enumerate(args.views):
                 for j, hemi in enumerate(HEMIS):
                     scores_hemi = t_values[hemi][metric]
