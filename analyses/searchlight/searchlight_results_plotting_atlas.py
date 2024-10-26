@@ -435,8 +435,7 @@ def plot(args):
     cbar_min = 0
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
-        # resolution_fs = "fsaverage" if args.resolution == "fsaverage7" else args.resolution
-        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/{args.resolution}/label/{hemi_fs}.aparc.a2009s.annot")
+        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
         atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
         names = [name.decode() for name in names]
 
