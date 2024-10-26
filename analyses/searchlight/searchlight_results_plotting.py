@@ -13,7 +13,7 @@ from tqdm import tqdm
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
-    load_null_distr_per_subject_scores, METRIC_MIN, permutation_results_dir, get_hparam_suffix
+    load_null_distr_per_subject_scores, METRIC_MIN, permutation_results_dir, get_hparam_suffix, calc_significance_cutoff
 from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -90,20 +90,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
 
-    # calculate p-value threshold
-    null_distribution_tfce_values_file = os.path.join(
-        permutation_results_dir(args),
-        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-    )
-    print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
-    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-    max_test_statistic_distr = sorted([
-        np.nanmax(np.concatenate((n[HEMIS[0]][args.metric], n[HEMIS[1]][args.metric])))
-        for n in null_distribution_tfce_values
-    ])
-    significance_cutoff = np.quantile(max_test_statistic_distr, 1-args.p_value_threshold)
-    print(f"{len(null_distribution_tfce_values)} permutations")
-    print(f"tfce value significance cutoff for p<{args.p_value_threshold} (across hemis): {significance_cutoff}")
+    significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold)
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)

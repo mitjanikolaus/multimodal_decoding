@@ -430,6 +430,25 @@ def calc_t_values(per_subject_scores):
     return t_values
 
 
+def calc_significance_cutoff(args, p_value_threshold=0.05):
+    null_distribution_tfce_values_file = os.path.join(
+        permutation_results_dir(args),
+        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+    )
+    print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
+    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+
+    max_test_statistic_distr = sorted([
+        np.nanmax(np.concatenate((n[HEMIS[0]][args.metric], n[HEMIS[1]][args.metric])))
+        for n in null_distribution_tfce_values
+    ])
+
+    significance_cutoff = np.quantile(max_test_statistic_distr, 1-p_value_threshold)
+    print(f"{len(null_distribution_tfce_values)} permutations")
+    print(f"cluster test statistic significance cutoff for p<0.05 (across hemis): {significance_cutoff}")
+    return significance_cutoff, max_test_statistic_distr
+
+
 def calc_test_statistics(args):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
@@ -452,22 +471,7 @@ def calc_test_statistics(args):
         print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
         print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
 
-    null_distribution_tfce_values_file = os.path.join(
-        permutation_results_dir(args),
-        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-    )
-
-    print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
-    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-
-    max_test_statistic_distr = sorted([
-        np.nanmax(np.concatenate((n[HEMIS[0]][args.metric], n[HEMIS[1]][args.metric])))
-        for n in null_distribution_tfce_values
-    ])
-
-    significance_cutoff = np.quantile(max_test_statistic_distr, 0.95)
-    print(f"{len(null_distribution_tfce_values)} permutations")
-    print(f"cluster test statistic significance cutoff for p<0.05 (across hemis): {significance_cutoff}")
+    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(args)
 
     p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:

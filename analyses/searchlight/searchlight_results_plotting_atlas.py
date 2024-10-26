@@ -24,7 +24,7 @@ from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
 from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, permutation_results_dir, \
-    get_hparam_suffix
+    get_hparam_suffix, calc_significance_cutoff
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION
@@ -379,15 +379,18 @@ def plot_surf_roi_custom(surf_mesh,
 
 def plot(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
-    p_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
-    os.makedirs(p_values_atlas_results_dir, exist_ok=True)
+    tfce_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "tfce_values_atlas"))
+    os.makedirs(tfce_values_atlas_results_dir, exist_ok=True)
 
-    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
-    p_values = pickle.load(open(p_values_path, "rb"))
+    # p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    # p_values = pickle.load(open(p_values_path, "rb"))
 
-    # transform to plottable magnitudes:
-    p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
-    p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
+    # # transform to plottable magnitudes:
+    # p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
+    # p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
+    # calculate p-value threshold
+
+    significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold)
 
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
@@ -422,10 +425,13 @@ def plot(args):
     all_colors = {label_names_dict[r]: c for r, c in
                   zip(unique_rois, color_palette)}
 
-    save_legend(all_colors, p_values_atlas_results_dir)
+    save_legend(all_colors, tfce_values_atlas_results_dir)
     # plt.savefig(path)
 
-    cbar_max = np.nanmax(np.concatenate((p_values['left'], p_values['right'])))
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    tfce_values = pickle.load(open(tfce_values_path, "rb"))
+
+    cbar_max = np.nanmax(np.concatenate((tfce_values['left'][args.metric], tfce_values['right'][args.metric])))
     cbar_min = 0
     for hemi in HEMIS:
         hemi_fs = FS_HEMI_NAMES[hemi]
@@ -471,11 +477,11 @@ def plot(args):
 
             plot_surf_stat_map_custom(
                 fsaverage[f"infl_{hemi}"],
-                p_values[hemi],
+                tfce_values[hemi][args.metric],
                 hemi=hemi,
                 view=view,
                 colorbar=False,
-                threshold=-np.log10(P_VALUE_THRESHOLD),
+                threshold=significance_cutoff,
                 vmax=cbar_max,
                 vmin=cbar_min,
                 cmap=CMAP_POS_ONLY,
@@ -484,43 +490,43 @@ def plot(args):
             )
 
             title = f"{view}_{hemi}"
-            path = os.path.join(p_values_atlas_results_dir, f"{title}.png")
+            path = os.path.join(tfce_values_atlas_results_dir, f"{title}.png")
             save_plot_and_crop_img(path)
             print(f"saved {path}")
 
     # plot for cbar:
     plotting.plot_surf_stat_map(
         fsaverage[f"infl_{HEMIS[0]}"],
-        p_values[HEMIS[0]],
+        tfce_values[HEMIS[0]][args.metric],
         hemi=HEMIS[0],
         view=args.views[0],
         colorbar=True,
-        threshold=-np.log10(P_VALUE_THRESHOLD),
+        threshold=-np.log10(args.p_value_threshold),
         vmax=cbar_max,
         vmin=cbar_min,
         cmap=CMAP_POS_ONLY,
     )
-    save_plot_and_crop_img(os.path.join(p_values_atlas_results_dir, "colorbar.png"), crop_cbar=True)
+    save_plot_and_crop_img(os.path.join(tfce_values_atlas_results_dir, "colorbar.png"), crop_cbar=True)
 
 
 def create_composite_image(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
-    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values_atlas"))
+    tfce_values_imgs_dir = str(os.path.join(results_path, "tmp", "tfce_values_atlas"))
 
-    images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+    images_lateral = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
                       in HEMIS]
-    images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+    images_medial = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
                      in HEMIS]
-    images_posterior = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
+    images_posterior = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
                      in HEMIS]
 
-    imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    imgs_ventral = [Image.open(os.path.join(tfce_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
     img_ventral = append_images(images=imgs_ventral, horizontally=False)
 
     img_medial = append_images(images=images_medial)
     img_posterior = append_images(images=images_posterior)
 
-    img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
+    img_colorbar = Image.open(os.path.join(tfce_values_imgs_dir, "colorbar.png"))
     img_lateral = append_images(images=images_lateral)
 
     img_row_1 = append_images([img_lateral, img_posterior])
@@ -528,7 +534,7 @@ def create_composite_image(args):
 
     img_row_2 = append_images([img_row_2, img_colorbar], padding = 20)
 
-    roi_legend = Image.open(os.path.join(p_values_imgs_dir, f"legend.png"))
+    roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
     p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
 
@@ -591,6 +597,8 @@ def get_args():
     parser.add_argument("--metric", type=str, default=METRIC_MIN)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
+
+    parser.add_argument("--p-value-threshold", type=float, default=0.01)
 
     return parser.parse_args()
 
