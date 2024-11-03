@@ -1,10 +1,5 @@
 import os
 import numpy as np
-import pandas as pd
-from networkx.classes import all_neighbors
-from scipy.stats import pearsonr
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 from nibabel import GiftiImage
 from nibabel.gifti import GiftiDataArray
@@ -49,7 +44,7 @@ FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
-DEFAULT_RESOLUTION =  "fsaverage7"
+DEFAULT_RESOLUTION = "fsaverage7"
 
 
 def nipype_subject_id(subject):
