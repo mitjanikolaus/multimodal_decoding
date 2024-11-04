@@ -164,7 +164,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             # we need to create a proxy mappable
             proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
             proxy_mappable.set_array(surf_map_faces)
-            cax, _ = make_axes(axes, location='right', fraction=.2,
+            cax, _ = make_axes(axes, location='right', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
             figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks,
@@ -494,6 +494,7 @@ def plot(args):
             print(f"saved {path}")
 
     # plot for cbar:
+    fig = plt.figure(figsize=(7, 6))
     plotting.plot_surf_stat_map(
         fsaverage[f"infl_{HEMIS[0]}"],
         tfce_values[HEMIS[0]][args.metric],
@@ -504,6 +505,7 @@ def plot(args):
         vmax=cbar_max,
         vmin=cbar_min,
         cmap=CMAP_POS_ONLY,
+        figure=fig,
     )
     save_plot_and_crop_img(os.path.join(tfce_values_atlas_results_dir, "colorbar.png"), crop_cbar=True)
 
