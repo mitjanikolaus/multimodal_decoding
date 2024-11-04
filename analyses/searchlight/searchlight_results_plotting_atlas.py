@@ -402,7 +402,7 @@ def plot(args):
                     'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], # , 'G_front_inf-Orbital',  'G_orbital',
         "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_oc-temp_lat-fusifor',
                     'Pole_temporal'], #, 'G_front_inf-Orbital', 'G_orbital',
-        "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup', 'G_occipital_sup'] #, 'S_intrapariet_and_P_trans'
+        "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup'] #, 'S_intrapariet_and_P_trans' , 'G_occipital_sup'
     }
 
     unique_rois = set()
