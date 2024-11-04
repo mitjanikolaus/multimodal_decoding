@@ -501,7 +501,7 @@ def plot(args):
         hemi=HEMIS[0],
         view=args.views[0],
         colorbar=True,
-        threshold=-np.log10(args.p_value_threshold),
+        threshold=significance_cutoff,
         vmax=cbar_max,
         vmin=cbar_min,
         cmap=CMAP_POS_ONLY,
