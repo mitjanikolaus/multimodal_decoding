@@ -470,7 +470,7 @@ def plot(args):
             fig = plot_surf_roi_custom(
                 fsaverage[f"infl_{hemi}"], roi_map=atlas_labels_current_view,
                 bg_map=fsaverage[f"sulc_{hemi}"], hemi=hemi,
-                view=view, alpha=0.5, cmap=cmap,
+                view=view, alpha=1, cmap=cmap,
                 bg_on_data=True, darkness=0.4, categorical_cmap=True,
             )
 
