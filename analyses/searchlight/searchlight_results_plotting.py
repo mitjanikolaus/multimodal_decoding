@@ -126,6 +126,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
                 title = f"{args.metric}_{view}_{hemi}"
                 save_plot_and_crop_img(os.path.join(test_stat_imgs_dir, f"{title}.png"))
         # plot for cbar:
+        fig = plt.figure(figsize=(7, 6))
         plotting.plot_surf_stat_map(
             fsaverage[f"infl_{HEMIS[0]}"],
             values[HEMIS[0]][args.metric],
@@ -138,6 +139,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
             vmax=cbar_max[stat_name],
             vmin=0,
             cmap=CMAP_POS_ONLY,
+            figure=fig,
         )
         save_plot_and_crop_img(os.path.join(test_stat_imgs_dir, f"colorbar_{args.metric}.png"), crop_cbar=True)
 
@@ -208,7 +210,7 @@ def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False):
     plt.savefig(path, dpi=300, transparent=True)
     image = Image.open(path)
     if crop_cbar:
-        image = image.crop((image.size[0] - image.size[0] / 5, 0, image.size[0], image.size[1]))
+        image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
     if crop_to_content:
         image = image.crop(image.getbbox())
     image.save(path)
@@ -328,11 +330,11 @@ def run(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     os.makedirs(results_path, exist_ok=True)
 
-    plot_p_values(results_path, args)
-
-    per_subject_scores = load_per_subject_scores(args)
-    plot_acc_scores(per_subject_scores, args, results_path)
-
+    # plot_p_values(results_path, args)
+    #
+    # per_subject_scores = load_per_subject_scores(args)
+    # plot_acc_scores(per_subject_scores, args, results_path)
+    #
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
