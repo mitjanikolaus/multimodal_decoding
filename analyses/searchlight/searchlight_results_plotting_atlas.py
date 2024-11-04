@@ -164,7 +164,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             # we need to create a proxy mappable
             proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
             proxy_mappable.set_array(surf_map_faces)
-            cax, _ = make_axes(axes, location='right', fraction=.15,
+            cax, _ = make_axes(axes, location='right', fraction=.2,
                                shrink=.5, pad=.0, aspect=10.)
             figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks,
