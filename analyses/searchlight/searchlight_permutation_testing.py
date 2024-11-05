@@ -23,8 +23,9 @@ from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIF
     ACC_IMAGES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
-    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
-from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, FS_HEMI_NAMES, export_to_gifti
+    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST
+from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, FS_HEMI_NAMES, export_to_gifti, ACC_IMAGERY_WHOLE_TEST, \
+    ACC_IMAGERY
 
 DEFAULT_N_JOBS = 10
 
@@ -54,6 +55,10 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
         score_name = metric.split("_")[-1]
         scores[score_name] = np.repeat(np.nan, nan_locations.shape)
         scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
+
+    for acc, metric in zip([ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST], [METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]):
+        scores[metric] = np.repeat(np.nan, nan_locations.shape)
+        scores[metric][~nan_locations] = np.array([score[acc] for score in scores_agnostic])
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
         scores_specific_captions = dict()
