@@ -330,11 +330,11 @@ def run(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
     os.makedirs(results_path, exist_ok=True)
 
-    # plot_p_values(results_path, args)
-    #
-    # per_subject_scores = load_per_subject_scores(args)
-    # plot_acc_scores(per_subject_scores, args, results_path)
-    #
+    plot_p_values(results_path, args)
+
+    per_subject_scores = load_per_subject_scores(args)
+    plot_acc_scores(per_subject_scores, args, results_path)
+
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
