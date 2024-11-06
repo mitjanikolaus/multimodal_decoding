@@ -7,14 +7,14 @@ from PIL import Image
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import make_axes
 from matplotlib.colors import ListedColormap
-from nilearn import datasets, plotting
+from matplotlib.ticker import ScalarFormatter
+from nilearn import datasets
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import os
 import pickle
 
-import seaborn as sns
 from nilearn.plotting.cm import mix_colormaps
 from nilearn.plotting.img_plotting import get_colorbar_and_data_ranges
 from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
@@ -164,12 +164,13 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             # we need to create a proxy mappable
             proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
             proxy_mappable.set_array(surf_map_faces)
-            cax, _ = make_axes(axes, location='right', fraction=.15,
+            cax, _ = make_axes(axes, location='bottom', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
+            ticks = [0, threshold, round(np.mean(ticks), -3), round(np.max(ticks), -3)]
             figure.colorbar(
-                proxy_mappable, cax=cax, ticks=ticks,
+                proxy_mappable, cax=cax, ticks=ticks, label="TFCE",
                 boundaries=bounds, spacing='proportional',
-                format=cbar_tick_format, orientation='vertical')
+                format=ScalarFormatter(useOffset=False), orientation='horizontal')
 
         p3dcollec.set_facecolors(face_colors)
         p3dcollec.set_edgecolors(face_colors)
@@ -382,15 +383,7 @@ def plot(args):
     tfce_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "tfce_values_atlas"))
     os.makedirs(tfce_values_atlas_results_dir, exist_ok=True)
 
-    # p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
-    # p_values = pickle.load(open(p_values_path, "rb"))
-
-    # # transform to plottable magnitudes:
-    # p_values['left'][~np.isnan(p_values['left'])] = - np.log10(p_values['left'][~np.isnan(p_values['left'])])
-    # p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
-    # calculate p-value threshold
-
-    significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold)
+    significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) #(603.5, None)
 
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
@@ -456,6 +449,8 @@ def plot(args):
 
         # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
+
+
         for i, (view, rois) in enumerate(rois_for_view.items()):
             regions_indices = [names.index(roi) for roi in rois]
             label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
@@ -495,7 +490,7 @@ def plot(args):
 
     # plot for cbar:
     fig = plt.figure(figsize=(7, 6))
-    plotting.plot_surf_stat_map(
+    plot_surf_stat_map_custom(
         fsaverage[f"infl_{HEMIS[0]}"],
         tfce_values[HEMIS[0]][args.metric],
         hemi=HEMIS[0],
@@ -507,7 +502,7 @@ def plot(args):
         cmap=CMAP_POS_ONLY,
         figure=fig,
     )
-    save_plot_and_crop_img(os.path.join(tfce_values_atlas_results_dir, "colorbar.png"), crop_cbar=True)
+    save_plot_and_crop_img(os.path.join(tfce_values_atlas_results_dir, "colorbar.png"), crop_cbar=True, horizontal_cbar=True)
 
 
 def create_composite_image(args):
@@ -528,12 +523,15 @@ def create_composite_image(args):
     img_posterior = append_images(images=images_posterior)
 
     img_colorbar = Image.open(os.path.join(tfce_values_imgs_dir, "colorbar.png"))
-    img_lateral = append_images(images=images_lateral)
+    img_lateral = append_images(images=images_lateral, horizontally=True)
 
-    img_row_1 = append_images([img_lateral, img_posterior])
-    img_row_2 = append_images([img_medial, img_ventral])
+    img_row_1 = append_images([img_lateral, img_posterior], padding=50)
+    img_row_2 = append_images([img_medial, img_ventral], padding=30)
 
-    img_row_2 = append_images([img_row_2, img_colorbar], padding = 20)
+    offset_size = (int(img_row_2.size[0]/2 - img_colorbar.size[0]/2), img_colorbar.size[1])
+    image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
+    img_colorbar = append_images([image_whitespace, img_colorbar])
+    img_row_1 = append_images([img_colorbar, img_row_1], horizontally=False, padding = 20)
 
     roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
@@ -544,35 +542,35 @@ def create_composite_image(args):
 
 
     # without atlas
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
-    p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
-
-    images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
-                      in HEMIS]
-    images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
-                     in HEMIS]
-    images_posterior = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
-                     in HEMIS]
-
-    imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
-    img_ventral = append_images(images=imgs_ventral, horizontally=False)
-
-    img_medial = append_images(images=images_medial)
-    img_posterior = append_images(images=images_posterior)
-
-    img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
-    img_lateral = append_images(images=images_lateral)
-
-    img_row_1 = append_images([img_lateral, img_posterior])
-    img_row_2 = append_images([img_medial, img_ventral])
-
-    img_row_2 = append_images([img_row_2, img_colorbar], padding=20)
-
-    p_val_image = append_images([img_row_1, img_row_2], padding=5, horizontally=False)
-
-    path = os.path.join(results_path, "searchlight_results_no_atlas.png")
-    p_val_image.save(path, transparent=True)
-    print("done")
+    # results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+    # p_values_imgs_dir = str(os.path.join(results_path, "tmp", "p_values"))
+    #
+    # images_lateral = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+    #                   in HEMIS]
+    # images_medial = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+    #                  in HEMIS]
+    # images_posterior = [Image.open(os.path.join(p_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
+    #                  in HEMIS]
+    #
+    # imgs_ventral = [Image.open(os.path.join(p_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    # img_ventral = append_images(images=imgs_ventral, horizontally=False)
+    #
+    # img_medial = append_images(images=images_medial)
+    # img_posterior = append_images(images=images_posterior)
+    #
+    # img_colorbar = Image.open(os.path.join(p_values_imgs_dir, "colorbar.png"))
+    # img_lateral = append_images(images=images_lateral)
+    #
+    # img_row_1 = append_images([img_lateral, img_posterior])
+    # img_row_2 = append_images([img_medial, img_ventral])
+    #
+    # img_row_2 = append_images([img_row_2, img_colorbar], padding=20)
+    #
+    # p_val_image = append_images([img_row_1, img_row_2], padding=5, horizontally=False)
+    #
+    # path = os.path.join(results_path, "searchlight_results_no_atlas.png")
+    # p_val_image.save(path, transparent=True)
+    # print("done")
 
 
 def get_args():

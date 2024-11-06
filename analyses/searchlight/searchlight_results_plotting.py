@@ -206,11 +206,14 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
         save_plot_and_crop_img(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
 
-def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False):
+def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False, horizontal_cbar=False):
     plt.savefig(path, dpi=300, transparent=True)
     image = Image.open(path)
     if crop_cbar:
-        image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
+        if horizontal_cbar:
+            image = image.crop((0, int(image.size[1] - image.size[1] / 5), image.size[0], image.size[1]))
+        else:
+            image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
     if crop_to_content:
         image = image.crop(image.getbbox())
     image.save(path)
