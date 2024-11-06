@@ -24,11 +24,12 @@ from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
+from analyses.searchlight.searchlight import METRIC_IMAGERY_WHOLE_TEST
 from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, permutation_results_dir, \
-    get_hparam_suffix, calc_significance_cutoff
+    get_hparam_suffix, calc_significance_cutoff, load_per_subject_scores
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
-    append_images
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION
+    append_images, COLORBAR_MAX
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION, SUBJECTS
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -69,7 +70,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                  alpha='auto', vmin=None, vmax=None, cbar_vmin=None,
                                  cbar_vmax=None, cbar_tick_format='%.2g',
                                  title=None, output_file=None, darkness=0.7,
-                                 axes=None, figure=None, categorical_cmap=False):
+                                 axes=None, figure=None, categorical_cmap=False, metric=None):
     """Help for plot_surf.
 
     This function handles surface plotting when the selected
@@ -167,9 +168,12 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             proxy_mappable.set_array(surf_map_faces)
             cax, _ = make_axes(axes, location='bottom', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
-            ticks = [0, threshold, round(np.mean(ticks), -3), round(np.max(ticks), -3)]
+            if metric == "tfce":
+                ticks = [0, threshold, round(np.mean(ticks), -3), round(np.max(ticks), -3)]
+            else:
+                ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
             figure.colorbar(
-                proxy_mappable, cax=cax, ticks=ticks, label="TFCE",
+                proxy_mappable, cax=cax, ticks=ticks, label=metric.upper(),
                 boundaries=bounds, spacing='proportional',
                 format=ScalarFormatter(useOffset=False), orientation='horizontal')
             cax.xaxis.set_ticks_position('top')
@@ -191,7 +195,7 @@ def plot_surf_custom(
         surf_mesh, surf_map=None, hemi='left', view='lateral', engine='matplotlib', cmap=None, symmetric_cmap=False,
         colorbar=False, avg_method=None, threshold=None, alpha=None, vmin=None, vmax=None, cbar_vmin=None,
         cbar_vmax=None, cbar_tick_format="auto", title=None, title_font_size=18, output_file=None, axes=None,
-        figure=None, bg_map=None, bg_on_data=False, keep_bg=False, darkness=0.7, categorical_cmap=False,
+        figure=None, bg_map=None, bg_on_data=False, keep_bg=False, darkness=0.7, categorical_cmap=False, metric=None,
 ):
     """Plot surfaces with optional background and data."""
 
@@ -233,7 +237,7 @@ def plot_surf_custom(
             vmin=vmin, vmax=vmax, cbar_vmin=cbar_vmin,
             cbar_vmax=cbar_vmax, cbar_tick_format=cbar_tick_format,
             title=title, bg_map=bg_map, bg_on_data=bg_on_data, keep_bg=keep_bg,
-            output_file=output_file, axes=axes, figure=figure, categorical_cmap=categorical_cmap)
+            output_file=output_file, axes=axes, figure=figure, categorical_cmap=categorical_cmap, metric=metric)
 
     elif engine == 'plotly':
         raise NotImplementedError()
@@ -250,7 +254,7 @@ def plot_surf_stat_map_custom(
         surf_mesh, stat_map, hemi='left', view='lateral', engine='matplotlib', threshold=None, alpha=None, vmin=None,
         vmax=None, cmap='cold_hot', colorbar=True, symmetric_cbar="auto", cbar_tick_format="auto", title=None,
         title_font_size=18, output_file=None, axes=None, figure=None, avg_method=None,
-        bg_map=None, bg_on_data=False, keep_bg=False, categorical_cmap=False, **kwargs
+        bg_map=None, bg_on_data=False, keep_bg=False, categorical_cmap=False, metric=None, **kwargs
 ):
     """Plot a stats map on a surface :term:`mesh` with optional background.    """
     check_extensions(stat_map, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS)
@@ -280,7 +284,7 @@ def plot_surf_stat_map_custom(
         title=title, title_font_size=title_font_size, output_file=output_file,
         axes=axes, figure=figure, cbar_vmin=cbar_vmin,
         bg_map=bg_map, bg_on_data=bg_on_data, keep_bg=keep_bg,
-        cbar_vmax=cbar_vmax, categorical_cmap=categorical_cmap, **kwargs
+        cbar_vmax=cbar_vmax, categorical_cmap=categorical_cmap, metric=metric, **kwargs
     )
     return display
 
@@ -519,197 +523,207 @@ def plot_surf_roi_custom(surf_mesh,
 def plot(args):
     plt.style.use("dark_background")
 
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
-    tfce_values_atlas_results_dir = str(os.path.join(results_path, "tmp", "tfce_values_atlas"))
-    os.makedirs(tfce_values_atlas_results_dir, exist_ok=True)
+    for result_metric in ["imagery", "tfce"]:
+        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+        atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
+        os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
-    significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) #(1342, None)
+        significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) # (1342, None)
 
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    # rois_for_view = {
-    #     "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
-    #                'G_oc-temp_med-Parahip', 'S_pericallosal'],
-    #     "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'S_temporal_sup', 'S_front_inf',
-    #                 'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_temporal_inf',
-    #                 'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], # , 'G_front_inf-Orbital',  'G_orbital',
-    #     "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_oc-temp_lat-fusifor',
-    #                 'Pole_temporal'], #, 'G_front_inf-Orbital', 'G_orbital',
-    #     "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup'] #, 'S_intrapariet_and_P_trans' , 'G_occipital_sup'
-    # }
-    rois_for_view = {
-        "left": {
-            "medial": ['precuneus', 'isthmuscingulate'],
-            "lateral": ['inferiorparietal', 'supramarginal'], #'middletemporal'
-            "ventral": ['inferiortemporal', 'fusiform'],
-        },
-        "right": {
-            "medial": ['precuneus', 'isthmuscingulate'],
-            "lateral": ['inferiorparietal'],
-            "ventral": [],
+        # rois_for_view = {
+        #     "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
+        #                'G_oc-temp_med-Parahip', 'S_pericallosal'],
+        #     "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'S_temporal_sup', 'S_front_inf',
+        #                 'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_temporal_inf',
+        #                 'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], # , 'G_front_inf-Orbital',  'G_orbital',
+        #     "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_oc-temp_lat-fusifor',
+        #                 'Pole_temporal'], #, 'G_front_inf-Orbital', 'G_orbital',
+        #     "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup'] #, 'S_intrapariet_and_P_trans' , 'G_occipital_sup'
+        # }
+        rois_for_view = {
+            "left": {
+                "medial": ['precuneus', 'isthmuscingulate'],
+                "lateral": ['inferiorparietal', 'supramarginal'], #'middletemporal'
+                "ventral": ['inferiortemporal', 'fusiform'],
+            },
+            "right": {
+                "medial": ['precuneus', 'isthmuscingulate'],
+                "lateral": ['inferiorparietal'],
+                "ventral": [],
+            }
         }
-    }
 
-    # unique_rois = set()
-    # for r in rois_for_view.values():
-    #     unique_rois.update(r)
+        # unique_rois = set()
+        # for r in rois_for_view.values():
+        #     unique_rois.update(r)
 
-    # label_names_dict = destrieux_label_names()
-    # color_palette = [(183, 242, 34), (127, 176, 4),
-    #                  (174, 245, 176), (10, 250, 16), (4, 186, 8), (2, 110, 5), (1, 74, 3),
-    #                  (193, 247, 233), (5, 245, 183), (1, 140, 104),
-    #                  (145, 231, 242), (5, 220, 247), (0, 120, 135),
-    #                  (115, 137, 245), (7, 48, 245), (2, 29, 158),
-    #                  (174, 92, 237), (140, 7, 242), (76, 3, 133),
-    #                  (245, 105, 242), (250, 5, 245), (125, 2, 122),
-    #                  (242, 34, 152)]
-    # color_palette = [(x[0] / 255, x[1] / 255, x[2] / 255) for x in color_palette]
-    #
-    # assert len(unique_rois) <= len(color_palette), f"not enough colors for {len(unique_rois)} ROIS"
-    #
-    # all_colors = {label_names_dict[r]: c for r, c in
-    #               zip(unique_rois, color_palette)}
-    #
-    # save_legend(all_colors, tfce_values_atlas_results_dir)
+        # label_names_dict = destrieux_label_names()
+        # color_palette = [(183, 242, 34), (127, 176, 4),
+        #                  (174, 245, 176), (10, 250, 16), (4, 186, 8), (2, 110, 5), (1, 74, 3),
+        #                  (193, 247, 233), (5, 245, 183), (1, 140, 104),
+        #                  (145, 231, 242), (5, 220, 247), (0, 120, 135),
+        #                  (115, 137, 245), (7, 48, 245), (2, 29, 158),
+        #                  (174, 92, 237), (140, 7, 242), (76, 3, 133),
+        #                  (245, 105, 242), (250, 5, 245), (125, 2, 122),
+        #                  (242, 34, 152)]
+        # color_palette = [(x[0] / 255, x[1] / 255, x[2] / 255) for x in color_palette]
+        #
+        # assert len(unique_rois) <= len(color_palette), f"not enough colors for {len(unique_rois)} ROIS"
+        #
+        # all_colors = {label_names_dict[r]: c for r, c in
+        #               zip(unique_rois, color_palette)}
+        #
+        # save_legend(all_colors, tfce_values_atlas_results_dir)
 
-    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    tfce_values = pickle.load(open(tfce_values_path, "rb"))
+        if result_metric == 'tfce':
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+            result_values = pickle.load(open(tfce_values_path, "rb"))
+            for hemi in HEMIS:
+                result_values[hemi] = result_values[hemi][args.metric]
+        elif result_metric == 'imagery':
+            result_values = {}
+            subject_scores = load_per_subject_scores(args)
+            for hemi in HEMIS:
+                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][METRIC_IMAGERY_WHOLE_TEST] for subj in args.subjects], axis=0)
+                result_values[hemi] = score_hemi_avgd
+        else:
+            raise RuntimeError(f"Unknown metric: {result_metric}")
 
-    cbar_max = np.nanmax(np.concatenate((tfce_values['left'][args.metric], tfce_values['right'][args.metric])))
-    cbar_min = 0
-    for hemi in HEMIS:
-        hemi_fs = FS_HEMI_NAMES[hemi]
-        # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
-        atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.annot")
-        atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
-        names = [name.decode() for name in names]
+        cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+        cbar_min = 0 if result_metric == 'tfce' else 0.5
+        for hemi in HEMIS:
+            hemi_fs = FS_HEMI_NAMES[hemi]
+            # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
+            atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.annot")
+            atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
+            names = [name.decode() for name in names]
 
-        # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
-        subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi_fs}.test.annot")
-
-        # subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
-        # subcortical_names = [name.decode() for name in subcortical_names]
-
-        # names = names + subcortical_names
-        # atlas_colors = np.vstack((atlas_colors, subcortical_atlas_colors))
-
-        # add labels from subcortical atlas
-        # offset = np.max(atlas_labels) + 1
-        # label_to_id = {id: id if id == -1 else i + offset for i, id in enumerate(label_ids)}
-        # subcortical_atlas_labels_transformed = np.array([-1 if l == -1 else l + offset for l in subcortical_atlas_labels])
-        # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
-
-        # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
+            # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
+            # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi_fs}.test.annot")
+            # subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
+            # subcortical_names = [name.decode() for name in subcortical_names]
+            # names = names + subcortical_names
+            # atlas_colors = np.vstack((atlas_colors, subcortical_atlas_colors))
+            # add labels from subcortical atlas
+            # offset = np.max(atlas_labels) + 1
+            # label_to_id = {id: id if id == -1 else i + offset for i, id in enumerate(label_ids)}
+            # subcortical_atlas_labels_transformed = np.array([-1 if l == -1 else l + offset for l in subcortical_atlas_labels])
+            # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
+            # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
 
 
-        for i, (view, rois) in enumerate(rois_for_view[hemi].items()):
-            regions_indices = [names.index(roi) for roi in rois]
-            # label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
-            label_names = [r for r in rois]
-            # colors = [all_colors[label_names[regions_indices.index(i)]] if i in regions_indices else (0, 0, 0, 0) for i
-            #           in range(np.nanmax(atlas_labels))]
-            # cmap = ListedColormap(colors)
-            atlas_labels_current_view = np.array([l if l in regions_indices else np.nan for l in atlas_labels])
-            # fig = plot_surf_roi_custom(
-            #     fsaverage[f"infl_{hemi}"], roi_map=atlas_labels_current_view,
-            #     bg_map=fsaverage[f"sulc_{hemi}"], hemi=hemi,
-            #     view=view, alpha=1, cmap=cmap,
-            #     bg_on_data=True, darkness=0.4, categorical_cmap=True,
-            # )
-            # plot_surf_stat_map_custom(
-            #     fsaverage[f"infl_{hemi}"],
-            #     tfce_values[hemi][args.metric],
-            #     hemi=hemi,
-            #     view=view,
-            #     colorbar=False,
-            #     threshold=significance_cutoff,
-            #     vmax=cbar_max,
-            #     vmin=cbar_min,
-            #     cmap=CMAP_POS_ONLY,
-            #     figure=fig,
-            #     keep_bg=True,
-            # )
+            for i, (view, rois) in enumerate(rois_for_view[hemi].items()):
+                regions_indices = [names.index(roi) for roi in rois]
+                # label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
+                label_names = [r for r in rois]
+                # colors = [all_colors[label_names[regions_indices.index(i)]] if i in regions_indices else (0, 0, 0, 0) for i
+                #           in range(np.nanmax(atlas_labels))]
+                # cmap = ListedColormap(colors)
+                atlas_labels_current_view = np.array([l if l in regions_indices else np.nan for l in atlas_labels])
+                # fig = plot_surf_roi_custom(
+                #     fsaverage[f"infl_{hemi}"], roi_map=atlas_labels_current_view,
+                #     bg_map=fsaverage[f"sulc_{hemi}"], hemi=hemi,
+                #     view=view, alpha=1, cmap=cmap,
+                #     bg_on_data=True, darkness=0.4, categorical_cmap=True,
+                # )
+                # plot_surf_stat_map_custom(
+                #     fsaverage[f"infl_{hemi}"],
+                #     tfce_values[hemi][args.metric],
+                #     hemi=hemi,
+                #     view=view,
+                #     colorbar=False,
+                #     threshold=significance_cutoff,
+                #     vmax=cbar_max,
+                #     vmin=cbar_min,
+                #     cmap=CMAP_POS_ONLY,
+                #     figure=fig,
+                #     keep_bg=True,
+                # )
 
-            fig = plotting.plot_surf_stat_map(
-                fsaverage[f"infl_{hemi}"],
-                tfce_values[hemi][args.metric],
-                bg_map=fsaverage[f"sulc_{hemi}"],
-                hemi=hemi,
-                view=view,
-                colorbar=False,
-                threshold=significance_cutoff,
-                vmax=cbar_max,
-                vmin=cbar_min,
-                cmap=CMAP_POS_ONLY,
-            )
-            plot_surf_contours_custom(
-                surf_mesh=fsaverage[f"infl_{hemi}"],
-                bg_map=fsaverage[f"sulc_{hemi}"],
-                roi_map=atlas_labels_current_view,
-                levels=regions_indices,
-                hemi=hemi,
-                figure=fig,
-                colors=['w'] * len(regions_indices),
-            )
+                fig = plotting.plot_surf_stat_map(
+                    fsaverage[f"infl_{hemi}"],
+                    result_values[hemi],
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    hemi=hemi,
+                    view=view,
+                    colorbar=False,
+                    threshold=significance_cutoff if result_metric == 'tfce' else 0.65,
+                    vmax=cbar_max,
+                    vmin=cbar_min,
+                    cmap=CMAP_POS_ONLY,
+                )
+                plot_surf_contours_custom(
+                    surf_mesh=fsaverage[f"infl_{hemi}"],
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    roi_map=atlas_labels_current_view,
+                    levels=regions_indices,
+                    hemi=hemi,
+                    figure=fig,
+                    colors=['w'] * len(regions_indices),
+                )
 
-            title = f"{view}_{hemi}"
-            path = os.path.join(tfce_values_atlas_results_dir, f"{title}.png")
-            save_plot_and_crop_img(path)
-            print(f"saved {path}")
+                title = f"{view}_{hemi}"
+                path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
+                save_plot_and_crop_img(path)
+                print(f"saved {path}")
 
-    # plot for cbar:
-    fig = plt.figure(figsize=(7, 6))
-    plot_surf_stat_map_custom(
-        fsaverage[f"infl_{HEMIS[0]}"],
-        tfce_values[HEMIS[0]][args.metric],
-        hemi=HEMIS[0],
-        view=args.views[0],
-        colorbar=True,
-        threshold=significance_cutoff,
-        vmax=cbar_max,
-        vmin=cbar_min,
-        cmap=CMAP_POS_ONLY,
-        figure=fig,
-    )
-    save_plot_and_crop_img(os.path.join(tfce_values_atlas_results_dir, "colorbar.png"), crop_cbar=True, horizontal_cbar=True)
+        # plot for cbar:
+        fig = plt.figure(figsize=(7, 6))
+        plot_surf_stat_map_custom(
+            fsaverage[f"infl_{HEMIS[0]}"],
+            result_values[HEMIS[0]],
+            hemi=HEMIS[0],
+            view=args.views[0],
+            colorbar=True,
+            threshold=significance_cutoff if result_metric == 'tfce' else 0.65,
+            vmax=cbar_max,
+            vmin=cbar_min,
+            cmap=CMAP_POS_ONLY,
+            figure=fig,
+            metric=result_metric,
+        )
+        save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True, horizontal_cbar=True)
 
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
-    tfce_values_imgs_dir = str(os.path.join(results_path, "tmp", "tfce_values_atlas"))
+    for result_metric in ["imagery", "tfce"]:
+        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+        results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
-    images_lateral = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
-                      in HEMIS]
-    images_medial = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
-                     in HEMIS]
-    # images_posterior = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
-    #                  in HEMIS]
+        images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+                          in HEMIS]
+        images_medial = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+                         in HEMIS]
+        # images_posterior = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
+        #                  in HEMIS]
 
-    imgs_ventral = [Image.open(os.path.join(tfce_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
-    img_ventral = append_images(images=imgs_ventral, horizontally=False)
+        imgs_ventral = [Image.open(os.path.join(results_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+        img_ventral = append_images(images=imgs_ventral, horizontally=False)
 
-    img_medial = append_images(images=images_medial, padding=400)
-    # img_posterior = append_images(images=images_posterior)
+        img_medial = append_images(images=images_medial, padding=400)
+        # img_posterior = append_images(images=images_posterior)
 
-    img_lateral = append_images(images=images_lateral, padding=400)
+        img_lateral = append_images(images=images_lateral, padding=400)
 
-    img_colorbar = Image.open(os.path.join(tfce_values_imgs_dir, "colorbar.png"))
-    offset_size = (img_colorbar.size[0], int(img_lateral.size[1] - img_colorbar.size[1]))
-    image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
-    img_colorbar = append_images([image_whitespace, img_colorbar], horizontally=False)
+        img_colorbar = Image.open(os.path.join(results_values_imgs_dir, "colorbar.png"))
+        offset_size = (img_colorbar.size[0], int(img_lateral.size[1] - img_colorbar.size[1]))
+        image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
+        img_colorbar = append_images([image_whitespace, img_colorbar], horizontally=False)
 
-    img_row_1 = append_images([img_lateral], padding=50)
-    img_row_2 = append_images([img_medial], padding=30)
-    img_row_3 = append_images([img_ventral, img_colorbar], padding=300)
+        img_row_1 = append_images([img_lateral], padding=50)
+        img_row_2 = append_images([img_medial], padding=30)
+        img_row_3 = append_images([img_ventral, img_colorbar], padding=300)
 
-    # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
+        # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
-    # p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
-    p_val_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=False)
+        # p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
+        p_val_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=False)
 
-    path = os.path.join(results_path, "searchlight_results.png")
-    p_val_image.save(path, transparent=True, facecolor="black")
+        path = os.path.join(results_path, f"searchlight_results_{result_metric}.png")
+        p_val_image.save(path, transparent=True, facecolor="black")
 
 
 def get_args():
@@ -723,6 +737,8 @@ def get_args():
 
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+
+    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
