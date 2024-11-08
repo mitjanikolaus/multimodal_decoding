@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import make_axes
-from matplotlib.colors import ListedColormap, Normalize, to_rgba
+from matplotlib.colors import Normalize, to_rgba
 from matplotlib.ticker import ScalarFormatter
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from nilearn import datasets, plotting
@@ -34,6 +34,8 @@ from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_D
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
+
+CMAP_POS_ONLY = "hot"
 
 
 def destrieux_label_names():
@@ -152,24 +154,23 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
         )
 
         if colorbar:
-            cbar_vmin = cbar_vmin if cbar_vmin is not None else vmin
             cbar_vmax = cbar_vmax if cbar_vmax is not None else vmax
             ticks = _get_ticks_matplotlib(cbar_vmin, cbar_vmax,
                                           cbar_tick_format, threshold)
             our_cmap, norm = _get_cmap_matplotlib(cmap,
-                                                  vmin,
+                                                  threshold,
                                                   vmax,
                                                   cbar_tick_format,
                                                   threshold)
+            cbar_vmin = 0
             bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)
-
             # we need to create a proxy mappable
             proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
             proxy_mappable.set_array(surf_map_faces)
             cax, _ = make_axes(axes, location='bottom', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
             if metric == "tfce":
-                ticks = [0, threshold, round(np.mean(ticks), -3), round(np.max(ticks), -3)]
+                ticks = [0, threshold,  round(np.mean([threshold, np.max(ticks)]), -3), round(np.max(ticks), -3)]
             else:
                 ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
             figure.colorbar(
@@ -523,12 +524,12 @@ def plot_surf_roi_custom(surf_mesh,
 def plot(args):
     plt.style.use("dark_background")
 
-    for result_metric in ["imagery", "tfce"]:
+    for result_metric in ["tfce", "imagery"]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
-        significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) # (1342, None)
+        significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) # (603, None)
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
