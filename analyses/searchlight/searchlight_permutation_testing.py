@@ -568,10 +568,7 @@ def load_null_distr_per_subject_scores(args):
 
 def calc_t_values_null_distr(args, out_path):
     per_subject_scores_null_distr_path = os.path.join(
-        SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-        args.resolution,
-        args.mode,
-        f"per_subject_scores_null_distr.p"
+        permutation_results_dir(args), f"per_subject_scores_null_distr.p"
     )
     if not os.path.isfile(per_subject_scores_null_distr_path):
         print("loading per subject null distr scores")
@@ -761,7 +758,8 @@ def create_masks(args):
     log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     for hemi in HEMIS:
-        path_out = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(permutation_results_dir(args),
+                                f"p_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(log_10_p_values[hemi], path_out)
 
     # tfce values
@@ -769,7 +767,8 @@ def create_masks(args):
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
     for hemi in HEMIS:
-        path_out = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(permutation_results_dir(args),
+                                f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(tfce_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC], path_out)
 
     # p value masks
