@@ -748,7 +748,7 @@ def create_null_distribution(args):
 def create_masks(args):
     print("Creating gifti results masks")
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
-    masks_path = os.path.join(os.path.dirname(p_values_path), "masks")
+    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{get_hparam_suffix(args)}")
     os.makedirs(masks_path, exist_ok=True)
     p_values_gifti_path = os.path.join(os.path.dirname(p_values_path), "p_values_gifti")
     os.makedirs(p_values_gifti_path, exist_ok=True)
@@ -761,7 +761,7 @@ def create_masks(args):
     log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     for hemi in HEMIS:
-        path_out = os.path.join(permutation_results_dir(args), f"p_values_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(log_10_p_values[hemi], path_out)
 
     # tfce values
@@ -769,7 +769,7 @@ def create_masks(args):
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
     for hemi in HEMIS:
-        path_out = os.path.join(permutation_results_dir(args), f"tfce_values_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(tfce_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC], path_out)
 
     # p value masks
@@ -780,7 +780,7 @@ def create_masks(args):
         masks[hemi][np.isnan(p_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
-    path_out = os.path.join(masks_path, f"p_values_thresh_{args.p_value_threshold}.p")
+    path_out = os.path.join(masks_path, f"p_values{get_hparam_suffix(args)}_thresh_{args.p_value_threshold}.p")
     pickle.dump(masks, open(path_out, mode='wb'))
 
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
