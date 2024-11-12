@@ -22,16 +22,16 @@ from tqdm import tqdm
 from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC, ACC_CAPTIONS, \
     ACC_IMAGES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, \
-    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CAPTIONS, METRIC_IMAGES, \
-    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST
+    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
+    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, METRIC_CROSS_DECODING
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, FS_HEMI_NAMES, export_to_gifti, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_IMAGERY
+    ACC_IMAGERY, ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS
 
 DEFAULT_N_JOBS = 10
 
 CHANCE_VALUES = {
-    METRIC_CAPTIONS: 0.5,
-    METRIC_IMAGES: 0.5,
+    ACC_CAPTIONS: 0.5,
+    ACC_IMAGES: 0.5,
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC: 0,
@@ -39,50 +39,51 @@ CHANCE_VALUES = {
     METRIC_IMAGERY_WHOLE_TEST: 0.5,
 }
 
-BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
-
 
 def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
     scores = dict()
 
-    for metric in BASE_METRICS:
-        score_name = metric.split("_")[-1]
-        scores[score_name] = np.repeat(np.nan, nan_locations.shape)
-        scores[score_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
-
-    for acc, metric in zip([ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST], [METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]):
+    for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]:
         scores[metric] = np.repeat(np.nan, nan_locations.shape)
-        scores[metric][~nan_locations] = np.array([score[acc] for score in scores_agnostic])
+        scores[metric][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
         scores_specific_captions = dict()
-        for metric in BASE_METRICS:
-            score_name = metric.split("_")[-1]
-            scores_specific_captions[score_name] = np.repeat(np.nan, nan_locations.shape)
-            scores_specific_captions[score_name][~nan_locations] = np.array(
+        for metric in [ACC_CAPTIONS, ACC_IMAGES]:
+            scores_specific_captions[metric] = np.repeat(np.nan, nan_locations.shape)
+            scores_specific_captions[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_captions])
 
         scores_specific_images = dict()
-        for metric in BASE_METRICS:
-            score_name = metric.split("_")[-1]
-            scores_specific_images[score_name] = np.repeat(np.nan, nan_locations.shape)
-            scores_specific_images[score_name][~nan_locations] = np.array(
+        for metric in [ACC_CAPTIONS, ACC_IMAGES]:
+            scores_specific_images[metric] = np.repeat(np.nan, nan_locations.shape)
+            scores_specific_images[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
 
         scores[METRIC_DIFF_IMAGES] = np.array(
             [ai - si for ai, ac, si, sc in
-             zip(scores[METRIC_IMAGES],
-                 scores[METRIC_CAPTIONS],
-                 scores_specific_images[METRIC_IMAGES],
-                 scores_specific_captions[METRIC_CAPTIONS])]
+             zip(scores[ACC_IMAGES],
+                 scores[ACC_CAPTIONS],
+                 scores_specific_images[ACC_IMAGES],
+                 scores_specific_captions[ACC_CAPTIONS])]
         )
         scores[METRIC_DIFF_CAPTIONS] = np.array(
             [ac - sc for ai, ac, si, sc in
-             zip(scores[METRIC_IMAGES],
-                 scores[METRIC_CAPTIONS],
-                 scores_specific_images[METRIC_IMAGES],
-                 scores_specific_captions[METRIC_CAPTIONS])]
+             zip(scores[ACC_IMAGES],
+                 scores[ACC_CAPTIONS],
+                 scores_specific_images[ACC_IMAGES],
+                 scores_specific_captions[ACC_CAPTIONS])]
         )
+
+        if (ACC_CROSS_CAPTIONS_TO_IMAGES in scores_mod_specific_captions) and (
+                ACC_CROSS_IMAGES_TO_CAPTIONS in scores_mod_specific_images):
+            scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
+            scores[ACC_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = np.array(
+                [score[ACC_CROSS_IMAGES_TO_CAPTIONS] for score in scores_mod_specific_images])
+
+            scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
+            scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
+                [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_specific_captions])
 
     return scores
 
@@ -409,7 +410,7 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
-        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
+        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
@@ -422,8 +423,8 @@ def calc_t_values(per_subject_scores):
                 (
                     t_values[hemi][METRIC_DIFF_CAPTIONS],
                     t_values[hemi][METRIC_DIFF_IMAGES],
-                    t_values[hemi][METRIC_IMAGES],
-                    t_values[hemi][METRIC_CAPTIONS]),
+                    t_values[hemi][ACC_IMAGES],
+                    t_values[hemi][ACC_CAPTIONS]),
                 axis=0)
 
     return t_values
@@ -587,9 +588,9 @@ def calc_t_values_null_distr(args, out_path):
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS,
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
                                METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]:
-                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][METRIC_IMAGES].size)
+                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
             iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
@@ -598,7 +599,7 @@ def calc_t_values_null_distr(args, out_path):
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
-                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS,
+                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
                                    METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]:
                         data = np.array(
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
@@ -613,17 +614,22 @@ def calc_t_values_null_distr(args, out_path):
                             (
                                 t_values[hemi][METRIC_DIFF_CAPTIONS],
                                 t_values[hemi][METRIC_DIFF_IMAGES],
-                                t_values[hemi][METRIC_IMAGES],
-                                t_values[hemi][METRIC_CAPTIONS]),
+                                t_values[hemi][ACC_IMAGES],
+                                t_values[hemi][ACC_CAPTIONS]),
                             axis=0)
+                        if ACC_CROSS_IMAGES_TO_CAPTIONS in t_values[hemi]:
+                            dsets[hemi][METRIC_CROSS_DECODING][iteration] = np.nanmin(
+                                (t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
+                                 t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
+                                axis=0)
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][METRIC_IMAGES].shape[0]
+    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES].shape[0]
     enough_data = {
         hemi: np.argwhere(
-            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][METRIC_IMAGES] for subj in args.subjects])).sum(
+            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES] for subj in args.subjects])).sum(
                 axis=0) > 2)[:, 0]
         for hemi in HEMIS
     }  # at least 3 datapoints

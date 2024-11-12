@@ -33,8 +33,6 @@ SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
-METRIC_CAPTIONS = 'captions'
-METRIC_IMAGES = 'images'
 METRIC_AGNOSTIC = 'agnostic'
 METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'
 METRIC_DIFF_IMAGES = 'diff_imgs_agno_imgs_specific'
