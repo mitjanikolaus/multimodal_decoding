@@ -627,7 +627,7 @@ def calc_t_values_null_distr(args, out_path):
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES].shape[0]
-    print(per_subject_scores_null_distr[0])
+    print(list(per_subject_scores_null_distr[0].keys()))
     enough_data = {
         hemi: np.argwhere(
             (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES] for subj in args.subjects])).sum(
