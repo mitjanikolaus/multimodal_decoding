@@ -23,7 +23,7 @@ from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIF
     ACC_IMAGES
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
-    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST, METRIC_CROSS_DECODING
+    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_CROSS_DECODING
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, FS_HEMI_NAMES, export_to_gifti, ACC_IMAGERY_WHOLE_TEST, \
     ACC_IMAGERY, ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS
 
@@ -35,8 +35,8 @@ CHANCE_VALUES = {
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC: 0,
-    METRIC_IMAGERY: 0.5,
-    METRIC_IMAGERY_WHOLE_TEST: 0.5,
+    ACC_IMAGERY: 0.5,
+    ACC_IMAGERY_WHOLE_TEST: 0.5,
 }
 
 
@@ -589,7 +589,7 @@ def calc_t_values_null_distr(args, out_path):
             for hemi in HEMIS:
                 dsets[hemi] = dict()
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
-                               METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]:
+                               METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]:
                     tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
@@ -600,7 +600,7 @@ def calc_t_values_null_distr(args, out_path):
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
                     for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
-                                   METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]:
+                                   ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]:
                         data = np.array(
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(permutation, args.subjects)])

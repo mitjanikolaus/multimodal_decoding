@@ -38,8 +38,6 @@ METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'
 METRIC_DIFF_IMAGES = 'diff_imgs_agno_imgs_specific'
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
-METRIC_IMAGERY = 'imagery'
-METRIC_IMAGERY_WHOLE_TEST = 'imagery_whole_test'
 
 
 def train_and_test(
