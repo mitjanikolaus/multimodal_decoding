@@ -21,28 +21,20 @@ from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC, ACC_CAPTIONS, \
     ACC_IMAGES
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_MIN_DIFF_BOTH_MODALITIES, \
-    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_MIN, METRIC_CAPTIONS, METRIC_IMAGES, \
+from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, \
+    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CAPTIONS, METRIC_IMAGES, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, FS_HEMI_NAMES, export_to_gifti, ACC_IMAGERY_WHOLE_TEST, \
     ACC_IMAGERY
 
 DEFAULT_N_JOBS = 10
 
-METRIC_CODES = {
-    METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
-    METRIC_DIFF_CAPTIONS: 1,
-    METRIC_DIFF_IMAGES: 2,
-    METRIC_MIN: 3,
-}
-
 CHANCE_VALUES = {
     METRIC_CAPTIONS: 0.5,
     METRIC_IMAGES: 0.5,
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
-    METRIC_MIN_DIFF_BOTH_MODALITIES: 0,
-    METRIC_MIN: 0,
+    METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC: 0,
 }
 
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
@@ -424,7 +416,7 @@ def calc_t_values(per_subject_scores):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            t_values[hemi][METRIC_MIN] = np.nanmin(
+            t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
                 (
                     t_values[hemi][METRIC_DIFF_CAPTIONS],
                     t_values[hemi][METRIC_DIFF_IMAGES],
@@ -593,7 +585,7 @@ def calc_t_values_null_distr(args, out_path):
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_MIN]:
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC]:
                     tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][METRIC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
@@ -613,7 +605,7 @@ def calc_t_values_null_distr(args, out_path):
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
-                        dsets[hemi][METRIC_MIN][iteration] = np.nanmin(
+                        dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
                             (
                                 t_values[hemi][METRIC_DIFF_CAPTIONS],
                                 t_values[hemi][METRIC_DIFF_IMAGES],
@@ -694,7 +686,7 @@ def permutation_results_dir(args):
 
 
 def get_hparam_suffix(args):
-    return f"_metric_{METRIC_CODES[args.metric]}_h_{args.tfce_h}_e_{args.tfce_e}"
+    return f"_metric_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}"
 
 
 def create_null_distribution(args):
@@ -768,7 +760,7 @@ def create_masks(args):
 
     for hemi in HEMIS:
         path_out = os.path.join(permutation_results_dir(args), f"tfce_values_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(tfce_values[hemi][METRIC_MIN], path_out)
+        export_to_gifti(tfce_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC], path_out)
 
     # p value masks
     masks = copy.deepcopy(p_values)
@@ -827,7 +819,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MIN)
+    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
 

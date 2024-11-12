@@ -25,7 +25,7 @@ from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
 from analyses.searchlight.searchlight import METRIC_IMAGERY_WHOLE_TEST
-from analyses.searchlight.searchlight_permutation_testing import METRIC_MIN, permutation_results_dir, \
+from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
     get_hparam_suffix, calc_significance_cutoff, load_per_subject_scores
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images, COLORBAR_MAX
@@ -749,7 +749,7 @@ def get_args():
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MIN)
+    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 

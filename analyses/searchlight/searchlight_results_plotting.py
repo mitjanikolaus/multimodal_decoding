@@ -13,7 +13,7 @@ from tqdm import tqdm
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
-    load_null_distr_per_subject_scores, METRIC_MIN, permutation_results_dir, get_hparam_suffix, calc_significance_cutoff
+    load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, get_hparam_suffix, calc_significance_cutoff
 from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -444,7 +444,7 @@ def get_args():
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MIN)
+    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 
