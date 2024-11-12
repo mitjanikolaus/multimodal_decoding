@@ -35,6 +35,8 @@ CHANCE_VALUES = {
     METRIC_DIFF_IMAGES: 0,
     METRIC_DIFF_CAPTIONS: 0,
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC: 0,
+    METRIC_IMAGERY: 0.5,
+    METRIC_IMAGERY_WHOLE_TEST: 0.5,
 }
 
 BASE_METRICS = [ACC_CAPTIONS, ACC_IMAGES]
@@ -585,7 +587,8 @@ def calc_t_values_null_distr(args, out_path):
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC]:
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS,
+                               METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]:
                     tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][METRIC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
@@ -595,7 +598,8 @@ def calc_t_values_null_distr(args, out_path):
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
-                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS]:
+                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_IMAGES, METRIC_CAPTIONS,
+                                   METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]:
                         data = np.array(
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(permutation, args.subjects)])
@@ -616,7 +620,7 @@ def calc_t_values_null_distr(args, out_path):
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]]['left'][METRIC_IMAGES].shape[0]
+    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][METRIC_IMAGES].shape[0]
     enough_data = {
         hemi: np.argwhere(
             (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][METRIC_IMAGES] for subj in args.subjects])).sum(
