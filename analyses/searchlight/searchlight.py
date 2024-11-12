@@ -79,7 +79,7 @@ def train_and_test(
 
             scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES, y_imagery_shuffled,
                                                        y_pred_imagery,
-                                                       comp_mod_agnostic_scores=False, comp_cross_decoding_scores=False)
+                                                       comp_mod_agnostic_scores=False)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
