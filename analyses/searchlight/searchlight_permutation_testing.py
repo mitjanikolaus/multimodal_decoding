@@ -410,7 +410,8 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
-        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS]:
+        for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
+                       ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
@@ -426,6 +427,12 @@ def calc_t_values(per_subject_scores):
                     t_values[hemi][ACC_IMAGES],
                     t_values[hemi][ACC_CAPTIONS]),
                 axis=0)
+            if ACC_CROSS_IMAGES_TO_CAPTIONS in t_values[hemi]:
+                t_values[hemi][METRIC_CROSS_DECODING] = np.nanmin(
+                    (t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
+                     t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
+                    axis=0
+                )
 
     return t_values
 
@@ -618,7 +625,8 @@ def calc_t_values_null_distr(args, out_path):
                             dsets[hemi][METRIC_CROSS_DECODING][iteration] = np.nanmin(
                                 (t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
                                  t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
-                                axis=0)
+                                axis=0
+                            )
 
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
