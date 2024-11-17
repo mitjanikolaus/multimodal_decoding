@@ -606,7 +606,8 @@ def calc_t_values_null_distr(args, out_path):
             for hemi in HEMIS:
                 dsets[hemi] = dict()
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
-                               METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]:
+                               METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST,
+                               ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]:
                     tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
