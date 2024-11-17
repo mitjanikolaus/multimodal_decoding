@@ -86,6 +86,8 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
                 [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_mod_specific_captions])
         else:
             print("Missing cross decoding scores")
+            print(list(scores_mod_specific_captions.keys()))
+            print(list(scores_mod_specific_images.keys()))
 
     return scores
 
