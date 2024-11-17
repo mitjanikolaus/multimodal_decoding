@@ -49,13 +49,13 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
         scores_specific_captions = dict()
-        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]:
+        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_CAPTIONS_TO_IMAGES]:
             scores_specific_captions[metric] = np.repeat(np.nan, nan_locations.shape)
             scores_specific_captions[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_captions])
 
         scores_specific_images = dict()
-        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]:
+        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]:
             scores_specific_images[metric] = np.repeat(np.nan, nan_locations.shape)
             scores_specific_images[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
@@ -75,19 +75,8 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
                  scores_specific_captions[ACC_CAPTIONS])]
         )
 
-        if (ACC_CROSS_CAPTIONS_TO_IMAGES in scores_specific_captions) and (
-                ACC_CROSS_IMAGES_TO_CAPTIONS in scores_specific_images):
-            scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
-            scores[ACC_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = np.array(
-                [score[ACC_CROSS_IMAGES_TO_CAPTIONS] for score in scores_specific_images])
-
-            scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
-            scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
-                [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_specific_captions])
-        else:
-            print("Missing cross decoding scores")
-            print(list(scores_mod_specific_captions.keys()))
-            print(list(scores_mod_specific_images.keys()))
+        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = scores_specific_images[ACC_CROSS_IMAGES_TO_CAPTIONS]
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = scores_specific_captions[ACC_CROSS_CAPTIONS_TO_IMAGES]
 
     return scores
 
