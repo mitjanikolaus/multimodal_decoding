@@ -83,7 +83,7 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
 
             scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
             scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
-                [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_specific_captions])
+                [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_mod_specific_captions])
         else:
             print("Missing cross decoding scores")
 
