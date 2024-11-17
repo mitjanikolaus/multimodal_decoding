@@ -384,7 +384,6 @@ def calc_t_value(values, popmean, epsilon=1e-8):
             values_no_nan[0] = values_no_nan[0] + epsilon
             values_no_nan[-1] = values_no_nan[-1] - epsilon
             t_val = stats.ttest_1samp(values_no_nan, popmean=popmean, alternative="greater")[0]
-            print(f"corrected t val: {t_val}")
         return t_val
     else:
         return 0
