@@ -642,6 +642,17 @@ def run(args):
                                 print(f"test fMRI betas shape: {test_fmri_betas.shape}")
                                 print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
+                                results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
+                                run_str = get_run_str(
+                                    model_name, features, test_features, vision_features, lang_features, mask,
+                                    args.surface,
+                                    args.resolution)
+                                results_file_path = os.path.join(results_dir, run_str, "results.p")
+                                if os.path.isfile(results_file_path) and not args.overwrite:
+                                    print(f"Skipping decoder training as results are already present at"
+                                          f" {results_file_path}")
+                                    continue
+
                                 train_latents, latent_transform = get_nn_latent_data(
                                     model_name, features,
                                     vision_features,
@@ -723,15 +734,8 @@ def run(args):
                                     f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                                 )
 
-                                results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
-                                run_str = get_run_str(
-                                    model_name, features, test_features, vision_features, lang_features, mask,
-                                    args.surface,
-                                    args.resolution)
-                                results_file_dir = os.path.join(results_dir, run_str)
-                                os.makedirs(results_file_dir, exist_ok=True)
-
-                                pickle.dump(results, open(os.path.join(results_file_dir, "results.p"), 'wb'))
+                                os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
+                                pickle.dump(results, open(results_file_path, 'wb'))
 
 
 def get_args():
@@ -763,6 +767,8 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
+
+    parser.add_argument("--overwrite", type=bool, action='store_true', default=False)
 
     return parser.parse_args()
 
