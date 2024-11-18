@@ -816,7 +816,7 @@ def create_masks(args):
         clusters = results['clusters']
         clusters.sort(key=len, reverse=True)
         for i, cluster in enumerate(clusters[:10]):
-            print(f"{i}: Cluster of size {len(cluster)}")
+            print(f"{i}: Cluster of {len(cluster)} vertices")
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
             cluster_map[list(cluster)] = log_10_p_values[hemi][list(cluster)]
 
@@ -866,6 +866,6 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
-    create_null_distribution(args)
-    calc_test_statistics(args)
+    # create_null_distribution(args)
+    # calc_test_statistics(args)
     create_masks(args)
