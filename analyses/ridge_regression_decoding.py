@@ -254,7 +254,7 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
         file_name = os.path.basename(path)
-        stim_id = int(file_name.replace('beta_', '').replace(filename_suffix[1:], ''))
+        stim_id = int(file_name.replace('beta_I', '').replace('beta_C', '').replace(filename_suffix[1:], ''))
         if 'imagery' in split_name:
             stim_types.append(IMAGERY)
             stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
