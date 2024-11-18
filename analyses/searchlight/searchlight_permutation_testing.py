@@ -284,7 +284,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cli
 
         tfce_values[hemi] = {metric: np.zeros_like(values)}
 
-        for score_thresh in tqdm(score_threshs):
+        for score_thresh in score_threshs:
             clusters_dict = calc_clusters(
                 values,
                 score_thresh,
