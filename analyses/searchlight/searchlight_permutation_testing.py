@@ -822,10 +822,10 @@ def create_masks(args):
         clusters.sort(key=len, reverse=True)
         for i, cluster in enumerate(clusters[:10]):
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
-            vertex_max_t_value = cluster[np.argmax(t_values[hemi][list(cluster)])]
+            vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][list(cluster)])]
             print(f"Coordinates of max t-value: {mesh.coordinates[vertex_max_t_value]}")
-            print(f"\tMax t-value: {np.max(t_values[hemi][list(cluster)])}")
-            print(f"\tMax t-value: {t_values[hemi][vertex_max_t_value]}")
+            print(f"\tMax t-value: {np.max(t_values[hemi][args.metric][list(cluster)])}")
+            print(f"\tMax t-value: {t_values[hemi][args.metric][vertex_max_t_value]}")
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
             cluster_map[list(cluster)] = log_10_p_values[hemi][list(cluster)]
@@ -857,7 +857,7 @@ def get_args():
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_200')
+    parser.add_argument("--mode", type=str, default='n_neighbors_750')
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
@@ -876,6 +876,6 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
-    create_null_distribution(args)
-    calc_test_statistics(args)
+    # create_null_distribution(args)
+    # calc_test_statistics(args)
     create_masks(args)
