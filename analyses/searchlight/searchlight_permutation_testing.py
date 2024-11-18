@@ -266,7 +266,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cli
     for hemi in HEMIS:
         values = t_values[hemi][metric]
         if len(values[values > clip_value]) > 0:
-            print(f"Clipping {len(values[values > clip_value])} values that are greater than {clip_value}")
+            print(f"Clipping {len(values[values > clip_value])} t values that are greater than {clip_value}")
             values[values > clip_value] = clip_value
 
         max_score = np.nanmax(values)
