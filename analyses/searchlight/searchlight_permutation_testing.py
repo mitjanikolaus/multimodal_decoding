@@ -795,7 +795,7 @@ def create_masks(args):
     for hemi in HEMIS:
         path_out = os.path.join(permutation_results_dir(args),
                                 f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(tfce_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC], path_out)
+        export_to_gifti(tfce_values[hemi][args.metric], path_out)
 
     # p value masks
     masks = copy.deepcopy(p_values)
