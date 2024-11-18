@@ -7,11 +7,11 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy.stats import pearsonr
 
-from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_CAPTIONS, \
-    METRIC_IMAGES, \
-    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST
+from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, \
+    SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from analyses.searchlight.searchlight_permutation_testing import load_per_subject_scores, permutation_results_dir
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGES, \
+    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
@@ -69,7 +69,8 @@ def create_gifti_results_maps(args):
 
         plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
-    METRICS = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_IMAGERY, METRIC_IMAGERY_WHOLE_TEST]
+    METRICS = [ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, ACC_IMAGERY,
+               ACC_IMAGERY_WHOLE_TEST]
 
     for metric in METRICS:
         for hemi in HEMIS:
