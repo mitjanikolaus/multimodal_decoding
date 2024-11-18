@@ -821,14 +821,15 @@ def create_masks(args):
         clusters = results['clusters']
         clusters.sort(key=len, reverse=True)
         for i, cluster in enumerate(clusters[:10]):
+            cluster = list(cluster)
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
-            vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][list(cluster)])]
+            vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
             print(f"Coordinates of max t-value: {mesh.coordinates[vertex_max_t_value]}")
-            print(f"\tMax t-value: {np.max(t_values[hemi][args.metric][list(cluster)])}")
+            print(f"\tMax t-value: {np.max(t_values[hemi][args.metric][cluster])}")
             print(f"\tMax t-value: {t_values[hemi][args.metric][vertex_max_t_value]}")
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
-            cluster_map[list(cluster)] = log_10_p_values[hemi][list(cluster)]
+            cluster_map[list(cluster)] = log_10_p_values[hemi][cluster]
 
             fname = f"thresh_{args.p_value_threshold}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
             path_out = os.path.join(results_maps_path, fname)
