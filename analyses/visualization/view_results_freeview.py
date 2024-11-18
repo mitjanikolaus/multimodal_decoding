@@ -2,8 +2,9 @@ import argparse
 import os
 
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_AGNOSTIC, \
-    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES
-from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir
+    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
+from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
+from notebooks.notebook_utils import METRICS_IMAGERY
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES
 
@@ -24,9 +25,11 @@ def run(args):
         cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
 
         results_dir = permutation_results_dir(args)
-        mask_paths = [os.path.join(
-            results_dir, f"tfce_values_{hemi_fs}.gii")
-        ]
+        mask_paths = []
+        for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST]:
+            args.metric = metric
+            mask_paths.append(os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
+
         # mask_paths += [os.path.join(
         #     results_dir, "p_values_gifti", f"thresh_{thresh}_{hemi_fs}_cluster_{i}.gii")
         #     for i in range(args.n_clusters)
@@ -35,9 +38,7 @@ def run(args):
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
 
-        results_dir = os.path.join(searchlight_dir, "train", args.model, args.features,
-                                   args.resolution, args.mode, "acc_scores_gifti")
-        maps_paths = [os.path.join(results_dir, f"{metric.replace(' ', '')}_{hemi_fs}.gii") for metric in METRICS]
+        maps_paths = [os.path.join(results_dir, "acc_results_maps", f"{metric}_{hemi_fs}.gii") for metric in METRICS]
         for maps_path in maps_paths:
             if os.path.isfile(maps_path):
                 cmd += f":overlay={maps_path}:overlay_zorder=2"
@@ -66,9 +67,12 @@ def get_args():
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
-    parser.add_argument("--mode", type=str, default='n_neighbors_200')
+    parser.add_argument("--mode", type=str, default='n_neighbors_750')
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
+
+    parser.add_argument("--tfce-h", type=float, default=2.0)
+    parser.add_argument("--tfce-e", type=float, default=1.0)
 
     parser.add_argument("--n-clusters", type=int, default=10)
 

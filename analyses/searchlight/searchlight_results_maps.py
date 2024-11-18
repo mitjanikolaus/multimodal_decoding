@@ -47,7 +47,7 @@ def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_
 
 
 def create_gifti_results_maps(args):
-    results_dir = os.path.join(permutation_results_dir(args), "acc_scores_gifti")
+    results_dir = os.path.join(permutation_results_dir(args), "acc_results_maps")
     os.makedirs(results_dir, exist_ok=True)
 
     print("Creating gifti results maps")

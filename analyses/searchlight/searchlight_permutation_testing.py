@@ -774,8 +774,8 @@ def create_masks(args):
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
     masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{get_hparam_suffix(args)}")
     os.makedirs(masks_path, exist_ok=True)
-    p_values_gifti_path = os.path.join(os.path.dirname(p_values_path), "p_values_gifti")
-    os.makedirs(p_values_gifti_path, exist_ok=True)
+    results_maps_path = os.path.join(permutation_results_dir(args), "results_maps")
+    os.makedirs(results_maps_path, exist_ok=True)
 
     p_values = pickle.load(open(p_values_path, "rb"))
 
@@ -785,7 +785,7 @@ def create_masks(args):
     log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     for hemi in HEMIS:
-        path_out = os.path.join(permutation_results_dir(args),
+        path_out = os.path.join(results_maps_path,
                                 f"p_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(log_10_p_values[hemi], path_out)
 
@@ -794,7 +794,7 @@ def create_masks(args):
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
     for hemi in HEMIS:
-        path_out = os.path.join(permutation_results_dir(args),
+        path_out = os.path.join(results_maps_path,
                                 f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(tfce_values[hemi][args.metric], path_out)
 
@@ -821,7 +821,7 @@ def create_masks(args):
             cluster_map[list(cluster)] = log_10_p_values[hemi][list(cluster)]
 
             fname = f"thresh_{args.p_value_threshold}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
-            path_out = os.path.join(p_values_gifti_path, fname)
+            path_out = os.path.join(results_maps_path, fname)
             export_to_gifti(cluster_map, path_out)
 
             cluster_mask = {h: np.zeros_like(cluster_map, dtype=np.uint8) for h in HEMIS}
