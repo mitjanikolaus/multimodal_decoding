@@ -259,14 +259,14 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
-def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clip=100,
+def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clip_value=100,
                      cluster_extents_measure="num_vertices"):
     tfce_values = dict()
 
     for hemi in HEMIS:
         values = t_values[hemi][metric]
-        print(f"Clipping {len(values[values > clip])} values that are greater than {clip}")
-        values[values > clip] = clip
+        print(f"Clipping {len(values[values > clip_value])} values that are greater than {clip_value}")
+        values[values > clip_value] = clip_value
 
         max_score = np.nanmax(values)
         if np.isnan(max_score) or np.isinf(max_score):
