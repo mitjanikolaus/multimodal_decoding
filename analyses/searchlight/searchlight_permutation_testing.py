@@ -282,7 +282,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cli
         step = max_score / 100 if dh == "auto" else dh
         score_threshs = np.arange(step, max_score + step, step)
 
-        tfce_values[hemi] = {metric: np.zeros_like(values)}
+        tfce_values[hemi] = {metric: np.zeros(shape=values.shape, dtype=np.float32)}
 
         for score_thresh in score_threshs:
             clusters_dict = calc_clusters(
