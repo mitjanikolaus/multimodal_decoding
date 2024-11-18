@@ -48,7 +48,7 @@ IMAGE = "image"
 CAPTION = "caption"
 IMAGERY = "imagery"
 
-DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/glm/")
+DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
 
 
 def get_default_features(model_name, logging=True):
