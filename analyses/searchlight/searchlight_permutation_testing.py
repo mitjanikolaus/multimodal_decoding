@@ -815,7 +815,7 @@ def create_masks(args):
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
     for hemi in HEMIS:
-        print(f"clusters for {hemi} hemi")
+        print(f"\nclusters for {hemi} hemi")
         mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
         results = calc_clusters(masks[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
         clusters = results['clusters']
@@ -825,7 +825,6 @@ def create_masks(args):
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
             vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
             print(f"Coordinates of max t-value: {mesh.coordinates[vertex_max_t_value]}")
-            print(f"\tMax t-value: {np.max(t_values[hemi][args.metric][cluster])}")
             print(f"\tMax t-value: {t_values[hemi][args.metric][vertex_max_t_value]}")
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
@@ -877,6 +876,6 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
-    # create_null_distribution(args)
-    # calc_test_statistics(args)
+    create_null_distribution(args)
+    calc_test_statistics(args)
     create_masks(args)
