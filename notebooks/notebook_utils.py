@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS
+from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, DECODER_OUT_DIR
 from tqdm import tqdm
 from glob import glob
 import pickle
@@ -61,7 +61,7 @@ def plot_metric(data, kind="bar", x_variable="model_feat", order=None, hue_varia
 
 def get_short_label_text(label, cut_labels=True):
     text = label.get_text().split('_')[0]
-    if cut_labels and (len(text) > 10):
+    if cut_labels and (len(text) > 10) and ('-' in text):
         text = f"{'-'.join(text.split('-')[:-1])}-\n{text.split('-')[-1]}"
     return text
 
@@ -144,29 +144,32 @@ def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pai
                                                        shorten_label_texts=shorten_label_texts)
 
     if plot_modality_specific:
-        first_metric_graph = None
+        first_metric_graph_mod_specific_1 = None
+
         for m, metric in enumerate(metrics):
-            plot_metric(data_training_mode_captions, kind="point", order=order, metric=metrics[m],
+            g1, _ = plot_metric(data_training_mode_captions, kind="point", order=order, metric=metrics[m],
                         x_variable="model_feat", dodge=dodge,
                         hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
                         axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
-            g, _ = plot_metric(data_training_mode_images, kind="point", order=order, metric=metrics[m],
+            g2, _ = plot_metric(data_training_mode_images, kind="point", order=order, metric=metrics[m],
                                x_variable="model_feat", dodge=dodge,
                                hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
                                axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
             if m == 0:
-                first_metric_graph = g
+                first_metric_graph_mod_specific_1 = g1
 
-        handles, labels = first_metric_graph.get_legend_handles_labels()
+
+        handles, labels = first_metric_graph_mod_specific_1.get_legend_handles_labels()
+
         if len(handles) > 0:
             new_labels = ["captions", "images"]
-            new_handles = [handles[0], handles[-1]]
+            new_handles = [handles[-4], handles[-1]]
             catplot_g.fig.legend(handles=new_handles, labels=new_labels, ncol=2,
                                  title="Modality-specific decoders trained on", loc='upper right',
                                  bbox_to_anchor=legend_2_bbox)
 
     for m, metric in enumerate(metrics):
-        catplot_g.axes[m, 0].set_title(metrics[m].replace("pairwise_acc_", "").replace("_", "-"), fontsize=35,
+        catplot_g.axes[m, 0].set_title(metrics[m].replace("pairwise_acc_mean","").replace("pairwise_acc_", "").replace("_", "-"), fontsize=35,
                                        y=row_title_height)
         catplot_g.axes[m, 0].set_ylabel('pairwise accuracy')
 
@@ -198,11 +201,9 @@ def update_acc_scores(results, metric="cosine", normalize_predictions=True, norm
 
 def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine", normalize_predictions=True, normalize_targets=False,
                      norm_imagery_preds_with_test_preds=False):
-    results_root_dir = os.path.expanduser(f'~/data/multimodal_decoding/glm/')
-
     data = []
 
-    result_files = sorted(glob(f"{results_root_dir}/*/*/*/results.p"))
+    result_files = sorted(glob(f"{DECODER_OUT_DIR}/*/*/*/results.p"))
     for result_file_path in tqdm(result_files):
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
