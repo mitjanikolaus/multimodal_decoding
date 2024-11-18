@@ -809,14 +809,24 @@ def create_masks(args):
     path_out = os.path.join(masks_path, f"p_values{get_hparam_suffix(args)}_thresh_{args.p_value_threshold}.p")
     pickle.dump(masks, open(path_out, mode='wb'))
 
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    t_values = pickle.load(open(t_values_path, "rb"))
+
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
     for hemi in HEMIS:
-        print(hemi)
+        print(f"clusters for {hemi} hemi")
+        mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
         results = calc_clusters(masks[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
         clusters = results['clusters']
         clusters.sort(key=len, reverse=True)
         for i, cluster in enumerate(clusters[:10]):
-            print(f"{i}: Cluster of {len(cluster)} vertices")
+            print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
+            vertex_max_t_value = cluster[np.argmax(t_values[hemi][list(cluster)])]
+            print(f"Coordinates of max t-value: {mesh.coordinates[vertex_max_t_value]}")
+            print(f"\tMax t-value: {np.max(t_values[hemi][list(cluster)])}")
+            print(f"\tMax t-value: {t_values[hemi][vertex_max_t_value]}")
+
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
             cluster_map[list(cluster)] = log_10_p_values[hemi][list(cluster)]
 
@@ -866,6 +876,6 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
-    # create_null_distribution(args)
-    # calc_test_statistics(args)
+    create_null_distribution(args)
+    calc_test_statistics(args)
     create_masks(args)
