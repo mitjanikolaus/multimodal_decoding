@@ -824,8 +824,8 @@ def create_masks(args):
             cluster = list(cluster)
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
             vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
-            print(f"Coordinates of max t-value: {mesh.coordinates[vertex_max_t_value]}")
-            print(f"\tMax t-value: {t_values[hemi][args.metric][vertex_max_t_value]}")
+            print(f"Coordinates of max t-value: {mesh.coordinates[vertex_max_t_value]}", end=" | ")
+            print(f"Max t-value: {t_values[hemi][args.metric][vertex_max_t_value]}")
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
             cluster_map[list(cluster)] = log_10_p_values[hemi][cluster]
