@@ -51,13 +51,13 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
         scores_specific_captions = dict()
-        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_CAPTIONS_TO_IMAGES]:
+        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]:
             scores_specific_captions[metric] = np.repeat(np.nan, nan_locations.shape)
             scores_specific_captions[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_captions])
 
         scores_specific_images = dict()
-        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]:
+        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_CAPTIONS_TO_IMAGES]:
             scores_specific_images[metric] = np.repeat(np.nan, nan_locations.shape)
             scores_specific_images[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
@@ -77,8 +77,8 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
                  scores_specific_captions[ACC_CAPTIONS])]
         )
 
-        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = scores_specific_images[ACC_CROSS_IMAGES_TO_CAPTIONS]
-        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = scores_specific_captions[ACC_CROSS_CAPTIONS_TO_IMAGES]
+        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = scores_specific_images[ACC_CROSS_CAPTIONS_TO_IMAGES]
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = scores_specific_captions[ACC_CROSS_IMAGES_TO_CAPTIONS]
 
     return scores
 
