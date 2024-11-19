@@ -501,7 +501,7 @@ def calc_test_statistics(args):
         print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
         print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
 
-    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(args)
+    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(args, args.p_value_threshold)
 
     p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
