@@ -877,6 +877,7 @@ if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
+    print(f"\n\nPermutation Testing for {args.metric}\n")
     create_null_distribution(args)
     calc_test_statistics(args)
     create_masks(args)
