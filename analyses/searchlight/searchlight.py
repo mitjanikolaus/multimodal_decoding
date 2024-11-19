@@ -72,7 +72,7 @@ def train_and_test(
             np.random.seed(seed)
             shuffled_indices_imagery = np.random.choice(range(3), size=3, replace=False)
             # make sure the indices are actually shuffled
-            while np.all(shuffled_indices_imagery == range(3)):
+            while np.any(shuffled_indices_imagery == range(3)):
                 shuffled_indices_imagery = np.random.choice(range(3), size=3, replace=False)
 
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
