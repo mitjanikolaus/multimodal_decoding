@@ -472,7 +472,7 @@ def calc_significance_cutoff(args, p_value_threshold=0.05):
 
     for thresh in [0.05, 1e-2, 1e-3, 1e-4, 1e-5]:
         val = np.quantile(max_test_statistic_distr, 1 - thresh)
-        print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val}")
+        print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
 
     print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff}")
 
