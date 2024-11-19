@@ -71,6 +71,10 @@ def train_and_test(
 
             np.random.seed(seed)
             shuffled_indices_imagery = np.random.choice(range(3), size=3, replace=False)
+            # make sure the indices are actually shuffled
+            while np.all(shuffled_indices_imagery == range(3)):
+                shuffled_indices_imagery = np.random.choice(range(3), size=3, replace=False)
+
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
 
             scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES, y_imagery_shuffled,
