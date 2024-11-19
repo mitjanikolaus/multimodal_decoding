@@ -459,7 +459,7 @@ def calc_significance_cutoff(args, p_value_threshold=0.05):
         permutation_results_dir(args),
         f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
     )
-    print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
+    # print("loading null distribution test statistic: ", null_distribution_tfce_values_file)
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
     max_test_statistic_distr = sorted([
@@ -469,11 +469,12 @@ def calc_significance_cutoff(args, p_value_threshold=0.05):
 
     significance_cutoff = np.quantile(max_test_statistic_distr, 1 - p_value_threshold)
     print(f"{len(null_distribution_tfce_values)} permutations")
-    print(f"cluster test statistic significance cutoff for p<{p_value_threshold} (across hemis): {significance_cutoff}")
 
     for thresh in [0.05, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5]:
         val = np.quantile(max_test_statistic_distr, 1 - thresh)
-        print(f"(info) cluster test statistic significance cutoff for p<{thresh} (across hemis): {val}")
+        print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val}")
+
+    print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff}")
 
     return significance_cutoff, max_test_statistic_distr
 
