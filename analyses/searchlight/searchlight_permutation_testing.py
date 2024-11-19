@@ -481,7 +481,6 @@ def calc_significance_cutoff(args, p_value_threshold=0.05):
 def calc_test_statistics(args):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
-        os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         per_subject_scores = load_per_subject_scores(args)
         print(f"Calculating t-values")
         t_values = calc_t_values(per_subject_scores)
@@ -489,12 +488,14 @@ def calc_test_statistics(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    print("calculating tfce..")
-    edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-    tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e)
-
     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    pickle.dump(tfce_values, open(tfce_values_path, "wb"))
+    if not os.path.isfile(tfce_values_path):
+        print("calculating tfce..")
+        edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+        tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e)
+        pickle.dump(tfce_values, open(tfce_values_path, "wb"))
+    else:
+        tfce_values = pickle.load(open(tfce_values_path, 'rb'))
 
     for hemi in HEMIS:
         print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
