@@ -1,10 +1,10 @@
 import argparse
+import glob
 import os
 
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_AGNOSTIC, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
-from notebooks.notebook_utils import METRICS_IMAGERY
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES
 
@@ -16,24 +16,23 @@ def run(args):
     os.environ["FREESURFER_HOME"] = FREESURFER_HOME_DIR
     os.system("$FREESURFER_HOME/SetUpFreeSurfer.sh")
     cmd = "freeview"
-    thresh = str(args.p_values_threshold)
-    searchlight_dir = SEARCHLIGHT_OUT_DIR
-    if args.local:
-        searchlight_dir = searchlight_dir.replace("searchlight", "searchlight_local")
 
     for hemi_fs in HEMIS_FS:
         cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST]:
+        for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST,
+                       ACC_IMAGERY]:
             args.metric = metric
-            mask_paths.append(os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
+            mask_paths.append(
+                os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
 
-        # mask_paths += [os.path.join(
-        #     results_dir, "p_values_gifti", f"thresh_{thresh}_{hemi_fs}_cluster_{i}.gii")
-        #     for i in range(args.n_clusters)
-        # ]
+            if metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
+                clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
+                for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
+                    mask_paths.append(file)
+
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
@@ -75,8 +74,6 @@ def get_args():
     parser.add_argument("--tfce-e", type=float, default=1.0)
 
     parser.add_argument("--n-clusters", type=int, default=10)
-
-    parser.add_argument("--local", action="store_true", default=False)
 
     return parser.parse_args()
 
