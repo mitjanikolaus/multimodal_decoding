@@ -7,6 +7,7 @@ import warnings
 
 import h5py
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from nilearn import datasets
 import os
@@ -816,6 +817,8 @@ def create_masks(args):
 
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
+
+    clusters_df = []
     for hemi in HEMIS:
         print(f"\nclusters for {hemi} hemi")
         mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
@@ -826,8 +829,11 @@ def create_masks(args):
             cluster = list(cluster)
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
             vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
-            print(f"Max t-value: {t_values[hemi][args.metric][vertex_max_t_value]:.2f}", end=" | ")
-            print(f"Coordinates (max t-value): {mesh.coordinates[vertex_max_t_value]}")
+            max_t_value = t_values[hemi][args.metric][vertex_max_t_value]
+            print(f"Max t-value: {max_t_value:.2f}", end=" | ")
+            coords = mesh.coordinates[vertex_max_t_value]
+            print(f"Coordinates (max t-value): {coords}")
+            clusters_df.append({"hemi": hemi, "id": i, "max t-value": max_t_value, "peak coordinates": np.round(coords, 2)})
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
             cluster_map[list(cluster)] = log_10_p_values[hemi][cluster]
@@ -840,6 +846,9 @@ def create_masks(args):
             cluster_mask[hemi][list(cluster)] = 1
             path_out = os.path.join(masks_path, f"p_values_thresh_{args.p_value_threshold}_{hemi}_cluster_{i}.p")
             pickle.dump(cluster_mask, open(path_out, mode='wb'))
+
+    df = pd.DataFrame.from_records(clusters_df, index=["hemi", "id"])
+    print(df.style.format(precision=2).to_latex(hrules=True))
 
 
 def get_args():
