@@ -30,7 +30,7 @@ from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, \
-    ACC_IMAGERY_WHOLE_TEST
+    ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -525,7 +525,7 @@ def plot_surf_roi_custom(surf_mesh,
 def plot(args):
     plt.style.use("dark_background")
 
-    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY_WHOLE_TEST, METRIC_CROSS_DECODING]:
+    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY, METRIC_CROSS_DECODING]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
@@ -692,7 +692,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY_WHOLE_TEST, METRIC_CROSS_DECODING]:
+    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY, METRIC_CROSS_DECODING]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
         results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
