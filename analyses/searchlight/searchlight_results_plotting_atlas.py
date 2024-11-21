@@ -555,7 +555,7 @@ def plot(args):
             "right": {
                 "medial": ['precuneus', 'isthmuscingulate'],
                 "lateral": ['inferiorparietal', 'rostralmiddlefrontal'],
-                "ventral": [],
+                "ventral": ['inferiortemporal'],
             }
         }
 
