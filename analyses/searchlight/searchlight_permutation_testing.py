@@ -833,13 +833,16 @@ def create_masks(args):
             print(f"Max t-value: {max_t_value:.2f}", end=" | ")
             coords = mesh.coordinates[vertex_max_t_value]
             print(f"Coordinates (max t-value): {coords}")
-            clusters_df.append({"hemi": hemi, "id": i, "max t-value": max_t_value, "peak coordinates": np.round(coords, 2)})
+            clusters_df.append({
+                "hemi": hemi, "id": i, "max t-value": max_t_value, "peak coordinates": np.round(coords, 2)
+            })
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
             cluster_map[list(cluster)] = log_10_p_values[hemi][cluster]
 
-            fname = f"thresh_{args.p_value_threshold}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
-            path_out = os.path.join(results_maps_path, fname)
+            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            path_out = os.path.join(results_maps_path, f"clusters{get_hparam_suffix(args)}", fname)
+            os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map, path_out)
 
             cluster_mask = {h: np.zeros_like(cluster_map, dtype=np.uint8) for h in HEMIS}
