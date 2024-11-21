@@ -530,6 +530,7 @@ def plot(args):
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
+        args.metric = result_metric
         significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) # (603, None)
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -547,12 +548,12 @@ def plot(args):
         rois_for_view = {
             "left": {
                 "medial": ['precuneus', 'isthmuscingulate'],
-                "lateral": ['inferiorparietal', 'supramarginal'], #'middletemporal'
+                "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'parsopercularis', 'rostralmiddlefrontal'],
                 "ventral": ['inferiortemporal', 'fusiform'],
             },
             "right": {
                 "medial": ['precuneus', 'isthmuscingulate'],
-                "lateral": ['inferiorparietal'],
+                "lateral": ['inferiorparietal', 'rostralmiddlefrontal'],
                 "ventral": [],
             }
         }
