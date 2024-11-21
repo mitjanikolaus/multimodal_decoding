@@ -834,7 +834,7 @@ def create_masks(args):
             coords = mesh.coordinates[vertex_max_t_value]
             print(f"Coordinates (max t-value): {coords}")
             clusters_df.append({
-                "hemi": hemi, "id": i, "max t-value": max_t_value, "peak coordinates": np.round(coords, 2)
+                "hemi": hemi, "id": i, "max t-value": max_t_value, "p value": p_values[hemi][vertex_max_t_value], "peak coordinates": np.round(coords, 2)
             })
 
             cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
