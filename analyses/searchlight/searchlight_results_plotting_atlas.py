@@ -24,11 +24,12 @@ from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
+from analyses.searchlight.searchlight import METRIC_CROSS_DECODING
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
     get_hparam_suffix, calc_significance_cutoff, load_per_subject_scores
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
-    append_images, COLORBAR_MAX
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION, SUBJECTS, \
+    append_images
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, \
     ACC_IMAGERY_WHOLE_TEST
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
@@ -524,7 +525,7 @@ def plot_surf_roi_custom(surf_mesh,
 def plot(args):
     plt.style.use("dark_background")
 
-    for result_metric in ["tfce", "imagery"]:
+    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY_WHOLE_TEST, METRIC_CROSS_DECODING]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
@@ -578,22 +579,21 @@ def plot(args):
         #
         # save_legend(all_colors, tfce_values_atlas_results_dir)
 
-        if result_metric == 'tfce':
-            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-            result_values = pickle.load(open(tfce_values_path, "rb"))
-            for hemi in HEMIS:
-                result_values[hemi] = result_values[hemi][args.metric]
-        elif result_metric == 'imagery':
-            result_values = {}
-            subject_scores = load_per_subject_scores(args)
-            for hemi in HEMIS:
-                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][ACC_IMAGERY_WHOLE_TEST] for subj in args.subjects], axis=0)
-                result_values[hemi] = score_hemi_avgd
-        else:
-            raise RuntimeError(f"Unknown metric: {result_metric}")
+        tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+        result_values = pickle.load(open(tfce_values_path, "rb"))
+        for hemi in HEMIS:
+            result_values[hemi] = result_values[hemi][args.metric]
+        # elif result_metric == 'imagery':
+        #     result_values = {}
+        #     subject_scores = load_per_subject_scores(args)
+        #     for hemi in HEMIS:
+        #         score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][ACC_IMAGERY_WHOLE_TEST] for subj in args.subjects], axis=0)
+        #         result_values[hemi] = score_hemi_avgd
+        # else:
+        #     raise RuntimeError(f"Unknown metric: {result_metric}")
 
         cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        cbar_min = 0 if result_metric == 'tfce' else 0.5
+        cbar_min = 0
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
@@ -651,7 +651,7 @@ def plot(args):
                     hemi=hemi,
                     view=view,
                     colorbar=False,
-                    threshold=significance_cutoff if result_metric == 'tfce' else 0.65,
+                    threshold=significance_cutoff,
                     vmax=cbar_max,
                     vmin=cbar_min,
                     cmap=CMAP_POS_ONLY,
@@ -679,7 +679,7 @@ def plot(args):
             hemi=HEMIS[0],
             view=args.views[0],
             colorbar=True,
-            threshold=significance_cutoff if result_metric == 'tfce' else 0.65,
+            threshold=significance_cutoff,
             vmax=cbar_max,
             vmin=cbar_min,
             cmap=CMAP_POS_ONLY,
@@ -690,7 +690,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    for result_metric in ["imagery", "tfce"]:
+    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGERY_WHOLE_TEST, METRIC_CROSS_DECODING]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
         results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
