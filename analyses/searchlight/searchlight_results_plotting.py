@@ -12,9 +12,9 @@ from tqdm import tqdm
 
 from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
-    METRIC_DIFF_CAPTIONS, METRIC_CAPTIONS, METRIC_IMAGES, load_per_subject_scores, CHANCE_VALUES, \
+    METRIC_DIFF_CAPTIONS, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, get_hparam_suffix, calc_significance_cutoff
-from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION
+from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGES
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 0.8
@@ -147,7 +147,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
 def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     metrics = [
-        METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+        ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     if subfolder:
@@ -306,10 +306,10 @@ def create_composite_image(args):
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
-    for metric in [METRIC_IMAGES, METRIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
+    for metric in [ACC_IMAGES, ACC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]:
         images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_medial_left.png"))
         cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
-        if metric in [METRIC_IMAGES, METRIC_CAPTIONS]:
+        if metric in [ACC_IMAGES, ACC_CAPTIONS]:
             acc_scores_img = append_images([cbar, images], padding=50)
         else:
             acc_scores_img = append_images([images, cbar], padding=50)
@@ -375,7 +375,7 @@ def run(args):
 
 
     if args.per_subject_plots:
-        metrics = [METRIC_CAPTIONS, METRIC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
+        metrics = [ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
         print("\n\nCreating per-subject plots..")
         for subject, scores in tqdm(per_subject_scores.items()):
             fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))

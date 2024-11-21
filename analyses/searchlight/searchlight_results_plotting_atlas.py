@@ -24,12 +24,12 @@ from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
-from analyses.searchlight.searchlight import METRIC_IMAGERY_WHOLE_TEST
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
     get_hparam_suffix, calc_significance_cutoff, load_per_subject_scores
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images, COLORBAR_MAX
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION, SUBJECTS
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, ROOT_DIR, DEFAULT_RESOLUTION, SUBJECTS, \
+    ACC_IMAGERY_WHOLE_TEST
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -587,7 +587,7 @@ def plot(args):
             result_values = {}
             subject_scores = load_per_subject_scores(args)
             for hemi in HEMIS:
-                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][METRIC_IMAGERY_WHOLE_TEST] for subj in args.subjects], axis=0)
+                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][ACC_IMAGERY_WHOLE_TEST] for subj in args.subjects], axis=0)
                 result_values[hemi] = score_hemi_avgd
         else:
             raise RuntimeError(f"Unknown metric: {result_metric}")
