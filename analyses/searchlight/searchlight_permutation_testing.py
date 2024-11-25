@@ -770,11 +770,64 @@ def create_null_distribution(args):
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
+def compute_results_clusters(values, args):
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    t_values = pickle.load(open(t_values_path, "rb"))
+
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    p_values = pickle.load(open(p_values_path, "rb"))
+
+    edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
+
+    results_maps_path = os.path.join(permutation_results_dir(args), "results_maps")
+    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{get_hparam_suffix(args)}")
+    os.makedirs(masks_path, exist_ok=True)
+
+    clusters_df = []
+    for hemi in HEMIS:
+        print(f"\nclusters for {hemi} hemi")
+        mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
+        results = calc_clusters(values[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
+        clusters = results['clusters']
+        clusters.sort(key=len, reverse=True)
+        for i, cluster in enumerate(clusters[:10]):
+            cluster = list(cluster)
+            print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
+            vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
+            max_t_value = t_values[hemi][args.metric][vertex_max_t_value]
+            print(f"Max t-value: {max_t_value:.2f}", end=" | ")
+            coords = mesh.coordinates[vertex_max_t_value]
+            print(f"Coordinates (max t-value): {coords}")
+            clusters_df.append({
+                "hemi": hemi, "id": i, "location": "", "size": len(cluster),
+                "max t-value": max_t_value,
+                "p-value": p_values[hemi][vertex_max_t_value],
+                "peak coordinates": np.round(coords, 2),
+                "references": ""
+            })
+
+            cluster_map = np.repeat(np.nan, p_values[hemi].shape)
+            cluster_map[list(cluster)] = values[hemi][cluster]
+
+            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            path_out = os.path.join(results_maps_path, f"clusters{get_hparam_suffix(args)}", fname)
+            os.makedirs(os.path.dirname(path_out), exist_ok=True)
+            export_to_gifti(cluster_map, path_out)
+
+            # cluster_mask = {h: np.zeros_like(cluster_map, dtype=np.uint8) for h in HEMIS}
+            # cluster_mask[hemi][list(cluster)] = 1
+            # path_out = os.path.join(masks_path, f"p_values_thresh_{args.p_value_threshold}_{hemi}_cluster_{i}.p")
+            # pickle.dump(cluster_mask, open(path_out, mode='wb'))
+
+    df = pd.DataFrame.from_records(clusters_df, index=["hemi", "id"])
+    print(df.style.format(precision=3).to_latex(hrules=True))
+
+
 def create_masks(args):
     print("Creating gifti results masks")
     p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
-    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{get_hparam_suffix(args)}")
-    os.makedirs(masks_path, exist_ok=True)
+
     results_maps_path = os.path.join(permutation_results_dir(args), "results_maps")
     os.makedirs(results_maps_path, exist_ok=True)
 
@@ -807,53 +860,7 @@ def create_masks(args):
         masks[hemi][np.isnan(p_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
-    path_out = os.path.join(masks_path, f"p_values{get_hparam_suffix(args)}_thresh_{args.p_value_threshold}.p")
-    pickle.dump(masks, open(path_out, mode='wb'))
-
-    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    t_values = pickle.load(open(t_values_path, "rb"))
-
-    edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-    fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
-
-    clusters_df = []
-    for hemi in HEMIS:
-        print(f"\nclusters for {hemi} hemi")
-        mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
-        results = calc_clusters(masks[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
-        clusters = results['clusters']
-        clusters.sort(key=len, reverse=True)
-        for i, cluster in enumerate(clusters[:10]):
-            cluster = list(cluster)
-            print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
-            vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
-            max_t_value = t_values[hemi][args.metric][vertex_max_t_value]
-            print(f"Max t-value: {max_t_value:.2f}", end=" | ")
-            coords = mesh.coordinates[vertex_max_t_value]
-            print(f"Coordinates (max t-value): {coords}")
-            clusters_df.append({
-                "hemi": hemi, "id": i, "location": "", "size": len(cluster),
-                "max t-value": max_t_value,
-                "p-value": p_values[hemi][vertex_max_t_value],
-                "peak coordinates": np.round(coords, 2),
-                "references": ""
-            })
-
-            cluster_map = np.repeat(np.nan, log_10_p_values[hemi].shape)
-            cluster_map[list(cluster)] = log_10_p_values[hemi][cluster]
-
-            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
-            path_out = os.path.join(results_maps_path, f"clusters{get_hparam_suffix(args)}", fname)
-            os.makedirs(os.path.dirname(path_out), exist_ok=True)
-            export_to_gifti(cluster_map, path_out)
-
-            cluster_mask = {h: np.zeros_like(cluster_map, dtype=np.uint8) for h in HEMIS}
-            cluster_mask[hemi][list(cluster)] = 1
-            path_out = os.path.join(masks_path, f"p_values_thresh_{args.p_value_threshold}_{hemi}_cluster_{i}.p")
-            pickle.dump(cluster_mask, open(path_out, mode='wb'))
-
-    df = pd.DataFrame.from_records(clusters_df, index=["hemi", "id"])
-    print(df.style.format(precision=3).to_latex(hrules=True))
+    compute_results_clusters(masks, args)
 
 
 def get_args():
