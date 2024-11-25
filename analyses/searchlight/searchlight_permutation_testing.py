@@ -384,12 +384,11 @@ def calc_t_value(values, popmean, epsilon=1e-8):
     # use heuristic (mean needs to be greater than popmean) to speed up calculation
     values_no_nan = values[~np.isnan(values)]
     if values_no_nan.mean() > popmean:
-        t_val = stats.ttest_1samp(values_no_nan, popmean=popmean, alternative="greater")[0]
-        if np.isinf(t_val):
+        if np.all(values_no_nan == values_no_nan[0]):
             # Add/subtract epsilon for numerical stability
             values_no_nan[0] = values_no_nan[0] + epsilon
             values_no_nan[-1] = values_no_nan[-1] - epsilon
-            t_val = stats.ttest_1samp(values_no_nan, popmean=popmean, alternative="greater")[0]
+        t_val = stats.ttest_1samp(values_no_nan, popmean=popmean, alternative="greater")[0]
         return t_val
     else:
         return 0
@@ -411,12 +410,11 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
                 if key in t_vals_cache:
                     t_vals.append(t_vals_cache[key])
                 else:
-                    t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
-                    if np.isinf(t_val):
+                    if np.all(x_no_nan == x_no_nan[0]):
                         # Add/subtract epsilon for numerical stability
                         x_no_nan[0] = x_no_nan[0] + epsilon
                         x_no_nan[-1] = x_no_nan[-1] - epsilon
-                        t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
+                    t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
                     t_vals.append(t_val)
                     t_vals_cache[key] = t_val
             else:
