@@ -437,7 +437,7 @@ def get_args():
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_200')
+    parser.add_argument("--mode", type=str, default='n_neighbors_750')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)
 
