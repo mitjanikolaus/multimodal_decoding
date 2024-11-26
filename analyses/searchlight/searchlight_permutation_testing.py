@@ -802,8 +802,8 @@ def compute_results_clusters(values, args):
             clusters_df.append({
                 "hemi": hemi, "id": i, "location": "", "size": len(cluster),
                 "max t-value": max_t_value,
-                "p-value": p_values[hemi][vertex_max_t_value],
-                "peak coordinates": np.round(coords, 2),
+                "p-value": '{:.0e}'.format(p_values[hemi][vertex_max_t_value]),
+                "peak coordinates": np.round(coords, 1),
                 "references": ""
             })
 
