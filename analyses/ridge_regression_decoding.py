@@ -229,8 +229,8 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
     )
     model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
     nn_latent_transform = {
-        CAPTION: Normalize(model_mean_std[CAPTION]['mean'], model_mean_std[CAPTION]['std']),
-        IMAGE: Normalize(model_mean_std[IMAGE]['mean'], model_mean_std[IMAGE]['std']),
+        CAPTION: Standardize(model_mean_std[CAPTION]['mean'], model_mean_std[CAPTION]['std']),
+        IMAGE: Standardize(model_mean_std[IMAGE]['mean'], model_mean_std[IMAGE]['std']),
     }
 
     return nn_latent_transform
@@ -305,11 +305,11 @@ def load_fmri_betas_transform(subject, mode, mask_name=None):
     bold_std_mean_path = get_fmri_betas_mean_std_path(subject, mode, mask_name)
 
     bold_mean_std = pickle.load(open(bold_std_mean_path, 'rb'))
-    fmri_betas_transform = Normalize(bold_mean_std['mean'], bold_mean_std['std'])
+    fmri_betas_transform = Standardize(bold_mean_std['mean'], bold_mean_std['std'])
     return fmri_betas_transform
 
 
-class Normalize:
+class Standardize:
     def __init__(self, mean, std, eps=1e-8):
         self.mean = mean
         self.std = std
@@ -353,28 +353,28 @@ def dist_mat_to_pairwise_acc(dist_mat):
     return score
 
 
-def pairwise_accuracy(latents, predictions, metric="cosine", normalize_predictions=True, normalize_targets=False):
-    if normalize_predictions:
-        preds_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
-        predictions = preds_normalize(predictions)
-    if normalize_targets:
-        latens_normalize = Normalize(latents.mean(axis=0), latents.std(axis=0))
-        latents = latens_normalize(latents)
+def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_targets=False):
+    if standardize_predictions:
+        preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = preds_standardize(predictions)
+    if standardize_targets:
+        latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
+        latents = latens_standardize(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
-def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cosine", normalize_predictions=True,
-                                   normalize_targets=False):
+def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cosine", standardize_predictions=True,
+                                   standardize_targets=False):
     results = dict()
 
-    if normalize_predictions:
-        pred_normalize = Normalize(predictions.mean(axis=0), predictions.std(axis=0))
-        predictions = pred_normalize(predictions)
-    if normalize_targets:
-        latens_normalize = Normalize(latents.mean(axis=0), latents.std(axis=0))
-        latents = latens_normalize(latents)
+    if standardize_predictions:
+        pred_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = pred_standardize(predictions)
+    if standardize_targets:
+        latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
+        latents = latens_standardize(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
 
@@ -391,15 +391,15 @@ def pairwise_accuracy_mod_agnostic(latents, predictions, stim_types, metric="cos
 
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
-                                      imagery_predictions=None, metric="cosine", normalize_predictions=True,
-                                      normalize_targets=False, norm_imagery_preds_with_test_preds=False,
+                                      imagery_predictions=None, metric="cosine", standardize_predictions=True,
+                                      standardize_targets=False, norm_imagery_preds_with_test_preds=False,
                                       comp_mod_agnostic_scores=True, comp_cross_decoding_scores=True):
     results = dict()
     if comp_mod_agnostic_scores:
         results.update(
             pairwise_accuracy_mod_agnostic(
-                latents, predictions, stim_types, metric, normalize_predictions,
-                normalize_targets
+                latents, predictions, stim_types, metric, standardize_predictions,
+                standardize_targets
             )
         )
 
@@ -407,8 +407,8 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
         preds_mod = predictions[stim_types == modality].copy()
         latents_mod = latents[stim_types == modality]
 
-        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
-                                                     normalize_targets)
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, standardize_predictions,
+                                                     standardize_targets)
 
     if comp_cross_decoding_scores:
         for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
@@ -417,14 +417,14 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
             preds_mod = predictions[stim_types == mod_preds].copy()
             latents_mod = latents[stim_types == mod_latents]
 
-            results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, normalize_predictions,
-                                                         normalize_targets)
+            results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, standardize_predictions,
+                                                         standardize_targets)
 
     if imagery_latents is not None:
         results.update(
             calc_imagery_pairwise_accuracy_scores(
                 imagery_latents, imagery_predictions, latents, metric,
-                normalize_predictions, normalize_targets,
+                standardize_predictions, standardize_targets,
                 test_set_preds=predictions if norm_imagery_preds_with_test_preds else None
             )
         )
@@ -433,23 +433,23 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
 
 
 def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
-                                          normalize_predictions=True, normalize_targets=False, test_set_preds=None):
+                                          standardize_predictions=True, standardize_targets=False, test_set_preds=None):
     results = dict()
 
     results[ACC_IMAGERY] = pairwise_accuracy(
-        imagery_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
+        imagery_latents, imagery_predictions, metric, standardize_predictions, standardize_targets
     )
 
     if test_set_preds is not None:
         all_preds = np.concatenate((imagery_predictions, test_set_preds))
-        norm = Normalize(all_preds.mean(axis=0), all_preds.std(axis=0))
+        norm = Standardize(all_preds.mean(axis=0), all_preds.std(axis=0))
         imagery_predictions = norm(imagery_predictions)
 
-        normalize_predictions = False  # Do not normalize again
+        standardize_predictions = False  # Do not standardize again
 
     target_latents = np.concatenate((imagery_latents, latents))
     results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(
-        target_latents, imagery_predictions, metric, normalize_predictions, normalize_targets
+        target_latents, imagery_predictions, metric, standardize_predictions, standardize_targets
     )
 
     return results
@@ -571,7 +571,7 @@ def apply_mask_and_clean(mask_name, betas_list, args):
     return betas_list
 
 
-def normalize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask_name):
+def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask_name):
     bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, mask_name)
     os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
 
@@ -614,7 +614,7 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
                     mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = normalize_fmri_betas(
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask
                 )
 
