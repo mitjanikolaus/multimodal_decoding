@@ -722,7 +722,7 @@ def permutation_results_dir(args):
 
 
 def get_hparam_suffix(args):
-    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}"
+    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}_dh_{args.tfce_dh}_clip_{args.tfce_clip}"
 
 
 def create_null_distribution(args):
