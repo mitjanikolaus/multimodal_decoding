@@ -492,7 +492,8 @@ def calc_test_statistics(args):
     if not os.path.isfile(tfce_values_path):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-        tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e)
+        tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
+                                       dh=args.tfce_dh, clip_value=args.tfce_clip)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
         tfce_values = pickle.load(open(tfce_values_path, 'rb'))
@@ -748,7 +749,12 @@ def create_null_distribution(args):
                 tfce_values = []
                 for iteration in iterator:
                     vals = {hemi: {args.metric: t_vals[f"{hemi}__{args.metric}"][iteration]} for hemi in HEMIS}
-                    tfce_values.append(calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e))
+                    tfce_values.append(
+                        calc_tfce_values(
+                            vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
+                            clip_value=args.tfce_clip
+                        )
+                    )
                 # tfce_values = [
                 #     calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
                 #     iterator
@@ -884,6 +890,8 @@ def get_args():
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
+    parser.add_argument("--tfce-dh", type=float, default=0.1)
+    parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
