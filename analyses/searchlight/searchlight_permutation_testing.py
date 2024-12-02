@@ -415,6 +415,8 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
                         x_no_nan[0] = x_no_nan[0] + epsilon
                         x_no_nan[-1] = x_no_nan[-1] - epsilon
                     t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
+                    if np.isinf(t_val):
+                        print(f"Inf t-val for values: {x_no_nan}")
                     t_vals.append(t_val)
                     t_vals_cache[key] = t_val
             else:
