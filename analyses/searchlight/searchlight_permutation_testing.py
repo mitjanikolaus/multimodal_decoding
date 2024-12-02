@@ -43,7 +43,7 @@ CHANCE_VALUES = {
 }
 
 
-def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
+def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, scores_cross_lang, scores_cross_vision, nan_locations):
     scores = dict()
 
     for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]:
@@ -52,16 +52,23 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
         scores_specific_captions = dict()
-        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS]:
+        for metric in [ACC_CAPTIONS, ACC_IMAGES]:
             scores_specific_captions[metric] = np.repeat(np.nan, nan_locations.shape)
             scores_specific_captions[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_captions])
 
         scores_specific_images = dict()
-        for metric in [ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_CAPTIONS_TO_IMAGES]:
+        for metric in [ACC_CAPTIONS, ACC_IMAGES]:
             scores_specific_images[metric] = np.repeat(np.nan, nan_locations.shape)
             scores_specific_images[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
+
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
+            [score[ACC_IMAGES] for score in scores_cross_lang])
+        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
+        scores[ACC_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = np.array(
+            [score[ACC_CAPTIONS] for score in scores_cross_vision])
 
         scores[METRIC_DIFF_IMAGES] = np.array(
             [ai - si for ai, ac, si, sc in
@@ -77,9 +84,6 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
                  scores_specific_images[ACC_IMAGES],
                  scores_specific_captions[ACC_CAPTIONS])]
         )
-
-        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = scores_specific_images[ACC_CROSS_CAPTIONS_TO_IMAGES]
-        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = scores_specific_captions[ACC_CROSS_IMAGES_TO_CAPTIONS]
 
     return scores
 
@@ -127,7 +131,29 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
                 print(f"Missing modality-specific results: {results_mod_specific_lang_file}")
                 scores_captions = None
 
-            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
+            results_cross_decoding_vision_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MOD_SPECIFIC_CAPTIONS}/{args.cross_decoding_vision_model}/{args.cross_decoding_vision_model_features}/{subject}/'
+                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            if os.path.isfile(results_cross_decoding_vision_file):
+                scores_cross_vision = pickle.load(open(results_cross_decoding_vision_file, 'rb'))['scores']
+            else:
+                print(f"Missing vision cross decoding results: {results_cross_decoding_vision_file}")
+                scores_cross_vision = None
+
+            results_cross_decoding_lang_file = os.path.join(
+                SEARCHLIGHT_OUT_DIR,
+                f'{MOD_SPECIFIC_CAPTIONS}/{args.cross_decoding_lang_model}/{args.cross_decoding_lang_model_features}/{subject}/'
+                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            if os.path.isfile(results_cross_decoding_lang_file):
+                scores_cross_lang = pickle.load(open(results_cross_decoding_lang_file, 'rb'))['scores']
+            else:
+                print(f"Missing lang cross decoding results: {results_cross_decoding_lang_file}")
+                scores_cross_lang = None
+
+            scores = process_scores(scores_agnostic, scores_captions, scores_images, scores_cross_lang, scores_cross_vision, nan_locations)
 
             # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
             # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
@@ -888,6 +914,12 @@ def get_args():
 
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+
+    parser.add_argument("--cross-decoding-lang-model", type=str, default='imagebind')
+    parser.add_argument("--cross-decoding-lang-features", type=str, default="lang_test_matched")
+
+    parser.add_argument("--cross-decoding-vision-model", type=str, default='imagebind')
+    parser.add_argument("--cross-decoding-vision-features", type=str, default="vision_test_lang")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
