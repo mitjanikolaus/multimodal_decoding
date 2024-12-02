@@ -622,7 +622,7 @@ def calc_t_values_null_distr(args, out_path):
                                ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES,
                                METRIC_CROSS_DECODING]:
                     tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES].size)
-                    dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
+                    dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
             iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
                 permutations)
