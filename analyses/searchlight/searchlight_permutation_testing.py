@@ -919,7 +919,7 @@ def get_args():
     parser.add_argument("--cross-decoding-lang-features", type=str, default="lang_test_matched")
 
     parser.add_argument("--cross-decoding-vision-model", type=str, default='imagebind')
-    parser.add_argument("--cross-decoding-vision-features", type=str, default="vision_test_lang")
+    parser.add_argument("--cross-decoding-vision-features", type=str, default="vision_test_matched")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
