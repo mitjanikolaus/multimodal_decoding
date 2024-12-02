@@ -37,6 +37,6 @@ if __name__ == "__main__":
     extractor = ImagebindFeatureExtractor(model, None, "random-imagebind", BATCH_SIZE, device)
     extractor.extract_features()
 
-    # model = imagebind_model.imagebind_huge(pretrained=True)
-    # extractor = ImagebindFeatureExtractor(model, None, "imagebind", BATCH_SIZE, device)
-    # extractor.extract_features()
+    model = imagebind_model.imagebind_huge(pretrained=True)
+    extractor = ImagebindFeatureExtractor(model, None, "imagebind", BATCH_SIZE, device)
+    extractor.extract_features()
