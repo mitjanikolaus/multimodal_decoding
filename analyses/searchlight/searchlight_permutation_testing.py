@@ -133,7 +133,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
 
             results_cross_decoding_vision_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MOD_SPECIFIC_CAPTIONS}/{args.cross_decoding_vision_model}/{args.cross_decoding_vision_model_features}/{subject}/'
+                f'{MOD_SPECIFIC_CAPTIONS}/{args.cross_decoding_vision_model}/{args.cross_decoding_vision_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
             if os.path.isfile(results_cross_decoding_vision_file):
@@ -144,7 +144,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
 
             results_cross_decoding_lang_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MOD_SPECIFIC_CAPTIONS}/{args.cross_decoding_lang_model}/{args.cross_decoding_lang_model_features}/{subject}/'
+                f'{MOD_SPECIFIC_CAPTIONS}/{args.cross_decoding_lang_model}/{args.cross_decoding_lang_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
             if os.path.isfile(results_cross_decoding_lang_file):
