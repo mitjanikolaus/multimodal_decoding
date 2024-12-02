@@ -271,8 +271,12 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cli
             values[values > clip_value] = clip_value
 
         max_score = np.nanmax(values)
-        if np.isnan(max_score) or np.isinf(max_score):
-            print("encountered NaN or Inf in t-values while calculating tfce values")
+        if np.isnan(max_score):
+            print("encountered NaN in t-values while calculating tfce values")
+            tfce_values[hemi] = {metric: np.zeros_like(values)}
+            continue
+        if np.isinf(max_score):
+            print("encountered inf in t-values while calculating tfce values")
             tfce_values[hemi] = {metric: np.zeros_like(values)}
             continue
 
