@@ -315,7 +315,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cli
 
         if dh == "auto":
             step = max_score / 100
-            print(f"Automatically set dh to {dh}")
+            print(f"Automatically set dh to {step}")
         else:
             step = dh
 
