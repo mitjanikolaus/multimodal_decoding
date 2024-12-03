@@ -11,7 +11,7 @@ from analyses.searchlight.searchlight import METRIC_DIFF_CAPTIONS, METRIC_DIFF_I
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from analyses.searchlight.searchlight_permutation_testing import load_per_subject_scores, permutation_results_dir
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGES, \
-    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
+    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES
 
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
@@ -70,19 +70,19 @@ def create_gifti_results_maps(args):
         plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
     METRICS = [ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, ACC_IMAGERY,
-               ACC_IMAGERY_WHOLE_TEST]
+               ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]
 
     for metric in METRICS:
         for hemi in HEMIS:
             if metric in subject_scores[args.subjects[0]][hemi]:
                 score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_avgd)}")
-                path_out = os.path.join(results_dir, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+                path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 export_to_gifti(score_hemi_avgd, path_out)
 
                 for subj in args.subjects:
                     score_hemi = subject_scores[subj][hemi][metric]
-                    path_out = os.path.join(results_dir, subj, f"{metric.replace(' ', '')}_{FS_HEMI_NAMES[hemi]}.gii")
+                    path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                     os.makedirs(os.path.dirname(path_out), exist_ok=True)
                     export_to_gifti(score_hemi, path_out)
 
