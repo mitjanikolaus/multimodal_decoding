@@ -72,6 +72,8 @@ def get_args():
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
+    parser.add_argument("--tfce-dh", type=float, default=0.1)
+    parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--n-clusters", type=int, default=10)
 
