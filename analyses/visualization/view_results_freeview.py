@@ -2,7 +2,7 @@ import argparse
 import glob
 import os
 
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, METRIC_AGNOSTIC, \
+from analyses.searchlight.searchlight import METRIC_AGNOSTIC, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGERY, \

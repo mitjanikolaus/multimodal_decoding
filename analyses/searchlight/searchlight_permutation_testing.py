@@ -63,12 +63,13 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
             scores_specific_images[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
 
-        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
-        scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
-            [score[ACC_IMAGES] for score in scores_cross_lang])
         scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
         scores[ACC_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = np.array(
-            [score[ACC_CAPTIONS] for score in scores_cross_vision])
+            [score[ACC_CROSS_IMAGES_TO_CAPTIONS] for score in scores_cross_lang])
+
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
+            [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_cross_vision])
 
         scores[METRIC_DIFF_IMAGES] = np.array(
             [ai - si for ai, ac, si, sc in
