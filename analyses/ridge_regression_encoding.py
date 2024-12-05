@@ -150,6 +150,10 @@ def run(args):
 
                                 test_predicted_betas = model.predict(test_data_latents)
 
+                                test_fmri_betas = backend.to_numpy(test_fmri_betas)
+                                test_predicted_betas = backend.to_numpy(test_predicted_betas)
+                                test_data_latents = backend.to_numpy(test_data_latents)
+
                                 results = {
                                     "alpha": best_alphas,
                                     "model": model_name,
@@ -164,8 +168,8 @@ def run(args):
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
-                                    "predictions": test_predicted_betas.cpu(),
-                                    "latents": test_data_latents.cpu(),
+                                    "predictions": test_predicted_betas,
+                                    "latents": test_data_latents,
                                     "imagery_latents": imagery_data_latents,
                                     "surface": args.surface,
                                     "resolution": args.resolution,
@@ -173,8 +177,7 @@ def run(args):
 
                                 results.update(
                                     calc_correlation_metrics(
-                                        test_fmri_betas.cpu().numpy(), test_predicted_betas.cpu().numpy(),
-                                        test_stim_types,
+                                        test_fmri_betas, test_predicted_betas, test_stim_types,
                                     )
                                 )
                                 print(
