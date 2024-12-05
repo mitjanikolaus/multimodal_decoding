@@ -118,8 +118,8 @@ def run(args):
                                                                    n_alphas_batch=args.n_alphas_batch,
                                                                    n_targets_batch_refit=args.n_targets_batch_refit))
 
-                                train_fmri_betas = backend.asarray(train_fmri_betas)
-                                train_latents = backend.asarray(train_latents)
+                                train_fmri_betas = backend.asarray(train_fmri_betas.astype(np.float16))
+                                train_latents = backend.asarray(train_latents.astype(np.float16))
 
                                 start = time.time()
                                 model.fit(train_latents, train_fmri_betas)
