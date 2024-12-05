@@ -522,7 +522,7 @@ def get_fmri_surface_data(subject, mode, resolution):
     fmri_betas = {
         hemi: pickle.load(
             open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in tqdm(HEMIS, desc=f"loading {base_mode} fmri surface data.. ")
+        in tqdm(HEMIS, desc=f"loading {base_mode} fmri surface data")
     }
     stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
     stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
