@@ -11,7 +11,7 @@ from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
-from tqdm import trange
+from tqdm import trange, tqdm
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
@@ -523,7 +523,7 @@ def get_fmri_surface_data(subject, mode, resolution):
     fmri_betas = {
         hemi: pickle.load(
             open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in HEMIS
+        in tqdm(HEMIS)
     }
     print("done.")
     stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
