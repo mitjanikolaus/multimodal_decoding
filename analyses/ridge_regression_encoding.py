@@ -3,7 +3,6 @@ import time
 from collections import Counter
 
 import numpy as np
-import torch.cuda
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV
 from himalaya.scoring import correlation_score
@@ -15,7 +14,7 @@ from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, IMAG
     get_default_lang_features, get_run_str, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
-from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE
+from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 
@@ -44,28 +43,24 @@ def run(args):
             train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
                 subject,
                 training_mode,
-                surface=args.surface,
+                surface=True,
                 resolution=args.resolution,
             )
             test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
                 subject,
                 TESTING_MODE,
-                surface=args.surface,
+                surface=True,
                 resolution=args.resolution,
             )
-            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
-                subject,
-                IMAGERY,
-                surface=args.surface,
-                resolution=args.resolution,
-            )
-            for mask in args.masks:
-                mask = None if mask in ["none", "None"] else mask
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
-                    mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
-                )
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask
+            for hemi in HEMIS:
+                train_fmri_betas = train_fmri_betas_full[hemi]
+                test_fmri_betas = test_fmri_betas_full[hemi]
+
+                train_fmri_betas = np.nan_to_num(train_fmri_betas)
+                test_fmri_betas = np.nan_to_num(test_fmri_betas)
+
+                train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject, training_mode=training_mode, mask_name=None
                 )
 
                 for model_name in args.models:
@@ -85,18 +80,16 @@ def run(args):
                                 if lang_features == FEATS_SELECT_DEFAULT:
                                     lang_features = get_default_lang_features(model_name)
 
-                                print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                                print(f"\nTRAIN MODE: {training_mode} | HEMI: {hemi} | SUBJECT: {subject} | "
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
                                       f"TEST FEATURES: {test_features}")
                                 print(f"train fMRI betas shape: {train_fmri_betas.shape}")
                                 print(f"test fMRI betas shape: {test_fmri_betas.shape}")
-                                print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
                                 results_dir = os.path.join(ENCODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
-                                    model_name, features, test_features, vision_features, lang_features, mask,
-                                    args.surface,
-                                    args.resolution)
+                                    model_name, features, test_features, vision_features, lang_features, mask=None,
+                                    surface=True, resolution=args.resolution, hemi=hemi)
                                 results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
                                 if os.path.isfile(results_file_path) and not args.overwrite:
                                     print(f"Skipping encoder training as results are already present at"
@@ -148,7 +141,7 @@ def run(args):
                                     "vision_features": vision_features,
                                     "lang_features": lang_features,
                                     "training_mode": training_mode,
-                                    "mask": mask,
+                                    "hemi": hemi,
                                     "num_voxels": test_fmri_betas.shape[1],
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
@@ -181,7 +174,6 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
 
-    parser.add_argument("--surface", action="store_true", default=False)
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
@@ -194,8 +186,6 @@ def get_args():
                         choices=VISION_FEAT_COMBINATION_CHOICES)
     parser.add_argument("--lang-features", type=str, nargs='+', default=[FEATS_SELECT_DEFAULT],
                         choices=LANG_FEAT_COMBINATION_CHOICES)
-
-    parser.add_argument("--masks", type=str, nargs='+', default=[None])
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
