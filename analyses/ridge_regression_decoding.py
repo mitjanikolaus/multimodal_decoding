@@ -497,7 +497,7 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface, resolution):
+def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface, resolution, hemi=None):
     run_str = f"{model_name}_{features}_test_{test_features}"
     run_str += f"_{vision_features}"
     run_str += f"_{lang_features}"
@@ -513,6 +513,9 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
 
     if surface:
         run_str += f"_surface_{resolution}"
+
+    if hemi:
+        run_str += f"_{hemi}_hemi"
 
     return run_str
 
@@ -544,7 +547,6 @@ def get_fmri_surface_data(subject, mode, resolution):
 def get_fmri_data(subject, mode, surface=False, resolution=None):
     if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
-        fmri_betas = np.concatenate((fmri_betas[HEMIS[0]], fmri_betas[HEMIS[1]]), axis=1)
     else:
         fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(subject, mode)
 
@@ -581,7 +583,8 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
-    imagery_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
+    if imagery_fmri_betas is not None:
+        imagery_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
 
     return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
