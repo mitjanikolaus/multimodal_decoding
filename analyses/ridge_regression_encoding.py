@@ -33,7 +33,7 @@ def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
 
 
 def run(args):
-    if torch.cuda.is_available():
+    if args.cuda:
         print("Setting backend to cuda")
         backend = set_backend("torch_cuda")
     else:
@@ -223,6 +223,8 @@ def get_args():
     parser.add_argument("--n-alphas-batch", type=int, default=5)
 
     parser.add_argument("--overwrite", action='store_true', default=False)
+
+    parser.add_argument("--cuda", action='store_true', default=False)
 
     return parser.parse_args()
 
