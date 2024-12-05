@@ -127,7 +127,7 @@ def run(args):
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alphas = np.round(model.best_alphas_.cpu())
+                                best_alphas = np.round(model.best_alphas_.cpu().numpy())
 
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
@@ -178,7 +178,6 @@ def run(args):
                                         test_stim_types,
                                     )
                                 )
-                                print(results[CORR_ALL])
                                 print(
                                     f"Best alphas: {Counter(best_alphas)}"
                                     f" | Corr (all): {np.mean(results[CORR_ALL]):.2f} |"
