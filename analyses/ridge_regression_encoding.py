@@ -125,7 +125,9 @@ def run(args):
                                     training_mode,
                                 )
 
-                                model = RidgeCV(alphas=args.l2_regularization_alphas)
+                                model = RidgeCV(alphas=args.l2_regularization_alphas,
+                                                solver_params=dict(n_targets_batch=args.n_targets_batch, n_alphas_batch=args.n_alphas_batch,
+                                                                   n_targets_batch_refit=args.n_targets_batch_refit))
 
                                 train_fmri_betas = backend.asarray(train_fmri_betas)
                                 train_latents = backend.asarray(train_latents)
@@ -223,8 +225,9 @@ def get_args():
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
                         default=[1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
 
-    parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
-    parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
+    parser.add_argument("--n-targets-batch", type=int, default=500)
+    parser.add_argument("--n-targets-batch-refit", type=int, default=100)
+    parser.add_argument("--n-alphas-batch", type=int, default=5)
 
     parser.add_argument("--overwrite", action='store_true', default=False)
 
