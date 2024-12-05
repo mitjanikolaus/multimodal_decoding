@@ -14,7 +14,8 @@ from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, IMAG
     get_default_lang_features, get_run_str, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
-from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS
+from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS, \
+    CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 
@@ -26,6 +27,12 @@ def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
     for modality, metric_name in zip([CAPTION, IMAGE], [CORR_CAPTIONS, CORR_IMAGES]):
         preds_mod = test_predicted_betas[stim_types == modality].copy()
         targets_mod = test_fmri_betas[stim_types == modality]
+        corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
+
+    for mod_preds, mod_latents, metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+                                                   [CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]):
+        preds_mod = test_predicted_betas[stim_types == mod_preds].copy()
+        targets_mod = test_fmri_betas[stim_types == mod_latents]
         corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
 
     return corr_scores
@@ -60,7 +67,8 @@ def run(args):
                 test_fmri_betas = np.nan_to_num(test_fmri_betas)
 
                 train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject, training_mode=training_mode, mask_name=None
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject,
+                    training_mode=training_mode, mask_name=None
                 )
 
                 for model_name in args.models:

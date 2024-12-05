@@ -76,7 +76,7 @@ def create_gifti_results_maps(args):
     for hemi in HEMIS:
         diff_corr_captions_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_CAPTIONS] - averaged_scores_mod_specific_lang[hemi][CORR_CAPTIONS]
         diff_corr_images_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_IMAGES] - averaged_scores_mod_specific_vision[hemi][CORR_IMAGES]
-        diff_mod_agnositic_mod_specific = np.min([diff_corr_captions_mod_agnositic_mod_specific, diff_corr_images_mod_agnositic_mod_specific], axis=1)
+        diff_mod_agnositic_mod_specific = np.min([diff_corr_captions_mod_agnositic_mod_specific, diff_corr_images_mod_agnositic_mod_specific], axis=0)
 
         path_out = os.path.join(results_dir, f"diff_corr_captions_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_corr_captions_mod_agnositic_mod_specific, path_out)
