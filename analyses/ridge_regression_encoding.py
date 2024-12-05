@@ -193,7 +193,7 @@ def get_args():
 
     parser.add_argument("--n-targets-batch", type=int, default=500)
     parser.add_argument("--n-targets-batch-refit", type=int, default=100)
-    parser.add_argument("--n-alphas-batch", type=int, default=1)
+    parser.add_argument("--n-alphas-batch", type=int, default=2)
 
     parser.add_argument("--overwrite", action='store_true', default=False)
 
