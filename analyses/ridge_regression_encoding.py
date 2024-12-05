@@ -165,7 +165,7 @@ def run(args):
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
                                     "predictions": test_predicted_betas.cpu(),
-                                    "latents": test_data_latents,
+                                    "latents": test_data_latents.cpu(),
                                     "imagery_latents": imagery_data_latents,
                                     "surface": args.surface,
                                     "resolution": args.resolution,
