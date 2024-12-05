@@ -22,13 +22,13 @@ ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_enc
 
 
 def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
-    corr_scores_all = correlation_score(test_fmri_betas, test_predicted_betas)
+    corr_scores_all = correlation_score(test_fmri_betas, test_predicted_betas).cpu().numpy()
 
     corr_scores = {CORR_ALL: corr_scores_all}
     for modality, metric_name in zip([CAPTION, IMAGE], [CORR_CAPTIONS, CORR_IMAGES]):
         preds_mod = test_predicted_betas[stim_types == modality].copy()
         targets_mod = test_fmri_betas[stim_types == modality]
-        corr_scores[metric_name] = correlation_score(targets_mod, preds_mod)
+        corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
 
     return corr_scores
 
