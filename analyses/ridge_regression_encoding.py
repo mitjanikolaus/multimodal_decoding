@@ -145,7 +145,6 @@ def run(args):
                                     "num_voxels": test_fmri_betas.shape[1],
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
-                                    "surface": args.surface,
                                     "resolution": args.resolution,
                                 }
 
