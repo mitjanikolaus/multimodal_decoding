@@ -224,6 +224,9 @@ ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
 ACC_IMAGERY = "pairwise_acc_imagery"
 ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 
+CORR_CAPTIONS = "corr_captions"
+CORR_IMAGES = "corr_images"
+CORR_ALL = "corr"
 
 def export_to_gifti(scores, path):
     data = scores.astype(np.float32)

@@ -1,11 +1,13 @@
 import argparse
 import time
+from collections import Counter
 
 import numpy as np
 import nibabel as nib
 import torch.cuda
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV, Ridge
+from himalaya.scoring import r2_score, correlation_score
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics import make_scorer
@@ -18,16 +20,28 @@ from tqdm import trange
 from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, IMAGERY, apply_mask_and_clean, \
     standardize_fmri_betas, FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
     get_default_lang_features, get_run_str, get_nn_latent_data, DEFAULT_N_JOBS, DEFAULT_N_PRE_DISPATCH, \
-    LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES
+    LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
+    calc_all_pairwise_accuracy_scores, CAPTION, IMAGE
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
     VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
     LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION
-
+    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
+
+
+def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
+    corr_scores_all = correlation_score(test_fmri_betas, test_predicted_betas)
+
+    corr_scores = {CORR_ALL: corr_scores_all}
+    for modality, metric_name in zip([CAPTION, IMAGE], [CORR_CAPTIONS, CORR_IMAGES]):
+        preds_mod = test_predicted_betas[stim_types == modality].copy()
+        targets_mod = test_fmri_betas[stim_types == modality]
+        corr_scores[metric_name] = correlation_score(targets_mod, preds_mod)
+
+    return corr_scores
 
 
 def run(args):
@@ -118,17 +132,10 @@ def run(args):
 
                                 start = time.time()
                                 model.fit(train_latents, train_fmri_betas)
-                                print("Best alphas: ", model.best_alphas_)
-
-                                # pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
-                                # clf.fit(train_fmri_betas, train_latents)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alpha = model.best_alphas_
+                                best_alphas = np.round(model.best_alphas_)
 
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
@@ -148,14 +155,9 @@ def run(args):
                                                                              nn_latent_transform=latent_transform)
 
                                 test_predicted_betas = model.predict(test_data_latents)
-                                # imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
-                                corrs = []
-                                for i in trange(test_predicted_betas.shape[1]):
-                                    corr = pearsonr(test_predicted_betas[:, i], test_fmri_betas[:, i])[0]
-                                    corrs.append(corr)
-                                print("Mean corr: ", np.mean(corrs))
+
                                 results = {
-                                    "alpha": best_alpha,
+                                    "alpha": best_alphas,
                                     "model": model_name,
                                     "subject": subject,
                                     "features": features,
@@ -165,12 +167,10 @@ def run(args):
                                     "training_mode": training_mode,
                                     "mask": mask,
                                     "num_voxels": test_fmri_betas.shape[1],
-                                    # "cv_results": clf.cv_results_,
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
                                     "predictions": test_predicted_betas,
-                                    # "imagery_predictions": imagery_predicted_latents,
                                     "latents": test_data_latents,
                                     "imagery_latents": imagery_data_latents,
                                     "surface": args.surface,
@@ -178,18 +178,18 @@ def run(args):
                                 }
 
                                 results.update(
-                                    calc_all_pairwise_accuracy_scores(
-                                        test_data_latents, test_predicted_latents, test_stim_types,
-                                        imagery_data_latents, imagery_predicted_latents
+                                    calc_correlation_metrics(
+                                        test_fmri_betas, test_predicted_betas, test_stim_types,
                                     )
                                 )
                                 print(
-                                    f"Best alpha: {best_alpha}"
-                                    f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
-                                    f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                                    f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
-                                    f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
-                                    f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
+                                    f"Best alphas: {Counter(best_alphas)}"
+                                    f" | Corr (all): {np.mean(results[CORR_ALL]):.2f} |"
+                                    f" (max: {np.max(results[CORR_ALL]):.2f})"
+                                    f" | Corr (captions): {np.mean(results[CORR_CAPTIONS]):.2f} |"
+                                    f" (max: {np.max(results[CORR_CAPTIONS]):.2f})"
+                                    f" | Corr (images): {np.mean(results[CORR_IMAGES]):.2f} |"
+                                    f" (max: {np.max(results[CORR_IMAGES]):.2f})"
                                 )
 
                                 os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
@@ -221,7 +221,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
-                        default=[1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
+                        default=[1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
