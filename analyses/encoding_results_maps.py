@@ -58,7 +58,7 @@ def create_gifti_results_maps(args):
 
     for metric in METRICS:
         for hemi in HEMIS:
-            print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(averaged_scores_mod_agnostic[hemi][metric])}")
+            print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(averaged_scores_mod_agnostic[hemi][metric]):.3f}")
             path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(averaged_scores_mod_agnostic[hemi][metric], path_out)
 
