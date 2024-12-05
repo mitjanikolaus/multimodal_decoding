@@ -134,19 +134,10 @@ def run(args):
                                                                           TESTING_MODE,
                                                                           nn_latent_transform=latent_transform)
 
-                                imagery_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
-                                                                             lang_features,
-                                                                             imagery_stim_ids,
-                                                                             imagery_stim_types,
-                                                                             subject,
-                                                                             IMAGERY,
-                                                                             nn_latent_transform=latent_transform)
-
                                 test_predicted_betas = model.predict(test_data_latents)
 
                                 test_fmri_betas = backend.to_numpy(test_fmri_betas)
                                 test_predicted_betas = backend.to_numpy(test_predicted_betas)
-                                test_data_latents = backend.to_numpy(test_data_latents)
 
                                 results = {
                                     "alpha": best_alphas,
