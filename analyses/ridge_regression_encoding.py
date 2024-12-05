@@ -179,8 +179,8 @@ def run(args):
                                     )
                                 )
                                 print(
-                                    f"Best alphas: {Counter(best_alphas)}"
-                                    f" | Corr (all): {np.mean(results[CORR_ALL]):.2f} |"
+                                    f"Best alphas: {Counter(best_alphas)}\n"
+                                    f"Corr (all): {np.mean(results[CORR_ALL]):.2f} |"
                                     f" (max: {np.max(results[CORR_ALL]):.2f})"
                                     f" | Corr (captions): {np.mean(results[CORR_CAPTIONS]):.2f} |"
                                     f" (max: {np.max(results[CORR_CAPTIONS]):.2f})"
