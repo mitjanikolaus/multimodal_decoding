@@ -126,7 +126,8 @@ def run(args):
                                 )
 
                                 model = RidgeCV(alphas=args.l2_regularization_alphas,
-                                                solver_params=dict(n_targets_batch=args.n_targets_batch, n_alphas_batch=args.n_alphas_batch,
+                                                solver_params=dict(n_targets_batch=args.n_targets_batch,
+                                                                   n_alphas_batch=args.n_alphas_batch,
                                                                    n_targets_batch_refit=args.n_targets_batch_refit))
 
                                 train_fmri_betas = backend.asarray(train_fmri_betas)
@@ -184,7 +185,8 @@ def run(args):
 
                                 results.update(
                                     calc_correlation_metrics(
-                                        test_fmri_betas.cpu(), test_predicted_betas.cpu(), test_stim_types,
+                                        test_fmri_betas.cpu().numpy(), test_predicted_betas.cpu().numpy(),
+                                        test_stim_types,
                                     )
                                 )
                                 print(
