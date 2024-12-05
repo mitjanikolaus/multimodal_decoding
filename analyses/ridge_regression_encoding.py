@@ -3,31 +3,20 @@ import time
 from collections import Counter
 
 import numpy as np
-import nibabel as nib
 import torch.cuda
 from himalaya.backend import set_backend
-from himalaya.ridge import RidgeCV, Ridge
-from himalaya.scoring import r2_score, correlation_score
-from scipy.spatial.distance import cdist
-from scipy.stats import spearmanr, pearsonr
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV
+from himalaya.ridge import RidgeCV
+from himalaya.scoring import correlation_score
 import os
-from glob import glob
 import pickle
-from tqdm import trange
 
 from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, IMAGERY, apply_mask_and_clean, \
     standardize_fmri_betas, FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
-    get_default_lang_features, get_run_str, get_nn_latent_data, DEFAULT_N_JOBS, DEFAULT_N_PRE_DISPATCH, \
+    get_default_lang_features, get_run_str, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
-    calc_all_pairwise_accuracy_scores, CAPTION, IMAGE
-from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISION_MEAN_FEAT_KEY, \
-    VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
-    LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, \
-    ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL
+    CAPTION, IMAGE
+from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL
+
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 
