@@ -189,6 +189,7 @@ def run(args):
                                         test_stim_types,
                                     )
                                 )
+                                print(results[CORR_ALL])
                                 print(
                                     f"Best alphas: {Counter(best_alphas)}"
                                     f" | Corr (all): {np.mean(results[CORR_ALL]):.2f} |"
