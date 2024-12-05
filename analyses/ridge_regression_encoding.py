@@ -137,7 +137,7 @@ def run(args):
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alphas = np.round(model.best_alphas_)
+                                best_alphas = np.round(model.best_alphas_.cpu())
 
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
@@ -156,6 +156,9 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
+                                test_fmri_betas = backend.asarray(test_fmri_betas)
+                                test_data_latents = backend.asarray(test_data_latents)
+
                                 test_predicted_betas = model.predict(test_data_latents)
 
                                 results = {
@@ -172,7 +175,7 @@ def run(args):
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
-                                    "predictions": test_predicted_betas,
+                                    "predictions": test_predicted_betas.cpu(),
                                     "latents": test_data_latents,
                                     "imagery_latents": imagery_data_latents,
                                     "surface": args.surface,
@@ -181,7 +184,7 @@ def run(args):
 
                                 results.update(
                                     calc_correlation_metrics(
-                                        test_fmri_betas, test_predicted_betas, test_stim_types,
+                                        test_fmri_betas.cpu(), test_predicted_betas.cpu(), test_stim_types,
                                     )
                                 )
                                 print(
