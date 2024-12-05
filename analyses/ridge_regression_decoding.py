@@ -519,13 +519,11 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
 
 def get_fmri_surface_data(subject, mode, resolution):
     base_mode = mode.split('_')[0]
-    print(f"loading {base_mode} fmri data.. ", end="")
     fmri_betas = {
         hemi: pickle.load(
             open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in tqdm(HEMIS)
+        in tqdm(HEMIS, desc=f"loading {base_mode} fmri surface data.. ")
     }
-    print("done.")
     stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
     stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
 
