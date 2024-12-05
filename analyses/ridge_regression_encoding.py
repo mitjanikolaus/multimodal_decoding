@@ -118,9 +118,6 @@ def run(args):
                                                                    n_alphas_batch=args.n_alphas_batch,
                                                                    n_targets_batch_refit=args.n_targets_batch_refit))
 
-                                train_fmri_betas = train_fmri_betas.astype(np.float16)
-                                train_latents = train_latents.astype(np.float16)
-
                                 start = time.time()
                                 model.fit(train_latents, train_fmri_betas)
                                 end = time.time()
@@ -144,9 +141,6 @@ def run(args):
                                                                              subject,
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
-
-                                test_fmri_betas = test_fmri_betas.astype(np.float16)
-                                test_data_latents = test_data_latents.astype(np.float16)
 
                                 test_predicted_betas = model.predict(test_data_latents)
 
