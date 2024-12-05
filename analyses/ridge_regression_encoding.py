@@ -9,8 +9,8 @@ from himalaya.scoring import correlation_score
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, IMAGERY, apply_mask_and_clean, \
-    standardize_fmri_betas, FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
+from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, standardize_fmri_betas, \
+    FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
     get_default_lang_features, get_run_str, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
@@ -29,10 +29,10 @@ def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
         targets_mod = test_fmri_betas[stim_types == modality]
         corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
 
-    for mod_preds, mod_latents, metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+    for mod_preds, mod_targets, metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
                                                    [CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]):
         preds_mod = test_predicted_betas[stim_types == mod_preds].copy()
-        targets_mod = test_fmri_betas[stim_types == mod_latents]
+        targets_mod = test_fmri_betas[stim_types == mod_targets]
         corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
 
     return corr_scores

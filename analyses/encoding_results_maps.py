@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 import os
 
+from sympy.vector import Cross
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import get_run_str, FEATS_SELECT_DEFAULT, \
@@ -12,10 +13,10 @@ from analyses.ridge_regression_decoding import get_run_str, FEATS_SELECT_DEFAULT
     MODE_AGNOSTIC, TRAIN_MODE_CHOICES
 from analyses.ridge_regression_encoding import ENCODER_OUT_DIR
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, DATA_DIR, \
-    RESULTS_FILE, CORR_ALL, CORR_CAPTIONS, CORR_IMAGES
+    RESULTS_FILE, CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
 
 ENCODING_RESULTS_DIR = os.path.join(DATA_DIR, "encoding_results")
-METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES]
+METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
 
 def load_corr_scores(args, training_mode):
     per_subj_results = {}
@@ -86,6 +87,10 @@ def create_gifti_results_maps(args):
 
         path_out = os.path.join(results_dir, f"diff_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_mod_agnositic_mod_specific, path_out)
+
+        cross_decoding = np.min([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS], averaged_scores_mod_specific_vision[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES]], axis=0)
+        path_out = os.path.join(results_dir, f"cross_decoding_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(cross_decoding, path_out)
 
 
 def get_args():
