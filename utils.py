@@ -16,6 +16,8 @@ NN_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.p")
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
 
+RESULTS_FILE = "results.p"
+
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
 FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
 FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")

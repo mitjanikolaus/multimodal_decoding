@@ -18,7 +18,7 @@ from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISI
     VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
     LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION
+    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION, RESULTS_FILE
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -647,7 +647,7 @@ def run(args):
                                     model_name, features, test_features, vision_features, lang_features, mask,
                                     args.surface,
                                     args.resolution)
-                                results_file_path = os.path.join(results_dir, run_str, "results.p")
+                                results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
                                 if os.path.isfile(results_file_path) and not args.overwrite:
                                     print(f"Skipping decoder training as results are already present at"
                                           f" {results_file_path}")

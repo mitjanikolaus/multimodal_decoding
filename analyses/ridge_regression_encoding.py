@@ -15,8 +15,7 @@ from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, IMAG
     get_default_lang_features, get_run_str, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
-from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL
-
+from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 
@@ -98,7 +97,7 @@ def run(args):
                                     model_name, features, test_features, vision_features, lang_features, mask,
                                     args.surface,
                                     args.resolution)
-                                results_file_path = os.path.join(results_dir, run_str, "results.p")
+                                results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
                                 if os.path.isfile(results_file_path) and not args.overwrite:
                                     print(f"Skipping encoder training as results are already present at"
                                           f" {results_file_path}")
