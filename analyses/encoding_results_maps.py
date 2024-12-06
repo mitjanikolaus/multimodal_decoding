@@ -4,7 +4,6 @@ import pickle
 import numpy as np
 import os
 
-from sympy.vector import Cross
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import get_run_str, FEATS_SELECT_DEFAULT, \
@@ -88,9 +87,13 @@ def create_gifti_results_maps(args):
         path_out = os.path.join(results_dir, f"diff_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_mod_agnositic_mod_specific, path_out)
 
-        cross_decoding = np.min([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS], averaged_scores_mod_specific_vision[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES]], axis=0)
-        path_out = os.path.join(results_dir, f"cross_decoding_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(cross_decoding, path_out)
+        cross_encoding = np.min([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES], averaged_scores_mod_specific_vision[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
+        path_out = os.path.join(results_dir, f"cross_encoding_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(cross_encoding, path_out)
+
+        cross_encoding_or_diff = np.max([cross_encoding, diff_mod_agnositic_mod_specific], axis=0)
+        path_out = os.path.join(results_dir, f"cross_encoding_or_diff_mod_agnostic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(cross_encoding_or_diff, path_out)
 
 
 def get_args():
