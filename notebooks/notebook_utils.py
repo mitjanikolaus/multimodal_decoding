@@ -187,19 +187,19 @@ METRICS_ERROR_ANALYSIS = ['predictions', 'latents', 'stimulus_ids', 'stimulus_ty
 METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, 'imagery_predictions', 'imagery_latents']
 
 
-def update_acc_scores(results, metric="cosine", normalize_predictions=True, normalize_targets=False, norm_imagery_preds_with_test_preds=False):
+def update_acc_scores(results, metric="cosine", standardize_predictions=True, standardize_targets=False, norm_imagery_preds_with_test_preds=False):
     results.update(
         calc_all_pairwise_accuracy_scores(
             results["latents"], results["predictions"], results["stimulus_types"],
             imagery_latents=results["imagery_latents"] if "imagery_latents" in results else None,
             imagery_predictions=results["imagery_predictions"] if "imagery_predictions" in results else None,
-            metric=metric, normalize_predictions=normalize_predictions, normalize_targets=normalize_targets,
+            metric=metric, standardize_predictions=standardize_predictions, standardize_targets=standardize_targets,
             norm_imagery_preds_with_test_preds=True
         )
     )
     return results
 
-def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine", normalize_predictions=True, normalize_targets=False,
+def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine", standardize_predictions=True, standardize_targets=False,
                      norm_imagery_preds_with_test_preds=False):
     data = []
 
@@ -208,7 +208,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
             if recompute_acc_scores:
-                results = update_acc_scores(results, metric=pairwise_acc_metric, normalize_predictions=normalize_predictions, normalize_targets=normalize_targets,
+                results = update_acc_scores(results, metric=pairwise_acc_metric, standardize_predictions=standardize_predictions, standardize_targets=standardize_targets,
                                            norm_imagery_preds_with_test_preds=norm_imagery_preds_with_test_preds)
             
             for metric in metrics:
