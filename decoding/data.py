@@ -220,7 +220,7 @@ class Standardize:
         self.std = self.std + eps  # Avoid division by 0
 
     def __call__(self, x):
-        return ((x - self.mean) / self.std).astype(np.float32).squeeze()
+        return ((x - self.mean) / self.std).squeeze()
 
 
 class fMRIDataModule(pl.LightningDataModule):
