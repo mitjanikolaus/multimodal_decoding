@@ -79,7 +79,7 @@ class Decoder(pl.LightningModule):
         preds = self(x)
         loss = self.loss(preds, y)
         results = test_set_pairwise_acc_scores(y.cpu(), preds.cpu(), np.array(stim_types))
-
+        print(results)
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
         self.log_dict(results, on_step=True, on_epoch=True, logger=True)
 
