@@ -128,10 +128,7 @@ def get_latents_mean_std_path(subject, latent_feats_config, mode):
 def load_latents_transform(subject, latent_feats_config, mode):
     model_std_mean_path = get_latents_mean_std_path(subject, latent_feats_config, mode)
     model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
-    nn_latent_transform = {
-        CAPTION: transforms.Normalize(model_mean_std[CAPTION]['mean'], model_mean_std[CAPTION]['std']),
-        IMAGE: transforms.Normalize(model_mean_std[IMAGE]['mean'], model_mean_std[IMAGE]['std']),
-    }
+    nn_latent_transform = Standardize(model_mean_std['mean'], model_mean_std['std'])
 
     return nn_latent_transform
 
@@ -155,7 +152,7 @@ def get_latent_feats_standardization_transform(subject, latent_feats_config, tra
 
     nn_latent_transform = load_latents_transform(subject, latent_feats_config, training_mode)
 
-    return Standardize(nn_latent_transform['mean'], nn_latent_transform['std'])
+    return nn_latent_transform
 
 
 class DecodingDataset(Dataset):
