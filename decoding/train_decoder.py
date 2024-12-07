@@ -41,11 +41,10 @@ def run(args):
                                   f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
                                   f"TEST FEATURES: {test_features}")
 
-                            results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
                             run_str = get_run_str(
                                 model_name, features, test_features, vision_features, lang_features, mask=None,
                                 surface=False, resolution=None)
-                            results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
+                            results_file_path = os.path.join(DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE)
                             if os.path.isfile(results_file_path) and not args.overwrite:
                                 print(f"Skipping decoder training as results are already present at"
                                       f" {results_file_path}")

@@ -38,7 +38,7 @@ def get_fmri_data_paths(subject, mode, split):
     filename_suffix = "*.nii"
     betas_regex = f'betas_{split}*'
     if mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
-        betas_regex += f'_{mode}'
+        betas_regex += f'_{mode[:-1]}'
     fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, betas_regex, filename_suffix)
 
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
