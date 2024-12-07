@@ -25,7 +25,7 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
     return 1 - pairwise_cosine_similarity(predictions, originals)
 
 
-def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=False,
+def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True,
                       standardize_targets=False):
     if standardize_predictions:
         preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
@@ -38,7 +38,7 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
-def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosine", standardize_predictions=False,
+def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosine", standardize_predictions=True,
                                  standardize_targets=False):
     results = {}
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
