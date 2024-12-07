@@ -182,7 +182,7 @@ def get_args():
     parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS)
     parser.add_argument("--max-epochs", type=int, default=DEFAULT_MAX_EPOCHS)
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
-    parser.add_argument("--learning-rate", type=int, default=DEFAULT_LEARNING_RATE)
+    parser.add_argument("--learning-rate", type=float, default=DEFAULT_LEARNING_RATE)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
                         default=[1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
