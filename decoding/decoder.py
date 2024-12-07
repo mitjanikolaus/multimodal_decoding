@@ -65,8 +65,8 @@ class Decoder(pl.LightningModule):
         loss, contrastive_loss, mse_loss = self.loss(preds, y)
 
         self.log('train_loss', loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
-        self.log('train_loss_contrastive', contrastive_loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
-        self.log('train_loss_mse', mse_loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
+        self.log('train_loss_contrastive', contrastive_loss, on_step=False, on_epoch=True, logger=True, prog_bar=True)
+        self.log('train_loss_mse', mse_loss, on_step=False, on_epoch=True, logger=True, prog_bar=True)
 
         return loss
 
