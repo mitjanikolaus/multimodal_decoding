@@ -67,7 +67,7 @@ def run(args):
                             # Initialize Callbacks
                             early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_loss")
                             # checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint()
-                            trainer = pl.Trainer(max_epochs=2,
+                            trainer = pl.Trainer(max_epochs=20,
                                                  # logger=wandb_logger, #TODO
                                                  callbacks=[early_stop_callback]
                                                  )
