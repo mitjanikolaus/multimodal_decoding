@@ -58,7 +58,7 @@ class Decoder(pl.LightningModule):
         self.fc = nn.Linear(input_size, output_size)
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
-        self.loss_mse = nn.MSELoss() #TODO l2 regularization? with wd on optimizer?
+        self.loss_mse = nn.MSELoss()
         self.batch_size = batch_size
         self.weight_decay = weight_decay
         self.mse_loss_weight = mse_loss_weight
@@ -130,7 +130,7 @@ class Decoder(pl.LightningModule):
         self.log_dict(results)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         return optimizer
 
 
