@@ -16,6 +16,8 @@ from utils import SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_W
     RESULTS_FILE, DECODER_OUT_DIR
 import lightning as pl
 
+
+DEFAULT_NUM_WORKERS = 10
 DEFAULT_BATCH_SIZE = 128
 DEFAULT_LEARNING_RATE = 1e-3
 
@@ -54,7 +56,7 @@ def run(args):
                             latent_feats_config = LatentFeatsConfig(
                                 model_name, features, vision_features, lang_features
                             )
-                            dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config)
+                            dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config, args.num_workers)
 
                             sample_betas, sample_latents = next(iter(dm.ds_train))
 
@@ -175,6 +177,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
+    parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS)
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--learning-rate", type=int, default=DEFAULT_LEARNING_RATE)
 

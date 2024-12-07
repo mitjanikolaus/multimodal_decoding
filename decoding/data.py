@@ -224,9 +224,10 @@ class Standardize:
 
 
 class fMRIDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size, subject, training_mode, latent_feats_config):
+    def __init__(self, batch_size, subject, training_mode, latent_feats_config, num_workers):
         super().__init__()
         self.batch_size = batch_size
+        self.num_workers = num_workers
 
         self.subject = subject
         self.training_mode = training_mode
@@ -258,10 +259,10 @@ class fMRIDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.ds_val, batch_size=self.batch_size)
+        return DataLoader(self.ds_val, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.ds_test, batch_size=self.batch_size)
+        return DataLoader(self.ds_test, batch_size=self.batch_size, num_workers=self.num_workers)
