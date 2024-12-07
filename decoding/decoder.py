@@ -4,9 +4,15 @@ from torch import nn
 import torch.nn.functional as F
 import lightning as pl
 
-from analyses.ridge_regression_decoding import get_distance_matrix, dist_mat_to_pairwise_acc, CAPTION, IMAGE
+from analyses.ridge_regression_decoding import dist_mat_to_pairwise_acc, CAPTION, IMAGE
 from decoding.data import Standardize
 from utils import ACC_CAPTIONS, ACC_IMAGES
+
+
+def get_distance_matrix(predictions, originals, metric='cosine'):
+    if metric != "cosine":
+        raise NotImplementedError()
+    return 1 - torch.nn.functional.cosine_similarity(predictions, originals)
 
 
 def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True,
