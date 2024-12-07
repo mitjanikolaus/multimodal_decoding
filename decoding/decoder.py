@@ -98,7 +98,7 @@ class Decoder(pl.LightningModule):
 
         results = test_set_pairwise_acc_scores(targets, preds, stim_types)
         print(results)
-        self.log_dict(results, on_step=True, on_epoch=True)
+        self.log_dict(results)
 
 
 
