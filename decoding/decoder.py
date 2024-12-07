@@ -5,9 +5,18 @@ import torch.nn.functional as F
 import lightning as pl
 from torchmetrics.functional import pairwise_cosine_similarity
 
-from analyses.ridge_regression_decoding import dist_mat_to_pairwise_acc, CAPTION, IMAGE
+from analyses.ridge_regression_decoding import CAPTION, IMAGE
 from decoding.data import Standardize
 from utils import ACC_CAPTIONS, ACC_IMAGES
+
+
+def dist_mat_to_pairwise_acc(dist_mat):
+    diag = dist_mat.diagonal().reshape(-1, 1)
+    comp_mat = diag < dist_mat
+    corrects = comp_mat.sum()
+    # subtract the number of elements of the diagonal as these values are always "False" (not smaller than themselves)
+    score = corrects / (dist_mat.numel() - diag.numel())
+    return score
 
 
 def get_distance_matrix(predictions, originals, metric='cosine'):
