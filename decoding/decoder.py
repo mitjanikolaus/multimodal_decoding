@@ -75,15 +75,22 @@ class Decoder(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
-        x, y, stim_types, _ = batch
+        x, targets, stim_types, _ = batch
         preds = self(x)
-        loss = self.loss(preds, y)
-        results = test_set_pairwise_acc_scores(y.cpu(), preds.cpu(), np.array(stim_types))
-        print(results)
-        self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
-        self.log_dict(results, on_step=True, on_epoch=True, logger=True)
+        loss = self.loss(preds, targets)
 
-        return loss
+        self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
+
+        return loss, preds, targets, stim_types
+
+    def test_epoch_end(self, outputs):
+        loss, preds, targets, stim_types = outputs
+
+        results = test_set_pairwise_acc_scores(targets.cpu(), preds.cpu(), np.array(stim_types))
+        print(results)
+        self.log_dict(results, on_step=True, on_epoch=True)
+
+
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
