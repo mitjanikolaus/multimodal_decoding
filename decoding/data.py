@@ -79,7 +79,7 @@ def get_fmri_betas_standardization_transform(subject, training_mode, latent_feat
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_feats_config, graymatter_mask)
-        train_fmri_betas = [beta for beta, _ in tqdm(iter(train_ds))]
+        train_fmri_betas = [beta for beta, _ in tqdm(iter(train_ds), total=len(train_ds))]
         mean_std = {'mean': np.mean(train_fmri_betas, axis=0),
                     'std': np.std(train_fmri_betas, axis=0)}
         pickle.dump(mean_std, open(std_mean_path, 'wb'))
@@ -143,7 +143,7 @@ def get_latent_feats_standardization_transform(subject, latent_feats_config, tra
         mean_std = dict()
         graymatter_mask = load_graymatter_mask(subject)
         train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_feats_config, graymatter_mask)
-        train_latents = np.array([latents for _, latents in tqdm(iter(train_ds))])
+        train_latents = np.array([latents for _, latents in tqdm(iter(train_ds), total=len(train_ds))])
         stim_types = train_ds.stim_types
         if training_mode in [MODE_AGNOSTIC, TESTING_MODE]:
             mean_std[CAPTION] = {
