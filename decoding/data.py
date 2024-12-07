@@ -243,7 +243,7 @@ class fMRIDataModule(pl.LightningDataModule):
             latents_standardization
         ])
 
-        betas_standardization = get_fmri_betas_standardization_transform(subject, training_mode)
+        betas_standardization = get_fmri_betas_standardization_transform(subject, training_mode, latent_feats_config)
         self.betas_transform = transforms.Compose([
             transforms.ToTensor(),
             betas_standardization
