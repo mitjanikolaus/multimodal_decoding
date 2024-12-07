@@ -18,10 +18,11 @@ import lightning as pl
 
 
 DEFAULT_NUM_WORKERS = 10
-DEFAULT_MAX_EPOCHS = 100
+DEFAULT_MAX_EPOCHS = 50
 DEFAULT_BATCH_SIZE = 128
-DEFAULT_LEARNING_RATE = 1e-3
-DEFAULT_WEIGHT_DECAY = 1e-2
+DEFAULT_LEARNING_RATE = 1e-4
+DEFAULT_WEIGHT_DECAY = 1e-3
+DEFAULT_MSE_LOSS_WEIGHT = 0.5
 
 
 def run(args):
@@ -62,7 +63,7 @@ def run(args):
 
                             sample_betas, sample_latents = next(iter(dm.ds_train))
 
-                            model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate, args.weight_decay, args.batch_size)
+                            model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate, args.weight_decay, args.batch_size, args.mse_loss_weight)
 
                             # Initialize wandb logger
                             #TODO
@@ -186,6 +187,8 @@ def get_args():
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--learning-rate", type=float, default=DEFAULT_LEARNING_RATE)
     parser.add_argument("--weight-decay", type=float, default=DEFAULT_WEIGHT_DECAY)
+    parser.add_argument("--mse-loss-weight", type=float, default=DEFAULT_MSE_LOSS_WEIGHT)
+
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
                         default=[1e2, 1e3, 1e4, 1e5, 1e6, 1e7])

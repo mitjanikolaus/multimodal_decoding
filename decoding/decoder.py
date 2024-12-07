@@ -53,7 +53,7 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
 
 class Decoder(pl.LightningModule):
 
-    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight=0.5):
+    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size)
         self.learning_rate = learning_rate
