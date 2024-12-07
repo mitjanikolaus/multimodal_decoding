@@ -75,7 +75,7 @@ def run(args):
                                                  # logger=wandb_logger, #TODO
                                                  callbacks=[early_stop_callback],
                                                 log_every_n_steps=10,
-                                                 reload_dataloaders_every_epoch=True,
+                                                 reload_dataloaders_every_n_epochs=1,
                                                  )
 
                             trainer.fit(model, dm)
