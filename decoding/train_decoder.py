@@ -1,6 +1,7 @@
 import argparse
 import time
 
+import torch.cuda
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 import os
@@ -186,6 +187,9 @@ def get_args():
 
 
 if __name__ == "__main__":
+    if torch.cuda.is_available():
+        torch.set_float32_matmul_precision('medium')
+
     args = get_args()
     os.makedirs(DECODER_OUT_DIR, exist_ok=True)
 
