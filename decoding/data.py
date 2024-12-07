@@ -77,7 +77,7 @@ def get_fmri_betas_standardization_transform(subject, training_mode, latent_feat
     if not os.path.isfile(std_mean_path):
         print("Calculating mean and std over whole train set betas for standardization.")
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
-        graymatter_mask = get_graymatter_mask_path(subject)
+        graymatter_mask = load_graymatter_mask(subject)
         train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_feats_config, graymatter_mask)
         train_fmri_betas = [beta for beta, _ in tqdm(iter(train_ds))]
         mean_std = {'mean': np.mean(train_fmri_betas, axis=0),
@@ -141,7 +141,7 @@ def get_latent_feats_standardization_transform(subject, latent_feats_config, tra
         print("Calculating mean and std over whole train set latents for standardization.")
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         mean_std = dict()
-        graymatter_mask = get_graymatter_mask_path(subject)
+        graymatter_mask = load_graymatter_mask(subject)
         train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_feats_config, graymatter_mask)
         train_latents = np.array([latents for _, latents in tqdm(iter(train_ds))])
         stim_types = train_ds.stim_types
@@ -181,7 +181,9 @@ class DecodingDataset(Dataset):
         self.latent_feats_transform = latent_feats_transform
 
         latent_vectors_file = model_features_file_path(latent_feats_config.model_name)
+        print("Loading pickle with latent feats..", end=" ")
         self.latent_features = pickle.load(open(latent_vectors_file, 'rb'))
+        print("done.")
 
     def __len__(self):
         return len(self.data_paths)
@@ -192,7 +194,7 @@ class DecodingDataset(Dataset):
 
         if self.betas_transform:
             betas = self.betas_transform(betas)
-        if self.graymatter_mask:
+        if self.graymatter_mask is not None:
             betas = betas[self.graymatter_mask]
 
         betas = betas.astype('float32').reshape(-1)
