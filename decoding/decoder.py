@@ -21,6 +21,9 @@ class Decoder(pl.LightningModule):
         x = self.fc(x)
         return x
 
+    def loss(self, preds, targets):
+        return self.loss_contrastive(preds, targets) #TODO
+
     def training_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x)
@@ -125,14 +128,13 @@ class ClipLoss(torch.nn.Module):
         scores = self.get_scores(estimates, candidates)
         return F.softmax(scores, dim=1)
 
-    def forward(self, estimate, candidate, mask=None):
+    def forward(self, estimate, candidate):
         """Warning: estimate and candidate are not symmetrical.
         If estimate of shape [B, C, T] and candidate of size [B', C, T]
         with B'>=B, the first B samples of candidate are targets, while
         the remaining B'-B samples of candidate are only used as negatives.
         """
-        assert mask.all(), "mask is not supported for now"
-        assert estimate.size(0) <= candidate.size(0), "need at least as many targets as estimates"
+        # assert estimate.size(0) <= candidate.size(0), "need at least as many targets as estimates"
         scores = self.get_scores(estimate, candidate)
         target = torch.arange(len(scores), device=estimate.device)
         return F.cross_entropy(scores, target)
@@ -144,13 +146,11 @@ class CustomLoss(torch.nn.Module):
         self.weight_mse = weight_mse
         loss_mse = nn.MSELoss()
 
-    def forward(self, estimate, output, mask=None):
+    def forward(self, estimate, output):
         assert estimate.shape[1] == self.used_features.output_dimension and \
                output.shape[1] == self.used_features.dimension, \
                "Invalid features dim received. Are you using the correct " \
                "features for the loss?"
-        if mask is not None:
-            assert mask.any()
 
         loss = 0
         for feature in self.used_features.values():
@@ -161,7 +161,6 @@ class CustomLoss(torch.nn.Module):
 
             feature_estimate = estimate[:, feature_slice_model_output]
             feature_output = output[:, feature_slice]
-            feature_mask = mask.expand_as(feature_estimate)
 
             if feature.categorical:
                 # Classificaion loss
@@ -177,17 +176,17 @@ class CustomLoss(torch.nn.Module):
                 # [batch, seq-len, num-classes]
                 feature_estimate = feature_estimate.transpose(1, 2)
                 feature_output = feature_output.transpose(1, 2)
-                feature_mask = feature_mask.transpose(1, 2)
 
-                loss += F.cross_entropy(
-                    feature_estimate[feature_mask].reshape(
-                        -1, feature_slice_model_output.stop - feature_slice_model_output.start),
-                    feature_output.long()[mask.transpose(1, 2)],
-                    weights
-                )
+                # loss += F.cross_entropy(
+                #     feature_estimate[feature_mask].reshape(
+                #         -1, feature_slice_model_output.stop - feature_slice_model_output.start),
+                #     feature_output.long()[mask.transpose(1, 2)],
+                #     weights
+                # )
             else:
                 # Regression loss
-                loss += F.mse_loss(
-                    feature_estimate[feature_mask], feature_output[feature_mask])
+                # loss += F.mse_loss(
+                #     feature_estimate[feature_mask], feature_output[feature_mask])
+                ...
 
         return loss

@@ -55,31 +55,24 @@ def run(args):
                             )
                             dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config)
 
-                            train_samples = next(iter(dm.train_dataloader()))
-                            sample_betas, sample_latents = train_samples[0], train_samples[1]
+                            sample_betas, sample_latents = next(iter(dm.ds_train))
 
-                            model = Decoder(sample_betas.shape, sample_latents.shape, args.learning_rate)
+                            model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate)
 
                             # Initialize wandb logger
                             #TODO
                             # wandb_logger = WandbLogger(project='wandb-lightning', job_type='train')
 
                             # Initialize Callbacks
-                            early_stop_callback = pl.callbacks.EarlyStopping(monitor="val_loss")
-                            checkpoint_callback = pl.callbacks.ModelCheckpoint()
-
-                            # Initialize a trainer
+                            early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_loss")
+                            # checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint()
                             trainer = pl.Trainer(max_epochs=2,
                                                  # logger=wandb_logger, #TODO
-                                                 callbacks=[early_stop_callback,
-                                                            ImagePredictionLogger(val_samples),
-                                                            checkpoint_callback],
+                                                 callbacks=[early_stop_callback]
                                                  )
 
-                            # Train the model ⚡🚅⚡
                             trainer.fit(model, dm)
 
-                            # Evaluate the model on the held-out test set ⚡⚡
                             trainer.test(dataloaders=dm.test_dataloader())
 
                             # Close wandb run
