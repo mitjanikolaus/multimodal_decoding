@@ -105,18 +105,24 @@ class Decoder(pl.LightningModule):
 
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
 
-        self.test_outputs["preds"].extend(preds.cpu().numpy())
-        self.test_outputs["targets"].extend(targets.cpu().numpy())
-        self.test_outputs["stim_types"].extend(stim_types)
+        if "preds" not in self.test_outputs:
+            # first test batch
+            self.test_outputs["preds"] = preds
+            self.test_outputs["targets"] = targets
+            self.test_outputs["stim_types"] = stim_types
+        else:
+            self.test_outputs["preds"] = torch.concatenate((self.test_outputs["preds"], preds))
+            self.test_outputs["targets"] = torch.concatenate((self.test_outputs["targets"], targets))
+            self.test_outputs["stim_types"].extend(stim_types)
 
         return loss
 
     def on_test_epoch_start(self):
-        self.test_outputs = {"preds": [], "targets": [], "stim_types": []}
+        self.test_outputs = {}
 
     def on_test_epoch_end(self):
-        targets = np.array(self.test_outputs["targets"])
-        preds = np.array(self.test_outputs["preds"])
+        targets = self.test_outputs["targets"]
+        preds = self.test_outputs["preds"]
         stim_types = np.array(self.test_outputs["stim_types"])
 
         results = test_set_pairwise_acc_scores(targets, preds, stim_types)

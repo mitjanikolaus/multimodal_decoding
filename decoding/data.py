@@ -27,7 +27,7 @@ SPLIT_TEST = "test"
 SPLIT_IMAGERY = "imagery"
 
 VAL_SPLIT_RATIO = 0.2
-
+TEST_BATCH_SIZE = 140
 
 def stim_id_from_beta_file_name(beta_file_name):
     return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace(".nii", ''))
@@ -264,4 +264,4 @@ class fMRIDataModule(pl.LightningDataModule):
         return DataLoader(self.ds_val, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.ds_test, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.ds_test, batch_size=TEST_BATCH_SIZE, num_workers=self.num_workers)
