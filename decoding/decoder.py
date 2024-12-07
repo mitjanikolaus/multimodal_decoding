@@ -37,7 +37,7 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
 
 class Decoder(pl.LightningModule):
 
-    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size):
+    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight=0.5):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size)
         self.learning_rate = learning_rate
@@ -45,6 +45,7 @@ class Decoder(pl.LightningModule):
         self.loss_mse = nn.MSELoss() #TODO l2 regularization? with wd on optimizer?
         self.batch_size = batch_size
         self.weight_decay = weight_decay
+        self.mse_loss_weight = mse_loss_weight
 
         self.test_outputs = {}
 
@@ -53,21 +54,26 @@ class Decoder(pl.LightningModule):
         return x
 
     def loss(self, preds, targets):
-        return self.loss_contrastive(preds, targets)
+        contrastive_loss = self.loss_contrastive(preds, targets)
+        mse_loss = self.loss_mse(preds, targets)
+        loss = (1-self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
+        return loss, contrastive_loss, mse_loss
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x)
-        loss = self.loss(preds, y)
+        loss, contrastive_loss, mse_loss = self.loss(preds, y)
 
         self.log('train_loss', loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
+        self.log('train_loss_contrastive', contrastive_loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
+        self.log('train_loss_mse', mse_loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
 
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x)
-        loss = self.loss(preds, y)
+        loss, contrastive_loss, mse_loss = self.loss(preds, y)
 
         acc = pairwise_accuracy(y.cpu(), preds.cpu())
 
@@ -79,7 +85,7 @@ class Decoder(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, targets, stim_types, _ = batch
         preds = self(x)
-        loss = self.loss(preds, targets)
+        loss, _, _ = self.loss(preds, targets)
 
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
 
