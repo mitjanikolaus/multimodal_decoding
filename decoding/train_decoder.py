@@ -70,11 +70,12 @@ def run(args):
                             # wandb_logger = WandbLogger(project='wandb-lightning', job_type='train')
 
                             # Initialize Callbacks
-                            early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_pairwise_acc")
-                            # checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint()
+                            early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_loss")
+                            checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint()
                             trainer = pl.Trainer(max_epochs=args.max_epochs,
                                                  # logger=wandb_logger, #TODO
-                                                 callbacks=[early_stop_callback],
+                                                 callbacks=[early_stop_callback,
+                                                            checkpoint_callback],
                                                 log_every_n_steps=10,
                                                  reload_dataloaders_every_n_epochs=1,
                                                  )
