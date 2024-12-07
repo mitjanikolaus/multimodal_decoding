@@ -117,19 +117,20 @@ class ContrastiveLoss(torch.nn.Module):
         super().__init__()
 
     def forward(self, estimates, candidates):
-        inv_norms = 1 / (1e-8 + candidates.norm(dim=1, p=2))
-        # Normalize inside the einsum to avoid creating a copy of candidates
-        scores = torch.einsum("bc,oc,o->bo", estimates, candidates, inv_norms)
-        target = torch.arange(len(scores), device=estimates.device)
-        loss = F.cross_entropy(scores, target)
-        return loss
+        # inv_norms = 1 / (1e-8 + candidates.norm(dim=1, p=2))
+        # # Normalize inside the einsum to avoid creating a copy of candidates
+        # scores = torch.einsum("bc,oc,o->bo", estimates, candidates, inv_norms)
+        # target = torch.arange(len(scores), device=estimates.device)
+        # loss = F.cross_entropy(scores, target)
 
         # equivalent:
-        # I_e = torch.nn.functional.normalize(candidates, dim=1)
-        # T_e = estimates #torch.nn.functional.normalize(estimates, dim=1)
-        # logits = T_e @ I_e.T #TODO* np.exp(t) # temperature
-        #
-        # loss = F.cross_entropy(logits, target)
-        # # loss_t = F.cross_entropy(logits.T, target)
-        # # loss_alt = (loss_i + loss_t) / 2
+        candidates = torch.nn.functional.normalize(candidates, dim=1)
+        logits = candidates @ estimates.T #TODO* np.exp(t) # temperature
+
+        target = torch.arange(candidates.shape[0], device=estimates.device)
+        loss = F.cross_entropy(logits, target)
+        # loss_t = F.cross_entropy(logits.T, target)
+        # loss_alt = (loss_i + loss_t) / 2
+
+        return loss
 
