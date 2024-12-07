@@ -7,12 +7,12 @@ import os
 import pickle
 
 from decoding.data import fMRIDataModule, LatentFeatsConfig, TRAIN_MODE_CHOICES, MODALITY_AGNOSTIC
-from decoding.decoder import Decoder, DECODER_OUT_DIR
+from decoding.decoder import Decoder
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, \
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, get_default_features, \
     get_default_vision_features, get_default_lang_features, get_run_str, get_nn_latent_data
 from utils import SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_MODALITY_AGNOSTIC, \
-    RESULTS_FILE
+    RESULTS_FILE, DECODER_OUT_DIR
 import lightning as pl
 
 DEFAULT_BATCH_SIZE = 128

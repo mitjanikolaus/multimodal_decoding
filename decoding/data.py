@@ -5,16 +5,15 @@ from glob import glob
 
 import numpy as np
 from torch.utils.data import DataLoader, Dataset, random_split
-from torchvision import transforms
 import nibabel as nib
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import IMAGERY, IMAGE, CAPTION, \
     get_vision_feats, VISION_FEATS_ONLY, LANG_FEATS_ONLY, get_lang_feats, AVG_FEATS, \
     FUSED_FEATS_CLS, FUSED_FEATS_MEAN, MATCHED_FEATS, MODE_AGNOSTIC, TESTING_MODE
-from decoding.decoder import DECODER_OUT_DIR
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import FMRI_BETAS_DIR, IMAGERY_SCENES, model_features_file_path, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY
+from utils import FMRI_BETAS_DIR, IMAGERY_SCENES, model_features_file_path, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, \
+    DECODER_OUT_DIR
 import lightning as pl
 
 MODALITY_SPECIFIC_IMAGES = "images"

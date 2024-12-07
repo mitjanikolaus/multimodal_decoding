@@ -9,8 +9,6 @@ from analyses.ridge_regression_decoding import get_distance_matrix, dist_mat_to_
 from decoding.data import Standardize
 from utils import ACC_CAPTIONS, ACC_IMAGES
 
-DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/decoders/")
-
 
 def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True,
                       standardize_targets=False):
