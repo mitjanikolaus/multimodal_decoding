@@ -44,7 +44,7 @@ def get_fmri_data_paths(subject, mode, split):
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
     stim_ids = []
     stim_types = []
-    for path in tqdm(fmri_betas_paths):
+    for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
         stim_id = stim_id_from_beta_file_name(os.path.basename(path))
         if IMAGERY in split_name:
@@ -78,14 +78,15 @@ def get_fmri_betas_standardization_transform(subject, training_mode, latent_feat
         print("Calculating mean and std over whole train set betas for standardization.")
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
-        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_feats_config, graymatter_mask)
+        latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
+        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, graymatter_mask)
         train_fmri_betas = [beta for beta, _ in tqdm(iter(train_ds), total=len(train_ds))]
         mean_std = {'mean': np.mean(train_fmri_betas, axis=0),
                     'std': np.std(train_fmri_betas, axis=0)}
         pickle.dump(mean_std, open(std_mean_path, 'wb'))
 
     mean_std = pickle.load(open(std_mean_path, 'rb'))
-    return transforms.Normalize(mean_std['mean'], mean_std['std'])
+    return Standardize(mean_std['mean'], mean_std['std'])
 
 
 def get_latent_feats(all_latents, stim_id, stim_type, latent_feats_config):
@@ -140,50 +141,33 @@ def get_latent_feats_standardization_transform(subject, latent_feats_config, tra
     if not os.path.isfile(std_mean_path):
         print("Calculating mean and std over whole train set latents for standardization.")
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
-        mean_std = dict()
         graymatter_mask = load_graymatter_mask(subject)
-        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_feats_config, graymatter_mask)
+        latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
+        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, graymatter_mask)
         train_latents = np.array([latents for _, latents in tqdm(iter(train_ds), total=len(train_ds))])
-        stim_types = train_ds.stim_types
-        if training_mode in [MODE_AGNOSTIC, TESTING_MODE]:
-            mean_std[CAPTION] = {
-                'mean': train_latents[stim_types == CAPTION].mean(axis=0),
-                'std': train_latents[stim_types == CAPTION].std(axis=0),
-            }
-            mean_std[IMAGE] = {
-                'mean': train_latents[stim_types == IMAGE].mean(axis=0),
-                'std': train_latents[stim_types == IMAGE].std(axis=0),
-            }
-        else:
-            mean_std[CAPTION] = {
-                'mean': train_latents.mean(axis=0),
-                'std': train_latents.std(axis=0),
-            }
-            mean_std[IMAGE] = {
-                'mean': train_latents.mean(axis=0),
-                'std': train_latents.std(axis=0),
-            }
+
+        mean_std = {
+            'mean': train_latents.mean(axis=0),
+            'std': train_latents.std(axis=0),
+        }
+
         pickle.dump(mean_std, open(std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
 
     nn_latent_transform = load_latents_transform(subject, latent_feats_config, training_mode)
 
-    return nn_latent_transform
+    return Standardize(nn_latent_transform['mean'], nn_latent_transform['std'])
 
 
 class DecodingDataset(Dataset):
-    def __init__(self, subject, mode, split, latent_feats_config, graymatter_mask, betas_transform=None,
+    def __init__(self, subject, mode, split, latent_features, latent_feats_config, graymatter_mask, betas_transform=None,
                  latent_feats_transform=None):
         self.data_paths, self.stim_ids, self.stim_types = get_fmri_data_paths(subject, mode, split)
         self.betas_transform = betas_transform
         self.graymatter_mask = graymatter_mask
 
+        self.latent_features = latent_features
         self.latent_feats_config = latent_feats_config
         self.latent_feats_transform = latent_feats_transform
-
-        latent_vectors_file = model_features_file_path(latent_feats_config.model_name)
-        print("Loading pickle with latent feats..", end=" ")
-        self.latent_features = pickle.load(open(latent_vectors_file, 'rb'))
-        print("done.")
 
     def __len__(self):
         return len(self.data_paths)
@@ -192,19 +176,20 @@ class DecodingDataset(Dataset):
         betas = nib.load(self.data_paths[idx])
         betas = betas.get_fdata()
 
-        if self.betas_transform:
-            betas = self.betas_transform(betas)
         if self.graymatter_mask is not None:
             betas = betas[self.graymatter_mask]
 
         betas = betas.astype('float32').reshape(-1)
+        if self.betas_transform is not None:
+            betas = self.betas_transform(betas)
+
         betas = np.nan_to_num(betas)
 
         stim_id = self.stim_ids[idx]
         stim_type = self.stim_types[idx]
 
         latents = get_latent_feats(self.latent_features, stim_id, stim_type, self.latent_feats_config)
-        if self.latent_feats_transform:
+        if self.latent_feats_transform is not None:
             latents = self.latent_feats_transform(latents)
 
         return betas, latents
@@ -227,6 +212,16 @@ class LatentFeatsConfig:
     lang_features: str
 
 
+class Standardize:
+    def __init__(self, mean, std, eps=1e-8):
+        self.mean = mean
+        self.std = std
+        self.std = self.std + eps  # Avoid division by 0
+
+    def __call__(self, x):
+        return ((x - self.mean) / self.std).astype(np.float32).squeeze()
+
+
 class fMRIDataModule(pl.LightningDataModule):
     def __init__(self, batch_size, subject, training_mode, latent_feats_config):
         super().__init__()
@@ -238,30 +233,26 @@ class fMRIDataModule(pl.LightningDataModule):
 
         self.graymatter_mask = load_graymatter_mask(subject)
 
-        latents_standardization = get_latent_feats_standardization_transform(subject, latent_feats_config,
+        self.latents_transform = get_latent_feats_standardization_transform(subject, latent_feats_config,
                                                                              training_mode)
-        self.latents_transform = transforms.Compose([
-            transforms.ToTensor(),
-            latents_standardization
-        ])
 
-        betas_standardization = get_fmri_betas_standardization_transform(subject, training_mode, latent_feats_config)
-        self.betas_transform = transforms.Compose([
-            transforms.ToTensor(),
-            betas_standardization
-        ])
+        self.betas_transform = get_fmri_betas_standardization_transform(subject, training_mode, latent_feats_config)
+
+        print("Loading pickle with latent feats..", end=" ")
+        latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
+        print("done.")
 
         self.data = DecodingDataset(
-            self.subject, self.training_mode, SPLIT_TRAIN, self.latent_feats_config, self.graymatter_mask,
+            self.subject, self.training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
         self.ds_train, self.ds_val = random_split(self.data, [1 - VAL_SPLIT_RATIO, VAL_SPLIT_RATIO])
         self.ds_test = DecodingDataset(
-            self.subject, self.training_mode, SPLIT_TEST, self.latent_feats_config, self.graymatter_mask,
+            self.subject, self.training_mode, SPLIT_TEST, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
         self.ds_imagery = DecodingDataset(
-            self.subject, self.training_mode, SPLIT_IMAGERY, self.latent_feats_config, self.graymatter_mask,
+            self.subject, self.training_mode, SPLIT_IMAGERY, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
 
