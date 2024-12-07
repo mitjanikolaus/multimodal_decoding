@@ -37,13 +37,14 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
 
 class Decoder(pl.LightningModule):
 
-    def __init__(self, input_size, output_size, learning_rate, batch_size):
+    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size)
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
         self.loss_mse = nn.MSELoss() #TODO l2 regularization? with wd on optimizer?
         self.batch_size = batch_size
+        self.weight_decay = weight_decay
 
         self.test_outputs = {}
 
@@ -100,10 +101,8 @@ class Decoder(pl.LightningModule):
         print(results)
         self.log_dict(results)
 
-
-
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         return optimizer
 
 
