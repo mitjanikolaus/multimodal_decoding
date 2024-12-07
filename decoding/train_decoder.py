@@ -74,7 +74,8 @@ def run(args):
                             trainer = pl.Trainer(max_epochs=args.max_epochs,
                                                  # logger=wandb_logger, #TODO
                                                  callbacks=[early_stop_callback],
-                                                    log_every_n_steps=10,
+                                                log_every_n_steps=10,
+                                                 reload_dataloaders_every_epoch=True,
                                                  )
 
                             trainer.fit(model, dm)
