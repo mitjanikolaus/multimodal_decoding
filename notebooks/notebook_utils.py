@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, DECODER_OUT_DIR
+from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, RIDGE_DECODER_OUT_DIR
 from tqdm import tqdm
 from glob import glob
 import pickle
@@ -203,7 +203,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
                      norm_imagery_preds_with_test_preds=False):
     data = []
 
-    result_files = sorted(glob(f"{DECODER_OUT_DIR}/*/*/*/results.p"))
+    result_files = sorted(glob(f"{RIDGE_DECODER_OUT_DIR}/*/*/*/results.p"))
     for result_file_path in tqdm(result_files):
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:

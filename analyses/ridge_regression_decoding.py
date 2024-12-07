@@ -48,7 +48,7 @@ IMAGE = "image"
 CAPTION = "caption"
 IMAGERY = "imagery"
 
-DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
+RIDGE_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
 
 
 def get_default_features(model_name, logging=True):
@@ -218,7 +218,7 @@ def apply_latent_transform(nn_latent_vectors, latent_transform, stim_types):
 
 
 def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, lang_features_mode, mode):
-    mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
+    mean_std_dir = os.path.join(RIDGE_DECODER_OUT_DIR, "normalizations", subject)
     model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_{lang_features_mode}_mean_std_{mode}.p'
     return os.path.join(mean_std_dir, model_std_mean_name)
 
@@ -293,8 +293,8 @@ def get_fmri_voxel_data(subject, mode):
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_betas_mean_std_path(subject, mode, mask_name):
-    mean_std_dir = os.path.join(DECODER_OUT_DIR, "normalizations", subject)
+def get_fmri_betas_mean_std_path(subject, mode, mask_name=None):
+    mean_std_dir = os.path.join(RIDGE_DECODER_OUT_DIR, "normalizations", subject)
     bold_std_mean_name = f'bold_multimodal_mean_std_{mode}.p'
     if mask_name is not None:
         bold_std_mean_name += f'_mask_{mask_name}'
@@ -643,7 +643,7 @@ def run(args):
                                 print(f"test fMRI betas shape: {test_fmri_betas.shape}")
                                 print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
-                                results_dir = os.path.join(DECODER_OUT_DIR, training_mode, subject)
+                                results_dir = os.path.join(RIDGE_DECODER_OUT_DIR, training_mode, subject)
                                 run_str = get_run_str(
                                     model_name, features, test_features, vision_features, lang_features, mask,
                                     args.surface,
@@ -776,6 +776,6 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(DECODER_OUT_DIR, exist_ok=True)
+    os.makedirs(RIDGE_DECODER_OUT_DIR, exist_ok=True)
 
     run(args)
