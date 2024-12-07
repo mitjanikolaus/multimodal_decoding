@@ -37,12 +37,13 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
 
 class Decoder(pl.LightningModule):
 
-    def __init__(self, input_size, output_size, learning_rate):
+    def __init__(self, input_size, output_size, learning_rate, batch_size):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size)
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
         self.loss_mse = nn.MSELoss() #TODO l2 regularization? with wd on optimizer?
+        self.batch_size = batch_size
 
     def forward(self, x):
         x = self.fc(x)
@@ -79,7 +80,7 @@ class Decoder(pl.LightningModule):
         loss = self.loss(preds, y)
         results = test_set_pairwise_acc_scores(y.cpu(), preds.cpu(), np.array(stim_types))
 
-        self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True)
+        self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
         self.log_dict(results, on_step=True, on_epoch=True, logger=True)
 
         return loss

@@ -61,7 +61,7 @@ def run(args):
 
                             sample_betas, sample_latents = next(iter(dm.ds_train))
 
-                            model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate)
+                            model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate, args.batch_size)
 
                             # Initialize wandb logger
                             #TODO

@@ -250,11 +250,11 @@ class fMRIDataModule(pl.LightningDataModule):
         )
         self.ds_train, self.ds_val = random_split(self.data, [1 - VAL_SPLIT_RATIO, VAL_SPLIT_RATIO])
         self.ds_test = DecodingDataset(
-            self.subject, self.training_mode, SPLIT_TEST, latent_features, latent_feats_config, self.graymatter_mask,
+            self.subject, TESTING_MODE, SPLIT_TEST, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
         self.ds_imagery = DecodingDataset(
-            self.subject, self.training_mode, SPLIT_IMAGERY, latent_features, latent_feats_config, self.graymatter_mask,
+            self.subject, IMAGERY, SPLIT_IMAGERY, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
 
