@@ -45,13 +45,14 @@ class Decoder(pl.LightningModule):
         self.loss_mse = nn.MSELoss() #TODO l2 regularization? with wd on optimizer?
         self.batch_size = batch_size
 
+        self.test_outputs = {}
+
     def forward(self, x):
         x = self.fc(x)
         return x
 
     def loss(self, preds, targets):
         return self.loss_contrastive(preds, targets)
-
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -81,12 +82,21 @@ class Decoder(pl.LightningModule):
 
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True, batch_size=self.batch_size)
 
-        return loss, preds, targets, stim_types
+        self.test_outputs["preds"].extend(preds.cpu().numpy())
+        self.test_outputs["targets"].extend(targets.cpu().numpy())
+        self.test_outputs["stim_types"].extend(stim_types)
 
-    def test_epoch_end(self, outputs):
-        loss, preds, targets, stim_types = outputs
+        return loss
 
-        results = test_set_pairwise_acc_scores(targets.cpu(), preds.cpu(), np.array(stim_types))
+    def on_test_epoch_start(self):
+        self.test_outputs = {"preds": [], "targets": [], "stim_types": []}
+
+    def on_test_epoch_end(self):
+        targets = np.array(self.test_outputs["targets"])
+        preds = np.array(self.test_outputs["preds"])
+        stim_types = np.array(self.test_outputs["stim_types"])
+
+        results = test_set_pairwise_acc_scores(targets, preds, stim_types)
         print(results)
         self.log_dict(results, on_step=True, on_epoch=True)
 
