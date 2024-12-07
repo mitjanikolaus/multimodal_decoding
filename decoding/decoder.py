@@ -66,7 +66,7 @@ class Decoder(pl.LightningModule):
         x, y = batch
         preds = self(x)
         loss = self.loss(preds, y)
-        acc = pairwise_accuracy(y, preds)
+        acc = pairwise_accuracy(y, preds.cpu())
 
         self.log('val_loss', loss, on_step=True, on_epoch=True, logger=True)
         self.log('val_pairwise_acc', acc, on_step=True, on_epoch=True, logger=True)
@@ -77,7 +77,7 @@ class Decoder(pl.LightningModule):
         x, y, stim_types, _ = batch
         preds = self(x)
         loss = self.loss(preds, y)
-        results = test_set_pairwise_acc_scores(y, preds, stim_types)
+        results = test_set_pairwise_acc_scores(y, preds.cpu(), stim_types)
 
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True)
         self.log_dict(results, on_step=True, on_epoch=True, logger=True)
