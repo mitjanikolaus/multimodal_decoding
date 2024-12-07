@@ -30,6 +30,8 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
         preds_mod = predictions[stim_types == modality]
         latents_mod = latents[stim_types == modality]
 
+        print(latents_mod.shape)
+        print(preds_mod.shape)
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, standardize_predictions,
                                                      standardize_targets)
 
