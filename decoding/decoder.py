@@ -125,7 +125,7 @@ class ContrastiveLoss(torch.nn.Module):
 
         # equivalent:
         candidates = torch.nn.functional.normalize(candidates, dim=1)
-        logits = candidates @ estimates.T #TODO* np.exp(t) # temperature
+        logits = estimates @ candidates.T #TODO* np.exp(t) # temperature
 
         target = torch.arange(candidates.shape[0], device=estimates.device)
         loss = F.cross_entropy(logits, target)
