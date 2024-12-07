@@ -216,11 +216,10 @@ class LatentFeatsConfig:
 class Standardize:
     def __init__(self, mean, std, eps=1e-8):
         self.mean = mean
-        self.std = std
-        self.std = self.std + eps  # Avoid division by 0
+        self.std = std + eps  # Avoid division by 0
 
     def __call__(self, x):
-        return ((x - self.mean) / self.std).squeeze()
+        return (x - self.mean) / self.std
 
 
 class fMRIDataModule(pl.LightningDataModule):

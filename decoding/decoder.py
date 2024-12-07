@@ -75,7 +75,7 @@ class Decoder(pl.LightningModule):
         preds = self(x)
         loss, contrastive_loss, mse_loss = self.loss(preds, y)
 
-        acc = pairwise_accuracy(y.cpu(), preds.cpu())
+        acc = pairwise_accuracy(y, preds)
 
         self.log('val_loss', loss, on_step=False, on_epoch=True, logger=True, prog_bar=True)
         self.log('val_pairwise_acc', acc, on_step=False, on_epoch=True, logger=True, prog_bar=True)
@@ -125,7 +125,7 @@ class ContrastiveLoss(torch.nn.Module):
 
         # equivalent:
         candidates = torch.nn.functional.normalize(candidates, dim=1)
-        estimates = torch.nn.functional.normalize(estimates, dim=1)
+        # estimates = torch.nn.functional.normalize(estimates, dim=1)
 
         logits = estimates @ candidates.T #TODO* np.exp(t) # temperature
 
