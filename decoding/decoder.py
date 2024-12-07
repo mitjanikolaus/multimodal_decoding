@@ -70,8 +70,8 @@ class Decoder(pl.LightningModule):
         loss = self.loss(preds, y)
         acc = pairwise_accuracy(y.cpu(), preds.cpu())
 
-        self.log('val_loss', loss, on_step=True, on_epoch=True, logger=True, prog_bar=True)
-        self.log('val_pairwise_acc', acc, on_step=True, on_epoch=True, logger=True, prog_bar=True)
+        self.log('val_loss', loss, on_step=False, on_epoch=True, logger=True, prog_bar=True)
+        self.log('val_pairwise_acc', acc, on_step=False, on_epoch=True, logger=True, prog_bar=True)
 
         return loss
 
