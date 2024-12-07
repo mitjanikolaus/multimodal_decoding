@@ -5,8 +5,37 @@ from torch import nn
 import torch.nn.functional as F
 import lightning as pl
 
+from analyses.ridge_regression_decoding import get_distance_matrix, dist_mat_to_pairwise_acc, CAPTION, IMAGE
+from decoding.data import Standardize
+from utils import ACC_CAPTIONS, ACC_IMAGES
 
 DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/decoders/")
+
+
+def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True,
+                      standardize_targets=False):
+    if standardize_predictions:
+        preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = preds_standardize(predictions)
+    if standardize_targets:
+        latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
+        latents = latens_standardize(latents)
+
+    dist_mat = get_distance_matrix(predictions, latents, metric)
+    return dist_mat_to_pairwise_acc(dist_mat)
+
+
+def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosine", standardize_predictions=True,
+                                 standardize_targets=False):
+    results = {}
+    for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
+        preds_mod = predictions[stim_types == modality].copy()
+        latents_mod = latents[stim_types == modality]
+
+        results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, standardize_predictions,
+                                                     standardize_targets)
+
+    return results
 
 
 class Decoder(pl.LightningModule):
@@ -23,7 +52,8 @@ class Decoder(pl.LightningModule):
         return x
 
     def loss(self, preds, targets):
-        return self.loss_contrastive(preds, targets) #TODO
+        return self.loss_contrastive(preds, targets)
+
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -38,17 +68,22 @@ class Decoder(pl.LightningModule):
         x, y = batch
         preds = self(x)
         loss = self.loss(preds, y)
+        acc = pairwise_accuracy(y, preds)
 
         self.log('val_loss', loss, on_step=True, on_epoch=True, logger=True)
+        self.log('val_pairwise_acc', acc, on_step=True, on_epoch=True, logger=True)
 
         return loss
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, stim_types, _ = batch
         preds = self(x)
         loss = self.loss(preds, y)
+        results = test_set_pairwise_acc_scores(y, preds, stim_types)
 
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True)
+        self.log_dict(results, on_step=True, on_epoch=True, logger=True)
+
         return loss
 
     def configure_optimizers(self):

@@ -166,6 +166,8 @@ class DecodingDataset(Dataset):
         self.latent_feats_config = latent_feats_config
         self.latent_feats_transform = latent_feats_transform
 
+        self.split = split
+
     def __len__(self):
         return len(self.data_paths)
 
@@ -189,7 +191,10 @@ class DecodingDataset(Dataset):
         if self.latent_feats_transform is not None:
             latents = self.latent_feats_transform(latents)
 
-        return betas, latents
+        if self.split == SPLIT_TRAIN:
+            return betas, latents
+        else:
+            return betas, latents, stim_type, stim_id
 
 
 def load_graymatter_mask(subject):
