@@ -18,6 +18,7 @@ import lightning as pl
 
 
 DEFAULT_NUM_WORKERS = 10
+DEFAULT_MAX_EPOCHS = 100
 DEFAULT_BATCH_SIZE = 128
 DEFAULT_LEARNING_RATE = 1e-3
 
@@ -69,7 +70,7 @@ def run(args):
                             # Initialize Callbacks
                             early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_loss")
                             # checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint()
-                            trainer = pl.Trainer(max_epochs=100,
+                            trainer = pl.Trainer(max_epochs=args.max_epochs,
                                                  # logger=wandb_logger, #TODO
                                                  callbacks=[early_stop_callback],
                                                     log_every_n_steps=10,
@@ -179,6 +180,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS)
+    parser.add_argument("--max-epochs", type=int, default=DEFAULT_MAX_EPOCHS)
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--learning-rate", type=int, default=DEFAULT_LEARNING_RATE)
 

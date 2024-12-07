@@ -1,5 +1,4 @@
-import os
-
+import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -30,8 +29,6 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
         preds_mod = predictions[stim_types == modality]
         latents_mod = latents[stim_types == modality]
 
-        print(latents_mod.shape)
-        print(preds_mod.shape)
         results[acc_metric_name] = pairwise_accuracy(latents_mod, preds_mod, metric, standardize_predictions,
                                                      standardize_targets)
 
@@ -68,6 +65,7 @@ class Decoder(pl.LightningModule):
         x, y = batch
         preds = self(x)
         loss = self.loss(preds, y)
+
         acc = pairwise_accuracy(y.cpu(), preds.cpu())
 
         self.log('val_loss', loss, on_step=False, on_epoch=True, logger=True, prog_bar=True)
@@ -79,7 +77,7 @@ class Decoder(pl.LightningModule):
         x, y, stim_types, _ = batch
         preds = self(x)
         loss = self.loss(preds, y)
-        results = test_set_pairwise_acc_scores(y.cpu(), preds.cpu(), stim_types)
+        results = test_set_pairwise_acc_scores(y.cpu(), preds.cpu(), np.array(stim_types))
 
         self.log('test_loss', loss, on_step=True, on_epoch=True, logger=True)
         self.log_dict(results, on_step=True, on_epoch=True, logger=True)
