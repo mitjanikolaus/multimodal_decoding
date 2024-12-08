@@ -10,7 +10,8 @@ function []=run_spm_glm_stage_1(subject)
     defaults.stats.maxmem = 2^34;
     defaults.stats.resmem = true;
 
-    maxNumCompThreads
+    defaults.maxNumCompThreads = 10
+    maxNumCompThreads = 10
 
     home = getenv('HOME');
     data_dir = [home,'/data/multimodal_decoding/fmri/betas_new/', subject, '/unstructured'];
@@ -30,9 +31,9 @@ function []=run_spm_glm_stage_1(subject)
     % glm
     clearvars -except data_dir
 
-    % save residuals
+    % do not save residuals
     matlabbatch{1}.spm.stats.fmri_est.spmmat = {[data_dir '/SPM.mat']};
-    matlabbatch{1}.spm.stats.fmri_est.write_residuals = 1;
+    matlabbatch{1}.spm.stats.fmri_est.write_residuals = 0;
     matlabbatch{1}.spm.stats.fmri_est.method.Classical = 1;
 
     addpath('~/apps/spm12');
