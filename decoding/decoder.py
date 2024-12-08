@@ -126,8 +126,8 @@ class Decoder(pl.LightningModule):
         stim_types = np.array(self.test_outputs["stim_types"])
 
         results = test_set_pairwise_acc_scores(targets, preds, stim_types)
-        print(results)
         self.log_dict(results)
+        return preds
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
