@@ -57,11 +57,8 @@ class Decoder(pl.LightningModule):
 
     def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight):
         super().__init__()
-        self.mlp = nn.Sequential(OrderedDict([
-                ('dense1', nn.Linear(input_size, round(input_size/2))),
-                ('act1', nn.ReLU()),
-                ('dense2', nn.Linear(round(input_size/2), output_size)),
-            ]))
+        self.mlp = nn.Sequential(nn.Linear(input_size, round(input_size / 4), bias=False), nn.ReLU(),
+                                 nn.Linear(round(input_size / 4), output_size, bias=False))
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
         self.loss_mse = nn.MSELoss()
@@ -78,7 +75,7 @@ class Decoder(pl.LightningModule):
     def loss(self, preds, targets):
         contrastive_loss = self.loss_contrastive(preds, targets)
         mse_loss = self.loss_mse(preds, targets)
-        loss = (1-self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
+        loss = (1 - self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
         return loss, contrastive_loss, mse_loss
 
     def training_step(self, batch, batch_idx):
@@ -155,7 +152,7 @@ class ContrastiveLoss(torch.nn.Module):
         candidates = torch.nn.functional.normalize(candidates, dim=1)
         # estimates = torch.nn.functional.normalize(estimates, dim=1)
 
-        logits = estimates @ candidates.T #TODO* np.exp(t) # temperature
+        logits = estimates @ candidates.T  # TODO* np.exp(t) # temperature
 
         target = torch.arange(candidates.shape[0], device=estimates.device)
         loss = F.cross_entropy(logits, target)
@@ -163,4 +160,3 @@ class ContrastiveLoss(torch.nn.Module):
         # loss = (loss_1 + loss_2) / 2
 
         return loss
-
