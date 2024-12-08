@@ -59,7 +59,7 @@ def run(args):
                             latent_feats_config = LatentFeatsConfig(
                                 model_name, features, vision_features, lang_features
                             )
-                            dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config, args.num_workers)
+                            dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config, args.num_workers, cv_split=0)
 
                             sample_betas, sample_latents = next(iter(dm.ds_train))
 

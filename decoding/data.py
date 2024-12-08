@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from glob import glob
 
 import numpy as np
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset, random_split, Subset
 import nibabel as nib
 from tqdm import tqdm
 
@@ -26,7 +26,6 @@ SPLIT_TRAIN = "train"
 SPLIT_TEST = "test"
 SPLIT_IMAGERY = "imagery"
 
-VAL_SPLIT_RATIO = 0.2
 TEST_BATCH_SIZE = 140
 
 def stim_id_from_beta_file_name(beta_file_name):
@@ -223,8 +222,10 @@ class Standardize:
 
 
 class fMRIDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size, subject, training_mode, latent_feats_config, num_workers):
+    def __init__(self, batch_size, subject, training_mode, latent_feats_config, num_workers, cv_split=0, num_cv_splits=5):
         super().__init__()
+        assert cv_split < num_cv_splits
+
         self.batch_size = batch_size
         self.num_workers = num_workers
 
@@ -247,7 +248,12 @@ class fMRIDataModule(pl.LightningDataModule):
             self.subject, self.training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
-        self.ds_train, self.ds_val = random_split(self.data, [1 - VAL_SPLIT_RATIO, VAL_SPLIT_RATIO])
+        indices = list(range(len(self.data)))
+        val_split_size = round(len(self.data) / num_cv_splits)
+        val_indices = indices[cv_split * val_split_size: (cv_split + 1) * val_split_size]
+        train_indices = [i for i in indices if i not in val_indices]
+        self.ds_train = Subset(self.data, train_indices)
+        self.ds_val = Subset(self.data, val_indices)
         self.ds_test = DecodingDataset(
             self.subject, TESTING_MODE, SPLIT_TEST, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
