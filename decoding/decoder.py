@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 import torch
 from torch import nn
@@ -55,7 +57,13 @@ class Decoder(pl.LightningModule):
 
     def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight):
         super().__init__()
-        self.fc = nn.Linear(input_size, output_size, bias=False)
+        self.mlp = nn.Sequential(OrderedDict([
+                ('dense1', nn.Linear(input_size, round(input_size/2))),
+                ('act1', nn.ReLU()),
+                ('dense2', nn.Linear(round(input_size/2), round(input_size/4))),
+                ('act2', nn.ReLU()),
+                ('output', nn.Linear(round(input_size/4), output_size)),
+            ]))
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
         self.loss_mse = nn.MSELoss()
@@ -66,7 +74,7 @@ class Decoder(pl.LightningModule):
         self.test_outputs = {}
 
     def forward(self, x):
-        x = self.fc(x)
+        x = self.mlp(x)
         return x
 
     def loss(self, preds, targets):
@@ -152,9 +160,9 @@ class ContrastiveLoss(torch.nn.Module):
         logits = estimates @ candidates.T #TODO* np.exp(t) # temperature
 
         target = torch.arange(candidates.shape[0], device=estimates.device)
-        loss_1 = F.cross_entropy(logits, target)
-        loss_2 = F.cross_entropy(logits.T, target.T)
-        loss = (loss_1 + loss_2) / 2
+        loss = F.cross_entropy(logits, target)
+        # loss_2 = F.cross_entropy(logits.T, target)
+        # loss = (loss_1 + loss_2) / 2
 
         return loss
 
