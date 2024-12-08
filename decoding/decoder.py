@@ -57,8 +57,8 @@ class Decoder(pl.LightningModule):
 
     def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight):
         super().__init__()
-        self.mlp = nn.Sequential(nn.Linear(input_size, round(input_size / 4), bias=False), nn.ReLU(),
-                                 nn.Linear(round(input_size / 4), output_size, bias=False))
+        self.mlp = nn.Sequential(nn.Linear(input_size, round(output_size * 2), bias=False), nn.ReLU(),
+                                 nn.Linear(round(output_size * 2), output_size, bias=False))
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
         self.loss_mse = nn.MSELoss()
