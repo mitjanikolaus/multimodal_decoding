@@ -85,6 +85,7 @@ def run(args):
                             output = trainer.test(dataloaders=dm.test_dataloader(), ckpt_path='best')
                             print("\n\n\n")
                             print(output)
+                            print(model.test_outputs['preds'])
 
                             # Close wandb run
                             # wandb.finish() #TODO
