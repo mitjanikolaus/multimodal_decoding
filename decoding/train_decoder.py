@@ -1,6 +1,7 @@
 import argparse
 import time
 
+import numpy as np
 import torch.cuda
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -8,7 +9,7 @@ import os
 import pickle
 
 from decoding.data import fMRIDataModule, LatentFeatsConfig, TRAIN_MODE_CHOICES, MODALITY_AGNOSTIC
-from decoding.decoder import Decoder
+from decoding.decoder import Decoder, test_set_pairwise_acc_scores
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, \
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, get_default_features, \
     get_default_vision_features, get_default_lang_features, get_run_str, get_nn_latent_data
@@ -56,64 +57,49 @@ def run(args):
                                       f" {results_file_path}")
                                 continue
 
-                            latent_feats_config = LatentFeatsConfig(
-                                model_name, features, vision_features, lang_features
-                            )
-                            dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config, args.num_workers, cv_split=0)
+                            num_cv_splits = 5
+                            test_set_preds = []
+                            test_targets = None
+                            test_stim_types = None
+                            for cv in range(num_cv_splits):
+                                latent_feats_config = LatentFeatsConfig(
+                                    model_name, features, vision_features, lang_features
+                                )
+                                dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config, args.num_workers, cv_split=cv, num_cv_splits=num_cv_splits)
 
-                            sample_betas, sample_latents = next(iter(dm.ds_train))
+                                sample_betas, sample_latents = next(iter(dm.ds_train))
 
-                            model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate, args.weight_decay, args.batch_size, args.mse_loss_weight)
+                                model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate, args.weight_decay, args.batch_size, args.mse_loss_weight)
 
-                            # Initialize wandb logger
-                            #TODO
-                            # wandb_logger = WandbLogger(project='wandb-lightning', job_type='train')
+                                # Initialize wandb logger
+                                #TODO
+                                # wandb_logger = WandbLogger(project='wandb-lightning', job_type='train')
 
-                            # Initialize Callbacks
-                            early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_loss")
-                            checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint(monitor="val_loss")
-                            trainer = pl.Trainer(max_epochs=args.max_epochs,
-                                                 # logger=wandb_logger, #TODO
-                                                 callbacks=[early_stop_callback,
-                                                            checkpoint_callback],
-                                                log_every_n_steps=10,
-                                                 reload_dataloaders_every_n_epochs=1,
-                                                 )
+                                # Initialize Callbacks
+                                early_stop_callback = pl.pytorch.callbacks.EarlyStopping(monitor="val_loss")
+                                checkpoint_callback = pl.pytorch.callbacks.ModelCheckpoint(monitor="val_loss")
+                                trainer = pl.Trainer(max_epochs=args.max_epochs,
+                                                     # logger=wandb_logger, #TODO
+                                                     callbacks=[early_stop_callback,
+                                                                checkpoint_callback],
+                                                    log_every_n_steps=10,
+                                                     reload_dataloaders_every_n_epochs=1,
+                                                     )
 
-                            trainer.fit(model, dm)
+                                trainer.fit(model, dm)
 
-                            output = trainer.test(dataloaders=dm.test_dataloader(), ckpt_path='best')
+                                trainer.test(dataloaders=dm.test_dataloader(), ckpt_path='best')
+                                # Close wandb run
+                                # wandb.finish() #TODO
+
+                                test_set_preds.append(model.test_outputs['preds'])
+                                test_targets = model.test_outputs['targets']
+                                test_stim_types = model.test_outputs['stim_types']
+
+                            mean_preds = torch.stack(test_set_preds).mean(dim=0)
+                            scores = test_set_pairwise_acc_scores(test_targets, mean_preds, test_stim_types)
                             print("\n\n\n")
-                            print(output)
-                            print(model.test_outputs['preds'])
-
-                            # Close wandb run
-                            # wandb.finish() #TODO
-
-
-
-
-
-                            pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                            clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                               scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                               pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
-
-                            start = time.time()
-                            clf.fit(train_fmri_betas, train_latents)
-                            end = time.time()
-                            print(f"Elapsed time: {int(end - start)}s")
-
-                            best_alpha = clf.best_params_["alpha"]
-
-                            test_data_latents, _ = get_nn_latent_data(model_name, test_features,
-                                                                      vision_features,
-                                                                      lang_features,
-                                                                      test_stim_ids,
-                                                                      test_stim_types,
-                                                                      subject,
-                                                                      TESTING_MODE,
-                                                                      nn_latent_transform=latent_transform)
+                            print(scores)
 
                             imagery_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
                                                                          lang_features,
