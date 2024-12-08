@@ -238,7 +238,7 @@ def run(args):
         else:
             print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
             session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
-            sessions = [path.split(os.sep)[-2] for path in session_dirs]
+            sessions = [path.split(os.sep)[-1] for path in session_dirs]
         print(f"Sessions: {sessions}")
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
