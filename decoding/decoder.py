@@ -115,7 +115,7 @@ class Decoder(pl.LightningModule):
             self.test_outputs["targets"] = torch.concatenate((self.test_outputs["targets"], targets))
             self.test_outputs["stim_types"].extend(stim_types)
 
-        return loss
+        return loss, preds
 
     def on_test_epoch_start(self):
         self.test_outputs = {}

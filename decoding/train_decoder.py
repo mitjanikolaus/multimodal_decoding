@@ -82,7 +82,9 @@ def run(args):
 
                             trainer.fit(model, dm)
 
-                            trainer.test(dataloaders=dm.test_dataloader(), ckpt_path='best')
+                            output = trainer.test(dataloaders=dm.test_dataloader(), ckpt_path='best')
+                            print("\n\n\n")
+                            print(output)
 
                             # Close wandb run
                             # wandb.finish() #TODO
