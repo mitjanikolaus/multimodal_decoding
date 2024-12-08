@@ -95,9 +95,9 @@ def run(args):
 
                                 test_set_preds.append(model.test_outputs['preds'])
                                 test_targets = model.test_outputs['targets']
-                                test_stim_types = model.test_outputs['stim_types']
+                                test_stim_types = np.array(model.test_outputs['stim_types'])
 
-                            mean_preds = torch.stack(test_set_preds).mean(dim=0).squeeze()
+                            mean_preds = torch.stack(test_set_preds).mean(dim=0)
                             scores = test_set_pairwise_acc_scores(test_targets, mean_preds, test_stim_types)
                             print("\n\n\n")
                             print(scores)
