@@ -102,18 +102,6 @@ def run(args):
                             print("\n\n\n")
                             print(scores)
 
-                            imagery_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
-                                                                         lang_features,
-                                                                         imagery_stim_ids,
-                                                                         imagery_stim_types,
-                                                                         subject,
-                                                                         IMAGERY,
-                                                                         nn_latent_transform=latent_transform)
-
-                            best_model = clf.best_estimator_
-                            test_predicted_latents = best_model.predict(test_fmri_betas)
-                            imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
-
                             results = {
                                 "alpha": best_alpha,
                                 "model": model_name,
