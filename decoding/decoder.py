@@ -60,9 +60,7 @@ class Decoder(pl.LightningModule):
         self.mlp = nn.Sequential(OrderedDict([
                 ('dense1', nn.Linear(input_size, round(input_size/2))),
                 ('act1', nn.ReLU()),
-                ('dense2', nn.Linear(round(input_size/2), round(input_size/4))),
-                ('act2', nn.ReLU()),
-                ('output', nn.Linear(round(input_size/4), output_size)),
+                ('dense2', nn.Linear(round(input_size/2), output_size)),
             ]))
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
