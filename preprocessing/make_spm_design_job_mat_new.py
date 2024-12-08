@@ -156,8 +156,6 @@ def run(args):
     subsample_sessions = args.sessions
     # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
-    print("Stage: ", args.stage)
-
     for subject in args.subjects:
         print(subject)
         preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
@@ -226,47 +224,46 @@ def run(args):
             fmri_spec['sess']['hpf'] = 128.0
             return fmri_spec
 
-        if args.stage == 1:
-            fmri_spec = get_base_fmri_spec()
+        fmri_spec = get_base_fmri_spec()
 
-            os.makedirs(output_dir, exist_ok=True)
-            fmri_spec['dir'] = np.array([output_dir], dtype=object)
+        os.makedirs(output_dir, exist_ok=True)
+        fmri_spec['dir'] = np.array([output_dir], dtype=object)
 
-            scans = []
-            event_files = []
-            realign_files = []
-            if subsample_sessions:
-                sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
-                session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
-            else:
-                print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, '_session_id_ses-*'))
-                sessions = [path.split(os.sep)[-2].replace('_session_id_', '') for path in session_dirs]
-            print(f"Sessions: {sessions}")
-            for session, session_dir in zip(sessions, session_dirs):
-                print(f"Scanning for runs in {session_dir}")
-                n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
-                runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
-                print(f"Runs: {runs}")
-                for run in runs:
-                    event_file = os.path.join(
-                        raw_fmri_subj_data_dir, session, "func",
-                        f"{subject}_{session}_task-coco_{run}_events.tsv"
-                    )
-                    event_files.append(event_file)
-                    realign_file = os.path.join(
-                        realignment_data_dir, subject, session,
-                        f'rp_a{subject}_{session}_task-coco_{run}_bold.txt'
-                    )
-                    realign_files.append(realign_file)
-                    run_file = os.path.join(
-                        session_dir,
-                        f'rara{subject}_{session}_task-coco_{run}_bold.nii'
-                    )
-                    run_nii = nib.load(run_file)
-                    run_size = run_nii.shape[-1]
-                    for s in range(1, run_size + 1):
-                        scans.append(f"{run_file},{s}")
+        scans = []
+        event_files = []
+        realign_files = []
+        if subsample_sessions:
+            sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
+            session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
+        else:
+            print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
+            session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, '_session_id_ses-*'))
+            sessions = [path.split(os.sep)[-2].replace('_session_id_', '') for path in session_dirs]
+        print(f"Sessions: {sessions}")
+        for session, session_dir in zip(sessions, session_dirs):
+            print(f"Scanning for runs in {session_dir}")
+            n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+            runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
+            print(f"Runs: {runs}")
+            for run in runs:
+                event_file = os.path.join(
+                    raw_fmri_subj_data_dir, session, "func",
+                    f"{subject}_{session}_task-coco_{run}_events.tsv"
+                )
+                event_files.append(event_file)
+                realign_file = os.path.join(
+                    realignment_data_dir, subject, session,
+                    f'rp_a{subject}_{session}_task-coco_{run}_bold.txt'
+                )
+                realign_files.append(realign_file)
+                run_file = os.path.join(
+                    session_dir,
+                    f'rara{subject}_{session}_task-coco_{run}_bold.nii'
+                )
+                run_nii = nib.load(run_file)
+                run_size = run_nii.shape[-1]
+                for s in range(1, run_size + 1):
+                    scans.append(f"{run_file},{s}")
             fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
 
             # multi regressors
