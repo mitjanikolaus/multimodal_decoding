@@ -80,7 +80,10 @@ def get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, 
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
         ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, latent_feats_config,
                                    graymatter_mask)
-        fmri_betas = [beta for beta, _ in tqdm(iter(ds), total=len(ds))]
+        if split == SPLIT_TRAIN:
+            fmri_betas = [beta for beta, _ in tqdm(iter(ds), total=len(ds))]
+        else:
+            fmri_betas = [beta for beta, _, _, _ in tqdm(iter(ds), total=len(ds))]
         mean_std = {'mean': np.mean(fmri_betas, axis=0),
                     'std': np.std(fmri_betas, axis=0)}
         pickle.dump(mean_std, open(std_mean_path, 'wb'))
