@@ -87,7 +87,7 @@ def run(args):
                                                                 checkpoint_callback],
                                                      log_every_n_steps=10,
                                                      reload_dataloaders_every_n_epochs=1,
-                                                     precision=16,
+                                                     precision='16-mixed',
                                                      )
 
                                 trainer.fit(model, dm)
