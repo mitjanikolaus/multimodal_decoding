@@ -127,6 +127,11 @@ class Decoder(pl.LightningModule):
 
         results = test_set_pairwise_acc_scores(targets, preds, stim_types)
         self.log_dict(results)
+        results_no_standardization = test_set_pairwise_acc_scores(targets, preds, stim_types, standardize_predictions=False)
+        results_no_standardization = {f"{key}_no_std": val for key, val in results_no_standardization.items()}
+        self.log_dict(results_no_standardization)
+        print(results_no_standardization)
+
         return preds
 
     def configure_optimizers(self):
