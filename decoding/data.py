@@ -71,18 +71,18 @@ def get_fmri_betas_mean_std_path(subject, mode, mask_name=None):
     return os.path.join(DECODER_OUT_DIR, "normalizations", subject, bold_std_mean_name)
 
 
-def get_fmri_betas_standardization_transform(subject, training_mode, latent_feats_config):
+def get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, latent_feats_config):
     std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode)
     if not os.path.isfile(std_mean_path):
-        print("Calculating mean and std over whole train set betas for standardization.")
+        print(f"Calculating mean and std over whole {training_mode} set betas for standardization.")
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config,
+        ds = DecodingDataset(betas_dir, subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config,
                                    graymatter_mask)
-        train_fmri_betas = [beta for beta, _ in tqdm(iter(train_ds), total=len(train_ds))]
-        mean_std = {'mean': np.mean(train_fmri_betas, axis=0),
-                    'std': np.std(train_fmri_betas, axis=0)}
+        fmri_betas = [beta for beta, _ in tqdm(iter(ds), total=len(ds))]
+        mean_std = {'mean': np.mean(fmri_betas, axis=0),
+                    'std': np.std(fmri_betas, axis=0)}
         pickle.dump(mean_std, open(std_mean_path, 'wb'))
 
     mean_std = pickle.load(open(std_mean_path, 'rb'))
@@ -244,8 +244,8 @@ class fMRIDataModule(pl.LightningDataModule):
         self.latents_transform = get_latent_feats_standardization_transform(subject, latent_feats_config,
                                                                             training_mode)
 
-        self.betas_transform = get_fmri_betas_standardization_transform(subject, training_mode, latent_feats_config)
-
+        self.betas_transform = get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, latent_feats_config)
+        self.test_betas_transform = get_fmri_betas_standardization_transform(betas_dir, subject, TESTING_MODE, latent_feats_config)
         print("Loading pickle with latent feats..", end=" ")
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
         print("done.")
@@ -264,12 +264,12 @@ class fMRIDataModule(pl.LightningDataModule):
         self.ds_test = DecodingDataset(
             self.betas_dir,
             self.subject, TESTING_MODE, SPLIT_TEST, latent_features, latent_feats_config, self.graymatter_mask,
-            self.betas_transform, self.latents_transform,
+            self.test_betas_transform, self.latents_transform,
         )
         self.ds_imagery = DecodingDataset(
             self.betas_dir,
             self.subject, IMAGERY, SPLIT_IMAGERY, latent_features, latent_feats_config, self.graymatter_mask,
-            self.betas_transform, self.latents_transform,
+            self.test_betas_transform, self.latents_transform,
         )
 
     def train_dataloader(self):
