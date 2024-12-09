@@ -4,12 +4,14 @@ import nibabel as nib
 from glob import glob
 import os
 
+import numpy as np
 from tqdm import tqdm
 
 from preprocessing.make_spm_design_job_mat_new import FMRI_BETAS_DIR
 from utils import SUBJECTS
 
-SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank']
+SPLITS = ['train_image', 'train_caption']
+SPLITS_REPEATED = ['test_caption', 'test_image', 'imagery', 'blank']
 
 SUFFIX = "*bf(1)"
 
@@ -26,8 +28,7 @@ def create_symlinks_for_beta_files(betas_dir):
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
     """
-    betas_base_dir = os.path.join(betas_dir, 'split_1')
-    beta_file_addresses = sorted(glob(os.path.join(betas_base_dir, 'beta_*.nii'), recursive=True))
+    beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'split_*', 'beta_*.nii'), recursive=True))
 
     all_slink_names = set()
     all_beta_relative_paths = set()
@@ -55,8 +56,32 @@ def create_symlinks_for_beta_files(betas_dir):
                 all_beta_relative_paths.add(beta_relative_path)
                 os.symlink(beta_relative_path, slink_name)
 
-    print(all_slink_names)
     print(f"Created symbolic links for {len(all_slink_names)} beta files")
+
+    for split_name in SPLITS_REPEATED:
+        print(split_name)
+        repeated_betas = {}
+        for beta_path in tqdm(beta_file_addresses):
+            beta_file = nib.load(beta_path)
+            beta_name = beta_file.header['descrip'].item().decode()
+
+            if split_name in beta_name:
+                if split_name == 'blank':
+                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
+                else:
+                    stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
+                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
+                if slink_name in repeated_betas:
+                    repeated_betas[slink_name] = [beta_file]
+                else:
+                    repeated_betas[slink_name].append(beta_file)
+
+        print(f"total: {len(repeated_betas)}")
+        for slink_name, beta_files in tqdm(repeated_betas.items(), desc="averaging"):
+            assert len(beta_files) == 2
+            averaged = np.mean([beta_files[0].get_fdata(), beta_files[1].get_fdata()], axis=0)
+            beta_files[0].dataobj = averaged
+            nib.save(beta_files[0], slink_name)
 
 
 def get_args():
