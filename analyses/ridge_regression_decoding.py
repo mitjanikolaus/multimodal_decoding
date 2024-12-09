@@ -698,6 +698,9 @@ def run(args):
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
+                                train_predicted_latents = best_model.predict(train_fmri_betas)
+                                pickle.dump(train_predicted_latents, open("train_preds.p", "wb"))
+
                                 results = {
                                     "alpha": best_alpha,
                                     "model": model_name,
