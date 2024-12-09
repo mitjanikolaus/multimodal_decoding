@@ -53,8 +53,8 @@ def create_symlinks_for_beta_files(betas_dir):
         for slink_name, beta_files in tqdm(repeated_betas.items(), desc="averaging"):
             assert len(beta_files) == 2
             averaged = np.mean([beta_files[0].get_fdata(), beta_files[1].get_fdata()], axis=0)
-            beta_files[0].dataobj = averaged
-            nib.save(beta_files[0], slink_name)
+            averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
+            nib.save(averaged_img, slink_name)
 
     all_slink_names = set()
     all_beta_relative_paths = set()
