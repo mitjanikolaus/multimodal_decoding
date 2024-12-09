@@ -582,7 +582,9 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
     train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
-    test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
+
+    test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
+    test_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=test_fmri_betas)
     if imagery_fmri_betas is not None:
         imagery_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
 
@@ -697,9 +699,6 @@ def run(args):
                                 best_model = clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
-
-                                train_predicted_latents = best_model.predict(train_fmri_betas)
-                                pickle.dump(train_predicted_latents, open("train_preds.p", "wb"))
 
                                 results = {
                                     "alpha": best_alpha,
