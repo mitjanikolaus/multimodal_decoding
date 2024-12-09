@@ -236,7 +236,7 @@ def load_latents_transform(subject, model_name, features, vision_features_mode, 
     return nn_latent_transform
 
 
-def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None):
+def get_fmri_data_paths(betas_dir, subject, mode, surface=False, hemi=None, resolution=None):
     if surface:
         if hemi is None or resolution is None:
             raise ValueError("Hemi and resolution needs to be specified to load surface-level data")
@@ -246,7 +246,7 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
         )
     else:
         filename_suffix = "*.nii"
-        fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, f'betas_{mode}*', filename_suffix)
+        fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{mode}*', filename_suffix)
 
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
     stim_ids = []
@@ -273,8 +273,8 @@ def get_fmri_data_paths(subject, mode, surface=False, hemi=None, resolution=None
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_fmri_voxel_data(subject, mode):
-    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(subject, mode)
+def get_fmri_voxel_data(betas_dir, subject, mode):
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, mode)
 
     gray_matter_mask_path = get_graymatter_mask_path(subject)
     gray_matter_mask_img = nib.load(gray_matter_mask_path)
@@ -544,11 +544,11 @@ def get_fmri_surface_data(subject, mode, resolution):
     return fmri_betas, stim_ids, stim_types
 
 
-def get_fmri_data(subject, mode, surface=False, resolution=None):
+def get_fmri_data(betas_dir, subject, mode, surface=False, resolution=None):
     if surface:
         fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
     else:
-        fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(subject, mode)
+        fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(betas_dir, subject, mode)
 
     return fmri_betas, stim_ids, stim_types
 
@@ -593,18 +593,21 @@ def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
             train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
+                args.betas_dir,
                 subject,
                 training_mode,
                 surface=args.surface,
                 resolution=args.resolution,
             )
             test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
+                args.betas_dir,
                 subject,
                 TESTING_MODE,
                 surface=args.surface,
                 resolution=args.resolution,
             )
             imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
+                args.betas_dir,
                 subject,
                 IMAGERY,
                 surface=args.surface,
@@ -741,6 +744,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
