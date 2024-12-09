@@ -71,14 +71,14 @@ def get_fmri_betas_mean_std_path(subject, mode, mask_name=None):
     return os.path.join(DECODER_OUT_DIR, "normalizations", subject, bold_std_mean_name)
 
 
-def get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, latent_feats_config):
+def get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, split, latent_feats_config):
     std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode)
     if not os.path.isfile(std_mean_path):
         print(f"Calculating mean and std over whole {training_mode} set betas for standardization.")
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        ds = DecodingDataset(betas_dir, subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config,
+        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, latent_feats_config,
                                    graymatter_mask)
         fmri_betas = [beta for beta, _ in tqdm(iter(ds), total=len(ds))]
         mean_std = {'mean': np.mean(fmri_betas, axis=0),
@@ -244,8 +244,8 @@ class fMRIDataModule(pl.LightningDataModule):
         self.latents_transform = get_latent_feats_standardization_transform(subject, latent_feats_config,
                                                                             training_mode)
 
-        self.betas_transform = get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, latent_feats_config)
-        self.test_betas_transform = get_fmri_betas_standardization_transform(betas_dir, subject, TESTING_MODE, latent_feats_config)
+        self.betas_transform = get_fmri_betas_standardization_transform(betas_dir, subject, training_mode, SPLIT_TRAIN, latent_feats_config)
+        self.test_betas_transform = get_fmri_betas_standardization_transform(betas_dir, subject, TESTING_MODE, SPLIT_TEST, latent_feats_config)
         print("Loading pickle with latent feats..", end=" ")
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
         print("done.")
