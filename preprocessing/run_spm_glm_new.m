@@ -34,6 +34,8 @@ function []=run_spm_glm_stage_1(subject)
     matlabbatch{1}.spm.stats.fmri_est.spmmat = {[data_dir '/SPM.mat']};
     matlabbatch{1}.spm.stats.fmri_est.write_residuals = 0;
     matlabbatch{1}.spm.stats.fmri_est.method.Classical = 1;
+    matlabbatch{1}.spm.stats.maxmem = 2^32;
+    matlabbatch{1}.spm.stats.resmem = false;
 
     addpath('~/apps/spm12');
     spm('Defaults', 'fMRI');
