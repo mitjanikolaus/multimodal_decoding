@@ -744,8 +744,6 @@ def run(args):
                                     test_data_latents, test_predicted_latents, test_stim_types,
                                     imagery_data_latents, imagery_predicted_latents, standardize_predictions=False
                                 )
-                                results_no_standardization = {f"{key}_no_std": val for key, val in
-                                                              results_no_standardization.items()}
                                 print(
                                     f" | Pairwise acc (no std) (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
                                     f" | Pairwise acc (no std) (images): {results_no_standardization[ACC_IMAGES]:.2f}"
