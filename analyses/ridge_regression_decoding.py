@@ -734,7 +734,6 @@ def run(args):
                                 )
                                 print(
                                     f"Best alpha: {best_alpha}"
-                                    f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
                                     f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                                     f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
                                     f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
