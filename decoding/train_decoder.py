@@ -100,41 +100,44 @@ def run(args):
                             mean_preds = torch.stack(test_set_preds).mean(dim=0)
                             scores = test_set_pairwise_acc_scores(test_targets, mean_preds, test_stim_types)
 
-                            os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
-                            pickle.dump(mean_preds, open(results_file_path, 'wb'))
+                            results = {
+                                # "alpha": best_alpha,
+                                "model": model_name,
+                                "subject": subject,
+                                "features": features,
+                                "test_features": test_features,
+                                "vision_features": vision_features,
+                                "lang_features": lang_features,
+                                "training_mode": training_mode,
+                                # "num_voxels": test_fmri_betas.shape[1],
+                                # "cv_results": clf.cv_results_,
+                                # "stimulus_ids": test_stim_ids,
+                                "stimulus_types": test_stim_types,
+                                # "imagery_stimulus_ids": imagery_stim_ids,
+                                "predictions": mean_preds,
+                                # "imagery_predictions": imagery_predicted_latents,
+                                "latents": test_targets,
+                                # "imagery_latents": imagery_data_latents,
+                            }
 
                             print("\n\n\n")
                             print("Results with mean preds: ")
                             for score, val in scores.items():
                                 print(f"{score}: {val.cpu().numpy():.3f}")
+                                results[score]: val.cpu().numpy()
 
-                            # results = {
-                            #     "alpha": best_alpha,
-                            #     "model": model_name,
-                            #     "subject": subject,
-                            #     "features": features,
-                            #     "test_features": test_features,
-                            #     "vision_features": vision_features,
-                            #     "lang_features": lang_features,
-                            #     "training_mode": training_mode,
-                            #     "num_voxels": test_fmri_betas.shape[1],
-                            #     "cv_results": clf.cv_results_,
-                            #     "stimulus_ids": test_stim_ids,
-                            #     "stimulus_types": test_stim_types,
-                            #     "imagery_stimulus_ids": imagery_stim_ids,
-                            #     "predictions": test_predicted_latents,
-                            #     "imagery_predictions": imagery_predicted_latents,
-                            #     "latents": test_data_latents,
-                            #     "imagery_latents": imagery_data_latents,
-                            #     "surface": args.surface,
-                            #     "resolution": args.resolution,
-                            # }
+
                             # results.update(
                             #     calc_all_pairwise_accuracy_scores(
                             #         test_data_latents, test_predicted_latents, test_stim_types,
                             #         imagery_data_latents, imagery_predicted_latents
                             #     )
                             # )
+
+                            os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
+                            pickle.dump(results, open(results_file_path, 'wb'))
+
+
                             # print(
                             #     f"Best alpha: {best_alpha}"
                             #     f" | Pairwise acc (mod-agnostic): {results[ACC_MODALITY_AGNOSTIC]:.2f}"
