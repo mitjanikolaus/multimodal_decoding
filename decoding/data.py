@@ -28,16 +28,17 @@ SPLIT_IMAGERY = "imagery"
 
 TEST_BATCH_SIZE = 140
 
+
 def stim_id_from_beta_file_name(beta_file_name):
     return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace(".nii", ''))
 
 
-def get_fmri_data_paths(subject, mode, split):
+def get_fmri_data_paths(betas_dir, subject, mode, split):
     filename_suffix = "*.nii"
     betas_regex = f'betas_{split}*'
     if mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
         betas_regex += f'_{mode[:-1]}'
-    fmri_addresses_regex = os.path.join(FMRI_BETAS_DIR, subject, betas_regex, filename_suffix)
+    fmri_addresses_regex = os.path.join(betas_dir, subject, betas_regex, filename_suffix)
 
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
     stim_ids = []
@@ -77,7 +78,8 @@ def get_fmri_betas_standardization_transform(subject, training_mode, latent_feat
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, graymatter_mask)
+        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config,
+                                   graymatter_mask)
         train_fmri_betas = [beta for beta, _ in tqdm(iter(train_ds), total=len(train_ds))]
         mean_std = {'mean': np.mean(train_fmri_betas, axis=0),
                     'std': np.std(train_fmri_betas, axis=0)}
@@ -138,7 +140,8 @@ def get_latent_feats_standardization_transform(subject, latent_feats_config, tra
         os.makedirs(os.path.dirname(std_mean_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, graymatter_mask)
+        train_ds = DecodingDataset(subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config,
+                                   graymatter_mask)
         train_latents = np.array([latents for _, latents in tqdm(iter(train_ds), total=len(train_ds))])
 
         mean_std = {
@@ -154,9 +157,9 @@ def get_latent_feats_standardization_transform(subject, latent_feats_config, tra
 
 
 class DecodingDataset(Dataset):
-    def __init__(self, subject, mode, split, latent_features, latent_feats_config, graymatter_mask, betas_transform=None,
-                 latent_feats_transform=None):
-        self.data_paths, self.stim_ids, self.stim_types = get_fmri_data_paths(subject, mode, split)
+    def __init__(self, betas_dir, subject, mode, split, latent_features, latent_feats_config, graymatter_mask,
+                 betas_transform=None, latent_feats_transform=None):
+        self.data_paths, self.stim_ids, self.stim_types = get_fmri_data_paths(betas_dir, subject, mode, split)
         self.betas_transform = betas_transform
         self.graymatter_mask = graymatter_mask
 
@@ -222,9 +225,12 @@ class Standardize:
 
 
 class fMRIDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size, subject, training_mode, latent_feats_config, num_workers, cv_split=0, num_cv_splits=5):
+    def __init__(self, betas_dir, batch_size, subject, training_mode, latent_feats_config, num_workers, cv_split=0,
+                 num_cv_splits=5):
         super().__init__()
         assert cv_split < num_cv_splits
+
+        self.betas_dir = betas_dir
 
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -236,7 +242,7 @@ class fMRIDataModule(pl.LightningDataModule):
         self.graymatter_mask = load_graymatter_mask(subject)
 
         self.latents_transform = get_latent_feats_standardization_transform(subject, latent_feats_config,
-                                                                             training_mode)
+                                                                            training_mode)
 
         self.betas_transform = get_fmri_betas_standardization_transform(subject, training_mode, latent_feats_config)
 
@@ -245,6 +251,7 @@ class fMRIDataModule(pl.LightningDataModule):
         print("done.")
 
         self.data = DecodingDataset(
+            self.betas_dir,
             self.subject, self.training_mode, SPLIT_TRAIN, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
@@ -255,10 +262,12 @@ class fMRIDataModule(pl.LightningDataModule):
         self.ds_train = Subset(self.data, train_indices)
         self.ds_val = Subset(self.data, val_indices)
         self.ds_test = DecodingDataset(
+            self.betas_dir,
             self.subject, TESTING_MODE, SPLIT_TEST, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )
         self.ds_imagery = DecodingDataset(
+            self.betas_dir,
             self.subject, IMAGERY, SPLIT_IMAGERY, latent_features, latent_feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform,
         )

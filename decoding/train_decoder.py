@@ -14,9 +14,8 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, FEATURE_COM
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, get_default_features, \
     get_default_vision_features, get_default_lang_features, get_run_str, get_nn_latent_data
 from utils import SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_MODALITY_AGNOSTIC, \
-    RESULTS_FILE, DECODER_OUT_DIR
+    RESULTS_FILE, DECODER_OUT_DIR, FMRI_BETAS_DIR
 import lightning as pl
-
 
 DEFAULT_NUM_WORKERS = 10
 DEFAULT_MAX_EPOCHS = 50
@@ -51,7 +50,8 @@ def run(args):
                             run_str = get_run_str(
                                 model_name, features, test_features, vision_features, lang_features, mask=None,
                                 surface=False, resolution=None)
-                            results_file_path = os.path.join(DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE)
+                            results_file_path = os.path.join(DECODER_OUT_DIR, training_mode, subject, run_str,
+                                                             RESULTS_FILE)
                             if os.path.isfile(results_file_path) and not args.overwrite:
                                 print(f"Skipping decoder training as results are already present at"
                                       f" {results_file_path}")
@@ -65,14 +65,17 @@ def run(args):
                                 latent_feats_config = LatentFeatsConfig(
                                     model_name, features, vision_features, lang_features
                                 )
-                                dm = fMRIDataModule(args.batch_size, subject, training_mode, latent_feats_config, args.num_workers, cv_split=cv, num_cv_splits=num_cv_splits)
+                                dm = fMRIDataModule(args.betas_dir, args.batch_size, subject, training_mode,
+                                                    latent_feats_config, args.num_workers, cv_split=cv,
+                                                    num_cv_splits=num_cv_splits)
 
                                 sample_betas, sample_latents = next(iter(dm.ds_train))
 
-                                model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate, args.weight_decay, args.batch_size, args.mse_loss_weight)
+                                model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate,
+                                                args.weight_decay, args.batch_size, args.mse_loss_weight)
 
                                 # Initialize wandb logger
-                                #TODO
+                                # TODO
                                 # wandb_logger = WandbLogger(project='wandb-lightning', job_type='train')
 
                                 # Initialize Callbacks
@@ -82,7 +85,7 @@ def run(args):
                                                      # logger=wandb_logger, #TODO
                                                      callbacks=[early_stop_callback,
                                                                 checkpoint_callback],
-                                                    log_every_n_steps=10,
+                                                     log_every_n_steps=10,
                                                      reload_dataloaders_every_n_epochs=1,
                                                      precision=16,
                                                      )
@@ -128,7 +131,6 @@ def run(args):
                                 print(f"{score}: {val.cpu().numpy():.3f}")
                                 results[score]: val.cpu().numpy()
 
-
                             # results.update(
                             #     calc_all_pairwise_accuracy_scores(
                             #         test_data_latents, test_predicted_latents, test_stim_types,
@@ -138,7 +140,6 @@ def run(args):
 
                             os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
                             pickle.dump(results, open(results_file_path, 'wb'))
-
 
                             # print(
                             #     f"Best alpha: {best_alpha}"
@@ -155,6 +156,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAIN_MODE_CHOICES)
@@ -178,7 +181,6 @@ def get_args():
     parser.add_argument("--learning-rate", type=float, default=DEFAULT_LEARNING_RATE)
     parser.add_argument("--weight-decay", type=float, default=DEFAULT_WEIGHT_DECAY)
     parser.add_argument("--mse-loss-weight", type=float, default=DEFAULT_MSE_LOSS_WEIGHT)
-
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
                         default=[1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
