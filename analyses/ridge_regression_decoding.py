@@ -740,6 +740,18 @@ def run(args):
                                     f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                                 )
 
+                                results_no_standardization = calc_all_pairwise_accuracy_scores(
+                                    test_data_latents, test_predicted_latents, test_stim_types,
+                                    imagery_data_latents, imagery_predicted_latents, standardize_predictions=False
+                                )
+                                results_no_standardization = {f"{key}_no_std": val for key, val in
+                                                              results_no_standardization.items()}
+                                print(
+                                    f" | Pairwise acc (no std) (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
+                                    f" | Pairwise acc (no std) (images): {results_no_standardization[ACC_IMAGES]:.2f}"
+                                    f" | Pairwise acc (no std) (imagery): {results_no_standardization[ACC_IMAGERY]:.2f}"
+                                    f" | Pairwise acc (no std) (imagery whole test set): {results_no_standardization[ACC_IMAGERY_WHOLE_TEST]:.2f}"
+                                )
                                 os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
                                 pickle.dump(results, open(results_file_path, 'wb'))
 
