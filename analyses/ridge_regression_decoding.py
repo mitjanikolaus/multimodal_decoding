@@ -575,8 +575,9 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, mask_name)
     os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
 
-    mean_std = {'mean': train_fmri_betas.mean(axis=0),
-                'std': train_fmri_betas.std(axis=0)}
+    train_and_test = np.concatenate([train_fmri_betas, test_fmri_betas])
+    mean_std = {'mean': train_and_test.mean(axis=0),
+                'std': train_and_test.std(axis=0)}
     pickle.dump(mean_std, open(bold_std_mean_path, 'wb'))
 
     fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
