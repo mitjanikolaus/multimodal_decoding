@@ -7,11 +7,10 @@ function []=run_spm_glm_stage_1(subject)
 
     % increase maximum RAM and keep temporary GLM files in memory
     global defaults
-    defaults.stats.maxmem = 2^34;
-    defaults.stats.resmem = true;
+    defaults.stats.maxmem = 2^32;
+    defaults.stats.resmem = false;
 
-    defaults.maxNumCompThreads = 10
-    maxNumCompThreads = 10
+    maxNumCompThreads
 
     home = getenv('HOME');
     data_dir = [home,'/data/multimodal_decoding/fmri/betas_new/', subject, '/unstructured'];
