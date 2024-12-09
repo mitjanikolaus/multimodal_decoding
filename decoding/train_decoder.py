@@ -99,6 +99,10 @@ def run(args):
 
                             mean_preds = torch.stack(test_set_preds).mean(dim=0)
                             scores = test_set_pairwise_acc_scores(test_targets, mean_preds, test_stim_types)
+
+                            os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
+                            pickle.dump(mean_preds, open(results_file_path, 'wb'))
+
                             print("\n\n\n")
                             print("Results with mean preds: ")
                             for score, val in scores.items():
@@ -140,7 +144,7 @@ def run(args):
                             #     f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                             # )
                             #
-                            # os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
+                            os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
                             # pickle.dump(results, open(results_file_path, 'wb'))
 
 
