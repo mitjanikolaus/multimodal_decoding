@@ -688,6 +688,10 @@ def run(args):
                                     subject,
                                     training_mode,
                                 )
+                                outliers = pickle.load(open('outliers.p', 'rb'))
+                                print(len(outliers))
+                                train_latents = train_latents[
+                                    [i for i in range(len(train_latents)) if i not in outliers]]
 
                                 model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
