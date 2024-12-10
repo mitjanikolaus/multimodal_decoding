@@ -1,21 +1,18 @@
 import argparse
 import time
-from tabnanny import verbose
 
 import numpy as np
 import nibabel as nib
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
-from sklearn.linear_model import Ridge, RANSACRegressor, Lasso
+from sklearn.linear_model import Ridge, RANSACRegressor
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
 
-from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import MinMaxScaler, Normalizer, StandardScaler
-from sklearn.svm import LinearSVC, LinearSVR
 from tqdm import trange, tqdm
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
@@ -587,21 +584,21 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
-    scaler = StandardScaler()
-    scaler.fit(train_fmri_betas)
-    train_fmri_betas = scaler.transform(train_fmri_betas)
+    # scaler = StandardScaler()
+    # scaler.fit(train_fmri_betas)
+    # train_fmri_betas = scaler.transform(train_fmri_betas)
 
     # test_scaler = StandardScaler()
     # test_scaler.fit(test_fmri_betas)
-    test_fmri_betas = scaler.transform(test_fmri_betas)
+    # test_fmri_betas = scaler.transform(test_fmri_betas)
 
     # train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     #
     # test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
     # test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
     # test_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=test_fmri_betas)
-    if imagery_fmri_betas is not None:
-        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+    # if imagery_fmri_betas is not None:
+        # imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
 
         # imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
 
@@ -688,19 +685,18 @@ def run(args):
                                     training_mode,
                                 )
 
-                                # model = LinearSVC()
+                                model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = MultiOutputRegressor(LinearSVR(verbose=3), n_jobs=args.n_jobs)
-                                # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                                 start = time.time()
                                 clf.fit(train_fmri_betas, train_latents)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alpha = np.nan#clf.best_params_["alpha"]
+                                best_alpha = clf.best_params_["alpha"]
 
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
@@ -719,7 +715,7 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                best_model = clf#clf.best_estimator_
+                                best_model = clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
@@ -734,7 +730,7 @@ def run(args):
                                     "training_mode": training_mode,
                                     "mask": mask,
                                     "num_voxels": test_fmri_betas.shape[1],
-                                    # "cv_results": clf.cv_results_,
+                                    "cv_results": clf.cv_results_,
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
