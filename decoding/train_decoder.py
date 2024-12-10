@@ -67,12 +67,13 @@ def run(args):
                                 )
                                 dm = fMRIDataModule(args.betas_dir, args.batch_size, subject, training_mode,
                                                     latent_feats_config, args.num_workers, cv_split=cv,
-                                                    num_cv_splits=num_cv_splits, cosine_loss=args.cosine_loss)
+                                                    num_cv_splits=num_cv_splits)
 
                                 sample_betas, sample_latents = next(iter(dm.ds_train))
 
                                 model = Decoder(sample_betas.size, sample_latents.size, args.learning_rate,
-                                                args.weight_decay, args.batch_size, args.mse_loss_weight)
+                                                args.weight_decay, args.batch_size, args.mse_loss_weight,
+                                                cosine_loss=args.cosine_loss)
 
                                 # Initialize wandb logger
                                 # TODO
