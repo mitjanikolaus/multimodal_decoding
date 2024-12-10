@@ -12,6 +12,7 @@ import os
 from glob import glob
 import pickle
 
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import MinMaxScaler, Normalizer, StandardScaler
 from sklearn.svm import LinearSVC, LinearSVR
 from tqdm import trange, tqdm
@@ -688,7 +689,7 @@ def run(args):
 
                                 # model = LinearSVC()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = LinearSVR()
+                                clf = MultiOutputRegressor(LinearSVR(), n_jobs=args.n_jobs)
                                 # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                 #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
                                 #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
