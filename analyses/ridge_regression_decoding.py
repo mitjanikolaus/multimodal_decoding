@@ -686,18 +686,19 @@ def run(args):
                                     training_mode,
                                 )
 
-                                model = LinearSVC()
+                                # model = LinearSVC()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                                clf = LinearSVC()
+                                # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                                 start = time.time()
                                 clf.fit(train_fmri_betas, train_latents)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alpha = clf.best_params_["alpha"]
+                                best_alpha = np.nan#clf.best_params_["alpha"]
 
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
@@ -716,7 +717,7 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                best_model = clf.best_estimator_
+                                best_model = clf#clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
@@ -731,7 +732,7 @@ def run(args):
                                     "training_mode": training_mode,
                                     "mask": mask,
                                     "num_voxels": test_fmri_betas.shape[1],
-                                    "cv_results": clf.cv_results_,
+                                    # "cv_results": clf.cv_results_,
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
