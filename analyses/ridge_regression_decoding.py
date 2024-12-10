@@ -574,10 +574,6 @@ def apply_mask_and_clean(mask_name, betas_list, args):
 
 
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask_name):
-    outliers = pickle.load(open('outliers.p', 'rb'))
-    print(len(outliers))
-    train_fmri_betas = train_fmri_betas[[i for i in range(len(train_fmri_betas)) if i not in outliers]]
-
     bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, mask_name)
     os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
 
@@ -688,10 +684,6 @@ def run(args):
                                     subject,
                                     training_mode,
                                 )
-                                outliers = pickle.load(open('outliers.p', 'rb'))
-                                print(len(outliers))
-                                train_latents = train_latents[
-                                    [i for i in range(len(train_latents)) if i not in outliers]]
 
                                 model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
