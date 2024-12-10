@@ -5,7 +5,7 @@ import numpy as np
 import nibabel as nib
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
-from sklearn.linear_model import Ridge, RANSACRegressor, Lasso
+from sklearn.linear_model import Ridge, RANSACRegressor
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 import os
@@ -598,7 +598,7 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
     # test_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=test_fmri_betas)
     if imagery_fmri_betas is not None:
-        imagery_fmri_betas = scaler(imagery_fmri_betas)
+        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
 
         # imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
 
@@ -685,7 +685,7 @@ def run(args):
                                     training_mode,
                                 )
 
-                                model = Lasso()
+                                model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                                 clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
