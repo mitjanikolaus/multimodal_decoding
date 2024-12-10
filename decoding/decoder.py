@@ -74,7 +74,7 @@ class Decoder(pl.LightningModule):
 
     def loss(self, preds, targets):
         if self.cosine_loss:
-            return self.loss_cosine(preds, targets, np.ones((len(preds)))), np.nan, np.nan
+            return self.loss_cosine(preds, targets, torch.ones((len(preds)), device=preds.device)), np.nan, np.nan
         contrastive_loss = self.loss_contrastive(preds, targets)
         mse_loss = self.loss_mse(preds, targets)
         loss = (1-self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
