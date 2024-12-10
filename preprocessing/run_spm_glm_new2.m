@@ -23,7 +23,7 @@ function []=run_spm_glm_stage_2(subject)
         cd(data_dir)
 
         %design
-        load spm_lvl1_job_stage_2;
+        load spm_job;
         spm_jobman('run', jobs);
 
 
