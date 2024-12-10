@@ -67,7 +67,7 @@ def run(args):
                                 )
                                 dm = fMRIDataModule(args.betas_dir, args.batch_size, subject, training_mode,
                                                     latent_feats_config, args.num_workers, cv_split=cv,
-                                                    num_cv_splits=num_cv_splits)
+                                                    num_cv_splits=num_cv_splits, cosine_loss=args.cosine_loss)
 
                                 sample_betas, sample_latents = next(iter(dm.ds_train))
 
@@ -181,6 +181,7 @@ def get_args():
     parser.add_argument("--learning-rate", type=float, default=DEFAULT_LEARNING_RATE)
     parser.add_argument("--weight-decay", type=float, default=DEFAULT_WEIGHT_DECAY)
     parser.add_argument("--mse-loss-weight", type=float, default=DEFAULT_MSE_LOSS_WEIGHT)
+    parser.add_argument("--cosine-loss", action='store_true', default=False)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
                         default=[1e2, 1e3, 1e4, 1e5, 1e6, 1e7])

@@ -53,12 +53,15 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
 
 class Decoder(pl.LightningModule):
 
-    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight):
+    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight, cosine_loss=False):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size, bias=False)
         self.learning_rate = learning_rate
         self.loss_contrastive = ContrastiveLoss()
         self.loss_mse = nn.MSELoss()
+        self.cosine_loss = cosine_loss
+        if self.cosine_loss:
+            self.loss_cosine = nn.CosineEmbeddingLoss()
         self.batch_size = batch_size
         self.weight_decay = weight_decay
         self.mse_loss_weight = mse_loss_weight
@@ -70,6 +73,8 @@ class Decoder(pl.LightningModule):
         return x
 
     def loss(self, preds, targets):
+        if self.cosine_loss:
+            return self.loss_cosine(preds, targets), np.nan, np.nan
         contrastive_loss = self.loss_contrastive(preds, targets)
         mse_loss = self.loss_mse(preds, targets)
         loss = (1-self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
