@@ -584,9 +584,6 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
-    scaler = StandardScaler()
-    scaler.fit(train_fmri_betas)
-    train_fmri_betas = scaler.transform(train_fmri_betas)
 
     test_scaler = StandardScaler()
     max_mean = test_fmri_betas.mean(axis=1).max()
@@ -594,8 +591,12 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     print(len(filtered))
     train_and_test = np.concatenate([filtered, test_fmri_betas])
     test_scaler.fit(train_and_test)
-    #
     test_fmri_betas = test_scaler.transform(test_fmri_betas)
+
+    scaler = StandardScaler()
+    scaler.fit(train_fmri_betas)
+    train_fmri_betas = scaler.transform(train_fmri_betas)
+
 
     # train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     #
