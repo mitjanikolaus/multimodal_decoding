@@ -299,7 +299,7 @@ def run(args):
 
             fmri_spec['fact'] = fromarrays([[], []], names=['name', 'levels'])
 
-            save_dir_stage2 = os.path.join(output_dir, f'ses_{session:03d}')
+            save_dir_stage2 = os.path.join(output_dir, f'ses_{session}')
             os.makedirs(save_dir_stage2, exist_ok=True)
             stage_2_save_dirs.append(save_dir_stage2)
             fmri_spec['dir'] = np.array([save_dir_stage2], dtype=object)
