@@ -357,11 +357,15 @@ def dist_mat_to_pairwise_acc(dist_mat):
 
 def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_targets=False):
     if standardize_predictions:
-        preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
-        predictions = preds_standardize(predictions)
+        scaler = Normalizer(predictions)
+        predictions = scaler.fit_transform(predictions)
+        # preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
+        # predictions = preds_standardize(predictions)
     if standardize_targets:
-        latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
-        latents = latens_standardize(latents)
+        scaler = Normalizer(latents)
+        latents = scaler.fit_transform(latents)
+        # latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
+        # latents = latens_standardize(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
     return dist_mat_to_pairwise_acc(dist_mat)
