@@ -1,5 +1,6 @@
 import argparse
 import time
+from tabnanny import verbose
 
 import numpy as np
 import nibabel as nib
@@ -689,7 +690,7 @@ def run(args):
 
                                 # model = LinearSVC()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = MultiOutputRegressor(LinearSVR(), n_jobs=args.n_jobs, verbose=3)
+                                clf = MultiOutputRegressor(LinearSVR(verbose=3), n_jobs=args.n_jobs)
                                 # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                 #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
                                 #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
