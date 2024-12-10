@@ -5,7 +5,7 @@ import numpy as np
 import nibabel as nib
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
-from sklearn.linear_model import Ridge, RANSACRegressor
+from sklearn.linear_model import Ridge, RANSACRegressor, Lasso
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 import os
@@ -685,7 +685,7 @@ def run(args):
                                     training_mode,
                                 )
 
-                                model = Ridge()
+                                model = Lasso()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                                 clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
