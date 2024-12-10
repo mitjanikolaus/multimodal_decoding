@@ -355,17 +355,13 @@ def dist_mat_to_pairwise_acc(dist_mat):
     return score
 
 
-def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_targets=True):
+def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_targets=False):
     if standardize_predictions:
-        scaler = Normalizer()
-        predictions = scaler.fit_transform(predictions)
-        # preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
-        # predictions = preds_standardize(predictions)
+        preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
+        predictions = preds_standardize(predictions)
     if standardize_targets:
-        scaler = Normalizer()
-        latents = scaler.fit_transform(latents)
-        # latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
-        # latents = latens_standardize(latents)
+        latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
+        latents = latens_standardize(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
     return dist_mat_to_pairwise_acc(dist_mat)
@@ -578,6 +574,10 @@ def apply_mask_and_clean(mask_name, betas_list, args):
 
 
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas, subject, training_mode, mask_name):
+    outliers = pickle.load(open('outliers.p', 'rb'))
+    print(len(outliers))
+    train_fmri_betas = train_fmri_betas[[i for i in range(len(train_fmri_betas)) if i not in outliers]]
+
     bold_std_mean_path = get_fmri_betas_mean_std_path(subject, training_mode, mask_name)
     os.makedirs(os.path.dirname(bold_std_mean_path), exist_ok=True)
 
@@ -588,21 +588,21 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
-    # scaler = StandardScaler()
-    # scaler.fit(train_fmri_betas)
-    # train_fmri_betas = scaler.transform(train_fmri_betas)
+    scaler = StandardScaler()
+    scaler.fit(train_fmri_betas)
+    train_fmri_betas = scaler.transform(train_fmri_betas)
 
     # test_scaler = StandardScaler()
     # test_scaler.fit(test_fmri_betas)
-    # test_fmri_betas = scaler.transform(test_fmri_betas)
+    test_fmri_betas = scaler.transform(test_fmri_betas)
 
     # train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     #
     # test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
     # test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
     # test_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=test_fmri_betas)
-    # if imagery_fmri_betas is not None:
-        # imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+    if imagery_fmri_betas is not None:
+        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
 
         # imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
 
