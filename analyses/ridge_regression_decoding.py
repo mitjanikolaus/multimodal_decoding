@@ -13,7 +13,7 @@ from glob import glob
 import pickle
 
 from sklearn.preprocessing import MinMaxScaler, Normalizer, StandardScaler
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, LinearSVR
 from tqdm import trange, tqdm
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
@@ -688,7 +688,7 @@ def run(args):
 
                                 # model = LinearSVC()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = LinearSVC()
+                                clf = LinearSVR()
                                 # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                 #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
                                 #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
