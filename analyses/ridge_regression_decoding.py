@@ -11,6 +11,8 @@ from sklearn.model_selection import GridSearchCV
 import os
 from glob import glob
 import pickle
+
+from sklearn.preprocessing import MinMaxScaler
 from tqdm import trange, tqdm
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
@@ -580,15 +582,23 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
                 'std': train_and_test.std(axis=0)}
     pickle.dump(mean_std, open(bold_std_mean_path, 'wb'))
 
-    fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
+    # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
-    train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
+    scaler = MinMaxScaler()
+    scaler.fit(train_and_test)
+
+    train_fmri_betas = scaler.transform(train_fmri_betas)
+
+    test_fmri_betas = scaler.transform(test_fmri_betas)
+    # train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     #
-    test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
-    test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
+    # test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
+    # test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
     # test_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=test_fmri_betas)
     if imagery_fmri_betas is not None:
-        imagery_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
+        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+
+        # imagery_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
 
     return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
