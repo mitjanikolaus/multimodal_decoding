@@ -12,7 +12,7 @@ import os
 from glob import glob
 import pickle
 
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, Normalizer, StandardScaler
 from tqdm import trange, tqdm
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
@@ -584,11 +584,11 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
-    scaler = MinMaxScaler()
+    scaler = Normalizer()
     scaler.fit(train_fmri_betas)
     train_fmri_betas = scaler.transform(train_fmri_betas)
 
-    test_scaler = MinMaxScaler()
+    test_scaler = Normalizer()
     test_scaler.fit(test_fmri_betas)
     test_fmri_betas = test_scaler.transform(test_fmri_betas)
     # train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
