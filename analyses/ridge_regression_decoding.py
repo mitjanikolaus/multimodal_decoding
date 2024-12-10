@@ -585,18 +585,19 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
     scaler = MinMaxScaler()
-    scaler.fit(train_and_test)
-
+    scaler.fit(train_fmri_betas)
     train_fmri_betas = scaler.transform(train_fmri_betas)
 
-    test_fmri_betas = scaler.transform(test_fmri_betas)
+    test_scaler = MinMaxScaler()
+    test_scaler.fit(test_fmri_betas)
+    test_fmri_betas = test_scaler.transform(test_fmri_betas)
     # train_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=train_fmri_betas)
     #
     # test_fmri_betas = np.apply_along_axis(func1d=fmri_betas_transform, axis=1, arr=test_fmri_betas)
     # test_fmri_betas_transform = Standardize(test_fmri_betas.mean(axis=0), test_fmri_betas.std(axis=0))
     # test_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=test_fmri_betas)
     if imagery_fmri_betas is not None:
-        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+        imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
 
         # imagery_fmri_betas = np.apply_along_axis(func1d=test_fmri_betas_transform, axis=1, arr=imagery_fmri_betas)
 
