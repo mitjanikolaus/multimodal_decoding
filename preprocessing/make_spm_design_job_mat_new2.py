@@ -79,55 +79,51 @@ def preprocess_event_files(event_files):
 
 
 def load_event_files(tsv_files, log_files=None):
-    subject_infos = []
+    events_df = preprocess_event_files(tsv_files)
+    condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
+    if 'null' in condition_names:
+        condition_names.remove('null')
 
-    for tsvf_idx, tsvf in enumerate(tsv_files):
-        events_df = preprocess_event_files([tsvf])
-        condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
-        if 'null' in condition_names:
-            condition_names.remove('null')
+    print(condition_names)
+    print("Number of conditions:", len(condition_names))
 
-        print(condition_names)
-        print("Number of conditions:", len(condition_names))
+    # if log_files is not None:
+    #     events_df.to_csv(log_files[tsvf_idx], sep="\t")
 
-        if log_files is not None:
-            events_df.to_csv(log_files[tsvf_idx], sep="\t")
+    ###############################
+    # Design-Matrix-Friendly format
+    ###############################
+    onsets = {cond: [] for cond in condition_names}
+    durs = {cond: [] for cond in condition_names}
+    orth = {cond: 0.0 for cond in condition_names}
 
-        ###############################
-        # Design-Matrix-Friendly format
-        ###############################
-        onsets = {cond: [] for cond in condition_names}
-        durs = {cond: [] for cond in condition_names}
-        orth = {cond: 0.0 for cond in condition_names}
+    events_df = events_df.reset_index()
+    for index, trial in events_df.iterrows():
+        conditions = trial['glm_conditions']
+        for condition in conditions:
+            if condition != 'null':
+                onsets[condition].append(trial['onset'])
+                durs[condition].append(trial['duration'])
 
-        events_df = events_df.reset_index()
-        for index, trial in events_df.iterrows():
-            conditions = trial['glm_conditions']
-            for condition in conditions:
-                if condition != 'null':
-                    onsets[condition].append(trial['onset'])
-                    durs[condition].append(trial['duration'])
+    temp_condition_names = ['dummy'] + condition_names[:]
+    onsets['dummy'] = [0, 0]
+    durs['dummy'] = [0, 0]
+    temp_onsets = np.array([np.array(onsets[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
+    temp_durations = np.array([np.array(durs[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
+    temp_onsets = temp_onsets[1:]
+    temp_durations = temp_durations[1:]
 
-        temp_condition_names = ['dummy'] + condition_names[:]
-        onsets['dummy'] = [0, 0]
-        durs['dummy'] = [0, 0]
-        temp_onsets = np.array([np.array(onsets[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
-        temp_durations = np.array([np.array(durs[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
-        temp_onsets = temp_onsets[1:]
-        temp_durations = temp_durations[1:]
+    subject_info = Bunch(
+        conditions=np.array(condition_names, dtype=object),
+        onsets=temp_onsets,
+        durations=temp_durations,
+        orthogonalizations=np.array([orth[k] for k in condition_names], dtype=object),
+        tmod=np.zeros((len(condition_names),), dtype=object),
+        pmod=np.zeros((len(condition_names),), dtype=object),
+        regressor_names=None,
+        regressors=None)
 
-        subject_info = Bunch(
-            conditions=np.array(condition_names, dtype=object),
-            onsets=temp_onsets,
-            durations=temp_durations,
-            orthogonalizations=np.array([orth[k] for k in condition_names], dtype=object),
-            tmod=np.zeros((len(condition_names),), dtype=object),
-            pmod=np.zeros((len(condition_names),), dtype=object),
-            regressor_names=None,
-            regressors=None)
-
-        subject_infos.append(subject_info)
-    return subject_infos
+    return subject_info
 
 
 N_REALIGNMENT_AXES = 6
