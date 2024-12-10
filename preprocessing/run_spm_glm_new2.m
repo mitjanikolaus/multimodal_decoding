@@ -1,6 +1,6 @@
 function []=run_spm_glm_stage_2(subject)
     home = getenv('HOME');
-    filelist = dir(fullfile(home, '/data/multimodal_decoding/fmri/betas_new/', subject, '/unstructured/run_*'));
+    filelist = dir(fullfile(home, '/data/multimodal_decoding/fmri/betas_new/', subject, '/unstructured/ses-*'));
     filelist = filelist([filelist.isdir]);
 
     for i = 1:numel(filelist)
