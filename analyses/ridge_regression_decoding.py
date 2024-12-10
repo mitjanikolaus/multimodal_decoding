@@ -355,14 +355,14 @@ def dist_mat_to_pairwise_acc(dist_mat):
     return score
 
 
-def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_targets=False):
+def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_targets=True):
     if standardize_predictions:
-        scaler = Normalizer(norm='l1')
+        scaler = Normalizer()
         predictions = scaler.fit_transform(predictions)
         # preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
         # predictions = preds_standardize(predictions)
     if standardize_targets:
-        scaler = Normalizer(norm='l1')
+        scaler = Normalizer()
         latents = scaler.fit_transform(latents)
         # latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
         # latents = latens_standardize(latents)
