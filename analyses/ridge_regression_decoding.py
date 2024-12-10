@@ -596,7 +596,7 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     train_fmri_betas = scaler.transform(train_fmri_betas)
     test_fmri_betas = scaler.transform(test_fmri_betas)
 
-    test_fmri_betas = test_fmri_betas * ratio
+    test_fmri_betas = test_fmri_betas * ratio / 2
     test_stddev = test_fmri_betas.std(axis=0)
     print(f"test_stddev after: {test_stddev}")
 
