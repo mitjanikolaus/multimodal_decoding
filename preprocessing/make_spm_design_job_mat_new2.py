@@ -293,7 +293,7 @@ def run(args):
             # conditions
             conditions = load_event_files(
                 event_files,
-                log_file=os.path.join(output_dir, 'dmlog_stage_2.tsv')
+                log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs]
             )
 
             fmri_spec['sess']['cond'] = fromarrays(
