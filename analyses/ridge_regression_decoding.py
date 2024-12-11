@@ -5,6 +5,7 @@ import numpy as np
 import nibabel as nib
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
+from sklearn.decomposition import PCA
 from sklearn.linear_model import Ridge, RANSACRegressor
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -708,20 +709,6 @@ def run(args):
                                     subject,
                                     training_mode,
                                 )
-
-                                model = Ridge()
-                                pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
-
-                                start = time.time()
-                                clf.fit(train_fmri_betas, train_latents)
-                                end = time.time()
-                                print(f"Elapsed time: {int(end - start)}s")
-
-                                best_alpha = clf.best_params_["alpha"]
-
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
                                                                           lang_features,
@@ -738,6 +725,26 @@ def run(args):
                                                                              subject,
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
+
+                                pca = PCA(n_components=100)
+                                latents = np.concatenate((train_latents, test_data_latents, imagery_data_latents))
+                                latents = pca.fit_transform(latents)
+                                train_latents = latents[:len(train_latents)]
+                                test_data_latents = latents[len(train_latents):-len(imagery_data_latents)]
+                                imagery_data_latents = latents[len(train_latents) + len(test_data_latents):]
+
+                                model = Ridge()
+                                pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+
+                                start = time.time()
+                                clf.fit(train_fmri_betas, train_latents)
+                                end = time.time()
+                                print(f"Elapsed time: {int(end - start)}s")
+
+                                best_alpha = clf.best_params_["alpha"]
 
                                 best_model = clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
