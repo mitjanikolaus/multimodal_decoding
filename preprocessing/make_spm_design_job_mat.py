@@ -43,8 +43,10 @@ def get_condition_names(trial, glm_stage):
                     conditions.append('null')
                 if trial['trial_type'] == 1 and trial['train_test'] == 2:
                     conditions.append(f"test_image_{trial['condition_name']}")
+                    conditions.append("test_trial")
                 if trial['trial_type'] == 2 and trial['train_test'] == 2:
                     conditions.append(f"test_caption_{trial['condition_name']}")
+                    conditions.append("test_trial")
 
     elif glm_stage == 2:
         if trial['stim_name'] == 'Fix':
@@ -62,8 +64,10 @@ def get_condition_names(trial, glm_stage):
             if trial['condition_name'] != 0:
                 if trial['trial_type'] == 1 and trial['train_test'] == 1:
                     conditions.append(f"train_image_{trial['condition_name']}")
+                    conditions.append("train_trial")
                 if trial['trial_type'] == 2 and trial['train_test'] == 1:
                     conditions.append(f"train_caption_{trial['condition_name']}")
+                    conditions.append("train_trial")
                 if trial['trial_type'] == 1 and trial['train_test'] == 2:
                     conditions.append('null')
                 if trial['trial_type'] == 2 and trial['train_test'] == 2:
@@ -323,8 +327,8 @@ def run(args):
                 session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
             else:
                 print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, '_session_id_ses-*'))
-                sessions = [path.split(os.sep)[-2].replace('_session_id_', '') for path in session_dirs]
+                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
+                sessions = [path.split(os.sep)[-1] for path in session_dirs]
             print(f"Sessions: {sessions}")
             for session, session_dir in zip(sessions, session_dirs):
                 print(f"Scanning for runs in {session_dir}")
