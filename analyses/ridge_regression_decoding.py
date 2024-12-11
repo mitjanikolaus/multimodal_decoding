@@ -726,7 +726,7 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                pca = PCA(n_components=50)
+                                pca = PCA(n_components=10)
                                 train_latents = pca.fit_transform(train_latents)
                                 test_data_latents = pca.transform(test_data_latents)
                                 imagery_data_latents = pca.transform(imagery_data_latents)
