@@ -568,7 +568,7 @@ def apply_mask_and_clean(mask_name, betas_list, args):
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
-    nan_locations = np.logical_or([np.isnan(betas[0]) for betas in betas_list], axis=0)
+    nan_locations = np.logical_or.reduce([np.isnan(betas[0]) for betas in betas_list])
     betas_list = [betas[:, ~nan_locations] for betas in betas_list]
 
     return betas_list
