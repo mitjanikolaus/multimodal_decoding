@@ -596,7 +596,7 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # test_mean = test_fmri_betas.mean(axis=0)
     # print(f"new test_mean: {test_mean}")
 
-    pca = PCA(n_components=10000)
+    pca = PCA(n_components=2000)
     train_fmri_betas = pca.fit_transform(train_fmri_betas)
     test_fmri_betas = pca.transform(test_fmri_betas)
     imagery_fmri_betas = pca.transform(imagery_fmri_betas)
