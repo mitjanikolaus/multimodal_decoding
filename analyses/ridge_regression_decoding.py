@@ -596,6 +596,11 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # test_mean = test_fmri_betas.mean(axis=0)
     # print(f"new test_mean: {test_mean}")
 
+    pca = PCA(n_components=1000)
+    train_fmri_betas = pca.fit_transform(train_fmri_betas)
+    test_fmri_betas = pca.transform(test_fmri_betas)
+    imagery_fmri_betas = pca.transform(imagery_fmri_betas)
+
     scaler = StandardScaler()
     scaler.fit(train_fmri_betas)
     train_fmri_betas = scaler.transform(train_fmri_betas)
@@ -725,11 +730,6 @@ def run(args):
                                                                              subject,
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
-
-                                pca = PCA(n_components=10)
-                                train_latents = pca.fit_transform(train_latents)
-                                test_data_latents = pca.transform(test_data_latents)
-                                imagery_data_latents = pca.transform(imagery_data_latents)
 
                                 model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
