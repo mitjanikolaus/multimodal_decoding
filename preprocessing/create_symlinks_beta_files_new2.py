@@ -55,7 +55,7 @@ def create_symlinks_for_beta_files(betas_dir):
             averaged = np.mean([beta_file.get_fdata() for beta_file in beta_files], axis=0)
             # print(beta_files[0].shape)
             averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
-            print(averaged_img[0].shape)
+            print(averaged_img.shape)
             # print("new shape: ", averaged_img.shape)
             nib.save(averaged_img, slink_name)
 
