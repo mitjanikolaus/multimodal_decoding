@@ -726,7 +726,7 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                clf = RANSACRegressor(estimator=Ridge(alpha=10000))
+                                clf = RANSACRegressor(estimator=Ridge(alpha=10000), min_samples=100)
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                                 # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
                                 #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
