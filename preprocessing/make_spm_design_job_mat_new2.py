@@ -236,12 +236,6 @@ def run(args):
             fmri_spec['sess']['hpf'] = 128.0
             return fmri_spec
 
-        # scans = []
-        # event_files = []
-        # stage_2_fmri_specs = []
-        stage_2_save_dirs = []
-
-        realign_files = []
         if subsample_sessions:
             sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
             session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
@@ -301,7 +295,6 @@ def run(args):
 
             save_dir_stage2 = os.path.join(output_dir, session)
             os.makedirs(save_dir_stage2, exist_ok=True)
-            stage_2_save_dirs.append(save_dir_stage2)
             fmri_spec['dir'] = np.array([save_dir_stage2], dtype=object)
 
             jobs = dict()
