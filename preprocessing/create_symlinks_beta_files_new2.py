@@ -28,7 +28,7 @@ def create_symlinks_for_beta_files(betas_dir):
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
     """
-    beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'ses-*', 'beta_*.nii'), recursive=True))
+    beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'unstructured', 'ses-*', 'beta_*.nii'), recursive=True))
 
     for split_name in SPLITS_REPEATED:
         print(split_name)
