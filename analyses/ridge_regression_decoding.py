@@ -289,7 +289,8 @@ def get_fmri_voxel_data(betas_dir, subject, mode):
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
-        sample = sample[gray_matter_mask].astype('float32').reshape(-1)
+        # sample = sample[gray_matter_mask].astype('float32').reshape(-1)
+        sample = sample.astype('float32').reshape(-1)
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
@@ -604,9 +605,9 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # test_stddev = test_fmri_betas.std(axis=0)
     # print(f"test_stddev after: {test_stddev}")
 
-    # test_scaler = StandardScaler()
-    # test_scaler.fit(test_fmri_betas)
-    test_fmri_betas = scaler.transform(test_fmri_betas)
+    test_scaler = StandardScaler()
+    test_scaler.fit(test_fmri_betas)
+    test_fmri_betas = test_scaler.transform(test_fmri_betas)
 
     # max_mean = test_fmri_betas.mean(axis=1).max()
     # filtered = train_fmri_betas[train_fmri_betas.mean(axis=1) <= max_mean]
@@ -623,7 +624,7 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     if imagery_fmri_betas is not None:
         # imagery_scaler = StandardScaler()
         # imagery_scaler.fit(imagery_fmri_betas)
-        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+        imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
 
         # imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
 
@@ -726,20 +727,20 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                clf = RANSACRegressor(estimator=Ridge(alpha=10000), min_samples=100)
+                                model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                                 start = time.time()
                                 clf.fit(train_fmri_betas, train_latents)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alpha = np.nan#clf.best_params_["alpha"]
+                                best_alpha = clf.best_params_["alpha"]
 
-                                best_model = clf#clf.best_estimator_
+                                best_model = clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
