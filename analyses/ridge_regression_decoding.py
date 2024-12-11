@@ -292,6 +292,8 @@ def get_fmri_voxel_data(betas_dir, subject, mode):
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
+    print(mode)
+    print(fmri_betas.shape)
     return fmri_betas, stim_ids, stim_types
 
 
