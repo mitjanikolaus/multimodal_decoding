@@ -726,20 +726,20 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                model = RANSACRegressor(estimator=Ridge())
+                                clf = RANSACRegressor(estimator=Ridge(alpha=10000))
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+                                # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                                 start = time.time()
                                 clf.fit(train_fmri_betas, train_latents)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alpha = clf.best_params_["alpha"]
+                                best_alpha = np.nan#clf.best_params_["alpha"]
 
-                                best_model = clf.best_estimator_
+                                best_model = clf#clf.best_estimator_
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
