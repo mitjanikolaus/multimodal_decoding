@@ -289,8 +289,7 @@ def get_fmri_voxel_data(betas_dir, subject, mode):
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
-        # sample = sample[gray_matter_mask].astype('float32').reshape(-1)
-        sample = sample.astype('float32').reshape(-1)
+        sample = sample[gray_matter_mask].astype('float32').reshape(-1)
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
