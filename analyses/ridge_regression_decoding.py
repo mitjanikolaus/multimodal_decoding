@@ -727,11 +727,9 @@ def run(args):
                                                                              nn_latent_transform=latent_transform)
 
                                 pca = PCA(n_components=100)
-                                latents = np.concatenate((train_latents, test_data_latents, imagery_data_latents))
-                                latents = pca.fit_transform(latents)
-                                train_latents = latents[:len(train_latents)]
-                                test_data_latents = latents[len(train_latents):-len(imagery_data_latents)]
-                                imagery_data_latents = latents[len(train_latents) + len(test_data_latents):]
+                                train_latents = pca.fit_transform(train_latents)
+                                test_data_latents = pca.transform(test_data_latents)
+                                imagery_data_latents = pca.transform(imagery_data_latents)
 
                                 model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
