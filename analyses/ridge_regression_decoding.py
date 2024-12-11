@@ -292,8 +292,6 @@ def get_fmri_voxel_data(betas_dir, subject, mode):
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
-    print(mode)
-    print(fmri_betas.shape)
     return fmri_betas, stim_ids, stim_types
 
 
@@ -570,7 +568,8 @@ def apply_mask_and_clean(mask_name, betas_list, args):
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
-    betas_list = [betas[:, ~np.isnan(betas[0])] for betas in betas_list]
+    nan_locations = np.logical_or([np.isnan(betas[0]) for betas in betas_list], axis=0)
+    betas_list = [betas[:, ~nan_locations] for betas in betas_list]
 
     return betas_list
 
