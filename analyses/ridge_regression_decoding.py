@@ -585,16 +585,18 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     # fmri_betas_transform = load_fmri_betas_transform(subject, training_mode, mask_name)
 
-    train_stddev = train_fmri_betas.std(axis=0)
-    print(f"train_stddev: {train_stddev}")
-    test_stddev = test_fmri_betas.std(axis=0)
-    print(f"test_stddev: {test_stddev}")
-    ratio = train_stddev / test_stddev
-    print(f"ratio: {ratio}")
+    train_mean = train_fmri_betas.mean(axis=0)
+    print(f"train_mean: {train_mean}")
+    test_mean = test_fmri_betas.mean(axis=0)
+    print(f"test_mean: {test_mean}")
+    diff = train_mean - test_mean
+    print(f"diff: {diff}")
+    test_fmri_betas = test_fmri_betas - diff
+    test_mean = test_fmri_betas.mean(axis=0)
+    print(f"new test_mean: {test_mean}")
 
     scaler = StandardScaler()
     scaler.fit(train_fmri_betas)
-
     train_fmri_betas = scaler.transform(train_fmri_betas)
 
     # test_fmri_betas = test_fmri_betas * ratio / 2
