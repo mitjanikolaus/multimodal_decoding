@@ -603,9 +603,9 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # test_stddev = test_fmri_betas.std(axis=0)
     # print(f"test_stddev after: {test_stddev}")
 
-    test_scaler = StandardScaler()
-    test_scaler.fit(test_fmri_betas)
-    test_fmri_betas = test_scaler.transform(test_fmri_betas)
+    # test_scaler = StandardScaler()
+    # test_scaler.fit(test_fmri_betas)
+    test_fmri_betas = scaler.transform(test_fmri_betas)
 
     # max_mean = test_fmri_betas.mean(axis=1).max()
     # filtered = train_fmri_betas[train_fmri_betas.mean(axis=1) <= max_mean]
