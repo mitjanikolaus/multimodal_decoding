@@ -78,22 +78,22 @@ def create_gifti_results_maps(args):
         for hemi in HEMIS:
             score_hemi_specific_lang = subject_scores_mod_specific_lang[subj][hemi][CORR_CAPTIONS]
             path_out = os.path.join(results_dir, subj, f"mod_specific_lang_captions_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f"{os.path.basename(path_out)} max: {np.max(score_hemi_specific_lang):2.f}")
+            print(f"{os.path.basename(path_out)} max: {np.max(score_hemi_specific_lang):.2f}")
             export_to_gifti(score_hemi_specific_lang, path_out)
 
             score_hemi_specific_vision = subject_scores_mod_specific_vision[subj][hemi][CORR_IMAGES]
             path_out = os.path.join(results_dir, subj, f"mod_specific_vision_images_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f"{os.path.basename(path_out)} max: {np.max(score_hemi_specific_vision):2.f}")
+            print(f"{os.path.basename(path_out)} max: {np.max(score_hemi_specific_vision):.2f}")
             export_to_gifti(score_hemi_specific_vision, path_out)
 
             cross_lang_to_vision = subject_scores_mod_specific_lang[subj][hemi][CORR_CROSS_CAPTIONS_TO_IMAGES]
             path_out = os.path.join(results_dir, subj, f"cross_lang_to_vision_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f"{os.path.basename(path_out)} max: {np.max(cross_lang_to_vision):2.f}")
+            print(f"{os.path.basename(path_out)} max: {np.max(cross_lang_to_vision):.2f}")
             export_to_gifti(cross_lang_to_vision, path_out)
 
             cross_vision_to_lang = subject_scores_mod_specific_vision[subj][hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]
             path_out = os.path.join(results_dir, subj, f"cross_vision_to_lang_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f"{os.path.basename(path_out)} max: {np.max(cross_vision_to_lang):2.f}")
+            print(f"{os.path.basename(path_out)} max: {np.max(cross_vision_to_lang):.2f}")
             export_to_gifti(cross_vision_to_lang, path_out)
 
 
