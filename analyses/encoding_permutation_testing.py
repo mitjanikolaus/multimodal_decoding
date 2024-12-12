@@ -369,7 +369,6 @@ def calc_t_values_null_distr(args, out_path):
         for id in range(args.n_jobs)
     )
 
-    print("assembling results")
     tmp_files = dict()
     for job_id in range(args.n_jobs):
         tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
@@ -379,10 +378,10 @@ def calc_t_values_null_distr(args, out_path):
             tvals_shape = (args.n_permutations_group_level, n_vertices)
             all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
 
-        for i in tqdm(range(args.n_permutations_group_level)):
+        for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
             for hemi_metric in tmp_files[0].keys():
-                hemi = hemi_metric.split('__')[0]
-                data_tvals = np.repeat(np.nan, n_vertices)
+                # hemi = hemi_metric.split('__')[0]
+                # data_tvals = np.repeat(np.nan, n_vertices)
                 data_tvals = np.concatenate(
                     [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[hemi_metric][i] = data_tvals
