@@ -71,7 +71,6 @@ def create_gifti_results_maps(args):
                 score_hemi = subject_scores_mod_agnostic[subj][hemi][metric]
                 path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                print(f"{os.path.basename(path_out)} max: {np.max(score_hemi)}")
                 export_to_gifti(score_hemi, path_out)
 
     for subj in args.subjects:
