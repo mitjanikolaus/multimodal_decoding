@@ -98,8 +98,8 @@ def run(args):
                 test_fmri_betas = test_fmri_betas_full[hemi]
 
                 nan_locations = np.isnan(train_fmri_betas[0])
-                train_fmri_betas = train_fmri_betas[:, ~nan_locations]
-                test_fmri_betas = test_fmri_betas[:, ~nan_locations]
+                train_fmri_betas = np.nan_to_num(train_fmri_betas)#train_fmri_betas[:, ~nan_locations]
+                test_fmri_betas = np.nan_to_num(test_fmri_betas)#test_fmri_betas[:, ~nan_locations]
 
                 train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject,
