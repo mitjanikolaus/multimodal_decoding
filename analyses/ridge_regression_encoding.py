@@ -3,6 +3,8 @@ import time
 from collections import Counter
 
 import numpy as np
+from tqdm import tqdm
+
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV
 from himalaya.scoring import correlation_score
@@ -141,7 +143,7 @@ def run(args):
                                                                           TESTING_MODE,
                                                                           nn_latent_transform=latent_transform)
 
-                                test_predicted_betas = model.predict(test_data_latents)
+                                test_predicted_betas = model.predict(test_data_latents.astype(np.float32))
 
                                 test_fmri_betas = backend.to_numpy(test_fmri_betas)
                                 test_predicted_betas = backend.to_numpy(test_predicted_betas)
