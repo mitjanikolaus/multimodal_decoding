@@ -100,6 +100,8 @@ def run(args):
                 nan_locations = np.isnan(train_fmri_betas[0])
                 train_fmri_betas = train_fmri_betas[:, ~nan_locations]
                 test_fmri_betas = test_fmri_betas[:, ~nan_locations]
+                print(f"remaining nans: {np.sum(np.isnan(train_fmri_betas))}")
+                print(f"remaining test nans: {np.sum(np.isnan(test_fmri_betas))}")
 
                 train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject,
