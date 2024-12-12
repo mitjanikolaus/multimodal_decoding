@@ -47,7 +47,7 @@ def run(args):
     else:
         backend = set_backend("numpy")
 
-    random_seeds = create_null_distr_seeds(args.num_permuations_per_subject) if args.create_null_distr else None
+    random_seeds = create_null_distr_seeds(args.n_permuations_per_subject) if args.create_null_distr else None
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
