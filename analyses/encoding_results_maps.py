@@ -53,6 +53,12 @@ def create_gifti_results_maps(args):
     subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC)
     averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
 
+    subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS)
+    averaged_scores_mod_specific_lang = calc_averaged_scores(subject_scores_mod_specific_lang)
+
+    subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES)
+    averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
+
     print("Creating gifti results maps")
 
     for metric in METRICS:
@@ -67,11 +73,17 @@ def create_gifti_results_maps(args):
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 export_to_gifti(score_hemi, path_out)
 
-    subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS)
-    averaged_scores_mod_specific_lang = calc_averaged_scores(subject_scores_mod_specific_lang)
+                score_hemi_specific_lang = subject_scores_mod_specific_lang[subj][hemi][metric]
+                path_out = os.path.join(results_dir, subj, f"mod_specific_lang_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                os.makedirs(os.path.dirname(path_out), exist_ok=True)
+                export_to_gifti(score_hemi_specific_lang, path_out)
 
-    subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES)
-    averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
+                score_hemi_specific_vision = subject_scores_mod_specific_vision[subj][hemi][metric]
+                path_out = os.path.join(results_dir, subj, f"mod_specific_vision_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                os.makedirs(os.path.dirname(path_out), exist_ok=True)
+                export_to_gifti(score_hemi_specific_vision, path_out)
+
+
 
     for hemi in HEMIS:
         diff_corr_captions_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_CAPTIONS] - averaged_scores_mod_specific_lang[hemi][CORR_CAPTIONS]
