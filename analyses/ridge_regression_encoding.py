@@ -61,6 +61,13 @@ def get_results_file_path(subject, training_mode, model, features, vision_featur
     return results_file_path
 
 
+def get_null_distr_results_path(subject, training_mode, model, features, vision_features, lang_features, resolution,
+                                hemi):
+    run_str = get_run_str(model, features, vision_features, lang_features, resolution, hemi=hemi)
+    results_file_path = os.path.join(ENCODER_OUT_DIR, training_mode, subject, run_str, "null_distr.p")
+    return results_file_path
+
+
 def run(args):
     if args.cuda:
         print("Setting backend to cuda")
@@ -211,10 +218,13 @@ def run(args):
                                         )
                                         scores_null_distr.append(scores)
 
-                                    pickle.dump(
-                                        scores_null_distr,
-                                        open(os.path.join(os.path.dirname(results_file_path), f"null_distr.p"), "wb")
-                                    )
+                                    null_distr_file_path = get_null_distr_results_path(subject, training_mode,
+                                                                                       model_name,
+                                                                                       combined_feats(features,
+                                                                                                      test_features),
+                                                                                       vision_features, lang_features,
+                                                                                       args.resolution, hemi)
+                                    pickle.dump(scores_null_distr, open(null_distr_file_path, "wb"))
 
 
 def get_args():
