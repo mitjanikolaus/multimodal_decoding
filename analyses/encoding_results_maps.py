@@ -68,6 +68,7 @@ def create_gifti_results_maps(args):
             export_to_gifti(averaged_scores_mod_agnostic[hemi][metric], path_out)
 
             for subj in args.subjects:
+                print(f'\n{subj}')
                 score_hemi = subject_scores_mod_agnostic[subj][hemi][metric]
                 path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
