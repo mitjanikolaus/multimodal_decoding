@@ -167,7 +167,7 @@ def custom_search_light(
 def run(args):
     random_seeds = None
     if args.create_null_distr:
-        random_seeds = create_null_distr_seeds(args.n_permuations_per_subject)
+        random_seeds = create_null_distr_seeds(args.n_permutations_per_subject)
 
     for subject in args.subjects:
         for training_mode in args.training_modes:

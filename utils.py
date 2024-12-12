@@ -68,10 +68,10 @@ def create_shuffled_indices(seed):
     return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
 
 
-def create_null_distr_seeds(num_permuations_per_subject):
+def create_null_distr_seeds(n_permutations_per_subject):
     random_seeds = []
     seed = 0
-    for _ in range(num_permuations_per_subject):
+    for _ in range(n_permutations_per_subject):
         # shuffle indices for captions and images separately until all indices have changed
         shuffled_indices = create_shuffled_indices(seed)
         while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
