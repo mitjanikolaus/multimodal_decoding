@@ -216,7 +216,7 @@ def run(args):
                                         test_fmri_betas_shuffled = test_fmri_betas[shuffled_indices]
 
                                         scores = calc_correlation_metrics(
-                                            test_fmri_betas_shuffled, test_predicted_betas, test_stim_types,
+                                            test_fmri_betas_shuffled, test_predicted_betas, test_stim_types, backend
                                         )
                                         scores_null_distr.append(scores)
 
