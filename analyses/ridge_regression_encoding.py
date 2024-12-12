@@ -188,6 +188,7 @@ def run(args):
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "resolution": args.resolution,
+                                    "nan_locations": nan_locations,
                                 }
 
                                 results.update(
