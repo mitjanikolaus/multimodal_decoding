@@ -29,8 +29,10 @@ def load_corr_scores(args, training_mode, model, features):
                                                       args.resolution, hemi)
 
             results = pickle.load(open(results_file_path, "rb"))
+            nan_locations = results['nan_locations']
             for metric in METRICS:
-                per_subj_results[subject][hemi][metric] = results[metric]
+                per_subj_results[subject][hemi][metric] = np.repeat(np.nan, nan_locations.shape)
+                per_subj_results[subject][hemi][metric][~nan_locations] = results[metric]
 
     return per_subj_results
 
