@@ -98,8 +98,8 @@ def run(args):
                 test_fmri_betas = test_fmri_betas_full[hemi]
 
                 nan_locations = np.isnan(train_fmri_betas[0])
-                train_fmri_betas = np.nan_to_num(train_fmri_betas)#train_fmri_betas[:, ~nan_locations]
-                test_fmri_betas = np.nan_to_num(test_fmri_betas)#test_fmri_betas[:, ~nan_locations]
+                train_fmri_betas = np.nan_to_num(train_fmri_betas)  # train_fmri_betas[:, ~nan_locations]
+                test_fmri_betas = np.nan_to_num(test_fmri_betas)  # test_fmri_betas[:, ~nan_locations]
 
                 train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject,
@@ -152,7 +152,7 @@ def run(args):
                                                 solver_params=dict(n_targets_batch=args.n_targets_batch,
                                                                    n_alphas_batch=args.n_alphas_batch,
                                                                    n_targets_batch_refit=args.n_targets_batch_refit,
-                                                                   Y_in_cpu=True))
+                                                                   ))
 
                                 start = time.time()
                                 model.fit(train_latents.astype(np.float16), train_fmri_betas.astype(np.float16))
