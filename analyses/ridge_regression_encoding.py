@@ -193,7 +193,7 @@ def run(args):
 
                                 results.update(
                                     calc_correlation_metrics(
-                                        test_fmri_betas, test_predicted_betas, test_stim_types,
+                                        test_fmri_betas, test_predicted_betas, test_stim_types, backend
                                     )
                                 )
                                 print(
