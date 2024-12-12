@@ -151,7 +151,8 @@ def run(args):
                                 model = RidgeCV(alphas=args.l2_regularization_alphas,
                                                 solver_params=dict(n_targets_batch=args.n_targets_batch,
                                                                    n_alphas_batch=args.n_alphas_batch,
-                                                                   n_targets_batch_refit=args.n_targets_batch_refit))
+                                                                   n_targets_batch_refit=args.n_targets_batch_refit,
+                                                                   Y_in_cpu=True))
 
                                 start = time.time()
                                 model.fit(train_latents.astype(np.float16), train_fmri_betas.astype(np.float16))
