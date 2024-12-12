@@ -6,27 +6,28 @@ import os
 
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import get_run_str, FEATS_SELECT_DEFAULT, \
-    get_default_features, get_default_vision_features, get_default_lang_features, FEATURE_COMBINATION_CHOICES, \
+from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, \
+    get_default_features, get_default_vision_features, get_default_lang_features, \
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES
-from analyses.ridge_regression_encoding import ENCODER_OUT_DIR, ENCODING_RESULTS_DIR
+from analyses.ridge_regression_encoding import ENCODER_OUT_DIR, ENCODING_RESULTS_DIR, get_results_file_path
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, DATA_DIR, \
     RESULTS_FILE, CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
 
 METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
 
-def load_corr_scores(args, training_mode):
+
+def load_corr_scores(args, training_mode, model, features):
     per_subj_results = {}
     for subject in tqdm(args.subjects):
         per_subj_results[subject] = {}
         for hemi in HEMIS:
             per_subj_results[subject][hemi] = {}
-            results_dir = os.path.join(ENCODER_OUT_DIR, training_mode, subject)
-            run_str = get_run_str(args.model, args.features, args.test_features, args.vision_features,
-                                  args.lang_features, mask=None, surface=True, resolution=DEFAULT_RESOLUTION,
-                                  hemi=hemi)
-            results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
+            results_file_path = get_results_file_path(args.subject, training_mode, model,
+                                                      features,
+                                                      args.vision_features, args.lang_features,
+                                                      args.resolution, hemi)
+
             results = pickle.load(open(results_file_path, "rb"))
             for metric in METRICS:
                 per_subj_results[subject][hemi][metric] = results[metric]
@@ -49,20 +50,23 @@ def create_gifti_results_maps(args):
     results_dir = os.path.join(ENCODING_RESULTS_DIR, "corr_results_maps")
     os.makedirs(results_dir, exist_ok=True)
 
-    subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC)
+    subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, args.model, args.features)
     averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
 
-    subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS)
+    subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS, args.mod_specific_lang_model,
+                                                        args.mod_specific_lang_features)
     averaged_scores_mod_specific_lang = calc_averaged_scores(subject_scores_mod_specific_lang)
 
-    subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES)
+    subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES, args.mod_specific_vision_model,
+                                                          args.mod_specific_vision_features)
     averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
 
     print("Creating gifti results maps")
 
     for metric in METRICS:
         for hemi in HEMIS:
-            print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(averaged_scores_mod_agnostic[hemi][metric]):.3f}")
+            print(
+                f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(averaged_scores_mod_agnostic[hemi][metric]):.3f}")
             path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(averaged_scores_mod_agnostic[hemi][metric], path_out)
 
@@ -95,11 +99,13 @@ def create_gifti_results_maps(args):
             print(f"{os.path.basename(path_out)} max: {np.max(cross_vision_to_lang):.2f}")
             export_to_gifti(cross_vision_to_lang, path_out)
 
-
     for hemi in HEMIS:
-        diff_corr_captions_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_CAPTIONS] - averaged_scores_mod_specific_lang[hemi][CORR_CAPTIONS]
-        diff_corr_images_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_IMAGES] - averaged_scores_mod_specific_vision[hemi][CORR_IMAGES]
-        diff_mod_agnositic_mod_specific = np.min([diff_corr_captions_mod_agnositic_mod_specific, diff_corr_images_mod_agnositic_mod_specific], axis=0)
+        diff_corr_captions_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_CAPTIONS] - \
+                                                        averaged_scores_mod_specific_lang[hemi][CORR_CAPTIONS]
+        diff_corr_images_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_IMAGES] - \
+                                                      averaged_scores_mod_specific_vision[hemi][CORR_IMAGES]
+        diff_mod_agnositic_mod_specific = np.min(
+            [diff_corr_captions_mod_agnositic_mod_specific, diff_corr_images_mod_agnositic_mod_specific], axis=0)
 
         path_out = os.path.join(results_dir, f"diff_corr_captions_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_corr_captions_mod_agnositic_mod_specific, path_out)
@@ -110,12 +116,14 @@ def create_gifti_results_maps(args):
         path_out = os.path.join(results_dir, f"diff_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_mod_agnositic_mod_specific, path_out)
 
-        cross_encoding = np.min([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES], averaged_scores_mod_specific_vision[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
+        cross_encoding = np.min([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
+                                 averaged_scores_mod_specific_vision[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
         path_out = os.path.join(results_dir, f"cross_encoding_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(cross_encoding, path_out)
 
         cross_encoding_or_diff = np.max([cross_encoding, diff_mod_agnositic_mod_specific], axis=0)
-        path_out = os.path.join(results_dir, f"cross_encoding_or_diff_mod_agnostic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(results_dir,
+                                f"cross_encoding_or_diff_mod_agnostic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(cross_encoding_or_diff, path_out)
 
 
@@ -125,11 +133,13 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--test-features", type=str, default=FEATS_SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+
+    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
