@@ -58,11 +58,10 @@ def create_gifti_results_maps(args):
 
     subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES, args.mod_specific_vision_model,
                                                           args.mod_specific_vision_features)
+    averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
 
     subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, args.model, args.features)
     averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
-
-    averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
 
     print("Creating gifti results maps")
 
