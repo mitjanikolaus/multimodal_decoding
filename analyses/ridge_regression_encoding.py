@@ -15,7 +15,7 @@ from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, stan
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
 from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS, \
-    CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES
+    CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, FMRI_BETAS_DIR
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 
@@ -48,12 +48,14 @@ def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
             train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
+                args.betas_dir,
                 subject,
                 training_mode,
                 surface=True,
                 resolution=args.resolution,
             )
             test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
+                args.betas_dir,
                 subject,
                 TESTING_MODE,
                 surface=True,
@@ -177,6 +179,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
