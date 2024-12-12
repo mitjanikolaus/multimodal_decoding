@@ -52,15 +52,16 @@ def create_gifti_results_maps(args):
     results_dir = os.path.join(ENCODING_RESULTS_DIR, "corr_results_maps")
     os.makedirs(results_dir, exist_ok=True)
 
-    subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, args.model, args.features)
-    averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
-
     subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS, args.mod_specific_lang_model,
                                                         args.mod_specific_lang_features)
     averaged_scores_mod_specific_lang = calc_averaged_scores(subject_scores_mod_specific_lang)
 
     subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES, args.mod_specific_vision_model,
                                                           args.mod_specific_vision_features)
+
+    subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, args.model, args.features)
+    averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
+
     averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
 
     print("Creating gifti results maps")
