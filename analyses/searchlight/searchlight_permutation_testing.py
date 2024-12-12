@@ -26,7 +26,7 @@ from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, \
     METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, METRIC_CROSS_DECODING
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, FS_HEMI_NAMES, export_to_gifti, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_IMAGERY, ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS
+    ACC_IMAGERY, ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, DATA_DIR
 
 DEFAULT_N_JOBS = 10
 
@@ -218,7 +218,7 @@ def _compute_vertex_neighborhoods(surface):
 
 
 def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
-    path = os.path.join(SEARCHLIGHT_OUT_DIR, "edge_lengths", resolution, f"edge_lengths_{max_dist}.p")
+    path = os.path.join(DATA_DIR, "edge_lengths", resolution, f"edge_lengths_{max_dist}.p")
     if not os.path.isfile(path):
         edge_lengths_dicts = dict()
         fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)

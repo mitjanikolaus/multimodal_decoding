@@ -58,6 +58,30 @@ def model_features_file_path(model_name):
     return os.path.join(NN_FEATURES_DIR, f"{model_name.lower()}.p")
 
 
+def create_shuffled_indices(seed):
+    np.random.seed(seed)
+    num_stim_one_mod = NUM_TEST_STIMULI // 2
+    shuffleidx_mod_1 = np.random.choice(range(num_stim_one_mod), size=num_stim_one_mod,
+                                        replace=False)
+    shuffleidx_mod_2 = np.random.choice(range(num_stim_one_mod, NUM_TEST_STIMULI),
+                                        size=num_stim_one_mod, replace=False)
+    return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
+
+
+def create_null_distr_seeds(num_permuations_per_subject):
+    random_seeds = []
+    seed = 0
+    for _ in range(num_permuations_per_subject):
+        # shuffle indices for captions and images separately until all indices have changed
+        shuffled_indices = create_shuffled_indices(seed)
+        while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
+            seed += 1
+            shuffled_indices = create_shuffled_indices(seed)
+        random_seeds.append(seed)
+        seed += 1
+    return random_seeds
+
+
 IMAGES_IMAGERY_CONDITION = [
     [406591, f'images/train2017/000000406591.jpg',
      'A woman sits in a beach chair as a man walks along the sand'],

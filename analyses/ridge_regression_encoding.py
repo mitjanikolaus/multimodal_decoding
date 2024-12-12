@@ -15,9 +15,11 @@ from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, stan
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
 from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS, \
-    CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, FMRI_BETAS_DIR
+    CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, FMRI_BETAS_DIR, DATA_DIR, create_null_distr_seeds, \
+    create_shuffled_indices
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
+ENCODING_RESULTS_DIR = os.path.join(DATA_DIR, "encoding_results")
 
 
 def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
@@ -44,6 +46,8 @@ def run(args):
         backend = set_backend("torch_cuda")
     else:
         backend = set_backend("numpy")
+
+    random_seeds = create_null_distr_seeds(args.num_permuations_per_subject) if args.create_null_distr else None
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
@@ -126,7 +130,7 @@ def run(args):
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alphas = np.round(model.best_alphas_.cpu().numpy())
+                                best_alphas = np.round(backend.to_numpy(model.best_alphas_))
 
                                 test_data_latents, _ = get_nn_latent_data(model_name, test_features,
                                                                           vision_features,
@@ -176,6 +180,22 @@ def run(args):
                                 os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
                                 pickle.dump(results, open(results_file_path, 'wb'))
 
+                                if args.create_null_distr:
+                                    scores_null_distr = []
+                                    for seed in random_seeds:
+                                        shuffled_indices = create_shuffled_indices(seed)
+                                        test_fmri_betas_shuffled = test_fmri_betas[shuffled_indices]
+
+                                        scores = calc_correlation_metrics(
+                                            test_fmri_betas_shuffled, test_predicted_betas, test_stim_types,
+                                        )
+                                        scores_null_distr.append(scores)
+
+                                    pickle.dump(
+                                        scores_null_distr,
+                                        open(os.path.join(os.path.dirname(results_file_path), f"null_distr.p"), "wb")
+                                    )
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -210,6 +230,9 @@ def get_args():
     parser.add_argument("--overwrite", action='store_true', default=False)
 
     parser.add_argument("--cuda", action='store_true', default=False)
+
+    parser.add_argument("--create-null-distr", default=False, action="store_true")
+    parser.add_argument("--n-permutations-per-subject", type=int, default=100)
 
     return parser.parse_args()
 

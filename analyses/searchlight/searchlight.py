@@ -25,7 +25,7 @@ from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_
     get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, DATA_DIR, \
-    DEFAULT_RESOLUTION
+    DEFAULT_RESOLUTION, create_null_distr_seeds, create_shuffled_indices
 
 DEFAULT_N_JOBS = 10
 
@@ -164,29 +164,10 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
-def create_shuffled_indices(seed):
-    np.random.seed(seed)
-    num_stim_one_mod = NUM_TEST_STIMULI // 2
-    shuffleidx_mod_1 = np.random.choice(range(num_stim_one_mod), size=num_stim_one_mod,
-                                        replace=False)
-    shuffleidx_mod_2 = np.random.choice(range(num_stim_one_mod, NUM_TEST_STIMULI),
-                                        size=num_stim_one_mod, replace=False)
-    return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
-
-
 def run(args):
     random_seeds = None
     if args.create_null_distr:
-        random_seeds = []
-        seed = 0
-        for _ in range(args.n_permutations_per_subject):
-            # shuffle indices for captions and images separately until all indices have changed
-            shuffled_indices = create_shuffled_indices(seed)
-            while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
-                seed += 1
-                shuffled_indices = create_shuffled_indices(seed)
-            random_seeds.append(seed)
-            seed += 1
+        random_seeds = create_null_distr_seeds(args.num_permuations_per_subject)
 
     for subject in args.subjects:
         for training_mode in args.training_modes:
