@@ -7,11 +7,11 @@ import os
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, \
-    get_default_features, get_default_vision_features, get_default_lang_features, \
+    get_default_vision_features, get_default_lang_features, \
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES
-from analyses.ridge_regression_encoding import ENCODER_OUT_DIR, ENCODING_RESULTS_DIR, get_results_file_path
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, DATA_DIR, \
-    RESULTS_FILE, CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
+from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_results_file_path
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, \
+    CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
 
 METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
@@ -23,7 +23,7 @@ def load_corr_scores(args, training_mode, model, features):
         per_subj_results[subject] = {}
         for hemi in HEMIS:
             per_subj_results[subject][hemi] = {}
-            results_file_path = get_results_file_path(args.subject, training_mode, model,
+            results_file_path = get_results_file_path(subject, training_mode, model,
                                                       features,
                                                       args.vision_features, args.lang_features,
                                                       args.resolution, hemi)
