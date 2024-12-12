@@ -149,6 +149,7 @@ def run(args):
                                 )
 
                                 model = RidgeCV(alphas=args.l2_regularization_alphas,
+                                                Y_in_cpu=True,
                                                 solver_params=dict(n_targets_batch=args.n_targets_batch,
                                                                    n_alphas_batch=args.n_alphas_batch,
                                                                    n_targets_batch_refit=args.n_targets_batch_refit,
