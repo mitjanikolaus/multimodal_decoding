@@ -159,13 +159,9 @@ if __name__ == "__main__":
     args = get_args()
 
     model_name = args.model
-    if args.features == FEATS_SELECT_DEFAULT:
-        args.features = get_default_features(model_name)
     if args.vision_features == FEATS_SELECT_DEFAULT:
         args.vision_features = get_default_vision_features(model_name)
     if args.lang_features == FEATS_SELECT_DEFAULT:
         args.lang_features = get_default_lang_features(model_name)
-    if args.test_features == FEATS_SELECT_DEFAULT:
-        args.test_features = get_default_features(model_name)
 
     create_gifti_results_maps(args)
