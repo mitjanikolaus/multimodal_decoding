@@ -10,7 +10,6 @@ from joblib import Parallel, delayed
 import os
 import pickle
 
-from scipy import stats
 from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import get_default_vision_features, get_default_lang_features
@@ -26,7 +25,7 @@ DEFAULT_N_JOBS = 10
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
 
 
-def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
+def load_per_subject_scores(args, return_nan_locations=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -59,8 +58,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
 
             results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
             scores_agnostic = results_agnostic['scores']
-            # per_subject_n_neighbors[subject][hemi] = n_neighbors
-            # per_subject_nan_locations[subject][hemi] = nan_locations
+            nan_locations = results_agnostic['nan_locations']
+            per_subject_nan_locations[subject][hemi] = nan_locations
 
             if os.path.isfile(results_mod_specific_vision_file):
                 scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
@@ -74,7 +73,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
                 print(f"Missing modality-specific results: {results_mod_specific_lang_file}")
                 scores_captions = None
 
-            scores = process_scores(scores_agnostic, scores_captions, scores_images)
+            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
 
             # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
             # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
@@ -82,8 +81,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
 
             per_subject_scores[subject][hemi] = scores
 
-    if return_nan_locations_and_n_neighbors:
-        return per_subject_scores, per_subject_nan_locations, per_subject_n_neighbors
+    if return_nan_locations:
+        return per_subject_scores, per_subject_nan_locations
     else:
         return per_subject_scores
 
@@ -128,9 +127,8 @@ def calc_t_values(per_subject_scores):
                        CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
-            assert np.sum(enough_data) == data.shape[1] #TODO remove
-            print("\n\n\n can remove assert")
-            t_values[hemi][metric] = data.mean(axis=0)
+            t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
+            t_values[hemi][metric][enough_data] = np.nanmean(data[:, enough_data], axis=0)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -196,22 +194,28 @@ def calc_test_statistics(args):
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
-def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images):
+def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
     scores = dict()
     for metric in [CORR_CAPTIONS, CORR_IMAGES]:
-        scores[metric] = scores_agnostic[metric]
+        scores[metric] = np.repeat(np.nan, nan_locations.shape)
+        scores[metric][~nan_locations] = scores_agnostic[metric]
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
         scores_specific_captions = dict()
         for metric in [CORR_CAPTIONS, CORR_IMAGES]:
-            scores_specific_captions[metric] = scores_mod_specific_captions[metric]
+            scores_specific_captions[metric] = np.repeat(np.nan, nan_locations.shape)
+            scores_specific_captions[metric][~nan_locations] = scores_mod_specific_captions[metric]
 
         scores_specific_images = dict()
         for metric in [CORR_CAPTIONS, CORR_IMAGES]:
-            scores_specific_images[metric] = scores_mod_specific_images[metric]
+            scores_specific_images[metric] = np.repeat(np.nan, nan_locations.shape)
+            scores_specific_images[metric][~nan_locations] = scores_mod_specific_images[metric]
 
-        scores[CORR_CROSS_CAPTIONS_TO_IMAGES] = scores_mod_specific_captions[CORR_CROSS_CAPTIONS_TO_IMAGES]
-        scores[CORR_CROSS_IMAGES_TO_CAPTIONS] = scores_mod_specific_images[CORR_CROSS_IMAGES_TO_CAPTIONS]
+        scores[CORR_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
+        scores[CORR_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = scores_mod_specific_captions[CORR_CROSS_CAPTIONS_TO_IMAGES]
+
+        scores[CORR_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
+        scores[CORR_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = scores_mod_specific_images[CORR_CROSS_IMAGES_TO_CAPTIONS]
 
         scores[METRIC_DIFF_IMAGES] = np.array(
             [ai - si for ai, ac, si, sc in
@@ -239,12 +243,12 @@ def load_null_distr_per_subject_scores(args):
         for hemi in HEMIS:
             vision_features = get_default_vision_features(args.model)
             lang_features = get_default_lang_features(args.model)
-            results_agnostic_file = get_null_distr_results_path(subject, MODE_AGNOSTIC, args.model, args.features,
+            null_distr_agnostic_file = get_null_distr_results_path(subject, MODE_AGNOSTIC, args.model, args.features,
                                                                 vision_features, lang_features, args.resolution, hemi)
 
             vision_features = get_default_vision_features(args.mod_specific_vision_model)
             lang_features = get_default_lang_features(args.mod_specific_vision_model)
-            results_mod_specific_vision_file = get_null_distr_results_path(subject, MOD_SPECIFIC_IMAGES,
+            null_distr_results_mod_specific_vision_file = get_null_distr_results_path(subject, MOD_SPECIFIC_IMAGES,
                                                                            args.mod_specific_vision_model,
                                                                            args.mod_specific_vision_features,
                                                                            vision_features, lang_features,
@@ -252,21 +256,25 @@ def load_null_distr_per_subject_scores(args):
                                                                            hemi)
             vision_features = get_default_vision_features(args.mod_specific_lang_model)
             lang_features = get_default_lang_features(args.mod_specific_lang_model)
-            results_mod_specific_lang_file = get_null_distr_results_path(subject, MOD_SPECIFIC_CAPTIONS,
+            null_distr_results_mod_specific_lang_file = get_null_distr_results_path(subject, MOD_SPECIFIC_CAPTIONS,
                                                                          args.mod_specific_lang_model,
                                                                          args.mod_specific_lang_features,
                                                                          vision_features, lang_features,
                                                                          args.resolution,
                                                                          hemi)
 
-            null_distribution_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
-            null_distribution_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))
-            null_distribution_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))
+            null_distribution_agnostic = pickle.load(open(null_distr_agnostic_file, 'rb'))
+            null_distribution_images = pickle.load(open(null_distr_results_mod_specific_vision_file, 'rb'))
+            null_distribution_captions = pickle.load(open(null_distr_results_mod_specific_lang_file, 'rb'))
+
+            results_agnostic_file = get_results_file_path(subject, MODE_AGNOSTIC, args.model, args.features,
+                                                                vision_features, lang_features, args.resolution, hemi)
+            nan_locations = pickle.load(open(results_agnostic_file, 'rb'))['nan_locations']
 
             num_permutations = len(null_distribution_agnostic)
             for i in tqdm(range(num_permutations), desc='final per subject scores null distribution dict creation'):
                 scores = process_scores(null_distribution_agnostic[i], null_distribution_captions[i],
-                                        null_distribution_images[i])
+                                        null_distribution_images[i], nan_locations)
                 if len(per_subject_scores_null_distr) <= i:
                     per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
                 per_subject_scores_null_distr[i][subject][hemi] = scores
@@ -309,7 +317,7 @@ def calc_t_values_null_distr(args, out_path):
                         data = np.array(
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(permutation, args.subjects)])
-                        t_values[hemi][metric] = data.mean(axis=0)
+                        t_values[hemi][metric] = np.nanmean(data, axis=0)
                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
 
                     with warnings.catch_warnings():
@@ -331,16 +339,16 @@ def calc_t_values_null_distr(args, out_path):
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][CORR_IMAGES].shape[0]
-    # enough_data = {
-    #     hemi: np.argwhere(
-    #         (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][CORR_IMAGES] for subj in args.subjects])).sum(
-    #             axis=0) > 2)[:, 0]
-    #     for hemi in HEMIS
-    # }  # at least 3 datapoints
-    # enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
-    # print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
+    enough_data = {
+        hemi: np.argwhere(
+            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][CORR_IMAGES] for subj in args.subjects])).sum(
+                axis=0) > 2)[:, 0]
+        for hemi in HEMIS
+    }  # at least 3 datapoints
+    enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
+    print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
 
-    n_per_job = {hemi: math.ceil(len(per_subject_scores_null_distr[0][args.subjects[0]][hemi][CORR_IMAGES]) / args.n_jobs) for hemi in HEMIS}
+    n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
     print("filtering scores for enough data and splitting up for jobs")
@@ -352,7 +360,8 @@ def calc_t_values_null_distr(args, out_path):
             for hemi in HEMIS:
                 for metric in scores[subj][hemi].keys():
                     for job_id in range(args.n_jobs):
-                        scores_jobs[job_id][id][subj][hemi][metric] = scores[subj][hemi][metric][
+                        filtered = scores[subj][hemi][metric][enough_data[hemi]]
+                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[
                                                                       job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
                                                                           hemi]]
 
@@ -393,7 +402,7 @@ def permutation_results_dir(args):
     return str(os.path.join(
         ENCODING_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_vision_model,
         args.mod_specific_vision_features, args.mod_specific_lang_model, args.mod_specific_lang_features,
-        args.resolution, args.mode
+        args.resolution,
     ))
 
 
@@ -467,7 +476,6 @@ def get_args():
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_750')
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
