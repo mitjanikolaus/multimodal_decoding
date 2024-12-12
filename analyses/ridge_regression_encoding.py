@@ -24,20 +24,20 @@ ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_enc
 ENCODING_RESULTS_DIR = os.path.join(DATA_DIR, "encoding_results")
 
 
-def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
-    corr_scores_all = correlation_score(test_fmri_betas, test_predicted_betas).cpu().numpy()
+def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types, backend):
+    corr_scores_all = backend.to_numpy(correlation_score(test_fmri_betas, test_predicted_betas))
 
     corr_scores = {CORR_ALL: corr_scores_all}
     for modality, metric_name in zip([CAPTION, IMAGE], [CORR_CAPTIONS, CORR_IMAGES]):
         preds_mod = test_predicted_betas[stim_types == modality].copy()
         targets_mod = test_fmri_betas[stim_types == modality]
-        corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
+        corr_scores[metric_name] = backend.to_numpy(correlation_score(targets_mod, preds_mod))
 
     for mod_preds, mod_targets, metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
                                                    [CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]):
         preds_mod = test_predicted_betas[stim_types == mod_preds].copy()
         targets_mod = test_fmri_betas[stim_types == mod_targets]
-        corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
+        corr_scores[metric_name] = backend.to_numpy(correlation_score(targets_mod, preds_mod))
 
     return corr_scores
 
