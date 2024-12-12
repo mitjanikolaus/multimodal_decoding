@@ -13,7 +13,7 @@ import pickle
 
 from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, standardize_fmri_betas, \
     FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
-    get_default_lang_features, get_run_str, get_nn_latent_data, \
+    get_default_lang_features, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
     CAPTION, IMAGE
 from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS, \
@@ -40,6 +40,25 @@ def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types):
         corr_scores[metric_name] = correlation_score(targets_mod, preds_mod).cpu().numpy()
 
     return corr_scores
+
+
+def combined_feats(feats, test_features):
+    return f"{feats}_test_{test_features}"
+
+
+def get_run_str(model_name, features, vision_features, lang_features, resolution, hemi):
+    run_str = f"{model_name}_{features}"
+    run_str += f"_{vision_features}"
+    run_str += f"_{lang_features}"
+    run_str += f"_surface_{resolution}"
+    run_str += f"_{hemi}_hemi"
+    return run_str
+
+
+def get_results_file_path(subject, training_mode, model, features, vision_features, lang_features, resolution, hemi):
+    run_str = get_run_str(model, features, vision_features, lang_features, resolution, hemi=hemi)
+    results_file_path = os.path.join(ENCODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE)
+    return results_file_path
 
 
 def run(args):
@@ -71,8 +90,8 @@ def run(args):
                 train_fmri_betas = train_fmri_betas_full[hemi]
                 test_fmri_betas = test_fmri_betas_full[hemi]
 
-                train_fmri_betas = np.nan_to_num(train_fmri_betas)
-                test_fmri_betas = np.nan_to_num(test_fmri_betas)
+                train_fmri_betas = train_fmri_betas[~np.isnan(train_fmri_betas[0])]
+                test_fmri_betas = test_fmri_betas[~np.isnan(train_fmri_betas[0])]
 
                 train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject,
@@ -102,11 +121,10 @@ def run(args):
                                 print(f"train fMRI betas shape: {train_fmri_betas.shape}")
                                 print(f"test fMRI betas shape: {test_fmri_betas.shape}")
 
-                                results_dir = os.path.join(ENCODER_OUT_DIR, training_mode, subject)
-                                run_str = get_run_str(
-                                    model_name, features, test_features, vision_features, lang_features, mask=None,
-                                    surface=True, resolution=args.resolution, hemi=hemi)
-                                results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
+                                results_file_path = get_results_file_path(subject, training_mode, model_name,
+                                                                          combined_feats(features, test_features),
+                                                                          vision_features, lang_features,
+                                                                          args.resolution, hemi)
                                 if os.path.isfile(results_file_path) and not args.overwrite:
                                     print(f"Skipping encoder training as results are already present at"
                                           f" {results_file_path}")
