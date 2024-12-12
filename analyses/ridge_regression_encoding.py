@@ -126,7 +126,7 @@ def run(args):
                                                                    n_targets_batch_refit=args.n_targets_batch_refit))
 
                                 start = time.time()
-                                model.fit(train_latents, train_fmri_betas)
+                                model.fit(train_latents.astype(np.float32), train_fmri_betas.astype(np.float32))
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
