@@ -182,7 +182,7 @@ def run(args):
 
                                 if args.create_null_distr:
                                     scores_null_distr = []
-                                    for seed in random_seeds:
+                                    for seed in tqdm(random_seeds, desc="creating null distribution"):
                                         shuffled_indices = create_shuffled_indices(seed)
                                         test_fmri_betas_shuffled = test_fmri_betas[shuffled_indices]
 
