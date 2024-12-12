@@ -18,14 +18,14 @@ import pickle
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from analyses.ridge_regression_decoding import TRAIN_MODE_CHOICES, FEATS_SELECT_DEFAULT, \
+from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
     get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
-from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, NUM_TEST_STIMULI, SUBJECTS, DATA_DIR, \
-    DEFAULT_RESOLUTION, create_null_distr_seeds, create_shuffled_indices
+from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, SUBJECTS, DATA_DIR, \
+    DEFAULT_RESOLUTION, create_null_distr_seeds, create_shuffled_indices, TRAIN_MODE_CHOICES
 
 DEFAULT_N_JOBS = 10
 
@@ -34,10 +34,6 @@ SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, 
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
 METRIC_AGNOSTIC = 'agnostic'
-METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'
-METRIC_DIFF_IMAGES = 'diff_imgs_agno_imgs_specific'
-METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
-METRIC_CROSS_DECODING = 'cross_decoding'
 
 
 def train_and_test(

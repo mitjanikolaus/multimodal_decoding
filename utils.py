@@ -49,6 +49,16 @@ FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
 DEFAULT_RESOLUTION = "fsaverage7"
 
+MOD_SPECIFIC_IMAGES = "train_image"
+MOD_SPECIFIC_CAPTIONS = "train_caption"
+MODE_AGNOSTIC = "train"
+TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
+
+METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'
+METRIC_DIFF_IMAGES = 'diff_imgs_agno_imgs_specific'
+METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
+METRIC_CROSS_DECODING = 'cross_decoding'
+
 
 def nipype_subject_id(subject):
     return f'_subject_id_{subject}'

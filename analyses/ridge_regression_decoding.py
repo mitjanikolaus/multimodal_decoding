@@ -21,7 +21,7 @@ from utils import IMAGERY_SCENES, FMRI_BETAS_DIR, model_features_file_path, VISI
     VISION_CLS_FEAT_KEY, FUSED_CLS_FEAT_KEY, FUSED_MEAN_FEAT_KEY, LANG_MEAN_FEAT_KEY, \
     LANG_CLS_FEAT_KEY, FMRI_SURFACE_LEVEL_DIR, HEMIS, SUBJECTS, ACC_CAPTIONS, ACC_IMAGES, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, \
-    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION, RESULTS_FILE
+    ACC_MODALITY_AGNOSTIC, DEFAULT_RESOLUTION, RESULTS_FILE, MODE_AGNOSTIC, TRAIN_MODE_CHOICES
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -41,10 +41,6 @@ NUM_CV_SPLITS = 5
 DEFAULT_N_JOBS = 5
 DEFAULT_N_PRE_DISPATCH = 5
 
-MOD_SPECIFIC_IMAGES = "train_image"
-MOD_SPECIFIC_CAPTIONS = "train_caption"
-MODE_AGNOSTIC = "train"
-TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 TESTING_MODE = "test"
 
 IMAGE = "image"
@@ -805,7 +801,7 @@ def get_args():
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
-    parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
+    parser.add_argument("--training-modes", type=str, nargs="+", default=[MODE_AGNOSTIC],
                         choices=TRAIN_MODE_CHOICES)
 
     parser.add_argument("--surface", action="store_true", default=False)
