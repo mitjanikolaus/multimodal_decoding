@@ -146,7 +146,7 @@ def run(args):
                                                                    n_targets_batch_refit=args.n_targets_batch_refit))
 
                                 start = time.time()
-                                model.fit(train_latents.astype(np.float32), train_fmri_betas.astype(np.float32))
+                                model.fit(train_latents, train_fmri_betas)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
@@ -161,7 +161,7 @@ def run(args):
                                                                           TESTING_MODE,
                                                                           nn_latent_transform=latent_transform)
 
-                                test_predicted_betas = model.predict(test_data_latents.astype(np.float32))
+                                test_predicted_betas = model.predict(test_data_latents)
 
                                 test_fmri_betas = backend.to_numpy(test_fmri_betas)
                                 test_predicted_betas = backend.to_numpy(test_predicted_betas)
