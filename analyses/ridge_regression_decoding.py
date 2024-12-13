@@ -520,23 +520,23 @@ def get_run_str(model_name, features, test_features, vision_features, lang_featu
     return run_str
 
 
-def get_fmri_surface_data(subject, mode, resolution):
+def get_fmri_surface_data(subject, mode, resolution, hemis=HEMIS):
     base_mode = mode.split('_')[0]
     fmri_betas = {
         hemi: pickle.load(
             open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in tqdm(HEMIS, desc=f"loading {base_mode} fmri surface data")
+        in tqdm(hemis, desc=f"loading {base_mode} fmri surface data")
     }
     stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
     stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
 
     if mode == MOD_SPECIFIC_CAPTIONS:
-        for hemi in HEMIS:
+        for hemi in hemis:
             fmri_betas[hemi] = fmri_betas[hemi][stim_types == CAPTION]
         stim_ids = stim_ids[stim_types == CAPTION]
         stim_types = stim_types[stim_types == CAPTION]
     elif mode == MOD_SPECIFIC_IMAGES:
-        for hemi in HEMIS:
+        for hemi in hemis:
             fmri_betas[hemi] = fmri_betas[hemi][stim_types == IMAGE]
         stim_ids = stim_ids[stim_types == IMAGE]
         stim_types = stim_types[stim_types == IMAGE]

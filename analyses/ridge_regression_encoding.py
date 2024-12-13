@@ -15,7 +15,7 @@ from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, stan
     FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
     get_default_lang_features, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
-    CAPTION, IMAGE
+    CAPTION, IMAGE, get_fmri_surface_data
 from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS, \
     CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, FMRI_BETAS_DIR, DATA_DIR, create_null_distr_seeds, \
     create_shuffled_indices
@@ -79,25 +79,24 @@ def run(args):
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
-            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
-                args.betas_dir,
-                subject,
-                training_mode,
-                surface=True,
-                resolution=args.resolution,
-            )
-            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
-                args.betas_dir,
-                subject,
-                TESTING_MODE,
-                surface=True,
-                resolution=args.resolution,
-            )
             for hemi in HEMIS:
+                train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_surface_data(
+                    subject,
+                    training_mode,
+                    resolution=args.resolution,
+                    hemis=[hemi],
+                )
+                test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                    subject,
+                    TESTING_MODE,
+                    resolution=args.resolution,
+                    hemis=[hemi]
+                )
                 train_fmri_betas = train_fmri_betas_full[hemi]
                 test_fmri_betas = test_fmri_betas_full[hemi]
 
                 nan_locations = np.isnan(train_fmri_betas[0])
+                print("nan locations: ", np.sum(nan_locations))
                 train_fmri_betas = train_fmri_betas[:, ~nan_locations]
                 test_fmri_betas = test_fmri_betas[:, ~nan_locations]
 
