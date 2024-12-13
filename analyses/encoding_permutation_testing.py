@@ -310,7 +310,7 @@ def calc_t_values_null_distr(args, out_path):
                            METRIC_CROSS_ENCODING]:
                 dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32', fillvalue=np.nan)
 
-            for perm_idx in trange(args.n_permutations_group_level):
+            for perm_idx in tqdm(range(args.n_permutations_group_level)):
                 tvals = dict()
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
                                CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
