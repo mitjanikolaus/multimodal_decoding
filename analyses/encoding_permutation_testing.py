@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 import os
 import pickle
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from analyses.ridge_regression_decoding import get_default_vision_features, get_default_lang_features
 from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, get_results_file_path
@@ -283,121 +283,174 @@ def load_null_distr_per_subject_scores(args):
     return per_subject_scores_null_distr
 
 
+
 def calc_t_values_null_distr(args, out_path):
     per_subject_scores_null_distr_path = os.path.join(
         permutation_results_dir(args), f"per_subject_scores_null_distr.p"
     )
     if not os.path.isfile(per_subject_scores_null_distr_path):
         print("loading per subject null distr scores")
-        per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+        per_subject_scores = load_null_distr_per_subject_scores(args)
         os.makedirs(os.path.dirname(per_subject_scores_null_distr_path), exist_ok=True)
-        pickle.dump(per_subject_scores_null_distr, open(per_subject_scores_null_distr_path, 'wb'))
+        pickle.dump(per_subject_scores, open(per_subject_scores_null_distr_path, 'wb'))
     else:
-        per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
+        per_subject_scores = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
 
-    def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path, subjects):
-        os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
-
-        with h5py.File(tmp_file_path, 'w') as f:
-            dsets = dict()
-            for hemi in HEMIS:
-                dsets[hemi] = dict()
-                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
-                               METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC,
-                               CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-                               METRIC_CROSS_ENCODING]:
-                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][CORR_IMAGES].size)
-                    dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
-
-            iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
-                permutations)
-            for iteration, permutation in iterator:
-                t_values = {hemi: dict() for hemi in HEMIS}
-                for hemi in HEMIS:
-                    for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
-                                   CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES]:
-                        data = np.array(
-                            [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                             zip(permutation, args.subjects)])
-                        t_values[hemi][metric] = np.nanmean(data, axis=0)
-                        dsets[hemi][metric][iteration] = t_values[hemi][metric]
-
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=RuntimeWarning)
-                        dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
-                            (
-                                t_values[hemi][METRIC_DIFF_CAPTIONS],
-                                t_values[hemi][METRIC_DIFF_IMAGES],
-                                t_values[hemi][CORR_IMAGES],
-                                t_values[hemi][CORR_CAPTIONS]),
-                            axis=0)
-                        dsets[hemi][METRIC_CROSS_ENCODING][iteration] = np.nanmin(
-                            (t_values[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS],
-                             t_values[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES]),
-                            axis=0
-                        )
-
-    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
-    permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
-
-    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][CORR_IMAGES].shape[0]
-    enough_data = {
-        hemi: np.argwhere(
-            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][CORR_IMAGES] for subj in args.subjects])).sum(
-                axis=0) > 2)[:, 0]
-        for hemi in HEMIS
-    }  # at least 3 datapoints
-    enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
-    print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
-
-    n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
-    print(f"n vertices per job: {n_per_job}")
-
-    print("filtering scores for enough data and splitting up for jobs")
-    scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
-    for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr)):
-        for job_id in range(args.n_jobs):
-            scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
-        for subj in args.subjects:
-            for hemi in HEMIS:
-                for metric in scores[subj][hemi].keys():
-                    for job_id in range(args.n_jobs):
-                        filtered = scores[subj][hemi][metric][enough_data[hemi]]
-                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[
-                                                                      job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
-                                                                          hemi]]
-
-    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
-                     range(args.n_jobs)}
-    Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-        delayed(calc_permutation_t_values)(
-            scores_jobs[id],
-            permutations,
-            id,
-            tmp_filenames[id],
-            args.subjects,
-        )
-        for id in range(args.n_jobs)
-    )
-
-    tmp_files = dict()
-    for job_id in range(args.n_jobs):
-        tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
-        for hemi_metric in tmp_files[0].keys():
-            tvals_shape = (args.n_permutations_group_level, n_vertices)
-            all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
+        dsets = dict()
 
-        for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
-            for hemi_metric in tmp_files[0].keys():
-                hemi = hemi_metric.split('__')[0]
-                data_tvals = np.repeat(np.nan, n_vertices)
-                data_tvals[enough_data[hemi]] = np.concatenate(
-                    [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
-                all_t_vals_file[hemi_metric][i] = data_tvals
+        for hemi in HEMIS:
+            print(hemi)
+            tvals_shape = (args.n_permutations_group_level, per_subject_scores[0][args.subjects[0]][hemi][CORR_IMAGES].size)
+            dsets[hemi] = dict()
 
-    print("finished assemble")
+            for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
+                           METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC,
+                           CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
+                           METRIC_CROSS_ENCODING]:
+                dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32', fillvalue=np.nan)
+
+            for perm_idx in trange(args.n_permutations_group_level):
+                tvals = dict()
+                for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
+                               CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
+                               ]:
+                    data = [per_subject_scores[perm_idx][subj][hemi][metric] for subj in args.subjects]
+                    tvals[metric] = np.nanmean(data, axis=0)
+                    dsets[hemi][metric][perm_idx] = tvals[metric]
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][perm_idx] = np.nanmin(
+                        (
+                            tvals[METRIC_DIFF_CAPTIONS],
+                            tvals[METRIC_DIFF_IMAGES],
+                            tvals[CORR_IMAGES],
+                            tvals[CORR_CAPTIONS]),
+                        axis=0)
+                    dsets[hemi][METRIC_CROSS_ENCODING][perm_idx] = np.nanmin(
+                        (tvals[CORR_CROSS_IMAGES_TO_CAPTIONS],
+                         tvals[CORR_CROSS_CAPTIONS_TO_IMAGES]),
+                        axis=0
+                    )
+
+#
+# def calc_t_values_null_distr(args, out_path):
+#     per_subject_scores_null_distr_path = os.path.join(
+#         permutation_results_dir(args), f"per_subject_scores_null_distr.p"
+#     )
+#     if not os.path.isfile(per_subject_scores_null_distr_path):
+#         print("loading per subject null distr scores")
+#         per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+#         os.makedirs(os.path.dirname(per_subject_scores_null_distr_path), exist_ok=True)
+#         pickle.dump(per_subject_scores_null_distr, open(per_subject_scores_null_distr_path, 'wb'))
+#     else:
+#         per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
+#
+#     def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path, subjects):
+#         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
+#
+#         with h5py.File(tmp_file_path, 'w') as f:
+#             dsets = dict()
+#             for hemi in HEMIS:
+#                 dsets[hemi] = dict()
+#                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
+#                                METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC,
+#                                CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
+#                                METRIC_CROSS_ENCODING]:
+#                     tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][CORR_IMAGES].size)
+#                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
+#
+#             iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
+#                 permutations)
+#             for iteration, permutation in iterator:
+#                 t_values = {hemi: dict() for hemi in HEMIS}
+#                 for hemi in HEMIS:
+#                     for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
+#                                    CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES]:
+#                         data = np.array(
+#                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+#                              zip(permutation, args.subjects)])
+#                         t_values[hemi][metric] = np.nanmean(data, axis=0)
+#                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
+#
+#                     with warnings.catch_warnings():
+#                         warnings.simplefilter("ignore", category=RuntimeWarning)
+#                         dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
+#                             (
+#                                 t_values[hemi][METRIC_DIFF_CAPTIONS],
+#                                 t_values[hemi][METRIC_DIFF_IMAGES],
+#                                 t_values[hemi][CORR_IMAGES],
+#                                 t_values[hemi][CORR_CAPTIONS]),
+#                             axis=0)
+#                         dsets[hemi][METRIC_CROSS_ENCODING][iteration] = np.nanmin(
+#                             (t_values[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS],
+#                              t_values[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES]),
+#                             axis=0
+#                         )
+#
+#     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
+#     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
+#
+#     n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][CORR_IMAGES].shape[0]
+#     enough_data = {
+#         hemi: np.argwhere(
+#             (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][CORR_IMAGES] for subj in args.subjects])).sum(
+#                 axis=0) > 2)[:, 0]
+#         for hemi in HEMIS
+#     }  # at least 3 datapoints
+#     enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
+#     print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
+#
+#     n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
+#     print(f"n vertices per job: {n_per_job}")
+#
+#     print("filtering scores for enough data and splitting up for jobs")
+#     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
+#     for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr)):
+#         for job_id in range(args.n_jobs):
+#             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
+#         for subj in args.subjects:
+#             for hemi in HEMIS:
+#                 for metric in scores[subj][hemi].keys():
+#                     for job_id in range(args.n_jobs):
+#                         filtered = scores[subj][hemi][metric][enough_data[hemi]]
+#                         scores_jobs[job_id][id][subj][hemi][metric] = filtered[
+#                                                                       job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
+#                                                                           hemi]]
+#
+#     tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
+#                      range(args.n_jobs)}
+#     Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+#         delayed(calc_permutation_t_values)(
+#             scores_jobs[id],
+#             permutations,
+#             id,
+#             tmp_filenames[id],
+#             args.subjects,
+#         )
+#         for id in range(args.n_jobs)
+#     )
+#
+#     tmp_files = dict()
+#     for job_id in range(args.n_jobs):
+#         tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
+#
+#     with h5py.File(out_path, 'w') as all_t_vals_file:
+#         for hemi_metric in tmp_files[0].keys():
+#             tvals_shape = (args.n_permutations_group_level, n_vertices)
+#             all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
+#
+#         for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
+#             for hemi_metric in tmp_files[0].keys():
+#                 hemi = hemi_metric.split('__')[0]
+#                 data_tvals = np.repeat(np.nan, n_vertices)
+#                 data_tvals[enough_data[hemi]] = np.concatenate(
+#                     [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+#                 all_t_vals_file[hemi_metric][i] = data_tvals
+#
+#     print("finished assemble")
 
 
 def permutation_results_dir(args):
