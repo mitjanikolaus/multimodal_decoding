@@ -21,7 +21,6 @@ from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, \
     CORR_CAPTIONS, CORR_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     CORR_CROSS_CAPTIONS_TO_IMAGES, METRIC_CROSS_ENCODING
 
-
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
 
@@ -37,24 +36,24 @@ def load_per_subject_scores(args, return_nan_locations=False):
             vision_features = get_default_vision_features(args.model)
             lang_features = get_default_lang_features(args.model)
             results_agnostic_file = get_results_file_path(subject, MODE_AGNOSTIC, args.model, args.features,
-                                                                vision_features, lang_features, args.resolution, hemi)
+                                                          vision_features, lang_features, args.resolution, hemi)
 
             vision_features = get_default_vision_features(args.mod_specific_vision_model)
             lang_features = get_default_lang_features(args.mod_specific_vision_model)
             results_mod_specific_vision_file = get_results_file_path(subject, MOD_SPECIFIC_IMAGES,
-                                                                           args.mod_specific_vision_model,
-                                                                           args.mod_specific_vision_features,
-                                                                           vision_features, lang_features,
-                                                                           args.resolution,
-                                                                           hemi)
+                                                                     args.mod_specific_vision_model,
+                                                                     args.mod_specific_vision_features,
+                                                                     vision_features, lang_features,
+                                                                     args.resolution,
+                                                                     hemi)
             vision_features = get_default_vision_features(args.mod_specific_lang_model)
             lang_features = get_default_lang_features(args.mod_specific_lang_model)
             results_mod_specific_lang_file = get_results_file_path(subject, MOD_SPECIFIC_CAPTIONS,
-                                                                         args.mod_specific_lang_model,
-                                                                         args.mod_specific_lang_features,
-                                                                         vision_features, lang_features,
-                                                                         args.resolution,
-                                                                         hemi)
+                                                                   args.mod_specific_lang_model,
+                                                                   args.mod_specific_lang_features,
+                                                                   vision_features, lang_features,
+                                                                   args.resolution,
+                                                                   hemi)
 
             scores_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
             nan_locations = scores_agnostic['nan_locations']
@@ -147,7 +146,7 @@ def calc_t_values(per_subject_scores):
     return t_values
 
 
-def calc_test_statistics(args):
+def calc_test_statistics(null_distr_tfce_values, args):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
         per_subject_scores = load_per_subject_scores(args)
@@ -171,7 +170,8 @@ def calc_test_statistics(args):
         print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
         print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
 
-    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(args, args.p_value_threshold)
+    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distr_tfce_values, args.metric,
+                                                                             args.p_value_threshold)
 
     p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
@@ -211,10 +211,12 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
             scores_specific_images[metric][~nan_locations] = scores_mod_specific_images[metric]
 
         scores[CORR_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
-        scores[CORR_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = scores_mod_specific_captions[CORR_CROSS_CAPTIONS_TO_IMAGES]
+        scores[CORR_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = scores_mod_specific_captions[
+            CORR_CROSS_CAPTIONS_TO_IMAGES]
 
         scores[CORR_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
-        scores[CORR_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = scores_mod_specific_images[CORR_CROSS_IMAGES_TO_CAPTIONS]
+        scores[CORR_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = scores_mod_specific_images[
+            CORR_CROSS_IMAGES_TO_CAPTIONS]
 
         scores[METRIC_DIFF_IMAGES] = np.array(
             [ai - si for ai, ac, si, sc in
@@ -243,31 +245,32 @@ def load_null_distr_per_subject_scores(args):
             vision_features = get_default_vision_features(args.model)
             lang_features = get_default_lang_features(args.model)
             null_distr_agnostic_file = get_null_distr_results_path(subject, MODE_AGNOSTIC, args.model, args.features,
-                                                                vision_features, lang_features, args.resolution, hemi)
+                                                                   vision_features, lang_features, args.resolution,
+                                                                   hemi)
 
             vision_features = get_default_vision_features(args.mod_specific_vision_model)
             lang_features = get_default_lang_features(args.mod_specific_vision_model)
             null_distr_results_mod_specific_vision_file = get_null_distr_results_path(subject, MOD_SPECIFIC_IMAGES,
-                                                                           args.mod_specific_vision_model,
-                                                                           args.mod_specific_vision_features,
-                                                                           vision_features, lang_features,
-                                                                           args.resolution,
-                                                                           hemi)
+                                                                                      args.mod_specific_vision_model,
+                                                                                      args.mod_specific_vision_features,
+                                                                                      vision_features, lang_features,
+                                                                                      args.resolution,
+                                                                                      hemi)
             vision_features = get_default_vision_features(args.mod_specific_lang_model)
             lang_features = get_default_lang_features(args.mod_specific_lang_model)
             null_distr_results_mod_specific_lang_file = get_null_distr_results_path(subject, MOD_SPECIFIC_CAPTIONS,
-                                                                         args.mod_specific_lang_model,
-                                                                         args.mod_specific_lang_features,
-                                                                         vision_features, lang_features,
-                                                                         args.resolution,
-                                                                         hemi)
+                                                                                    args.mod_specific_lang_model,
+                                                                                    args.mod_specific_lang_features,
+                                                                                    vision_features, lang_features,
+                                                                                    args.resolution,
+                                                                                    hemi)
 
             null_distribution_agnostic = pickle.load(open(null_distr_agnostic_file, 'rb'))
             null_distribution_images = pickle.load(open(null_distr_results_mod_specific_vision_file, 'rb'))
             null_distribution_captions = pickle.load(open(null_distr_results_mod_specific_lang_file, 'rb'))
 
             results_agnostic_file = get_results_file_path(subject, MODE_AGNOSTIC, args.model, args.features,
-                                                                vision_features, lang_features, args.resolution, hemi)
+                                                          vision_features, lang_features, args.resolution, hemi)
             nan_locations = pickle.load(open(results_agnostic_file, 'rb'))['nan_locations']
 
             num_permutations = len(null_distribution_agnostic)
@@ -458,6 +461,9 @@ def create_null_distribution(args):
         tfce_values = np.concatenate(tfce_values)
 
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
+    else:
+        tfce_values = pickle.load(open(tfce_values_null_distribution_path, 'rb'))
+    return tfce_values
 
 
 def get_args():
@@ -496,6 +502,6 @@ if __name__ == "__main__":
     args = get_args()
 
     print(f"\n\nPermutation Testing for {args.metric}\n")
-    create_null_distribution(args)
-    calc_test_statistics(args)
+    null_distr_tfce_values = create_null_distribution(args)
+    calc_test_statistics(null_distr_tfce_values, args)
     create_masks(permutation_results_dir(args), get_hparam_suffix(args))
