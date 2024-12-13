@@ -3,6 +3,7 @@ import time
 from collections import Counter
 
 import numpy as np
+import sklearn
 from tqdm import tqdm
 
 from himalaya.backend import set_backend
@@ -154,7 +155,10 @@ def run(args):
                                                                    ))
 
                                 start = time.time()
-                                model.fit(train_latents.astype(np.float16), train_fmri_betas.astype(np.float16))
+                                train_latents = train_latents.astype(np.float32)
+                                train_fmri_betas = train_fmri_betas.astype(np.float32)
+                                sklearn.set_config(assume_finite=True)
+                                model.fit(train_latents, train_fmri_betas)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
