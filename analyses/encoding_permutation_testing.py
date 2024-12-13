@@ -505,4 +505,4 @@ if __name__ == "__main__":
     print(f"\n\nPermutation Testing for {args.metric}\n")
     null_distr_tfce_values = create_null_distribution(args)
     calc_test_statistics(null_distr_tfce_values, args)
-    create_masks(permutation_results_dir(args), args.metric, get_hparam_suffix(args))
+    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args))
