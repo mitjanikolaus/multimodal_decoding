@@ -294,8 +294,9 @@ def calc_t_values_null_distr(args, out_path):
         os.makedirs(os.path.dirname(per_subject_scores_null_distr_path), exist_ok=True)
         pickle.dump(per_subject_scores, open(per_subject_scores_null_distr_path, 'wb'))
     else:
-        print("loading precomputed per subject null distr scores")
+        print("loading precomputed per subject null distr scores..", end=' ')
         per_subject_scores = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
+        print('done.')
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
         dsets = dict()
