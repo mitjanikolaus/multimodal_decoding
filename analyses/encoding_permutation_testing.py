@@ -462,6 +462,7 @@ def create_null_distribution(args):
 
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
     else:
+        print(tfce_values_null_distribution_path)
         tfce_values = pickle.load(open(tfce_values_null_distribution_path, 'rb'))
     return tfce_values
 
