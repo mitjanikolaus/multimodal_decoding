@@ -297,7 +297,7 @@ def calc_t_values_null_distr(args, out_path):
         per_subject_scores = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
         print('done.')
 
-    permutations_iter = itertools.permutations(range(len(args.n_permutations_group_level)), len(args.subjects))
+    permutations_iter = itertools.permutations(range(args.n_permutations_group_level), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
     with h5py.File(out_path, 'w') as all_t_vals_file:
         dsets = dict()
