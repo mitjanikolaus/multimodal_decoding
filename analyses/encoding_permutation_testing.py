@@ -320,7 +320,9 @@ def calc_t_values_null_distr(args, out_path):
                                ]:
                     data = [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                             zip(permutations[perm_idx], args.subjects)]
-                    tvals[metric] = np.nanmean(data, axis=0)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", category=RuntimeWarning)
+                        tvals[metric] = np.nanmean(data, axis=0)
                     dsets[hemi][metric][perm_idx] = tvals[metric]
 
                 with warnings.catch_warnings():
