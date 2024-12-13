@@ -848,7 +848,7 @@ def compute_results_clusters(values, args):
     print(df.style.format(precision=3).to_latex(hrules=True))
 
 
-def create_masks(results_dir, hparam_suffix):
+def create_masks(results_dir, metric, hparam_suffix):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
 
@@ -874,7 +874,7 @@ def create_masks(results_dir, hparam_suffix):
     for hemi in HEMIS:
         path_out = os.path.join(results_maps_path,
                                 f"tfce_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(tfce_values[hemi][args.metric], path_out)
+        export_to_gifti(tfce_values[hemi][metric], path_out)
 
     # p value masks
     masks = copy.deepcopy(p_values)
@@ -928,4 +928,4 @@ if __name__ == "__main__":
     print(f"\n\nPermutation Testing for {args.metric}\n")
     create_null_distribution(args)
     calc_test_statistics(args)
-    create_masks(permutation_results_dir(args), get_hparam_suffix(args))
+    create_masks(permutation_results_dir(args), args.metric, get_hparam_suffix(args))
