@@ -283,7 +283,6 @@ def load_null_distr_per_subject_scores(args):
     return per_subject_scores_null_distr
 
 
-
 def calc_t_values_null_distr(args, out_path):
     per_subject_scores_null_distr_path = os.path.join(
         permutation_results_dir(args), f"per_subject_scores_null_distr.p"
@@ -298,6 +297,8 @@ def calc_t_values_null_distr(args, out_path):
         per_subject_scores = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
         print('done.')
 
+    permutations_iter = itertools.permutations(range(len(args.n_permutations_group_level)), len(args.subjects))
+    permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
     with h5py.File(out_path, 'w') as all_t_vals_file:
         dsets = dict()
         for hemi in HEMIS:
@@ -317,7 +318,8 @@ def calc_t_values_null_distr(args, out_path):
                 for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
                                CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
                                ]:
-                    data = [per_subject_scores[perm_idx][subj][hemi][metric] for subj in args.subjects]
+                    data = [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                            zip(permutations[perm_idx], args.subjects)]
                     tvals[metric] = np.nanmean(data, axis=0)
                     dsets[hemi][metric][perm_idx] = tvals[metric]
 
@@ -335,6 +337,7 @@ def calc_t_values_null_distr(args, out_path):
                          tvals[CORR_CROSS_CAPTIONS_TO_IMAGES]),
                         axis=0
                     )
+
 
 #
 # def calc_t_values_null_distr(args, out_path):
