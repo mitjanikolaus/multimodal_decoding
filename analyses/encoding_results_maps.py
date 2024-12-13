@@ -106,7 +106,7 @@ def create_gifti_results_maps(args):
                                                         averaged_scores_mod_specific_lang[hemi][CORR_CAPTIONS]
         diff_corr_images_mod_agnositic_mod_specific = averaged_scores_mod_agnostic[hemi][CORR_IMAGES] - \
                                                       averaged_scores_mod_specific_vision[hemi][CORR_IMAGES]
-        diff_mod_agnositic_mod_specific = np.min(
+        diff_mod_agnositic_mod_specific = np.nanmin(
             [diff_corr_captions_mod_agnositic_mod_specific, diff_corr_images_mod_agnositic_mod_specific], axis=0)
 
         path_out = os.path.join(results_dir, f"diff_corr_captions_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
@@ -118,7 +118,7 @@ def create_gifti_results_maps(args):
         path_out = os.path.join(results_dir, f"diff_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_mod_agnositic_mod_specific, path_out)
 
-        cross_encoding = np.min([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
+        cross_encoding = np.nanmin([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
                                  averaged_scores_mod_specific_vision[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
         path_out = os.path.join(results_dir, f"cross_encoding_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(cross_encoding, path_out)
