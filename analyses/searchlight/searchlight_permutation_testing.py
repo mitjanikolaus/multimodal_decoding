@@ -794,14 +794,14 @@ def create_null_distribution(args):
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
-def compute_results_clusters(values, results_dir, hparam_suffix):
+def compute_results_clusters(values, results_dir, hparam_suffix, metric, resolution):
     t_values_path = os.path.join(results_dir, "t_values.p")
     t_values = pickle.load(open(t_values_path, "rb"))
 
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
-    edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
+    edge_lengths = get_edge_lengths_dicts_based_on_edges(resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
 
     results_maps_path = os.path.join(results_dir, "results_maps")
@@ -818,8 +818,8 @@ def compute_results_clusters(values, results_dir, hparam_suffix):
         for i, cluster in enumerate(clusters[:10]):
             cluster = list(cluster)
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
-            vertex_max_t_value = cluster[np.argmax(t_values[hemi][args.metric][cluster])]
-            max_t_value = t_values[hemi][args.metric][vertex_max_t_value]
+            vertex_max_t_value = cluster[np.argmax(t_values[hemi][metric][cluster])]
+            max_t_value = t_values[hemi][metric][vertex_max_t_value]
             print(f"Max t-value: {max_t_value:.2f}", end=" | ")
             coords = mesh.coordinates[vertex_max_t_value]
             print(f"Coordinates (max t-value): {coords}")
@@ -848,7 +848,7 @@ def compute_results_clusters(values, results_dir, hparam_suffix):
     print(df.style.format(precision=3).to_latex(hrules=True))
 
 
-def create_masks(results_dir, metric, p_value_threshold, hparam_suffix):
+def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resolution):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
 
@@ -884,7 +884,7 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix):
         masks[hemi][np.isnan(p_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
-    compute_results_clusters(masks, results_dir, hparam_suffix)
+    compute_results_clusters(masks, results_dir, hparam_suffix, metric, resolution)
 
 
 def get_args():
@@ -928,4 +928,5 @@ if __name__ == "__main__":
     print(f"\n\nPermutation Testing for {args.metric}\n")
     create_null_distribution(args)
     calc_test_statistics(args)
-    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args))
+    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
+                 args.resolution)
