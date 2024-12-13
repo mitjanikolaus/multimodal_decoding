@@ -97,7 +97,6 @@ def run(args):
                 test_fmri_betas = test_fmri_betas_full[hemi]
 
                 nan_locations = np.isnan(train_fmri_betas[0])
-                print("nan locations: ", np.sum(nan_locations))
                 train_fmri_betas = train_fmri_betas[:, ~nan_locations]
                 test_fmri_betas = test_fmri_betas[:, ~nan_locations]
 
