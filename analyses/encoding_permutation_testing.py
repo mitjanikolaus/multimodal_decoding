@@ -167,8 +167,8 @@ def calc_test_statistics(null_distr_tfce_values, args):
         tfce_values = pickle.load(open(tfce_values_path, 'rb'))
 
     for hemi in HEMIS:
-        print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
-        print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
+        print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.3f} | ", end="")
+        print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.3f}")
 
     significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distr_tfce_values, args.metric,
                                                                              args.p_value_threshold)
@@ -485,7 +485,7 @@ def get_args():
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
-    parser.add_argument("--tfce-dh", type=float, default=0.01)
+    parser.add_argument("--tfce-dh", type=float, default=0.001)
     parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
@@ -503,9 +503,9 @@ if __name__ == "__main__":
     args = get_args()
 
     print(f"\n\nPermutation Testing for {args.metric}\n")
-    null_distr_tfce_values = create_null_distribution(args)
-    calc_test_statistics(null_distr_tfce_values, args)
-    # calc_test_statistics(None, args)
+    # null_distr_tfce_values = create_null_distribution(args)
+    # calc_test_statistics(null_distr_tfce_values, args)
+    calc_test_statistics(None, args)
 
     create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
                  args.resolution)
