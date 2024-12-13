@@ -157,7 +157,11 @@ def run(args):
                                 start = time.time()
                                 train_latents = train_latents.astype(np.float32)
                                 train_fmri_betas = train_fmri_betas.astype(np.float32)
+
+                                # skip input data checking to limit memory use
+                                # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
                                 sklearn.set_config(assume_finite=True)
+
                                 model.fit(train_latents, train_fmri_betas)
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
@@ -173,7 +177,8 @@ def run(args):
                                                                           TESTING_MODE,
                                                                           nn_latent_transform=latent_transform)
 
-                                test_predicted_betas = model.predict(test_data_latents.astype(np.float16))
+                                test_data_latents = test_data_latents.astype(np.float32)
+                                test_predicted_betas = model.predict(test_data_latents)
 
                                 test_fmri_betas = backend.to_numpy(test_fmri_betas)
                                 test_predicted_betas = backend.to_numpy(test_predicted_betas)
