@@ -301,14 +301,15 @@ def calc_t_values_null_distr(args, out_path):
         dsets = dict()
         for hemi in HEMIS:
             print(hemi)
-            tvals_shape = (args.n_permutations_group_level, per_subject_scores[0][args.subjects[0]][hemi][CORR_IMAGES].size)
+            n_vertices = per_subject_scores[0][args.subjects[0]][hemi][CORR_IMAGES].size
+            tvals_shape = (args.n_permutations_group_level, n_vertices)
             dsets[hemi] = dict()
 
             for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
                            METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC,
                            CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
                            METRIC_CROSS_ENCODING]:
-                dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32', fillvalue=np.nan)
+                dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
             for perm_idx in tqdm(range(args.n_permutations_group_level)):
                 tvals = dict()
