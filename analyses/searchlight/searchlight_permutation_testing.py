@@ -794,18 +794,18 @@ def create_null_distribution(args):
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
-def compute_results_clusters(values, args):
-    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+def compute_results_clusters(values, results_dir, hparam_suffix):
+    t_values_path = os.path.join(results_dir, "t_values.p")
     t_values = pickle.load(open(t_values_path, "rb"))
 
-    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+    p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
 
-    results_maps_path = os.path.join(permutation_results_dir(args), "results_maps")
-    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{get_hparam_suffix(args)}")
+    results_maps_path = os.path.join(results_dir, "results_maps")
+    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{hparam_suffix}")
     os.makedirs(masks_path, exist_ok=True)
 
     clusters_df = []
@@ -835,7 +835,7 @@ def compute_results_clusters(values, args):
             cluster_map[list(cluster)] = values[hemi][cluster]
 
             fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
-            path_out = os.path.join(results_maps_path, f"clusters{get_hparam_suffix(args)}", fname)
+            path_out = os.path.join(results_maps_path, f"clusters{hparam_suffix}", fname)
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map, path_out)
 
@@ -884,7 +884,7 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix):
         masks[hemi][np.isnan(p_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
-    compute_results_clusters(masks, args)
+    compute_results_clusters(masks, results_dir, hparam_suffix)
 
 
 def get_args():
