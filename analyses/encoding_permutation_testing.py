@@ -30,7 +30,6 @@ def load_per_subject_scores(args, return_nan_locations=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
-    per_subject_n_neighbors = {subj: dict() for subj in args.subjects}
     per_subject_nan_locations = {subj: dict() for subj in args.subjects}
 
     for subject in tqdm(args.subjects):
@@ -57,9 +56,8 @@ def load_per_subject_scores(args, return_nan_locations=False):
                                                                          args.resolution,
                                                                          hemi)
 
-            results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
-            scores_agnostic = results_agnostic['scores']
-            nan_locations = results_agnostic['nan_locations']
+            scores_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
+            nan_locations = scores_agnostic['nan_locations']
             per_subject_nan_locations[subject][hemi] = nan_locations
 
             if os.path.isfile(results_mod_specific_vision_file):
