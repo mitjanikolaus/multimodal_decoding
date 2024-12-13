@@ -485,7 +485,7 @@ def get_args():
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
-    parser.add_argument("--tfce-dh", type=float, default=0.1)
+    parser.add_argument("--tfce-dh", type=float, default=0.01)
     parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
@@ -505,5 +505,7 @@ if __name__ == "__main__":
     print(f"\n\nPermutation Testing for {args.metric}\n")
     null_distr_tfce_values = create_null_distribution(args)
     calc_test_statistics(null_distr_tfce_values, args)
+    # calc_test_statistics(None, args)
+
     create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
                  args.resolution)
