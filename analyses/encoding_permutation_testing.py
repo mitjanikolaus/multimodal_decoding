@@ -61,13 +61,13 @@ def load_per_subject_scores(args, return_nan_locations=False):
             per_subject_nan_locations[subject][hemi] = nan_locations
 
             if os.path.isfile(results_mod_specific_vision_file):
-                scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
+                scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))
             else:
                 print(f"Missing modality-specific results: {results_mod_specific_vision_file}")
                 scores_images = None
 
             if os.path.isfile(results_mod_specific_lang_file):
-                scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
+                scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))
             else:
                 print(f"Missing modality-specific results: {results_mod_specific_lang_file}")
                 scores_captions = None
