@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from utils import SUBJECTS, FMRI_BETAS_DIR
 
-SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank']
+SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank', 'train_trial', 'test_trial']
 
 SUFFIX = "*bf(1)"
 
@@ -38,6 +38,10 @@ def create_symlinks_for_beta_files(betas_dir):
             if split_name in beta_name:
                 if split_name == 'blank':
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
+                elif split_name == 'train_trial':
+                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_train_trial.nii")
+                elif split_name == 'test_trial':
+                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_test_trial.nii")
                 else:
                     stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
