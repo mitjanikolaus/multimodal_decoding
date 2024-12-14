@@ -62,11 +62,18 @@ def preprocess_event_files(event_files):
     """
     data = []
     onset_shift = 0
+    run_reg_names = [f'UR{i}' for i in range(1, len(event_files))]
 
     for r_idx, event_file in enumerate(event_files):
         df = pd.read_csv(event_file, sep='\t')
         df['onset'] += onset_shift
         df['glm_conditions'] = df.apply(get_condition_names, axis=1)
+
+        run_reg_data = np.zeros((df.shape[0], len(run_reg_names)))
+        if r_idx < len(run_reg_names):
+            run_reg_data[:, r_idx] = 1
+        run_reg_df = pd.DataFrame(run_reg_data, columns=run_reg_names)
+        df = pd.concat([df, run_reg_df], axis=1)
 
         onset_shift = df['onset'].iloc[-1] + df['duration'].iloc[-1]  # new onset_shift for the next run
 
