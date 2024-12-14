@@ -19,7 +19,6 @@ from preprocessing.make_spm_design_job_mat import get_sessions
 from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
     FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_DATA_DIR
 
-
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas_new")
 
 
@@ -35,23 +34,20 @@ def get_condition_names(trial):
     elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
         conditions.append(f"imagery_{trial['imagery_scene']}")
     else:
-        if trial['one_back'] != 0:
-            conditions.append('one_back')
-        if trial['subj_resp'] != 0:
+        if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
+            if trial['one_back'] != 0:
+                conditions.append('one_back')
+            if trial['subj_resp'] != 0:
                 conditions.append('subj_resp')
-        if trial['condition_name'] != 0:
+        elif trial['condition_name'] != 0:
             if trial['trial_type'] == 1 and trial['train_test'] == 1:
                 conditions.append(f"train_image_{trial['condition_name']}")
-                conditions.append("train_trial")
             if trial['trial_type'] == 2 and trial['train_test'] == 1:
                 conditions.append(f"train_caption_{trial['condition_name']}")
-                conditions.append("train_trial")
             if trial['trial_type'] == 1 and trial['train_test'] == 2:
                 conditions.append(f"test_image_{trial['condition_name']}")
-                conditions.append("test_trial")
             if trial['trial_type'] == 2 and trial['train_test'] == 2:
                 conditions.append(f"test_caption_{trial['condition_name']}")
-                conditions.append("test_trial")
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
@@ -79,7 +75,7 @@ def preprocess_event_files(event_files):
     return pd.concat(data, ignore_index=True)
 
 
-def load_event_files(tsv_files, log_files=None):
+def load_event_files(tsv_files):
     events_df = preprocess_event_files(tsv_files)
     condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
     if 'null' in condition_names:
@@ -87,9 +83,6 @@ def load_event_files(tsv_files, log_files=None):
 
     print(condition_names)
     print("Number of conditions:", len(condition_names))
-
-    # if log_files is not None:
-    #     events_df.to_csv(log_files[tsvf_idx], sep="\t")
 
     ###############################
     # Design-Matrix-Friendly format
@@ -106,18 +99,10 @@ def load_event_files(tsv_files, log_files=None):
                 onsets[condition].append(trial['onset'])
                 durs[condition].append(trial['duration'])
 
-    temp_condition_names = ['dummy'] + condition_names[:]
-    onsets['dummy'] = [0, 0]
-    durs['dummy'] = [0, 0]
-    temp_onsets = np.array([np.array(onsets[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
-    temp_durations = np.array([np.array(durs[k])[:, np.newaxis] for k in temp_condition_names], dtype=object)
-    temp_onsets = temp_onsets[1:]
-    temp_durations = temp_durations[1:]
-
     subject_info = Bunch(
         conditions=np.array(condition_names, dtype=object),
-        onsets=temp_onsets,
-        durations=temp_durations,
+        onsets=np.array([np.array(onsets[k])[:, np.newaxis] for k in condition_names], dtype=object),
+        durations=np.array([np.array(durs[k])[:, np.newaxis] for k in condition_names], dtype=object),
         orthogonalizations=np.array([orth[k] for k in condition_names], dtype=object),
         tmod=np.zeros((len(condition_names),), dtype=object),
         pmod=np.zeros((len(condition_names),), dtype=object),
@@ -276,10 +261,7 @@ def run(args):
             fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
 
             # conditions
-            conditions = load_event_files(
-                event_files,
-                # log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs]
-            )
+            conditions = load_event_files(event_files)
 
             fmri_spec['sess']['cond'] = fromarrays(
                 [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
@@ -298,11 +280,6 @@ def run(args):
             jobs['jobs'][0]['spm']['stats'] = dict()
             jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
             savemat(os.path.join(save_dir_stage2, 'spm_job.mat'), jobs)
-
-            # fmri_spec['sess']['scans'] = np.array(run_scans, dtype=object)[:, np.newaxis]
-            # stage_2_fmri_specs.append(fmri_spec)
-
-
 
 
 def get_args():
