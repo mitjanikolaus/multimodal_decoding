@@ -15,6 +15,7 @@ from nipype.interfaces.base import Bunch
 import pandas as pd
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from preprocessing.make_spm_design_job_mat import get_sessions
 from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
     FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_DATA_DIR
 
@@ -153,7 +154,7 @@ def define_multi_regressors(realign_files):
 
 
 def run(args):
-    subsample_sessions = args.sessions
+    sessions_subsample = args.sessions
     # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
     for subject in args.subjects:
@@ -232,14 +233,7 @@ def run(args):
         scans = []
         event_files = []
         realign_files = []
-        if subsample_sessions:
-            sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
-            session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
-        else:
-            print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-            session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
-            sessions = [path.split(os.sep)[-1] for path in session_dirs]
-        print(f"Sessions: {sessions}")
+        sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
             n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))

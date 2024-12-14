@@ -241,8 +241,20 @@ def define_multi_regressors(realign_files):
     return fromarrays([reg_names, x], names=['name', 'val'])
 
 
+def get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample):
+    if sessions_subsample:
+        sessions = [f'ses-{ses_idx}' for ses_idx in sessions_subsample]
+        session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
+    else:
+        print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
+        session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
+        sessions = [path.split(os.sep)[-1] for path in session_dirs]
+    print(f"Sessions: {sessions}")
+    return sessions, session_dirs
+
+
 def run(args):
-    subsample_sessions = args.sessions
+    sessions_subsample = args.sessions
     # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
 
     print("Stage: ", args.stage)
@@ -324,14 +336,7 @@ def run(args):
             scans = []
             event_files = []
             realign_files = []
-            if subsample_sessions:
-                sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
-                session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
-            else:
-                print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
-                sessions = [path.split(os.sep)[-1] for path in session_dirs]
-            print(f"Sessions: {sessions}")
+            sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
             for session, session_dir in zip(sessions, session_dirs):
                 print(f"Scanning for runs in {session_dir}")
                 n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
@@ -386,13 +391,7 @@ def run(args):
             stage_2_fmri_specs = []
             stage_2_save_dirs = []
 
-            if subsample_sessions:
-                sessions = [f'ses-{ses_idx}' for ses_idx in subsample_sessions]
-                session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
-            else:
-                print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-                session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, '_session_id_ses-*'))
-                sessions = [path.split(os.sep)[-2].replace('_session_id_', '') for path in session_dirs]
+            sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
             res_start = 0
             print(f"Sessions: {sessions}")
             for session, session_dir in zip(sessions, session_dirs):
