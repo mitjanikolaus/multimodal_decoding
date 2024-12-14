@@ -573,7 +573,7 @@ def apply_mask_and_clean(mask_name, betas_list, args):
     nan_locations = np.logical_or.reduce([np.isnan(betas[0]) for betas in betas_list])
     betas_list = [betas[:, ~nan_locations] for betas in betas_list]
 
-    return betas_list, nan_locations
+    return betas_list
 
 
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None, nan_locations=None):
@@ -633,9 +633,10 @@ def run(args):
             )
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas, nan_locations = apply_mask_and_clean(
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
                     mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
+                nan_locations = np.logical_or.reduce([np.isnan(betas[0]) for betas in [train_fmri_betas, test_fmri_betas, imagery_fmri_betas]])
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas, args, subject, nan_locations
                 )
