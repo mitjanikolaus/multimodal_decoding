@@ -1,6 +1,7 @@
 import argparse
 import time
 
+import nibabel
 import numpy as np
 import nibabel as nib
 from scipy.spatial.distance import cdist
@@ -273,20 +274,23 @@ def get_fmri_data_paths(betas_dir, subject, mode, surface=False, hemi=None, reso
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_fmri_voxel_data(betas_dir, subject, mode):
-    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, mode)
-
+def get_graymatter_mask(subject):
     gray_matter_mask_path = get_graymatter_mask_path(subject)
     gray_matter_mask_img = nib.load(gray_matter_mask_path)
     gray_matter_mask_data = gray_matter_mask_img.get_fdata()
-    gray_matter_mask = gray_matter_mask_data == 1
-    print(f"Gray matter mask size: {gray_matter_mask.sum()}")
+    graymatter_mask = gray_matter_mask_data == 1
+    print(f"Gray matter mask size: {graymatter_mask.sum()}")
+    return graymatter_mask
 
+def get_fmri_voxel_data(betas_dir, subject, mode):
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, mode)
+
+    graymatter_mask = get_graymatter_mask(subject)
     fmri_betas = []
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
-        sample = sample[gray_matter_mask].astype('float32').reshape(-1)
+        sample = sample[graymatter_mask].astype('float32').reshape(-1)
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
@@ -569,10 +573,24 @@ def apply_mask_and_clean(mask_name, betas_list, args):
     nan_locations = np.logical_or.reduce([np.isnan(betas[0]) for betas in betas_list])
     betas_list = [betas[:, ~nan_locations] for betas in betas_list]
 
-    return betas_list
+    return betas_list, nan_locations
 
 
-def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None):
+def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None, nan_locations=None):
+    graymatter_mask = get_graymatter_mask(subject)
+    train_trial_beta = nibabel.load(os.path.join(args.betas_dir, subject, 'betas_splits/beta_train_trial.nii'))
+    train_trial_beta = train_trial_beta.get_fdata()
+    train_trial_beta = train_trial_beta[graymatter_mask].astype('float32').reshape(-1)
+
+    test_trial_beta = nibabel.load(os.path.join(args.betas_dir, subject, 'betas_splits/beta_test_trial.nii'))
+    test_trial_beta = test_trial_beta.get_fdata()
+    test_trial_beta = test_trial_beta[graymatter_mask].astype('float32').reshape(-1)
+
+    diff_train_test = test_trial_beta - train_trial_beta
+    diff_train_test = diff_train_test[~nan_locations]
+
+    test_fmri_betas_transformed = test_fmri_betas - diff_train_test
+
     scaler = StandardScaler()
     scaler.fit(train_fmri_betas)
 
@@ -580,7 +598,7 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     # test_scaler = StandardScaler()
     # test_scaler.fit(test_fmri_betas)
-    test_fmri_betas = scaler.transform(test_fmri_betas)
+    test_fmri_betas = scaler.transform(test_fmri_betas_transformed)
 
     if imagery_fmri_betas is not None:
         imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
@@ -615,11 +633,11 @@ def run(args):
             )
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas, nan_locations = apply_mask_and_clean(
                     mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas, args, subject, nan_locations
                 )
 
                 for model_name in args.models:
