@@ -36,6 +36,8 @@ def create_symlinks_for_beta_files(betas_dir):
         beta_file = nib.load(beta_path)
         beta_name = beta_file.header['descrip'].item().decode()
 
+        if 'test_trail' in beta_name:
+            print('test trial')
         if ('train_trial' in beta_name) or ('test_trail' in beta_name):
             beta_name = 'train_trial' if 'train_trial' in beta_name else 'test_trail'
             slink_name = os.path.join(get_subdir('splits', betas_dir), f"beta_{beta_name}.nii")
