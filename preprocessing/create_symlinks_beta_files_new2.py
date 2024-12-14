@@ -30,21 +30,27 @@ def create_symlinks_for_beta_files(betas_dir):
     """
     beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'unstructured', 'ses-*', 'beta_*.nii'), recursive=True))
 
+    repeated_betas = {}
+
     for beta_path in tqdm(beta_file_addresses):
         beta_file = nib.load(beta_path)
         beta_name = beta_file.header['descrip'].item().decode()
 
         if 'train_trial' in beta_name or 'test_trail' in beta_name:
-            print(beta_name)
-            beta_name = beta_name.replace(SUFFIX, "").replace("_", "")
+            beta_name = 'train_trial' if 'train_trial' in beta_name else 'test_trail'
             print(beta_name)
             slink_name = os.path.join(get_subdir('splits', betas_dir), f"beta_{beta_name}.nii")
 
-            beta_relative_path = beta_path.replace(betas_dir, '')
-            if not beta_relative_path.startswith(os.sep):
-                beta_relative_path = os.sep + beta_relative_path
-            beta_relative_path = f"..{beta_relative_path}"
-            os.symlink(beta_relative_path, slink_name)
+            if slink_name not in repeated_betas:
+                repeated_betas[slink_name] = [beta_file]
+            else:
+                repeated_betas[slink_name].append(beta_file)
+
+    for slink_name, beta_files in repeated_betas.items():
+        print(f"averaging: {slink_name} ({len(beta_files)} files)")
+        averaged = np.mean([beta_file.get_fdata() for beta_file in beta_files], axis=0)
+        averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
+        nib.save(averaged_img, slink_name)
     #
     # for split_name in SPLITS_REPEATED:
     #     print(split_name)
