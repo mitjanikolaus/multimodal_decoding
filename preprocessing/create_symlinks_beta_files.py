@@ -39,6 +39,8 @@ def create_symlinks_for_beta_files(betas_dir):
                 if split_name == 'blank':
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
                 elif split_name == 'train_trial':
+                    print(beta_path)
+                    print(beta_name)
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_train_trial.nii")
                 elif split_name == 'test_trial':
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_test_trial.nii")
