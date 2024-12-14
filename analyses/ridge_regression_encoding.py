@@ -261,7 +261,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
-                        default=[1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
+                        default=[1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
 
     parser.add_argument("--n-targets-batch", type=int, default=500)
     parser.add_argument("--n-targets-batch-refit", type=int, default=100)
