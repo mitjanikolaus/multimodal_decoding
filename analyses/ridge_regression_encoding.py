@@ -12,7 +12,7 @@ from himalaya.scoring import correlation_score
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import get_fmri_data, TESTING_MODE, standardize_fmri_betas, \
+from analyses.ridge_regression_decoding import TESTING_MODE, standardize_fmri_betas, \
     FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
     get_default_lang_features, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
@@ -100,9 +100,8 @@ def run(args):
                 train_fmri_betas = train_fmri_betas[:, ~nan_locations]
                 test_fmri_betas = test_fmri_betas[:, ~nan_locations]
 
-                train_fmri_betas, test_fmri_betas, _ = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, subject=subject,
-                    training_mode=training_mode, mask_name=None
+                train_fmri_betas, test_fmri_betas = standardize_fmri_betas(
+                    train_fmri_betas, test_fmri_betas
                 )
 
                 for model_name in args.models:
