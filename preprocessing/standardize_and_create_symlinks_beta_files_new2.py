@@ -33,7 +33,7 @@ def create_symlinks_for_beta_files(betas_dir):
 
     repeated_betas = {}
 
-    for beta_path in tqdm(beta_file_addresses):
+    for beta_path in tqdm(beta_file_addresses, desc='creating train and test trial betas'):
         beta_file = nib.load(beta_path)
         beta_name = beta_file.header['descrip'].item().decode()
 
