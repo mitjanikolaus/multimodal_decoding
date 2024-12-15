@@ -77,6 +77,7 @@ def create_symlinks_for_beta_files(betas_dir):
             standardized_img = nib.Nifti1Image(beta_standardized, beta_file.affine, beta_file.header)
             new_beta_path = beta_path.replace('unstructured', 'standardized')
             assert new_beta_path != beta_path
+            os.makedirs(os.path.dirname(new_beta_path), exist_ok=True)
             nib.save(standardized_img, new_beta_path)
 
     beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'standardized', 'ses-*', 'beta_*.nii')))
