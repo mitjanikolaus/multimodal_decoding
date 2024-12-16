@@ -693,12 +693,14 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
-                                val_fmri_betas = np.concatenate((test_fmri_betas[:20], test_fmri_betas[70:90]))
+                                train_fmri_betas = np.concatenate((train_fmri_betas, test_fmri_betas[:10], test_fmri_betas[70:80]))
+                                val_fmri_betas = np.concatenate((test_fmri_betas[10:20], test_fmri_betas[80:90]))
                                 test_fmri_betas = np.concatenate((test_fmri_betas[20:70], test_fmri_betas[90:]))
                                 test_stim_ids = np.concatenate((test_stim_ids[20:70], test_stim_ids[90:]))
                                 test_stim_types = np.concatenate((test_stim_types[20:70], test_stim_types[90:]))
 
-                                val_latents = np.concatenate((test_data_latents[:20], test_data_latents[70:90]))
+                                train_latents = np.concatenate((train_latents, test_data_latents[:10], test_data_latents[70:80]))
+                                val_latents = np.concatenate((test_data_latents[10:20], test_data_latents[80:90]))
                                 test_data_latents = np.concatenate((test_data_latents[20:70], test_data_latents[90:]))
 
                                 print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
@@ -722,6 +724,8 @@ def run(args):
                                 start = time.time()
                                 best_alpha = None
                                 best_val_score = 0
+
+                                weights = np.array([1] * (len(train_fmri_betas) - 20) + [250] * 20)
                                 for alpha in args.l2_regularization_alphas:
                                     clf = Ridge(alpha=alpha)
                                     # pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
@@ -729,12 +733,12 @@ def run(args):
                                     #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
                                     #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
-                                    clf.fit(train_fmri_betas, train_latents)
+                                    clf.fit(train_fmri_betas, train_latents, sample_weight=weights)
                                     val_preds = clf.predict(val_fmri_betas)
                                     val_score_caps = pairwise_accuracy(val_latents[:10], val_preds[:10], standardize_predictions=False)
                                     val_score_imgs = pairwise_accuracy(val_latents[10:], val_preds[10:], standardize_predictions=False)
                                     val_score = np.mean((val_score_caps, val_score_imgs))
-                                    print(f"alpha: {alpha} | val score: {val_score} | val score: {val_score_imgs} | val score: {val_score_caps}")
+                                    print(f"alpha: {alpha} | val score: {val_score} | val score imgs: {val_score_imgs} | val score caps: {val_score_caps}")
                                     if val_score > best_val_score:
                                         best_alpha = alpha
                                         best_val_score = val_score
