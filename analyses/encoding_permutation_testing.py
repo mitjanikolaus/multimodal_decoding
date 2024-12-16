@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 import os
 import pickle
 
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 from analyses.ridge_regression_decoding import get_default_vision_features, get_default_lang_features
 from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, get_results_file_path
