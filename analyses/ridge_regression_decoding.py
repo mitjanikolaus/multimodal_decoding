@@ -663,30 +663,6 @@ def run(args):
                                     lang_features = get_default_lang_features(model_name)
 
 
-                                train_fmri_betas = np.concatenate((train_fmri_betas, test_fmri_betas[:10],
-                                                                  test_fmri_betas[70:80]))
-                                test_fmri_betas = np.concatenate((test_fmri_betas[10:70], test_fmri_betas[80:]))
-                                test_stim_ids = np.concatenate((test_stim_ids[10:70], test_stim_ids[80:]))
-                                test_stim_types = np.concatenate((test_stim_types[10:70], test_stim_types[80:]))
-
-                                print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
-                                      f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
-                                      f"TEST FEATURES: {test_features}")
-                                print(f"train fMRI betas shape: {train_fmri_betas.shape}")
-                                print(f"test fMRI betas shape: {test_fmri_betas.shape}")
-                                print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
-
-                                results_dir = os.path.join(RIDGE_DECODER_OUT_DIR, training_mode, subject)
-                                run_str = get_run_str(
-                                    model_name, features, test_features, vision_features, lang_features, mask,
-                                    args.surface,
-                                    args.resolution)
-                                results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
-                                if os.path.isfile(results_file_path) and not args.overwrite:
-                                    print(f"Skipping decoder training as results are already present at"
-                                          f" {results_file_path}")
-                                    continue
-
                                 train_latents, latent_transform = get_nn_latent_data(
                                     model_name, features,
                                     vision_features,
@@ -712,6 +688,36 @@ def run(args):
                                                                              subject,
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
+
+
+                                train_fmri_betas = np.concatenate((train_fmri_betas, test_fmri_betas[:10],
+                                                                  test_fmri_betas[70:80]))
+                                test_fmri_betas = np.concatenate((test_fmri_betas[10:70], test_fmri_betas[80:]))
+                                test_stim_ids = np.concatenate((test_stim_ids[10:70], test_stim_ids[80:]))
+                                test_stim_types = np.concatenate((test_stim_types[10:70], test_stim_types[80:]))
+
+                                train_latents = np.concatenate((train_latents, test_data_latents[:10],
+                                                                  test_data_latents[70:80]))
+                                test_data_latents = np.concatenate((test_data_latents[10:70], test_data_latents[80:]))
+
+                                print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                                      f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
+                                      f"TEST FEATURES: {test_features}")
+                                print(f"train fMRI betas shape: {train_fmri_betas.shape}")
+                                print(f"test fMRI betas shape: {test_fmri_betas.shape}")
+                                print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
+
+                                results_dir = os.path.join(RIDGE_DECODER_OUT_DIR, training_mode, subject)
+                                run_str = get_run_str(
+                                    model_name, features, test_features, vision_features, lang_features, mask,
+                                    args.surface,
+                                    args.resolution)
+                                results_file_path = os.path.join(results_dir, run_str, RESULTS_FILE)
+                                if os.path.isfile(results_file_path) and not args.overwrite:
+                                    print(f"Skipping decoder training as results are already present at"
+                                          f" {results_file_path}")
+                                    continue
+
 
                                 model = Ridge()
                                 pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
