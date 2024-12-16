@@ -662,6 +662,13 @@ def run(args):
                                 if lang_features == FEATS_SELECT_DEFAULT:
                                     lang_features = get_default_lang_features(model_name)
 
+
+                                train_fmri_betas = np.concatenate(train_fmri_betas, test_fmri_betas[:10],
+                                                                  test_fmri_betas[70:80])
+                                test_fmri_betas = np.concatenate(test_fmri_betas[10:70], test_fmri_betas[80:])
+                                test_stim_ids = np.concatenate(test_stim_ids[10:70], test_stim_ids[80:])
+                                test_stim_types = np.concatenate(test_stim_types[10:70], test_stim_types[80:])
+
                                 print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
                                       f"TEST FEATURES: {test_features}")
