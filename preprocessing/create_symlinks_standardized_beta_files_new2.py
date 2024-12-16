@@ -49,14 +49,15 @@ def create_symlinks_for_beta_files(betas_dir, subject):
                     betas.append(beta_file.get_fdata().reshape(-1))
                     beta_paths.append(beta_path)
 
+    betas = np.array(betas)
     graymatter_mask = get_graymatter_mask(subject).reshape(-1)
-    betas_filtered = betas[graymatter_mask]
+    betas_filtered = betas[:, graymatter_mask]
     print('standardizing', end='.. ')
     betas_filtered_standardized = StandardScaler(copy=False).fit_transform(betas_filtered)
     print('done.')
-    betas[graymatter_mask] = betas_filtered_standardized
-    print('new mean: ', betas[graymatter_mask].mean(axis=0).mean())
-    print('new std: ', betas[graymatter_mask].std(axis=0).mean())
+    betas[:, graymatter_mask] = betas_filtered_standardized
+    print('new mean: ', np.nanmean(np.nanmean(betas[:, graymatter_mask], axis=0)))
+    print('new std: ', np.nanmean(np.nanstd(betas[:, graymatter_mask], axis=0)))
 
     for beta_path, beta_standardized in zip(beta_paths, betas):
         beta_file = nib.load(beta_path)
