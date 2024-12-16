@@ -12,7 +12,7 @@ from preprocessing.make_spm_design_job_mat_new import FMRI_BETAS_DIR
 from utils import SUBJECTS
 
 SPLITS = ['train_image', 'train_caption']
-SPLITS_REPEATED = ['test_caption', 'test_image', 'imagery', 'blank']
+SPLITS_REPEATED = ['test_caption', 'test_image', 'imagery']
 
 SUFFIX = "*bf(1)"
 
@@ -66,8 +66,11 @@ def create_symlinks_for_beta_files(betas_dir):
         beta_paths = []
         for beta_path in tqdm(beta_file_addresses):
             beta_file = nib.load(beta_path)
-            betas.append(beta_file.get_fdata().reshape(-1))
-            beta_paths.append(beta_path)
+            beta_name = beta_file.header['descrip'].item().decode()
+            for split_name in SPLITS+SPLITS_REPEATED:
+                if split_name in beta_name:
+                    betas.append(beta_file.get_fdata().reshape(-1))
+                    beta_paths.append(beta_path)
 
         betas_standardized = StandardScaler().fit_transform(betas)
 
