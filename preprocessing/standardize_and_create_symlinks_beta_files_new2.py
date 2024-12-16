@@ -29,83 +29,83 @@ def create_symlinks_for_beta_files(betas_dir):
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
     """
-    beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'unstructured', 'ses-*', 'beta_*.nii'), recursive=True))
-
-    repeated_betas = {}
-
-    for beta_path in tqdm(beta_file_addresses, desc='creating train and test trial betas'):
-        beta_file = nib.load(beta_path)
-        beta_name = beta_file.header['descrip'].item().decode()
-
-        if ('train_trial' in beta_name) or ('test_trial' in beta_name):
-            beta_name = 'train_trial' if 'train_trial' in beta_name else 'test_trial'
-            slink_name = os.path.join(get_subdir('splits', betas_dir), f"beta_{beta_name}.nii")
-
-            if slink_name not in repeated_betas:
-                repeated_betas[slink_name] = [beta_file]
-            else:
-                repeated_betas[slink_name].append(beta_file)
-
-    for slink_name, beta_files in repeated_betas.items():
-        print(f"averaging: {slink_name} ({len(beta_files)} files)")
-        averaged = np.mean([beta_file.get_fdata() for beta_file in beta_files], axis=0)
-        averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
-        nib.save(averaged_img, slink_name)
-
-
-    base_path = os.path.join(betas_dir, 'unstructured')
-    print(f"Standardizing: scanning for sessions in {base_path}")
-    session_dirs = glob(os.path.join(base_path, 'ses-*'))
-    sessions = [path.split(os.sep)[-1] for path in session_dirs]
-
-    for session, session_dir in zip(sessions, session_dirs):
-        print(session)
-        beta_file_addresses = sorted(glob(os.path.join(session_dir, 'beta_*.nii')))
-
-        betas = []
-        beta_paths = []
-        for beta_path in tqdm(beta_file_addresses):
-            beta_file = nib.load(beta_path)
-            betas.append(beta_file.get_fdata().reshape(-1))
-            beta_paths.append(beta_path)
-
-        betas_standardized = StandardScaler().fit_transform(betas)
-
-        for beta_path, beta_standardized in zip(beta_paths, betas_standardized):
-            beta_file = nib.load(beta_path)
-            beta_standardized = beta_standardized.reshape(beta_file.shape)
-            standardized_img = nib.Nifti1Image(beta_standardized, beta_file.affine, beta_file.header)
-            new_beta_path = beta_path.replace('unstructured', 'standardized')
-            assert new_beta_path != beta_path
-            os.makedirs(os.path.dirname(new_beta_path), exist_ok=True)
-            nib.save(standardized_img, new_beta_path)
+    # beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'unstructured', 'ses-*', 'beta_*.nii'), recursive=True))
+    #
+    # repeated_betas = {}
+    #
+    # for beta_path in tqdm(beta_file_addresses, desc='creating train and test trial betas'):
+    #     beta_file = nib.load(beta_path)
+    #     beta_name = beta_file.header['descrip'].item().decode()
+    #
+    #     if ('train_trial' in beta_name) or ('test_trial' in beta_name):
+    #         beta_name = 'train_trial' if 'train_trial' in beta_name else 'test_trial'
+    #         slink_name = os.path.join(get_subdir('splits', betas_dir), f"beta_{beta_name}.nii")
+    #
+    #         if slink_name not in repeated_betas:
+    #             repeated_betas[slink_name] = [beta_file]
+    #         else:
+    #             repeated_betas[slink_name].append(beta_file)
+    #
+    # for slink_name, beta_files in repeated_betas.items():
+    #     print(f"averaging: {slink_name} ({len(beta_files)} files)")
+    #     averaged = np.mean([beta_file.get_fdata() for beta_file in beta_files], axis=0)
+    #     averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
+    #     nib.save(averaged_img, slink_name)
+    #
+    #
+    # base_path = os.path.join(betas_dir, 'unstructured')
+    # print(f"Standardizing: scanning for sessions in {base_path}")
+    # session_dirs = glob(os.path.join(base_path, 'ses-*'))
+    # sessions = [path.split(os.sep)[-1] for path in session_dirs]
+    #
+    # for session, session_dir in zip(sessions, session_dirs):
+    #     print(session)
+    #     beta_file_addresses = sorted(glob(os.path.join(session_dir, 'beta_*.nii')))
+    #
+    #     betas = []
+    #     beta_paths = []
+    #     for beta_path in tqdm(beta_file_addresses):
+    #         beta_file = nib.load(beta_path)
+    #         betas.append(beta_file.get_fdata().reshape(-1))
+    #         beta_paths.append(beta_path)
+    #
+    #     betas_standardized = StandardScaler().fit_transform(betas)
+    #
+    #     for beta_path, beta_standardized in zip(beta_paths, betas_standardized):
+    #         beta_file = nib.load(beta_path)
+    #         beta_standardized = beta_standardized.reshape(beta_file.shape)
+    #         standardized_img = nib.Nifti1Image(beta_standardized, beta_file.affine, beta_file.header)
+    #         new_beta_path = beta_path.replace('unstructured', 'standardized')
+    #         assert new_beta_path != beta_path
+    #         os.makedirs(os.path.dirname(new_beta_path), exist_ok=True)
+    #         nib.save(standardized_img, new_beta_path)
 
     beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'standardized', 'ses-*', 'beta_*.nii')))
-
-    for split_name in SPLITS_REPEATED:
-        print(split_name)
-        repeated_betas = {}
-        for beta_path in tqdm(beta_file_addresses):
-            beta_file = nib.load(beta_path)
-            beta_name = beta_file.header['descrip'].item().decode()
-
-            if split_name in beta_name:
-                if split_name == 'blank':
-                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
-                else:
-                    stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
-                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
-                if slink_name not in repeated_betas:
-                    repeated_betas[slink_name] = [beta_file]
-                else:
-                    repeated_betas[slink_name].append(beta_file)
-
-        print(f"total: {len(repeated_betas)}")
-        for slink_name, beta_files in repeated_betas.items():
-            print(f"averaging: {slink_name} ({len(beta_files)} files)")
-            averaged = np.mean([beta_file.get_fdata() for beta_file in beta_files], axis=0)
-            averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
-            nib.save(averaged_img, slink_name)
+    #
+    # for split_name in SPLITS_REPEATED:
+    #     print(split_name)
+    #     repeated_betas = {}
+    #     for beta_path in tqdm(beta_file_addresses):
+    #         beta_file = nib.load(beta_path)
+    #         beta_name = beta_file.header['descrip'].item().decode()
+    #
+    #         if split_name in beta_name:
+    #             if split_name == 'blank':
+    #                 slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
+    #             else:
+    #                 stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
+    #                 slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
+    #             if slink_name not in repeated_betas:
+    #                 repeated_betas[slink_name] = [beta_file]
+    #             else:
+    #                 repeated_betas[slink_name].append(beta_file)
+    #
+    #     print(f"total: {len(repeated_betas)}")
+    #     for slink_name, beta_files in repeated_betas.items():
+    #         print(f"averaging: {slink_name} ({len(beta_files)} files)")
+    #         averaged = np.mean([beta_file.get_fdata() for beta_file in beta_files], axis=0)
+    #         averaged_img = nib.Nifti1Image(averaged, beta_files[0].affine, beta_files[0].header)
+    #         nib.save(averaged_img, slink_name)
 
     all_slink_names = set()
     all_beta_relative_paths = set()
