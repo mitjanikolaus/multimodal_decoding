@@ -730,8 +730,11 @@ def run(args):
                                     #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
 
                                     clf.fit(train_fmri_betas, train_latents)
-                                    val_score = clf.score(val_fmri_betas, val_latents)
-                                    print(f"alpha: {alpha} | val score: {val_score}")
+                                    val_preds = clf.predict(val_fmri_betas)
+                                    val_score_caps = pairwise_accuracy(val_latents[:10], val_preds[:10], standardize_predictions=False)
+                                    val_score_imgs = pairwise_accuracy(val_latents[10:], val_preds[10:], standardize_predictions=False)
+                                    val_score = np.mean((val_score_caps, val_score_imgs))
+                                    print(f"alpha: {alpha} | val score: {val_score} | val score: {val_score_imgs} | val score: {val_score_caps}")
                                     if val_score > best_val_score:
                                         best_alpha = alpha
                                         best_val_score = val_score
