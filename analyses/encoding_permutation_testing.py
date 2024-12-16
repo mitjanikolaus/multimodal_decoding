@@ -19,10 +19,13 @@ from analyses.searchlight.searchlight_permutation_testing import get_edge_length
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, \
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, \
     CORR_CAPTIONS, CORR_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    CORR_CROSS_CAPTIONS_TO_IMAGES, METRIC_CROSS_ENCODING
+    CORR_CROSS_CAPTIONS_TO_IMAGES, METRIC_CROSS_ENCODING, FS_HEMI_NAMES, export_to_gifti
 
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
+
+CORR_IMAGES_MOD_SPECIFIC_IMAGES = 'corr_images_mod_specific_images'
+CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS = 'corr_captions_mod_specific_captions'
 
 
 def load_per_subject_scores(args, return_nan_locations=False):
@@ -219,19 +222,14 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
             CORR_CROSS_IMAGES_TO_CAPTIONS]
 
         scores[METRIC_DIFF_IMAGES] = np.array(
-            [ai - si for ai, ac, si, sc in
-             zip(scores[CORR_IMAGES],
-                 scores[CORR_CAPTIONS],
-                 scores_specific_images[CORR_IMAGES],
-                 scores_specific_captions[CORR_CAPTIONS])]
+            [ai - si for ai, si in zip(scores[CORR_IMAGES], scores_specific_images[CORR_IMAGES])]
         )
         scores[METRIC_DIFF_CAPTIONS] = np.array(
-            [ac - sc for ai, ac, si, sc in
-             zip(scores[CORR_IMAGES],
-                 scores[CORR_CAPTIONS],
-                 scores_specific_images[CORR_IMAGES],
-                 scores_specific_captions[CORR_CAPTIONS])]
+            [ac - sc for ac, sc in zip(scores[CORR_CAPTIONS], scores_specific_captions[CORR_CAPTIONS])]
         )
+
+        scores[CORR_IMAGES_MOD_SPECIFIC_IMAGES] = scores_specific_images[CORR_IMAGES]
+        scores[CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS] = scores_specific_captions[CORR_CAPTIONS]
 
     return scores
 
@@ -408,6 +406,24 @@ def create_null_distribution(args):
     return tfce_values
 
 
+def create_t_value_maps(results_dir):
+    print("Creating t value gifti results masks")
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+
+    results_maps_path = os.path.join(results_dir, "results_maps")
+    os.makedirs(results_maps_path, exist_ok=True)
+
+    t_values = pickle.load(open(t_values_path, "rb"))
+
+    for hemi in HEMIS:
+        for metric in [CORR_IMAGES, CORR_CAPTIONS, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_CROSS_ENCODING,
+                       CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
+                       METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, CORR_IMAGES_MOD_SPECIFIC_IMAGES,
+                       CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
+            path_out = os.path.join(results_maps_path, f"t_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+            export_to_gifti(t_values[hemi][metric], path_out)
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -449,3 +465,5 @@ if __name__ == "__main__":
 
     create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
                  args.resolution)
+
+    create_t_value_maps(permutation_results_dir(args))
