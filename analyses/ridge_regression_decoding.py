@@ -725,7 +725,7 @@ def run(args):
                                 best_alpha = None
                                 best_val_score = 0
 
-                                weights = np.array([1] * (len(train_fmri_betas) - 10) + [1000] * 10)
+                                weights = np.array([1] * (len(train_fmri_betas) - 10) + [500] * 10)
                                 for alpha in args.l2_regularization_alphas:
                                     clf = Ridge(alpha=alpha)
                                     # pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
@@ -749,7 +749,7 @@ def run(args):
                                 best_alpha = best_alpha#clf.best_params_["alpha"]
 
                                 best_model = Ridge(alpha=best_alpha)
-                                best_model.fit(train_fmri_betas, train_latents)
+                                best_model.fit(train_fmri_betas, train_latents, sample_weight=weights)
 
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
