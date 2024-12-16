@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
-from preprocessing.make_spm_design_job_mat_new import FMRI_BETAS_DIR
+from preprocessing.make_spm_design_job_mat_new2 import FMRI_BETAS_DIR
 from utils import SUBJECTS
 
 SPLITS = ['train_image', 'train_caption']
@@ -34,12 +34,12 @@ def create_symlinks_for_beta_files(betas_dir):
     session_dirs = glob(os.path.join(base_path, 'ses-*'))
     sessions = [path.split(os.sep)[-1] for path in session_dirs]
 
+    betas = []
+    beta_paths = []
     for session, session_dir in zip(sessions, session_dirs):
         print(session)
         beta_file_addresses = sorted(glob(os.path.join(session_dir, 'beta_*.nii')))
 
-        betas = []
-        beta_paths = []
         for beta_path in tqdm(beta_file_addresses):
             beta_file = nib.load(beta_path)
             beta_name = beta_file.header['descrip'].item().decode()
@@ -48,16 +48,15 @@ def create_symlinks_for_beta_files(betas_dir):
                     betas.append(beta_file.get_fdata().reshape(-1))
                     beta_paths.append(beta_path)
 
-        betas_standardized = StandardScaler().fit_transform(betas)
-
-        for beta_path, beta_standardized in zip(beta_paths, betas_standardized):
-            beta_file = nib.load(beta_path)
-            beta_standardized = beta_standardized.reshape(beta_file.shape)
-            standardized_img = nib.Nifti1Image(beta_standardized, beta_file.affine, beta_file.header)
-            new_beta_path = beta_path.replace('unstructured', 'standardized')
-            assert new_beta_path != beta_path
-            os.makedirs(os.path.dirname(new_beta_path), exist_ok=True)
-            nib.save(standardized_img, new_beta_path)
+    betas_standardized = StandardScaler().fit_transform(betas)
+    for beta_path, beta_standardized in zip(beta_paths, betas_standardized):
+        beta_file = nib.load(beta_path)
+        beta_standardized = beta_standardized.reshape(beta_file.shape)
+        standardized_img = nib.Nifti1Image(beta_standardized, beta_file.affine, beta_file.header)
+        new_beta_path = beta_path.replace('unstructured', 'standardized')
+        assert new_beta_path != beta_path
+        os.makedirs(os.path.dirname(new_beta_path), exist_ok=True)
+        nib.save(standardized_img, new_beta_path)
 
     beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'standardized', 'ses-*', 'beta_*.nii')))
 
