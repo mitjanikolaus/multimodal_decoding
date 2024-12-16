@@ -724,7 +724,7 @@ def run(args):
 
                                 best_alpha = clf.best_params_["alpha"]
 
-                                best_model = Ridge(alpha=best_alpha)
+                                best_model = clf.best_estimator_
 
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
