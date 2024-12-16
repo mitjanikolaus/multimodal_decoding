@@ -125,7 +125,7 @@ def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
-                       CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_IMAGES_MOD_SPECIFIC_IMAGES
+                       CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_IMAGES_MOD_SPECIFIC_IMAGES,
                        CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
