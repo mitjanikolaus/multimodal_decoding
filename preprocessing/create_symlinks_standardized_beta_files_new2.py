@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
+from analyses.ridge_regression_decoding import get_graymatter_mask
 from preprocessing.make_spm_design_job_mat_new2 import FMRI_BETAS_DIR
 from utils import SUBJECTS
 
@@ -24,7 +25,7 @@ def get_subdir(split_name, beta_dir):
     return subdir
 
 
-def create_symlinks_for_beta_files(betas_dir):
+def create_symlinks_for_beta_files(betas_dir, subject):
     r"""
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
@@ -48,8 +49,16 @@ def create_symlinks_for_beta_files(betas_dir):
                     betas.append(beta_file.get_fdata().reshape(-1))
                     beta_paths.append(beta_path)
 
-    betas_standardized = StandardScaler().fit_transform(betas)
-    for beta_path, beta_standardized in zip(beta_paths, betas_standardized):
+    graymatter_mask = get_graymatter_mask(subject).reshape(-1)
+    betas_filtered = betas[graymatter_mask]
+    print('standardizing', end='.. ')
+    betas_filtered_standardized = StandardScaler(copy=False).fit_transform(betas_filtered)
+    print('done.')
+    betas[graymatter_mask] = betas_filtered_standardized
+    print('new mean: ', betas[graymatter_mask].mean(axis=0).mean())
+    print('new std: ', betas[graymatter_mask].std(axis=0).mean())
+
+    for beta_path, beta_standardized in zip(beta_paths, betas):
         beta_file = nib.load(beta_path)
         beta_standardized = beta_standardized.reshape(beta_file.shape)
         standardized_img = nib.Nifti1Image(beta_standardized, beta_file.affine, beta_file.header)
@@ -126,4 +135,4 @@ if __name__ == "__main__":
     args = get_args()
     for subject in args.subjects:
         print(subject)
-        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject))
+        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject), subject)
