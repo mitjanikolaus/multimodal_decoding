@@ -255,7 +255,8 @@ def get_fmri_data_paths(betas_dir, subject, mode, surface=False, hemi=None, reso
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
         file_name = os.path.basename(path)
-        stim_id = int(file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(filename_suffix[1:], ''))
+        stim_id = int(
+            file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(filename_suffix[1:], ''))
         if 'imagery' in split_name:
             stim_types.append(IMAGERY)
             stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
@@ -281,6 +282,7 @@ def get_graymatter_mask(subject):
     graymatter_mask = gray_matter_mask_data == 1
     print(f"Gray matter mask size: {graymatter_mask.sum()}")
     return graymatter_mask
+
 
 def get_fmri_voxel_data(betas_dir, subject, mode):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, mode)
@@ -501,7 +503,8 @@ def calc_rsa_captions(latent_1, latent_2, stimulus_types, metric="spearmanr", ma
     return calc_rsa(latent_1_captions, latent_2_captions, metric, matrix_metric)
 
 
-def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface, resolution, hemi=None):
+def get_run_str(model_name, features, test_features, vision_features, lang_features, mask, surface, resolution,
+                hemi=None):
     run_str = f"{model_name}_{features}_test_{test_features}"
     run_str += f"_{vision_features}"
     run_str += f"_{lang_features}"
@@ -576,7 +579,8 @@ def apply_mask_and_clean(mask_name, betas_list, args):
     return betas_list
 
 
-def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None, nan_locations=None):
+def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None,
+                           nan_locations=None):
     # graymatter_mask = get_graymatter_mask(subject)
     # train_trial_beta = nibabel.load(os.path.join(args.betas_dir, subject, 'betas_splits/beta_train_trial.nii'))
     # train_trial_beta = train_trial_beta.get_fdata()
@@ -640,7 +644,8 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
                     mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
-                nan_locations = np.logical_or.reduce([np.isnan(betas[0]) for betas in [train_fmri_betas, test_fmri_betas, imagery_fmri_betas]])
+                nan_locations = np.logical_or.reduce(
+                    [np.isnan(betas[0]) for betas in [train_fmri_betas, test_fmri_betas, imagery_fmri_betas]])
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas, args, subject, nan_locations
                 )
@@ -661,7 +666,6 @@ def run(args):
                             for lang_features in args.lang_features:
                                 if lang_features == FEATS_SELECT_DEFAULT:
                                     lang_features = get_default_lang_features(model_name)
-
 
                                 train_latents, latent_transform = get_nn_latent_data(
                                     model_name, features,
@@ -689,16 +693,13 @@ def run(args):
                                                                              IMAGERY,
                                                                              nn_latent_transform=latent_transform)
 
+                                val_fmri_betas = np.concatenate((test_fmri_betas[:20], test_fmri_betas[70:90]))
+                                test_fmri_betas = np.concatenate((test_fmri_betas[20:70], test_fmri_betas[90:]))
+                                test_stim_ids = np.concatenate((test_stim_ids[20:70], test_stim_ids[90:]))
+                                test_stim_types = np.concatenate((test_stim_types[20:70], test_stim_types[90:]))
 
-                                train_fmri_betas = np.concatenate((train_fmri_betas, test_fmri_betas[:10],
-                                                                  test_fmri_betas[70:80]))
-                                test_fmri_betas = np.concatenate((test_fmri_betas[10:70], test_fmri_betas[80:]))
-                                test_stim_ids = np.concatenate((test_stim_ids[10:70], test_stim_ids[80:]))
-                                test_stim_types = np.concatenate((test_stim_types[10:70], test_stim_types[80:]))
-
-                                train_latents = np.concatenate((train_latents, test_data_latents[:10],
-                                                                  test_data_latents[70:80]))
-                                test_data_latents = np.concatenate((test_data_latents[10:70], test_data_latents[80:]))
+                                val_latents = np.concatenate((test_data_latents[:20], test_data_latents[70:90]))
+                                test_data_latents = np.concatenate((test_data_latents[20:70], test_data_latents[90:]))
 
                                 print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
@@ -718,21 +719,31 @@ def run(args):
                                           f" {results_file_path}")
                                     continue
 
-
-                                model = Ridge()
-                                pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                                clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
-                                                   scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                                                   pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
-
                                 start = time.time()
-                                clf.fit(train_fmri_betas, train_latents)
+                                best_alpha = None
+                                best_val_score = 0
+                                for alpha in args.l2_regularization_alphas:
+                                    clf = Ridge(alpha=alpha)
+                                    # pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                                    # clf = GridSearchCV(model, param_grid={"alpha": args.l2_regularization_alphas},
+                                    #                    scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                                    #                    pre_dispatch=args.n_pre_dispatch_jobs, refit=True, verbose=3)
+
+                                    clf.fit(train_fmri_betas, train_latents)
+                                    val_score = clf.score(val_fmri_betas, val_latents)
+                                    print(f"alpha: {alpha} | val score: {val_score}")
+                                    if val_score > best_val_score:
+                                        best_alpha = alpha
+                                        best_val_score = val_score
+
                                 end = time.time()
                                 print(f"Elapsed time: {int(end - start)}s")
 
-                                best_alpha = clf.best_params_["alpha"]
+                                best_alpha = best_alpha#clf.best_params_["alpha"]
 
-                                best_model = clf.best_estimator_
+                                best_model = Ridge(alpha=best_alpha)
+                                best_model.fit(train_fmri_betas, train_latents)
+
                                 test_predicted_latents = best_model.predict(test_fmri_betas)
                                 imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
@@ -750,7 +761,7 @@ def run(args):
                                     "training_mode": training_mode,
                                     "mask": mask,
                                     "num_voxels": test_fmri_betas.shape[1],
-                                    "cv_results": clf.cv_results_,
+                                    # "cv_results": clf.cv_results_,
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "imagery_stimulus_ids": imagery_stim_ids,
