@@ -20,7 +20,7 @@ from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
     FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_DATA_DIR
 
 
-FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas_new")
+FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas_one_step")
 
 
 def get_condition_names(trial):
@@ -35,9 +35,10 @@ def get_condition_names(trial):
     elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
         conditions.append(f"imagery_{trial['imagery_scene']}")
     else:
-        if trial['one_back'] != 0:
-            conditions.append('one_back')
-        if trial['subj_resp'] != 0:
+        if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
+            if trial['one_back'] != 0:
+                conditions.append('one_back')
+            if trial['subj_resp'] != 0:
                 conditions.append('subj_resp')
         if trial['condition_name'] != 0:
             if trial['trial_type'] == 1 and trial['train_test'] == 1:
@@ -258,29 +259,30 @@ def run(args):
                 run_size = run_nii.shape[-1]
                 for s in range(1, run_size + 1):
                     scans.append(f"{run_file},{s}")
-            fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
 
-            # multi regressors
-            fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
+        fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
 
-            # conditions
-            conditions = load_event_files(
-                event_files,
-                log_file=os.path.join(output_dir, 'dmlog_stage_1.tsv'))
+        # multi regressors
+        fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
 
-            fmri_spec['sess']['cond'] = fromarrays(
-                [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
-                 conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth']
-            )
+        # conditions
+        conditions = load_event_files(
+            event_files,
+            log_file=os.path.join(output_dir, 'dmlog_stage_1.tsv'))
 
-            fmri_spec['fact'] = fromarrays([[], []], names=['name', 'levels'])
+        fmri_spec['sess']['cond'] = fromarrays(
+            [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
+             conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth']
+        )
 
-            jobs = dict()
-            jobs['jobs'] = [dict()]
-            jobs['jobs'][0]['spm'] = dict()
-            jobs['jobs'][0]['spm']['stats'] = dict()
-            jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
-            savemat(os.path.join(output_dir, 'spm_job.mat'), jobs)
+        fmri_spec['fact'] = fromarrays([[], []], names=['name', 'levels'])
+
+        jobs = dict()
+        jobs['jobs'] = [dict()]
+        jobs['jobs'][0]['spm'] = dict()
+        jobs['jobs'][0]['spm']['stats'] = dict()
+        jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
+        savemat(os.path.join(output_dir, 'spm_job.mat'), jobs)
 
 
 def get_args():

@@ -10,22 +10,13 @@ function []=run_spm_glm_stage_1(subject)
     defaults.stats.maxmem = 2^32;
     defaults.stats.resmem = false;
 
-    maxNumCompThreads
-
     home = getenv('HOME');
-    data_dir = [home,'/data/multimodal_decoding/fmri/betas_new/', subject, '/unstructured'];
+    data_dir = [home,'/data/multimodal_decoding/fmri/betas_one_step/', subject, '/unstructured'];
     cd(data_dir)
 
     %design
     load spm_job;
     spm_jobman('run', jobs);
-
-
-    % concatenate runs
-    % nscans = [2496 2496 2496 2496 2496 2496 2496 2496 2496 2496 2496];
-    % load SPM.mat
-    % spm_fmri_concatenate('SPM.mat', nscans);
-
 
     % glm
     clearvars -except data_dir
@@ -41,7 +32,9 @@ function []=run_spm_glm_stage_1(subject)
     spm_jobman('initcfg');
     spm_get_defaults('cmdline',true);
 
+    maxNumCompThreads
+
+    defaults.stats.maxmem
+
     spm_jobman('run', matlabbatch);
-    % load SPM.mat;
-    % spm_spm(SPM);
 end

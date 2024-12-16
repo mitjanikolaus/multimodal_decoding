@@ -7,7 +7,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 
-from preprocessing.make_spm_design_job_mat_new import FMRI_BETAS_DIR
+from preprocessing.make_spm_design_job_mat_one_step import FMRI_BETAS_DIR
 from utils import SUBJECTS
 
 SPLITS = ['train_image', 'train_caption']
