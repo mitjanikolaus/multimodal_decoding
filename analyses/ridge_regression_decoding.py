@@ -735,8 +735,8 @@ def run(args):
 
                                     clf.fit(train_fmri_betas, train_latents, sample_weight=weights)
                                     val_preds = clf.predict(val_fmri_betas)
-                                    val_score_caps = pairwise_accuracy(val_latents[:10], val_preds[:10], standardize_predictions=False)
-                                    val_score_imgs = pairwise_accuracy(val_latents[10:], val_preds[10:], standardize_predictions=False)
+                                    val_score_caps = pairwise_accuracy(val_latents[:10], val_preds[:10], standardize_predictions=True)
+                                    val_score_imgs = pairwise_accuracy(val_latents[10:], val_preds[10:], standardize_predictions=True)
                                     val_score = np.mean((val_score_caps, val_score_imgs))
                                     print(f"alpha: {alpha} | val score: {val_score} | val score imgs: {val_score_imgs} | val score caps: {val_score_caps}")
                                     if val_score_imgs > best_val_score:
