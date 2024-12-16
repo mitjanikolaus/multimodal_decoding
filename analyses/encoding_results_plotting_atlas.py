@@ -750,6 +750,8 @@ def get_args():
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
+    parser.add_argument("--tfce-dh", type=float, default=0.01)
+    parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
