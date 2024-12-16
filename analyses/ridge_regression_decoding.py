@@ -590,6 +590,10 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # diff_train_test = diff_train_test[~nan_locations]
     #
     # test_fmri_betas_transformed = test_fmri_betas - diff_train_test
+    print(f'train fmri mean: {train_fmri_betas.mean(axis=0)}')
+    print(f'test fmri mean: {test_fmri_betas.mean(axis=0)}')
+    print(f'train fmri stddev: {train_fmri_betas.std(axis=0)}')
+    print(f'test fmri stddev: {test_fmri_betas.std(axis=0)}')
 
     # scaler = StandardScaler()
     # scaler.fit(train_fmri_betas)
