@@ -725,7 +725,7 @@ def run(args):
                                 best_alpha = None
                                 best_val_score = 0
 
-                                weights = np.array([1] * (len(train_fmri_betas) - 10) + [100] * 10)
+                                weights = np.array([1] * (len(train_fmri_betas) - 10) + [1000] * 10)
                                 for alpha in args.l2_regularization_alphas:
                                     clf = Ridge(alpha=alpha)
                                     # pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
