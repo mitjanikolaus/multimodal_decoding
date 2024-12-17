@@ -69,7 +69,7 @@ def plot(args):
     rois_for_view = {
         "left": {
             "medial": ['precuneus', 'isthmuscingulate'],
-            "lateral": ['inferiorparietal', 'supramarginal', 'bankssts', 'middletemporal'],
+            "lateral": ['inferiorparietal', 'supramarginal', 'bankssts'],
             "ventral": ['inferiortemporal', 'fusiform', 'parahippocampal'],
         },
         "right": {
