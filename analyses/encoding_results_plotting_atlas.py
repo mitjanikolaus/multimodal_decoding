@@ -26,7 +26,7 @@ from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFE
 
 from analyses.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix
 from analyses.searchlight.searchlight_permutation_testing import calc_significance_cutoff
-from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
+from analyses.searchlight.searchlight_results_plotting import DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images
 from analyses.searchlight.searchlight_results_plotting_atlas import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, \
@@ -35,6 +35,8 @@ from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAUL
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
+
+CMAP_POS_ONLY = "hot"
 
 
 def plot(args):
@@ -210,7 +212,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
+    results_path = str(os.path.join(RESULTS_DIR, "encoding", args.model, args.features, args.resolution))
     results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{args.metric}_atlas"))
 
     images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
@@ -242,7 +244,7 @@ def create_composite_image(args):
     # p_val_image = append_images([img_row_1, img_row_2, roi_legend], padding=5, horizontally=False)
     p_val_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=False)
 
-    path = os.path.join(results_path, f"searchlight_results_{args.metric}.png")
+    path = os.path.join(results_path, f"encoding_results_{args.metric}.png")
     p_val_image.save(path, transparent=True, facecolor="black")
 
 
