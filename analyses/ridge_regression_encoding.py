@@ -94,14 +94,14 @@ def run(args):
                     hemis=[hemi]
                 )
                 train_fmri_betas = train_fmri_betas_full[hemi]
-                test_fmri_betas = test_fmri_betas_full[hemi]
+                test_betas = test_fmri_betas_full[hemi]
 
                 nan_locations = np.isnan(train_fmri_betas[0])
                 train_fmri_betas = train_fmri_betas[:, ~nan_locations]
-                test_fmri_betas = test_fmri_betas[:, ~nan_locations]
+                test_betas = test_betas[:, ~nan_locations]
 
-                train_fmri_betas, test_fmri_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas
+                train_fmri_betas, test_betas = standardize_fmri_betas(
+                    train_fmri_betas, test_betas
                 )
 
                 for model_name in args.models:
@@ -125,7 +125,7 @@ def run(args):
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
                                       f"TEST FEATURES: {test_features}")
                                 print(f"train fMRI betas shape: {train_fmri_betas.shape}")
-                                print(f"test fMRI betas shape: {test_fmri_betas.shape}")
+                                print(f"test fMRI betas shape: {test_betas.shape}")
 
                                 results_file_path = get_results_file_path(subject, training_mode, model_name,
                                                                           combined_feats(features, test_features),
@@ -178,7 +178,7 @@ def run(args):
                                 test_data_latents = test_data_latents.astype(np.float32)
                                 test_predicted_betas = model.predict(test_data_latents)
 
-                                test_fmri_betas = backend.to_numpy(test_fmri_betas)
+                                test_betas = backend.to_numpy(test_betas)
                                 test_predicted_betas = backend.to_numpy(test_predicted_betas)
 
                                 results = {
@@ -191,16 +191,18 @@ def run(args):
                                     "lang_features": lang_features,
                                     "training_mode": training_mode,
                                     "hemi": hemi,
-                                    "num_voxels": test_fmri_betas.shape[1],
+                                    "num_voxels": test_betas.shape[1],
                                     "stimulus_ids": test_stim_ids,
                                     "stimulus_types": test_stim_types,
                                     "resolution": args.resolution,
                                     "nan_locations": nan_locations,
+                                    "test_predicted_betas": test_predicted_betas,
+                                    "test_betas": test_betas,
                                 }
 
                                 results.update(
                                     calc_correlation_metrics(
-                                        test_fmri_betas, test_predicted_betas, test_stim_types, backend
+                                        test_betas, test_predicted_betas, test_stim_types, backend
                                     )
                                 )
                                 print(
@@ -220,7 +222,7 @@ def run(args):
                                     scores_null_distr = []
                                     for seed in tqdm(random_seeds, desc="creating null distribution"):
                                         shuffled_indices = create_shuffled_indices(seed)
-                                        test_fmri_betas_shuffled = test_fmri_betas[shuffled_indices]
+                                        test_fmri_betas_shuffled = test_betas[shuffled_indices]
 
                                         scores = calc_correlation_metrics(
                                             test_fmri_betas_shuffled, test_predicted_betas, test_stim_types, backend
