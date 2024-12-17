@@ -493,10 +493,9 @@ def create_t_value_maps(results_dir):
     t_values = pickle.load(open(t_values_path, "rb"))
 
     for hemi in HEMIS:
-        for metric in [CORR_IMAGES, CORR_CAPTIONS, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_CROSS_ENCODING,
+        for metric in [CORR_IMAGES, CORR_CAPTIONS, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
                        CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-                       METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, CORR_IMAGES_MOD_SPECIFIC_IMAGES,
-                       CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
+                       CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
             path_out = os.path.join(results_maps_path, f"t_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(t_values[hemi][metric], path_out)
 
