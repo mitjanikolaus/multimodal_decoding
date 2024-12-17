@@ -218,7 +218,7 @@ def calc_test_statistics(null_distr_tfce_values, args):
     significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distr_tfce_values, args.metric,
                                                                              args.p_value_threshold)
 
-    p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
+    p_values = {hemi: np.repeat(np.nan, t_values[hemi][CORR_IMAGES].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
