@@ -2,12 +2,15 @@ import argparse
 import glob
 import os
 
-from analyses.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix
+from analyses.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, \
+    CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
+from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     METRIC_CROSS_DECODING, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
     METRIC_CROSS_ENCODING
 
-METRICS = [CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES]
+METRICS = [CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
+           CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
 
 
 def run(args):
@@ -25,16 +28,16 @@ def run(args):
             mask_paths.append(
                 os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
 
-            if metric == METRIC_CROSS_ENCODING:
-                clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
-                for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
-                    mask_paths.append(file)
+            # if metric == METRIC_CROSS_ENCODING:
+            #     clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
+            #     for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
+            #         mask_paths.append(file)
 
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
 
-        maps_paths = [os.path.join(results_dir, "acc_results_maps", f"{metric}_{hemi_fs}.gii") for metric in METRICS]
+        maps_paths = [os.path.join(ENCODING_RESULTS_DIR, "corr_results_maps", f"{metric}_{hemi_fs}.gii") for metric in METRICS]
         for maps_path in maps_paths:
             if os.path.isfile(maps_path):
                 cmd += f":overlay={maps_path}:overlay_zorder=2"
