@@ -15,8 +15,7 @@ from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOL
     CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
 
-METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS,
-           CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
+METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
 
 
 def load_corr_scores(args, training_mode, model, features):
@@ -110,6 +109,12 @@ def create_gifti_results_maps(args):
                                                       averaged_scores_mod_specific_vision[hemi][CORR_IMAGES]
         diff_mod_agnositic_mod_specific = np.nanmin(
             [diff_corr_captions_mod_agnositic_mod_specific, diff_corr_images_mod_agnositic_mod_specific], axis=0)
+
+        path_out = os.path.join(results_dir, f"{CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS}_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(averaged_scores_mod_specific_lang[hemi][CORR_CAPTIONS], path_out)
+
+        path_out = os.path.join(results_dir, f"{CORR_IMAGES_MOD_SPECIFIC_IMAGES}_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(averaged_scores_mod_specific_vision[hemi][CORR_IMAGES], path_out)
 
         path_out = os.path.join(results_dir, f"diff_corr_captions_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_corr_captions_mod_agnositic_mod_specific, path_out)
