@@ -152,25 +152,23 @@ def calc_t_values(per_subject_scores):
 
 
 def calculate_metric_from_t_vals(t_vals, metric):
-    metric_values = dict()
     for hemi in HEMIS:
-        metric_values[hemi] = dict()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             if metric == METRIC_CROSS_ENCODING:
-                metric_values[hemi][metric] = np.nanmin(
+                t_vals[hemi][metric] = np.nanmin(
                     (
                         t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
                         t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
                     axis=0)
             elif metric == METRIC_CROSS_ENCODING_ALT:
-                metric_values[hemi][metric] = np.nanmax(
+                t_vals[hemi][metric] = np.nanmax(
                     (
                         t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
                         t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
                     axis=0)
             elif metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
-                metric_values[hemi][metric] = np.nanmin(
+                t_vals[hemi][metric] = np.nanmin(
                     (
                         t_vals[hemi][METRIC_DIFF_CAPTIONS],
                         t_vals[hemi][METRIC_DIFF_IMAGES],
@@ -178,7 +176,7 @@ def calculate_metric_from_t_vals(t_vals, metric):
                         t_vals[hemi][CORR_CAPTIONS]),
                     axis=0)
             elif metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT:
-                metric_values[hemi][metric] = np.nanmin(
+                t_vals[hemi][metric] = np.nanmin(
                     (
                         np.nanmax((t_vals[hemi][METRIC_DIFF_CAPTIONS],
                                    t_vals[hemi][METRIC_DIFF_IMAGES]), axis=0),
@@ -187,7 +185,7 @@ def calculate_metric_from_t_vals(t_vals, metric):
                     axis=0)
             else:
                 raise RuntimeError(f"Unknown metric: {metric}")
-    return metric_values
+    return t_vals
 
 
 def calc_test_statistics(null_distr_tfce_values, args):
@@ -196,6 +194,8 @@ def calc_test_statistics(null_distr_tfce_values, args):
         per_subject_scores = load_per_subject_scores(args)
         print(f"Calculating t-values")
         t_values = calc_t_values(per_subject_scores)
+        t_values = calculate_metric_from_t_vals(t_values, args.metric)
+
         pickle.dump(t_values, open(t_values_path, 'wb'))
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
@@ -204,8 +204,7 @@ def calc_test_statistics(null_distr_tfce_values, args):
     if not os.path.isfile(tfce_values_path):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-        metric_values = calculate_metric_from_t_vals(t_values, args.metric)
-        tfce_values = calc_tfce_values(metric_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
+        tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
                                        dh=args.tfce_dh, clip_value=args.tfce_clip)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
