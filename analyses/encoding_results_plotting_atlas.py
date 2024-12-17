@@ -524,7 +524,7 @@ def plot_surf_roi_custom(surf_mesh,
 def plot(args):
     plt.style.use("dark_background")
 
-    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_ENCODING]:
+    for result_metric in [METRIC_CROSS_ENCODING]: #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
         results_path = str(os.path.join(RESULTS_DIR, "encoding", args.model, args.features, args.resolution))
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
@@ -695,7 +695,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    for result_metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_ENCODING]:
+    for result_metric in [METRIC_CROSS_ENCODING]: #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
         results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
@@ -754,8 +754,6 @@ def get_args():
     parser.add_argument("--tfce-e", type=float, default=1.0)
     parser.add_argument("--tfce-dh", type=float, default=0.01)
     parser.add_argument("--tfce-clip", type=float, default=100)
-
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 
