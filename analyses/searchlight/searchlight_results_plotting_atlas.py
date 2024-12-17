@@ -24,13 +24,12 @@ from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
-from analyses.searchlight.searchlight import METRIC_CROSS_DECODING
 from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
     get_hparam_suffix, calc_significance_cutoff, load_per_subject_scores
 from analyses.searchlight.searchlight_results_plotting import CMAP_POS_ONLY, DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, \
-    ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY
+    ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY, METRIC_CROSS_DECODING
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
