@@ -36,13 +36,11 @@ HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-CMAP_POS_ONLY = "hot"
-
 
 def plot(args):
     plt.style.use("dark_background")
 
-    for result_metric in [METRIC_CROSS_ENCODING]: #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
+    for result_metric in [args.metric]: #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
         results_path = str(os.path.join(RESULTS_DIR, "encoding", args.model, args.features, args.resolution))
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
@@ -213,7 +211,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    for result_metric in [METRIC_CROSS_ENCODING]: #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
+    for result_metric in [args.metric]: #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution))
         results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
@@ -265,6 +263,8 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
+
+    parser.add_argument("--metric", type=str, default=METRIC_CROSS_ENCODING)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
