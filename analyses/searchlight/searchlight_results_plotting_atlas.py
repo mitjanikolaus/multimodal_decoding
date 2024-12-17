@@ -170,7 +170,9 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             cax, _ = make_axes(axes, location='bottom', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
             # if metric == "tfce":
-            ticks = [0, threshold,  round(np.mean([threshold, np.max(ticks)]), -3), round(np.max(ticks), -3)]
+            # ticks = [0, threshold,  round(np.mean([threshold, np.max(ticks)]), -3), round(np.max(ticks), -3)]
+            ticks = [threshold,  np.mean([threshold, np.max(ticks)]), np.max(ticks)]
+
             # else:
             #     ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
             figure.colorbar(
