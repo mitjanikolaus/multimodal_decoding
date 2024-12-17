@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 import os
 import pickle
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from analyses.ridge_regression_decoding import get_default_vision_features, get_default_lang_features
 from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, get_results_file_path
@@ -19,7 +19,8 @@ from analyses.searchlight.searchlight_permutation_testing import get_edge_length
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, \
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, \
     CORR_CAPTIONS, CORR_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    CORR_CROSS_CAPTIONS_TO_IMAGES, METRIC_CROSS_ENCODING, FS_HEMI_NAMES, export_to_gifti
+    CORR_CROSS_CAPTIONS_TO_IMAGES, METRIC_CROSS_ENCODING, FS_HEMI_NAMES, export_to_gifti, \
+    METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT, METRIC_CROSS_ENCODING_ALT
 
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
@@ -132,22 +133,61 @@ def calc_t_values(per_subject_scores):
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
             t_values[hemi][metric][enough_data] = np.nanmean(data[:, enough_data], axis=0)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
-                (
-                    t_values[hemi][METRIC_DIFF_CAPTIONS],
-                    t_values[hemi][METRIC_DIFF_IMAGES],
-                    t_values[hemi][CORR_IMAGES],
-                    t_values[hemi][CORR_CAPTIONS]),
-                axis=0)
-            t_values[hemi][METRIC_CROSS_ENCODING] = np.nanmin(
-                (t_values[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
-                 t_values[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
-                axis=0
-            )
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter("ignore", category=RuntimeWarning)
+        #     t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
+        #         (
+        #             t_values[hemi][METRIC_DIFF_CAPTIONS],
+        #             t_values[hemi][METRIC_DIFF_IMAGES],
+        #             t_values[hemi][CORR_IMAGES],
+        #             t_values[hemi][CORR_CAPTIONS]),
+        #         axis=0)
+        #     t_values[hemi][METRIC_CROSS_ENCODING] = np.nanmin(
+        #         (t_values[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
+        #          t_values[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
+        #         axis=0
+        #     )
 
     return t_values
+
+
+def calculate_metric_from_t_vals(t_vals, metric):
+    metric_values = dict()
+    for hemi in HEMIS:
+        metric_values[hemi] = dict()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            if metric == METRIC_CROSS_ENCODING:
+                metric_values[hemi][metric] = np.nanmin(
+                    (
+                        t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
+                        t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
+                    axis=0)
+            elif metric == METRIC_CROSS_ENCODING_ALT:
+                metric_values[hemi][metric] = np.nanmax(
+                    (
+                        t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
+                        t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
+                    axis=0)
+            elif metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
+                metric_values[hemi][metric] = np.nanmin(
+                    (
+                        t_vals[hemi][METRIC_DIFF_CAPTIONS],
+                        t_vals[hemi][METRIC_DIFF_IMAGES],
+                        t_vals[hemi][CORR_IMAGES],
+                        t_vals[hemi][CORR_CAPTIONS]),
+                    axis=0)
+            elif metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT:
+                metric_values[hemi][metric] = np.nanmin(
+                    (
+                        np.nanmax((t_vals[hemi][METRIC_DIFF_CAPTIONS],
+                                   t_vals[hemi][METRIC_DIFF_IMAGES]), axis=0),
+                        t_vals[hemi][CORR_IMAGES],
+                        t_vals[hemi][CORR_CAPTIONS]),
+                    axis=0)
+            else:
+                raise RuntimeError(f"Unknown metric: {metric}")
+    return metric_values
 
 
 def calc_test_statistics(null_distr_tfce_values, args):
@@ -164,7 +204,8 @@ def calc_test_statistics(null_distr_tfce_values, args):
     if not os.path.isfile(tfce_values_path):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-        tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
+        metric_values = calculate_metric_from_t_vals(t_values, args.metric)
+        tfce_values = calc_tfce_values(metric_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
                                        dh=args.tfce_dh, clip_value=args.tfce_clip)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
@@ -307,9 +348,9 @@ def calc_t_values_null_distr(args, out_path):
             dsets[hemi] = dict()
 
             for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_IMAGES, CORR_CAPTIONS,
-                           METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC,
                            CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-                           METRIC_CROSS_ENCODING]:
+                           # METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_ENCODING
+                           ]:
                 dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
             for perm_idx in tqdm(range(args.n_permutations_group_level)):
@@ -324,20 +365,20 @@ def calc_t_values_null_distr(args, out_path):
                         tvals[metric] = np.nanmean(data, axis=0)
                     dsets[hemi][metric][perm_idx] = tvals[metric]
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][perm_idx] = np.nanmin(
-                        (
-                            tvals[METRIC_DIFF_CAPTIONS],
-                            tvals[METRIC_DIFF_IMAGES],
-                            tvals[CORR_IMAGES],
-                            tvals[CORR_CAPTIONS]),
-                        axis=0)
-                    dsets[hemi][METRIC_CROSS_ENCODING][perm_idx] = np.nanmin(
-                        (tvals[CORR_CROSS_IMAGES_TO_CAPTIONS],
-                         tvals[CORR_CROSS_CAPTIONS_TO_IMAGES]),
-                        axis=0
-                    )
+                # with warnings.catch_warnings():
+                #     warnings.simplefilter("ignore", category=RuntimeWarning)
+                #     dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][perm_idx] = np.nanmin(
+                #         (
+                #             tvals[METRIC_DIFF_CAPTIONS],
+                #             tvals[METRIC_DIFF_IMAGES],
+                #             tvals[CORR_IMAGES],
+                #             tvals[CORR_CAPTIONS]),
+                #         axis=0)
+                #     dsets[hemi][METRIC_CROSS_ENCODING][perm_idx] = np.nanmin(
+                #         (tvals[CORR_CROSS_IMAGES_TO_CAPTIONS],
+                #          tvals[CORR_CROSS_CAPTIONS_TO_IMAGES]),
+                #         axis=0
+                #     )
 
 
 def permutation_results_dir(args):
@@ -369,13 +410,48 @@ def create_null_distribution(args):
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
 
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
+            indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
+            iterator = tqdm(indices) if proc_id == 0 else indices
+
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
-                # t_values = [id * n_per_job: (id + 1) * n_per_job]
-                indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
-                iterator = tqdm(indices) if proc_id == 0 else indices
+                values = dict()
+                for hemi in HEMIS:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", category=RuntimeWarning)
+                        if args.metric == METRIC_CROSS_ENCODING:
+                            values[hemi] = [np.nanmin(
+                                (
+                                    t_vals[f"{hemi}__{CORR_CROSS_CAPTIONS_TO_IMAGES}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_CROSS_IMAGES_TO_CAPTIONS}"][perm_idx]),
+                                axis=0) for perm_idx in iterator]
+                        elif args.metric == METRIC_CROSS_ENCODING_ALT:
+                            values[hemi] = [np.nanmax(
+                                (
+                                    t_vals[f"{hemi}__{CORR_CROSS_CAPTIONS_TO_IMAGES}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_CROSS_IMAGES_TO_CAPTIONS}"][perm_idx]),
+                                axis=0) for perm_idx in iterator]
+                        elif args.metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
+                            values[hemi] = [np.nanmin(
+                                (
+                                    t_vals[f"{hemi}__{METRIC_DIFF_CAPTIONS}"][perm_idx],
+                                    t_vals[f"{hemi}__{METRIC_DIFF_IMAGES}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_IMAGES}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_CAPTIONS}"][perm_idx]),
+                                axis=0) for perm_idx in iterator]
+                        elif args.metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT:
+                            values[hemi] = [np.nanmin(
+                                (
+                                    np.nanmax((t_vals[f"{hemi}__{METRIC_DIFF_CAPTIONS}"][perm_idx],
+                                               t_vals[f"{hemi}__{METRIC_DIFF_IMAGES}"][perm_idx]), axis=0),
+                                    t_vals[f"{hemi}__{CORR_IMAGES}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_CAPTIONS}"][perm_idx]),
+                                axis=0) for perm_idx in iterator]
+                        else:
+                            raise RuntimeError(f"Unknown metric: {args.metric}")
+
                 tfce_values = []
-                for iteration in iterator:
-                    vals = {hemi: {args.metric: t_vals[f"{hemi}__{args.metric}"][iteration]} for hemi in HEMIS}
+                for iteration in trange(len(values[HEMIS[0]])):
+                    vals = {hemi: {args.metric: values[hemi][iteration]} for hemi in HEMIS}
                     tfce_values.append(
                         calc_tfce_values(
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
