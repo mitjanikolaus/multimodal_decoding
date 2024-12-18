@@ -134,19 +134,9 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
     return lang_feats
 
 
-def get_nn_latent_data(model_name, features, vision_features_mode, lang_features_mode, stim_ids, stim_types, subject,
-                       mode,
-                       nn_latent_transform=None
-                       ):
+def get_nn_latent_data(model_name, features, vision_features_mode, lang_features_mode, stim_ids, stim_types):
     latent_vectors_file = model_features_file_path(model_name)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
-
-    if mode.endswith("_captions"):
-        stim_ids = stim_ids[stim_types == CAPTION]
-        stim_types = stim_types[stim_types == CAPTION]
-    elif mode.endswith("_images"):
-        stim_ids = stim_ids[stim_types == IMAGE]
-        stim_types = stim_types[stim_types == IMAGE]
 
     nn_latent_vectors = []
     for stim_id, stim_type in zip(stim_ids, stim_types):
@@ -175,66 +165,10 @@ def get_nn_latent_data(model_name, features, vision_features_mode, lang_features
         else:
             raise RuntimeError(f"Unknown feature selection/combination method: {features}")
         nn_latent_vectors.append(feats)
+
     nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
 
-    if nn_latent_transform is None:
-        model_std_mean_path = get_latents_mean_std_path(subject, model_name, features, vision_features_mode,
-                                                        lang_features_mode, mode)
-        os.makedirs(os.path.dirname(model_std_mean_path), exist_ok=True)
-        mean_std = dict()
-        if mode in [MODE_AGNOSTIC, TESTING_MODE]:
-            mean_std[CAPTION] = {
-                'mean': nn_latent_vectors[stim_types == CAPTION].mean(axis=0),
-                'std': nn_latent_vectors[stim_types == CAPTION].std(axis=0),
-            }
-            mean_std[IMAGE] = {
-                'mean': nn_latent_vectors[stim_types == IMAGE].mean(axis=0),
-                'std': nn_latent_vectors[stim_types == IMAGE].std(axis=0),
-            }
-        else:
-            mean_std[CAPTION] = {
-                'mean': nn_latent_vectors.mean(axis=0),
-                'std': nn_latent_vectors.std(axis=0),
-            }
-            mean_std[IMAGE] = {
-                'mean': nn_latent_vectors.mean(axis=0),
-                'std': nn_latent_vectors.std(axis=0),
-            }
-        pickle.dump(mean_std, open(model_std_mean_path, 'wb'), pickle.HIGHEST_PROTOCOL)
-
-        nn_latent_transform = load_latents_transform(
-            subject, model_name, features, vision_features_mode, lang_features_mode, mode
-        )
-
-    nn_latent_vectors = apply_latent_transform(nn_latent_vectors, nn_latent_transform, stim_types)
-
-    return nn_latent_vectors, nn_latent_transform
-
-
-def apply_latent_transform(nn_latent_vectors, latent_transform, stim_types):
-    return np.array([
-        latent_transform[CAPTION](v) if type == CAPTION else latent_transform[IMAGE](v)
-        for v, type in zip(nn_latent_vectors, stim_types)]
-    )
-
-
-def get_latents_mean_std_path(subject, model_name, features, vision_features_mode, lang_features_mode, mode):
-    mean_std_dir = os.path.join(RIDGE_DECODER_OUT_DIR, "normalizations", subject)
-    model_std_mean_name = f'{model_name}_{features}_{vision_features_mode}_{lang_features_mode}_mean_std_{mode}.p'
-    return os.path.join(mean_std_dir, model_std_mean_name)
-
-
-def load_latents_transform(subject, model_name, features, vision_features_mode, lang_features_mode, mode):
-    model_std_mean_path = get_latents_mean_std_path(
-        subject, model_name, features, vision_features_mode, lang_features_mode, mode
-    )
-    model_mean_std = pickle.load(open(model_std_mean_path, 'rb'))
-    nn_latent_transform = {
-        CAPTION: Standardize(model_mean_std[CAPTION]['mean'], model_mean_std[CAPTION]['std']),
-        IMAGE: Standardize(model_mean_std[IMAGE]['mean'], model_mean_std[IMAGE]['std']),
-    }
-
-    return nn_latent_transform
+    return nn_latent_vectors
 
 
 def get_fmri_data_paths(betas_dir, subject, mode, surface=False, hemi=None, resolution=None):
@@ -579,6 +513,19 @@ def apply_mask_and_clean(mask_name, betas_list, args):
     return betas_list
 
 
+def standardize_latents(train_latents, test_latents, imagery_latents=None):
+    scaler = StandardScaler()
+    scaler.fit(train_latents)
+    train_latents = scaler.transform(train_latents)
+    test_latents = scaler.transform(test_latents)
+
+    if imagery_latents is not None:
+        imagery_latents = scaler.transform(imagery_latents)
+        return train_latents, test_latents, imagery_latents
+
+    return train_latents, test_latents
+
+
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None,
                            nan_locations=None):
     # graymatter_mask = get_graymatter_mask(subject)
@@ -667,31 +614,28 @@ def run(args):
                                 if lang_features == FEATS_SELECT_DEFAULT:
                                     lang_features = get_default_lang_features(model_name)
 
-                                train_latents, latent_transform = get_nn_latent_data(
+                                train_latents = get_nn_latent_data(
                                     model_name, features,
                                     vision_features,
                                     lang_features,
                                     train_stim_ids,
                                     train_stim_types,
-                                    subject,
-                                    training_mode,
                                 )
-                                test_data_latents, _ = get_nn_latent_data(model_name, test_features,
-                                                                          vision_features,
-                                                                          lang_features,
-                                                                          test_stim_ids,
-                                                                          test_stim_types,
-                                                                          subject,
-                                                                          TESTING_MODE,
-                                                                          nn_latent_transform=latent_transform)
+                                test_latents = get_nn_latent_data(model_name, test_features,
+                                                                  vision_features,
+                                                                  lang_features,
+                                                                  test_stim_ids,
+                                                                  test_stim_types,
+                                                                  )
 
-                                imagery_data_latents, _ = get_nn_latent_data(model_name, features, vision_features,
-                                                                             lang_features,
-                                                                             imagery_stim_ids,
-                                                                             imagery_stim_types,
-                                                                             subject,
-                                                                             IMAGERY,
-                                                                             nn_latent_transform=latent_transform)
+                                imagery_latents = get_nn_latent_data(model_name, features, vision_features,
+                                                                     lang_features,
+                                                                     imagery_stim_ids,
+                                                                     imagery_stim_types)
+
+                                train_latents, test_latents, imagery_latents = standardize_latents(train_latents,
+                                                                                                   test_latents,
+                                                                                                   imagery_latents)
 
                                 print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                                       f"MODEL: {model_name} | FEATURES: {features} {vision_features} {lang_features} | "
@@ -749,15 +693,15 @@ def run(args):
                                     "imagery_stimulus_ids": imagery_stim_ids,
                                     "predictions": test_predicted_latents,
                                     "imagery_predictions": imagery_predicted_latents,
-                                    "latents": test_data_latents,
-                                    "imagery_latents": imagery_data_latents,
+                                    "latents": test_latents,
+                                    "imagery_latents": imagery_latents,
                                     "surface": args.surface,
                                     "resolution": args.resolution,
                                 }
                                 results.update(
                                     calc_all_pairwise_accuracy_scores(
-                                        test_data_latents, test_predicted_latents, test_stim_types,
-                                        imagery_data_latents, imagery_predicted_latents
+                                        test_latents, test_predicted_latents, test_stim_types,
+                                        imagery_latents, imagery_predicted_latents
                                     )
                                 )
                                 print(
@@ -769,8 +713,8 @@ def run(args):
                                 )
 
                                 results_no_standardization = calc_all_pairwise_accuracy_scores(
-                                    test_data_latents, test_predicted_latents, test_stim_types,
-                                    imagery_data_latents, imagery_predicted_latents, standardize_predictions=False
+                                    test_latents, test_predicted_latents, test_stim_types,
+                                    imagery_latents, imagery_predicted_latents, standardize_predictions=False
                                 )
                                 print(
                                     f" | Pairwise acc (no std) (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"

@@ -16,7 +16,7 @@ from analyses.ridge_regression_decoding import TESTING_MODE, standardize_fmri_be
     FEATS_SELECT_DEFAULT, get_default_features, get_default_vision_features, \
     get_default_lang_features, get_nn_latent_data, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
-    CAPTION, IMAGE, get_fmri_surface_data
+    CAPTION, IMAGE, get_fmri_surface_data, standardize_latents
 from utils import SUBJECTS, DEFAULT_RESOLUTION, CORR_CAPTIONS, CORR_IMAGES, CORR_ALL, RESULTS_FILE, HEMIS, \
     CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, FMRI_BETAS_DIR, DATA_DIR, create_null_distr_seeds, \
     create_shuffled_indices
@@ -136,15 +136,25 @@ def run(args):
                                           f" {results_file_path}")
                                     continue
 
-                                train_latents, latent_transform = get_nn_latent_data(
-                                    model_name, features,
+                                train_latents = get_nn_latent_data(
+                                    model_name,
+                                    features,
                                     vision_features,
                                     lang_features,
                                     train_stim_ids,
                                     train_stim_types,
-                                    subject,
-                                    training_mode,
                                 )
+
+                                test_latents = get_nn_latent_data(
+                                    model_name,
+                                    test_features,
+                                    vision_features,
+                                    lang_features,
+                                    test_stim_ids,
+                                    test_stim_types,
+                                )
+
+                                train_latents, test_latents = standardize_latents(train_latents, test_latents)
 
                                 model = RidgeCV(alphas=args.l2_regularization_alphas,
                                                 solver_params=dict(n_targets_batch=args.n_targets_batch,
@@ -166,17 +176,8 @@ def run(args):
 
                                 best_alphas = np.round(backend.to_numpy(model.best_alphas_))
 
-                                test_data_latents, _ = get_nn_latent_data(model_name, test_features,
-                                                                          vision_features,
-                                                                          lang_features,
-                                                                          test_stim_ids,
-                                                                          test_stim_types,
-                                                                          subject,
-                                                                          TESTING_MODE,
-                                                                          nn_latent_transform=latent_transform)
-
-                                test_data_latents = test_data_latents.astype(np.float32)
-                                test_predicted_betas = model.predict(test_data_latents)
+                                test_latents = test_latents.astype(np.float32)
+                                test_predicted_betas = model.predict(test_latents)
 
                                 test_betas = backend.to_numpy(test_betas)
                                 test_predicted_betas = backend.to_numpy(test_predicted_betas)

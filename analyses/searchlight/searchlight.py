@@ -22,7 +22,7 @@ from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
     get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
     CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
-    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
+    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
 
 from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, SUBJECTS, DATA_DIR, \
     DEFAULT_RESOLUTION, create_null_distr_seeds, create_shuffled_indices, TRAIN_MODE_CHOICES
@@ -176,45 +176,45 @@ def run(args):
 
             model_name = args.model.lower()
 
+            test_features = args.test_features
+            if test_features == FEATS_SELECT_DEFAULT:
+                test_features = get_default_features(model_name)
+
             print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                   f"MODEL: {model_name} | FEATURES: {args.features}")
 
-            train_data_latents, nn_latent_transform = get_nn_latent_data(
+            train_latents = get_nn_latent_data(
                 model_name, args.features,
                 args.vision_features,
                 args.lang_features,
                 train_stim_ids,
                 train_stim_types,
-                subject,
-                training_mode,
             )
 
-            test_features = args.test_features
-            if test_features == FEATS_SELECT_DEFAULT:
-                test_features = get_default_features(model_name)
-            test_data_latents, _ = get_nn_latent_data(
+            test_latents = get_nn_latent_data(
                 model_name,
                 test_features,
                 args.vision_features,
                 args.lang_features,
                 test_stim_ids,
                 test_stim_types,
-                subject,
-                TESTING_MODE,
-                nn_latent_transform=nn_latent_transform
             )
 
-            imagery_data_latents, _ = get_nn_latent_data(
+            imagery_latents = get_nn_latent_data(
                 model_name,
                 args.features,
                 args.vision_features,
                 args.lang_features,
                 imagery_stim_ids,
                 imagery_stim_types,
-                subject,
-                IMAGERY,
-                nn_latent_transform=nn_latent_transform)
-            latents = np.concatenate((train_data_latents, test_data_latents, imagery_data_latents))
+            )
+
+            train_latents, test_latents, imagery_latents = standardize_latents(train_latents,
+                                                                               test_latents,
+                                                                               imagery_latents)
+
+
+            latents = np.concatenate((train_latents, test_latents, imagery_latents))
 
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
             for hemi in args.hemis:
