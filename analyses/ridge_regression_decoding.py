@@ -526,9 +526,8 @@ def standardize_latents(train_latents, test_latents, imagery_latents=None):
     return train_latents, test_latents
 
 
-def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None,
-                           nan_locations=None):
-    print("before standadization:")
+def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None):
+    print("before standardization:")
     print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
     print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
     print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
@@ -538,19 +537,19 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     scaler.fit(train_fmri_betas)
 
     train_fmri_betas = scaler.transform(train_fmri_betas)
-    #
-    # # test_scaler = StandardScaler()
-    # # test_scaler.fit(test_fmri_betas)
-    test_fmri_betas = scaler.transform(test_fmri_betas)
 
-    print("after standadization:")
+    test_scaler = StandardScaler()
+    test_scaler.fit(test_fmri_betas)
+    test_fmri_betas = test_scaler.transform(test_fmri_betas)
+
+    print("after standardization:")
     print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
     print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
     print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
     print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
 
     if imagery_fmri_betas is not None:
-        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+        imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
         return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     return train_fmri_betas, test_fmri_betas
@@ -585,10 +584,8 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask_and_clean(
                     mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
-                nan_locations = np.logical_or.reduce(
-                    [np.isnan(betas[0]) for betas in [train_fmri_betas, test_fmri_betas, imagery_fmri_betas]])
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas, args, subject, nan_locations
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
                 )
 
                 for model_name in args.models:
