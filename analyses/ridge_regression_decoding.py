@@ -533,23 +533,23 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
     print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
 
-    # scaler = StandardScaler()
-    # scaler.fit(train_fmri_betas)
+    scaler = StandardScaler()
+    scaler.fit(train_fmri_betas)
 
-    # train_fmri_betas = scaler.transform(train_fmri_betas)
+    train_fmri_betas = scaler.transform(train_fmri_betas)
 
     # test_scaler = StandardScaler()
     # test_scaler.fit(test_fmri_betas)
-    # test_fmri_betas = scaler.transform(test_fmri_betas)
+    test_fmri_betas = scaler.transform(test_fmri_betas)
     #
-    # print("after standardization:")
-    # print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
-    # print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
-    # print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
-    # print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
+    print("after standardization:")
+    print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
+    print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
+    print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
+    print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
 
     if imagery_fmri_betas is not None:
-        # imagery_fmri_betas = test_scaler.transform(imagery_fmri_betas)
+        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
         return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     return train_fmri_betas, test_fmri_betas
