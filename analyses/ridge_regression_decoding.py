@@ -528,23 +528,11 @@ def standardize_latents(train_latents, test_latents, imagery_latents=None):
 
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None, args=None, subject=None,
                            nan_locations=None):
-    # graymatter_mask = get_graymatter_mask(subject)
-    # train_trial_beta = nibabel.load(os.path.join(args.betas_dir, subject, 'betas_splits/beta_train_trial.nii'))
-    # train_trial_beta = train_trial_beta.get_fdata()
-    # train_trial_beta = train_trial_beta[graymatter_mask].astype('float32').reshape(-1)
-    #
-    # test_trial_beta = nibabel.load(os.path.join(args.betas_dir, subject, 'betas_splits/beta_test_trial.nii'))
-    # test_trial_beta = test_trial_beta.get_fdata()
-    # test_trial_beta = test_trial_beta[graymatter_mask].astype('float32').reshape(-1)
-    #
-    # diff_train_test = test_trial_beta - train_trial_beta
-    # diff_train_test = diff_train_test[~nan_locations]
-    #
-    # test_fmri_betas_transformed = test_fmri_betas - diff_train_test
-    print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean()}')
-    print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean()}')
-    print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean()}')
-    print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean()}')
+    print("before standadization:")
+    print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
+    print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
+    print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
+    print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
 
     scaler = StandardScaler()
     scaler.fit(train_fmri_betas)
@@ -554,6 +542,12 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     # # test_scaler = StandardScaler()
     # # test_scaler.fit(test_fmri_betas)
     test_fmri_betas = scaler.transform(test_fmri_betas)
+
+    print("after standadization:")
+    print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
+    print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
+    print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
+    print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
 
     if imagery_fmri_betas is not None:
         imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
