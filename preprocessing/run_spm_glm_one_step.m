@@ -19,7 +19,7 @@ function []=run_spm_glm_stage_1(subject)
     % increase maximum RAM and keep temporary GLM files in memory
     global defaults
     defaults.stats.maxmem = 2^35;
-    defaults.stats.resmem = false;
+    defaults.stats.resmem = true;
 
     % do not save residuals
     matlabbatch{1}.spm.stats.fmri_est.spmmat = {[data_dir '/SPM.mat']};
@@ -34,7 +34,7 @@ function []=run_spm_glm_stage_1(subject)
 
     maxNumCompThreads
 
-    defaults.stats.maxmem
+    defaults.stats.resmem
 
     spm_jobman('run', matlabbatch);
 end
