@@ -1,42 +1,27 @@
 import argparse
-from warnings import warn
 
 import nibabel.freesurfer
 import numpy as np
 from PIL import Image
-from matplotlib.cm import ScalarMappable
-from matplotlib.colorbar import make_axes
-from matplotlib.colors import Normalize, to_rgba
-from matplotlib.ticker import ScalarFormatter
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from nilearn import datasets, plotting
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import os
 import pickle
 
-from nilearn.plotting.cm import mix_colormaps
-from nilearn.plotting.img_plotting import get_colorbar_and_data_ranges
-from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
-    _get_ticks_matplotlib, _threshold_and_rescale, _compute_surf_map_faces_matplotlib, _get_view_plot_surf_matplotlib, \
-    _compute_facecolors_matplotlib, _get_faces_on_edge
-from nilearn.surface import load_surf_mesh
-from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
-
-from analyses.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix
-from analyses.searchlight.searchlight_permutation_testing import calc_significance_cutoff
-from analyses.searchlight.searchlight_results_plotting import DEFAULT_VIEWS, save_plot_and_crop_img, \
-    append_images
-from analyses.searchlight.searchlight_results_plotting_atlas import plot_surf_contours_custom, plot_surf_stat_map_custom
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, \
-    METRIC_CROSS_ENCODING, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
+from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix
+from analyses.visualization.plotting_utils import plot_surf_stat_map_custom, plot_surf_contours_custom
+from eval import METRIC_CROSS_ENCODING
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, append_images, \
+    save_plot_and_crop_img
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
 CMAP_POS_ONLY = "hot"
+
+DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 
 
 def plot(args):

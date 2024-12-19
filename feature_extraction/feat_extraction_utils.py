@@ -6,7 +6,8 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from utils import IMAGES_IMAGERY_CONDITION, COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, NN_FEATURES_DIR, \
+from data import IMAGES_IMAGERY_CONDITION
+from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, LATENT_FEATURES_DIR, \
     model_features_file_path
 
 
@@ -82,7 +83,7 @@ class FeatureExtractor:
         self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'both')
         self.dloader = DataLoader(self.ds, shuffle=False, batch_size=batch_size)
 
-        os.makedirs(NN_FEATURES_DIR, exist_ok=True)
+        os.makedirs(LATENT_FEATURES_DIR, exist_ok=True)
 
     def extract_features(self):
         all_feats = dict()

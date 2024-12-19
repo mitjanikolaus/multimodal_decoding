@@ -6,8 +6,7 @@ from nibabel.gifti import GiftiDataArray
 from nibabel.nifti1 import intent_codes, data_type_codes
 import pickle
 
-from analyses.searchlight.searchlight_results_masks import FS_HEMI_NAMES
-from utils import HEMIS
+from utils import HEMIS, FS_HEMI_NAMES
 
 
 def export_to_gifti(scores, path):

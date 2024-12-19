@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 import itertools
 import math
 import warnings
@@ -12,15 +11,15 @@ import pickle
 
 from tqdm import tqdm, trange
 
-from analyses.ridge_regression_decoding import get_default_vision_features, get_default_lang_features
-from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, get_results_file_path
-from analyses.searchlight.searchlight_permutation_testing import get_edge_lengths_dicts_based_on_edges, \
-    calc_tfce_values, calc_significance_cutoff, create_masks
-from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, \
-    METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, \
-    CORR_CAPTIONS, CORR_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    CORR_CROSS_CAPTIONS_TO_IMAGES, METRIC_CROSS_ENCODING, FS_HEMI_NAMES, export_to_gifti, \
-    METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT, METRIC_CROSS_ENCODING_ALT
+from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, calc_significance_cutoff, \
+    create_masks
+from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, \
+    get_results_file_path
+from data import features_config_from_combined_features
+from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
+    METRIC_CROSS_ENCODING, METRIC_CROSS_ENCODING_ALT, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT
+from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, \
+    MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, FS_HEMI_NAMES, export_to_gifti
 
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
@@ -37,27 +36,38 @@ def load_per_subject_scores(args, return_nan_locations=False):
 
     for subject in tqdm(args.subjects):
         for hemi in HEMIS:
-            vision_features = get_default_vision_features(args.model)
-            lang_features = get_default_lang_features(args.model)
-            results_agnostic_file = get_results_file_path(subject, MODE_AGNOSTIC, args.model, args.features,
-                                                          vision_features, lang_features, args.resolution, hemi)
+            feats_config_agnostic = features_config_from_combined_features(
+                args.model, args.features, args.vision_features, args.lang_features
+            )
+            results_agnostic_file = get_results_file_path(
+                subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
+            )
 
-            vision_features = get_default_vision_features(args.mod_specific_vision_model)
-            lang_features = get_default_lang_features(args.mod_specific_vision_model)
-            results_mod_specific_vision_file = get_results_file_path(subject, MOD_SPECIFIC_IMAGES,
-                                                                     args.mod_specific_vision_model,
-                                                                     args.mod_specific_vision_features,
-                                                                     vision_features, lang_features,
-                                                                     args.resolution,
-                                                                     hemi)
-            vision_features = get_default_vision_features(args.mod_specific_lang_model)
-            lang_features = get_default_lang_features(args.mod_specific_lang_model)
-            results_mod_specific_lang_file = get_results_file_path(subject, MOD_SPECIFIC_CAPTIONS,
-                                                                   args.mod_specific_lang_model,
-                                                                   args.mod_specific_lang_features,
-                                                                   vision_features, lang_features,
-                                                                   args.resolution,
-                                                                   hemi)
+            feats_config_mod_specific_vision = features_config_from_combined_features(
+                args.mod_specific_vision_model,
+                args.mod_specific_vision_features,
+                args.vision_features, args.lang_features,
+                logging=False
+            )
+            results_mod_specific_vision_file = get_results_file_path(
+                subject, MOD_SPECIFIC_IMAGES,
+                feats_config_mod_specific_vision,
+                args.resolution,
+                hemi
+            )
+
+            feats_config_mod_specific_lang = features_config_from_combined_features(
+                args.mod_specific_lang_model,
+                args.mod_specific_lang_features,
+                args.vision_features, args.lang_features,
+                logging=False
+            )
+            results_mod_specific_lang_file = get_results_file_path(
+                subject, MOD_SPECIFIC_CAPTIONS,
+                feats_config_mod_specific_lang,
+                args.resolution,
+                hemi
+            )
 
             scores_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
             nan_locations = scores_agnostic['nan_locations']
@@ -277,35 +287,46 @@ def load_null_distr_per_subject_scores(args):
     for subject in args.subjects:
         print(subject)
         for hemi in HEMIS:
-            vision_features = get_default_vision_features(args.model)
-            lang_features = get_default_lang_features(args.model)
-            null_distr_agnostic_file = get_null_distr_results_path(subject, MODE_AGNOSTIC, args.model, args.features,
-                                                                   vision_features, lang_features, args.resolution,
-                                                                   hemi)
+            feats_config_agnostic = features_config_from_combined_features(
+                args.model, args.features, args.vision_features, args.lang_features
+            )
+            null_distr_agnostic_file = get_null_distr_results_path(
+                subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
+            )
 
-            vision_features = get_default_vision_features(args.mod_specific_vision_model)
-            lang_features = get_default_lang_features(args.mod_specific_vision_model)
-            null_distr_results_mod_specific_vision_file = get_null_distr_results_path(subject, MOD_SPECIFIC_IMAGES,
-                                                                                      args.mod_specific_vision_model,
-                                                                                      args.mod_specific_vision_features,
-                                                                                      vision_features, lang_features,
-                                                                                      args.resolution,
-                                                                                      hemi)
-            vision_features = get_default_vision_features(args.mod_specific_lang_model)
-            lang_features = get_default_lang_features(args.mod_specific_lang_model)
-            null_distr_results_mod_specific_lang_file = get_null_distr_results_path(subject, MOD_SPECIFIC_CAPTIONS,
-                                                                                    args.mod_specific_lang_model,
-                                                                                    args.mod_specific_lang_features,
-                                                                                    vision_features, lang_features,
-                                                                                    args.resolution,
-                                                                                    hemi)
+            feats_config_mod_specific_vision = features_config_from_combined_features(
+                args.mod_specific_vision_model,
+                args.mod_specific_vision_features,
+                args.vision_features, args.lang_features,
+                logging=False
+            )
+            null_distr_results_mod_specific_vision_file = get_null_distr_results_path(
+                subject, MOD_SPECIFIC_IMAGES,
+                feats_config_mod_specific_vision,
+                args.resolution,
+                hemi
+            )
+
+            feats_config_mod_specific_lang = features_config_from_combined_features(
+                args.mod_specific_lang_model,
+                args.mod_specific_lang_features,
+                args.vision_features, args.lang_features,
+                logging=False
+            )
+            null_distr_results_mod_specific_lang_file = get_null_distr_results_path(
+                subject, MOD_SPECIFIC_CAPTIONS,
+                feats_config_mod_specific_lang,
+                args.resolution,
+                hemi
+            )
 
             null_distribution_agnostic = pickle.load(open(null_distr_agnostic_file, 'rb'))
             null_distribution_images = pickle.load(open(null_distr_results_mod_specific_vision_file, 'rb'))
             null_distribution_captions = pickle.load(open(null_distr_results_mod_specific_lang_file, 'rb'))
 
-            results_agnostic_file = get_results_file_path(subject, MODE_AGNOSTIC, args.model, args.features,
-                                                          vision_features, lang_features, args.resolution, hemi)
+            results_agnostic_file = get_results_file_path(
+                subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
+            )
             nan_locations = pickle.load(open(results_agnostic_file, 'rb'))['nan_locations']
 
             num_permutations = len(null_distribution_agnostic)

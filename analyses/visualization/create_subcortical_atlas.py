@@ -1,6 +1,5 @@
 import nibabel as nib
 from nibabel import freesurfer
-from nibabel.freesurfer.io import _pack_rgb
 from nilearn import datasets
 from nilearn.surface import surface
 import numpy as np

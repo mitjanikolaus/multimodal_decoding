@@ -35,10 +35,5 @@ function []=run_spm_glm_stage_1(subject)
     % use up to 30 CPUs
     maxNumCompThreads(30)
 
-    % log variables
-    maxNumCompThreads
-    defaults.stats.resmem
-    defaults.stats.maxmem
-
     spm_jobman('run', matlabbatch);
 end

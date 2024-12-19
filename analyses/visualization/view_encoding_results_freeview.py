@@ -1,13 +1,12 @@
 import argparse
-import glob
 import os
 
-from analyses.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, \
+from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
-from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
-    METRIC_CROSS_DECODING, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
+from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR
+from eval import CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
     METRIC_CROSS_ENCODING
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
 METRICS = [CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
            CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]

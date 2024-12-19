@@ -18,20 +18,19 @@ import pickle
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, \
-    FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, get_nn_latent_data, \
-    get_default_features, calc_all_pairwise_accuracy_scores, IMAGE, \
-    CAPTION, get_default_vision_features, LANG_FEAT_COMBINATION_CHOICES, get_default_lang_features, \
-    get_fmri_surface_data, IMAGERY, TESTING_MODE, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
+from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
+    get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, \
+    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
+from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
+    create_null_distr_seeds
 
-from utils import INDICES_TEST_STIM_CAPTION, INDICES_TEST_STIM_IMAGE, SUBJECTS, DATA_DIR, \
-    DEFAULT_RESOLUTION, create_null_distr_seeds, create_shuffled_indices, TRAIN_MODE_CHOICES
+from utils import SUBJECTS, DATA_DIR, \
+    DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES
 
 DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
-TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
 METRIC_AGNOSTIC = 'agnostic'
 
@@ -67,19 +66,17 @@ def train_and_test(
 
             np.random.seed(seed)
             assert len(y_imagery) == 3
-            derangements = [[1, 2, 0], [2, 0, 1]] # possible permutations that are different from original
+            derangements = [[1, 2, 0], [2, 0, 1]]  # possible permutations that are different from original
             shuffled_indices_imagery = derangements[np.random.choice(len(derangements))]
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
 
             scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES, y_imagery_shuffled,
-                                                       y_pred_imagery,
-                                                       comp_mod_agnostic_scores=False)
+                                                       y_pred_imagery)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery,
-                                               comp_mod_agnostic_scores=False)
+    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
 
     return scores
 
@@ -174,45 +171,23 @@ def run(args):
             imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(subject, IMAGERY,
                                                                                        args.resolution)
 
-            model_name = args.model.lower()
-
-            test_features = args.test_features
-            if test_features == FEATS_SELECT_DEFAULT:
-                test_features = get_default_features(model_name)
+            feats_config = LatentFeatsConfig(
+                args.model, args.features, args.test_features, args.vision_features, args.lang_features
+            )
 
             print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
-                  f"MODEL: {model_name} | FEATURES: {args.features}")
+                  f"MODEL: {feats_config.model} | FEATURES: {feats_config.features}")
 
-            train_latents = get_nn_latent_data(
-                model_name, args.features,
-                args.vision_features,
-                args.lang_features,
-                train_stim_ids,
-                train_stim_types,
+            train_latents = get_latent_features(feats_config.model, feats_config, train_stim_ids, train_stim_types)
+            test_latents = get_latent_features(
+                feats_config.model, feats_config, test_stim_ids, test_stim_types, test_mode=True
             )
-
-            test_latents = get_nn_latent_data(
-                model_name,
-                test_features,
-                args.vision_features,
-                args.lang_features,
-                test_stim_ids,
-                test_stim_types,
+            imagery_latents = get_latent_features(
+                feats_config.model, feats_config, imagery_stim_ids, imagery_stim_types, test_mode=True
             )
-
-            imagery_latents = get_nn_latent_data(
-                model_name,
-                args.features,
-                args.vision_features,
-                args.lang_features,
-                imagery_stim_ids,
-                imagery_stim_types,
+            train_latents, test_latents, imagery_latents = standardize_latents(
+                train_latents, test_latents, imagery_latents
             )
-
-            train_latents, test_latents, imagery_latents = standardize_latents(train_latents,
-                                                                               test_latents,
-                                                                               imagery_latents)
-
 
             latents = np.concatenate((train_latents, test_latents, imagery_latents))
 
@@ -229,11 +204,6 @@ def run(args):
                                          len(train_ids) + len(test_ids) + len(imagery_fmri[hemi])))
 
                 X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
-
-                results_dir = get_results_dir(args, f"{args.features}_test_{args.test_features}", hemi, model_name,
-                                              subject, training_mode)
-
-                results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
 
                 nan_locations = np.isnan(X[0])
                 assert np.all(nan_locations == np.isnan(X[-1]))
@@ -266,6 +236,9 @@ def run(args):
                 model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
                 start = time.time()
 
+                results_dir = get_results_dir(
+                    args, feats_config.combined_feats, hemi, feats_config.model, subject, training_mode
+                )
                 null_distr_dir = None
                 if args.create_null_distr:
                     null_distr_dir = os.path.join(results_dir, "null_distr")
@@ -281,21 +254,30 @@ def run(args):
                 print(f"Searchlight time: {int(end - start)}s")
                 test_scores_caps = [score["pairwise_acc_captions"] for score in scores]
                 print(
-                    f"Mean score (captions): {np.mean(test_scores_caps):.2f} | Max score: {np.max(test_scores_caps):.2f}")
+                    f"Mean score (captions): {np.mean(test_scores_caps):.2f} | "
+                    f"Max score: {np.max(test_scores_caps):.2f}"
+                )
 
                 test_scores_imgs = [score["pairwise_acc_images"] for score in scores]
                 print(
-                    f"Mean score (images): {np.mean(test_scores_imgs):.2f} | Max score: {np.max(test_scores_imgs):.2f}")
+                    f"Mean score (images): {np.mean(test_scores_imgs):.2f} | "
+                    f"Max score: {np.max(test_scores_imgs):.2f}"
+                )
 
                 imagery_scores = [score[ACC_IMAGERY] for score in scores]
                 print(
-                    f"Mean score ({ACC_IMAGERY}): {np.mean(imagery_scores):.2f} | Max score: {np.max(imagery_scores):.2f}")
+                    f"Mean score ({ACC_IMAGERY}): {np.mean(imagery_scores):.2f} | "
+                    f"Max score: {np.max(imagery_scores):.2f}"
+                )
 
                 imagery_whole_test_set_scores = [score[ACC_IMAGERY_WHOLE_TEST] for score in scores]
                 print(
-                    f"Mean score ({ACC_IMAGERY_WHOLE_TEST}): {np.mean(imagery_whole_test_set_scores):.2f} | Max score: {np.max(imagery_whole_test_set_scores):.2f}")
+                    f"Mean score ({ACC_IMAGERY_WHOLE_TEST}): {np.mean(imagery_whole_test_set_scores):.2f} | "
+                    f"Max score: {np.max(imagery_whole_test_set_scores):.2f}"
+                )
 
                 results_dict["scores"] = scores
+                results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
                 pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
 
 
@@ -307,9 +289,7 @@ def mode_from_args(args):
 
 
 def get_results_dir(args, features, hemi, model_name, subject, training_mode):
-    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features,
-                               subject,
-                               args.resolution, hemi)
+    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject, args.resolution, hemi)
     results_dir = os.path.join(results_dir, mode_from_args(args))
     os.makedirs(results_dir, exist_ok=True)
     return results_dir
@@ -322,15 +302,15 @@ def get_args():
                         choices=TRAIN_MODE_CHOICES)
 
     parser.add_argument("--model", type=str, default="imagebind")
-    parser.add_argument("--features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--test-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--vision-features", type=str, default=SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
-    parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
@@ -356,15 +336,4 @@ if __name__ == "__main__":
     args = get_args()
     os.makedirs(SEARCHLIGHT_OUT_DIR, exist_ok=True)
 
-    model_name = args.model.lower()
-    if args.features == FEATS_SELECT_DEFAULT:
-        args.features = get_default_features(model_name)
-    if args.vision_features == FEATS_SELECT_DEFAULT:
-        args.vision_features = get_default_vision_features(model_name)
-    if args.lang_features == FEATS_SELECT_DEFAULT:
-        args.lang_features = get_default_lang_features(model_name)
-    if args.test_features == FEATS_SELECT_DEFAULT:
-        args.test_features = get_default_features(model_name)
-
     run(args)
-    args.mode = mode_from_args(args)

@@ -1,13 +1,13 @@
 import numpy as np
 import torch
+from sklearn.preprocessing import StandardScaler
 from torch import nn
 import torch.nn.functional as F
 import lightning as pl
 from torchmetrics.functional import pairwise_cosine_similarity
 
-from analyses.ridge_regression_decoding import CAPTION, IMAGE
-from decoding.data import Standardize
-from utils import ACC_CAPTIONS, ACC_IMAGES
+from data import CAPTION, IMAGE
+from eval import ACC_CAPTIONS, ACC_IMAGES
 
 
 def dist_mat_to_pairwise_acc(dist_mat):
@@ -26,13 +26,11 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
 
 
 def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True,
-                      standardize_targets=False):
+                      standardize_latents=False):
     if standardize_predictions:
-        preds_standardize = Standardize(predictions.mean(axis=0), predictions.std(axis=0))
-        predictions = preds_standardize(predictions)
-    if standardize_targets:
-        latens_standardize = Standardize(latents.mean(axis=0), latents.std(axis=0))
-        latents = latens_standardize(latents)
+        predictions = StandardScaler().fit_transform(predictions)
+    if standardize_latents:
+        latents = StandardScaler().fit_transform(latents)
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
     return dist_mat_to_pairwise_acc(dist_mat)
@@ -53,7 +51,8 @@ def test_set_pairwise_acc_scores(latents, predictions, stim_types, metric="cosin
 
 class Decoder(pl.LightningModule):
 
-    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight, cosine_loss=False):
+    def __init__(self, input_size, output_size, learning_rate, weight_decay, batch_size, mse_loss_weight,
+                 cosine_loss=False):
         super().__init__()
         self.fc = nn.Linear(input_size, output_size, bias=False)
         self.learning_rate = learning_rate
@@ -77,7 +76,7 @@ class Decoder(pl.LightningModule):
             return self.loss_cosine(preds, targets, torch.ones((len(preds)), device=preds.device)), np.nan, np.nan
         contrastive_loss = self.loss_contrastive(preds, targets)
         mse_loss = self.loss_mse(preds, targets)
-        loss = (1-self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
+        loss = (1 - self.mse_loss_weight) * contrastive_loss + self.mse_loss_weight * mse_loss
         return loss, contrastive_loss, mse_loss
 
     def training_step(self, batch, batch_idx):
@@ -132,7 +131,9 @@ class Decoder(pl.LightningModule):
 
         results = test_set_pairwise_acc_scores(targets, preds, stim_types)
         self.log_dict(results)
-        results_no_standardization = test_set_pairwise_acc_scores(targets, preds, stim_types, standardize_predictions=False)
+        results_no_standardization = test_set_pairwise_acc_scores(
+            targets, preds, stim_types, standardize_predictions=False
+        )
         results_no_standardization = {f"{key}_no_std": val for key, val in results_no_standardization.items()}
         self.log_dict(results_no_standardization)
         print(results_no_standardization)
@@ -159,7 +160,7 @@ class ContrastiveLoss(torch.nn.Module):
         candidates = torch.nn.functional.normalize(candidates, dim=1)
         # estimates = torch.nn.functional.normalize(estimates, dim=1)
 
-        logits = estimates @ candidates.T #TODO* np.exp(t) # temperature
+        logits = estimates @ candidates.T  # TODO* np.exp(t) # temperature
 
         target = torch.arange(candidates.shape[0], device=estimates.device)
         loss = F.cross_entropy(logits, target)
@@ -167,4 +168,3 @@ class ContrastiveLoss(torch.nn.Module):
         # loss = (loss_1 + loss_2) / 2
 
         return loss
-

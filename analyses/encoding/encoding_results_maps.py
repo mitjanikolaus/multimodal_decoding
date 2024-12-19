@@ -6,27 +6,25 @@ import os
 
 from tqdm import tqdm
 
-from analyses.encoding_permutation_testing import CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
-from analyses.ridge_regression_decoding import FEATS_SELECT_DEFAULT, \
-    get_default_vision_features, get_default_lang_features, \
-    VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES
-from analyses.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_results_file_path
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, \
-    CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
+from analyses.encoding.encoding_permutation_testing import CORR_IMAGES_MOD_SPECIFIC_IMAGES, \
+    CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
+from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_results_file_path
+from data import features_config_from_combined_features, SELECT_DEFAULT, VISION_FEAT_COMBINATION_CHOICES, \
+    LANG_FEAT_COMBINATION_CHOICES
+from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, MODE_AGNOSTIC, \
+    MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
 
 METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
 
 
-def load_corr_scores(args, training_mode, model, features):
+def load_corr_scores(args, training_mode, feats_config):
     per_subj_results = {}
     for subject in tqdm(args.subjects):
         per_subj_results[subject] = {}
         for hemi in HEMIS:
             per_subj_results[subject][hemi] = {}
-            results_file_path = get_results_file_path(subject, training_mode, model,
-                                                      features,
-                                                      args.vision_features, args.lang_features,
+            results_file_path = get_results_file_path(subject, training_mode, feats_config,
                                                       args.resolution, hemi)
 
             results = pickle.load(open(results_file_path, "rb"))
@@ -52,17 +50,23 @@ def calc_averaged_scores(per_subj_scores):
 def create_gifti_results_maps(args):
     results_dir = os.path.join(ENCODING_RESULTS_DIR, "corr_results_maps")
     os.makedirs(results_dir, exist_ok=True)
+    feats_config_agnostic = features_config_from_combined_features(
+        args.model, args.features, args.vision_features, args.lang_features
+    )
+    subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, feats_config_agnostic)
+    averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
 
-    subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS, args.mod_specific_lang_model,
-                                                        args.mod_specific_lang_features)
+    feats_config_specific_lang = features_config_from_combined_features(
+        args.mod_specific_lang_model, args.mod_specific_lang_features, args.vision_features, args.lang_features
+    )
+    subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS, feats_config_specific_lang)
     averaged_scores_mod_specific_lang = calc_averaged_scores(subject_scores_mod_specific_lang)
 
-    subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES, args.mod_specific_vision_model,
-                                                          args.mod_specific_vision_features)
+    feats_config_specific_vision = features_config_from_combined_features(
+        args.mod_specific_vision_model, args.mod_specific_vision_features, args.vision_features, args.lang_features
+    )
+    subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES, feats_config_specific_vision)
     averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
-
-    subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, args.model, args.features)
-    averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
 
     print("Creating gifti results maps")
 
@@ -126,7 +130,7 @@ def create_gifti_results_maps(args):
         export_to_gifti(diff_mod_agnositic_mod_specific, path_out)
 
         cross_encoding = np.nanmin([averaged_scores_mod_specific_lang[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
-                                 averaged_scores_mod_specific_vision[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
+                                    averaged_scores_mod_specific_vision[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
         path_out = os.path.join(results_dir, f"cross_encoding_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(cross_encoding, path_out)
 
@@ -150,9 +154,9 @@ def get_args():
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
-    parser.add_argument("--vision-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--vision-features", type=str, default=SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
-    parser.add_argument("--lang-features", type=str, default=FEATS_SELECT_DEFAULT,
+    parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
@@ -168,9 +172,4 @@ if __name__ == "__main__":
     args = get_args()
 
     model_name = args.model
-    if args.vision_features == FEATS_SELECT_DEFAULT:
-        args.vision_features = get_default_vision_features(model_name)
-    if args.lang_features == FEATS_SELECT_DEFAULT:
-        args.lang_features = get_default_lang_features(model_name)
-
     create_gifti_results_maps(args)

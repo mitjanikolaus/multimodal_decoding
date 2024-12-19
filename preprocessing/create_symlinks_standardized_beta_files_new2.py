@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
-from analyses.ridge_regression_decoding import get_graymatter_mask
+from data import load_graymatter_mask
 from preprocessing.make_spm_design_job_mat_new2 import FMRI_BETAS_DIR
 from utils import SUBJECTS
 
@@ -50,7 +50,7 @@ def create_symlinks_for_beta_files(betas_dir, subject):
                     beta_paths.append(beta_path)
 
     betas = np.array(betas)
-    graymatter_mask = get_graymatter_mask(subject).reshape(-1)
+    graymatter_mask = load_graymatter_mask(subject).reshape(-1)
     betas_filtered = betas[:, graymatter_mask]
     print('standardizing', end='.. ')
     betas_filtered_standardized = StandardScaler(copy=False).fit_transform(betas_filtered)

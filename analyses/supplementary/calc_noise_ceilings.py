@@ -5,9 +5,9 @@ import numpy as np
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import get_fmri_voxel_data, RIDGE_DECODER_OUT_DIR, calc_rsa, calc_rsa_images, \
-    calc_rsa_captions, \
-    create_dissimilarity_matrix, rsa_from_matrices, TESTING_MODE
+from analyses.decoding.ridge_regression_decoding import RIDGE_DECODER_OUT_DIR, TESTING_MODE
+from data import get_fmri_voxel_data
+from eval import calc_rsa, calc_rsa_images, calc_rsa_captions, create_dissimilarity_matrix, rsa_from_matrices
 
 from utils import SUBJECTS
 

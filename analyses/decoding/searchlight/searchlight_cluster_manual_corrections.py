@@ -4,10 +4,9 @@ import os
 import nibabel
 import numpy as np
 
-from analyses.searchlight.searchlight import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
-from analyses.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
-    calc_significance_cutoff, compute_results_clusters
-from utils import HEMIS, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS
+from analyses.cluster_analysis import calc_significance_cutoff, compute_results_clusters
+from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
+from utils import HEMIS, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
 
 def split_clusters(args):

@@ -1,5 +1,7 @@
 import os
 import numpy as np
+from PIL.Image import Image
+from matplotlib import pyplot as plt
 
 from nibabel import GiftiImage
 from nibabel.gifti import GiftiDataArray
@@ -11,7 +13,9 @@ DATA_DIR = os.path.expanduser("~/data/multimodal_decoding")
 
 COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/")
 
-NN_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
+LATENT_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
+LATENT_FEATURES_NORMALIZATIONS_DIR = os.path.join(LATENT_FEATURES_DIR, "normalizations")
+
 
 STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.p")
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
@@ -24,26 +28,19 @@ FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni305")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
+FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
 FMRI_SURFACE_LEVEL_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
-DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/decoders/")
+RIDGE_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
+PYTORCH_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding_pytorch/")
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
 HEMIS_FS = ['lh', 'rh']
-
-VISION_MEAN_FEAT_KEY = "vision_features_mean"
-VISION_CLS_FEAT_KEY = "vision_features_cls"
-
-LANG_MEAN_FEAT_KEY = "lang_features_mean"
-LANG_CLS_FEAT_KEY = "lang_features_cls"
-
-FUSED_MEAN_FEAT_KEY = "fused_mean_features"
-FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
@@ -65,211 +62,42 @@ def nipype_subject_id(subject):
 
 
 def model_features_file_path(model_name):
-    return os.path.join(NN_FEATURES_DIR, f"{model_name.lower()}.p")
+    return os.path.join(LATENT_FEATURES_DIR, f"{model_name.lower()}.p")
 
 
-def create_shuffled_indices(seed):
-    np.random.seed(seed)
-    num_stim_one_mod = NUM_TEST_STIMULI // 2
-    shuffleidx_mod_1 = np.random.choice(range(num_stim_one_mod), size=num_stim_one_mod,
-                                        replace=False)
-    shuffleidx_mod_2 = np.random.choice(range(num_stim_one_mod, NUM_TEST_STIMULI),
-                                        size=num_stim_one_mod, replace=False)
-    return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
+def append_images(images, horizontally=True, padding=5):
+    if horizontally:
+        append_axis = 0
+        other_axis = 1
+    else:
+        append_axis = 1
+        other_axis = 0
+
+    imgs_dims = [0, 0]
+    imgs_dims[append_axis] = np.sum([img.size[append_axis] for img in images]) + (len(images) - 1) * padding
+    imgs_dims[other_axis] = np.max([img.size[other_axis] for img in images])
+    full_img = Image.new("RGBA", (imgs_dims[0], imgs_dims[1]))
+
+    prev_loc = [0, 0]
+    for img in images:
+        full_img.paste(img, (prev_loc[0], prev_loc[1]))
+        prev_loc[append_axis] += img.size[append_axis] + padding
+
+    return full_img
 
 
-def create_null_distr_seeds(n_permutations_per_subject):
-    random_seeds = []
-    seed = 0
-    for _ in range(n_permutations_per_subject):
-        # shuffle indices for captions and images separately until all indices have changed
-        shuffled_indices = create_shuffled_indices(seed)
-        while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
-            seed += 1
-            shuffled_indices = create_shuffled_indices(seed)
-        random_seeds.append(seed)
-        seed += 1
-    return random_seeds
-
-
-IMAGES_IMAGERY_CONDITION = [
-    [406591, f'images/train2017/000000406591.jpg',
-     'A woman sits in a beach chair as a man walks along the sand'],
-    [324670, f'images/train2017/000000324670.jpg',
-     'White bird sitting in front of a lighthouse with a red roof'],
-    [563723, f'images/train2017/000000563723.jpg',
-     'A little cat standing on the lap of a man sitting in a chair'],
-    [254568, f'images/train2017/000000254568.jpg',
-     'A lonely giraffe is walking in the middle of a grassy field'],
-    [42685, f'images/train2017/000000042685.jpg',
-     'A party of young people in a bedroom with a large box of pizza'],
-    [473773, f'images/train2017/000000473773.jpg',
-     'A man walking across a field of snow holding skis and ski poles'],
-    [485909, f'images/train2017/000000485909.jpg',
-     'Two men are discussing something next to a desk with a laptop'],
-    [544502, f'images/train2017/000000544502.jpg',
-     'A young male holding a racket and tennis ball in a tennis court'],
-    [556512, f'images/train2017/000000556512.jpg',
-     'A group of kids swimming in the ocean around a man on a surfboard'],
-    [410573, f'images/train2017/000000410573.jpg',
-     'A cat and a dog staring intensely at each other on an armchair'],
-    [48670, f'images/train2017/000000048670.jpg',
-     'A man stands by a rainy street with an umbrella over his head'],
-    [263212, f'images/train2017/000000263212.jpg',
-     'A woman working on her computer while also using her cell phone'],
-    [214816, f'images/train2017/000000214816.jpg',
-     'An old broken down church and graffiti on surrounding structures'],
-    [141343, f'images/train2017/000000141343.jpg',
-     'A teddy bear lying down on the sidewalk in front of a store'],
-    [213506, f'images/train2017/000000213506.jpg',
-     'A woman leaning out a window to talk to someone on the sidewal'],
-    [162396, f'images/train2017/000000162396.jpg',
-     'The man on the skateboard and the dog are getting their picture taken'],
-]
-
-IMAGERY_SCENES = {
-    'sub-01':
-        [
-            ('A woman sits in a beach chair as a man walks along the sand', 406591),
-            ('White bird sitting in front of a lighthouse with a red roof', 324670),
-            ('A little cat standing on the lap of a man sitting in a chair', 563723),
-        ],
-
-    'sub-02':
-        [
-            ("A woman sits in a beach chair as a man walks along the sand", 406591),
-            ("A little cat standing on the lap of a man sitting in a chair", 563723),
-            ("A lonely giraffe is walking in the middle of a grassy field", 254568)
-        ],
-
-    'sub-03':
-        [
-            ("A party of young people in a bedroom with a large box of pizza", 42685),
-            ("A man walking across a field of snow holding skis and ski poles", 473773),
-            ("Two men are discussing something next to a desk with a laptop", 485909),
-        ],
-
-    'sub-04':
-        [
-            ('A young male holding a racket and tennis ball in a tennis court', 544502),
-            ('A group of kids swimming in the ocean around a man on a surfboard', 556512),
-            ('A cat and a dog staring intensely at each other on an armchair', 410573),
-        ],
-
-    'sub-05':
-        [
-            ('A man stands by a rainy street with an umbrella over his head', 48670),
-            ('A woman working on her computer while also using her cell phone', 263212),
-            ('An old broken down church and graffiti on surrounding structures', 214816),
-        ],
-
-    'sub-07':
-        [
-            ('A teddy bear lying down on the sidewalk in front of a store', 141343),
-            ('A woman leaning out a window to talk to someone on the sidewal', 213506),
-            ('The man on the skateboard and the dog are getting their picture taken', 162396),
-        ],
-}
-
-IDS_IMAGES_IMAGERY = [scene[1] for scenes_subj in IMAGERY_SCENES.values() for scene in scenes_subj]
-
-IDS_IMAGES_TEST = [
-    3862,
-    6450,
-    16764,
-    25902,
-    38938,
-    43966,
-    47566,
-    53580,
-    55413,
-    57703,
-    63881,
-    70426,
-    79642,
-    122403,
-    133449,
-    138529,
-    146411,
-    159225,
-    163240,
-    165419,
-    165874,
-    176509,
-    180389,
-    183210,
-    186308,
-    186788,
-    192095,
-    195406,
-    201601,
-    211189,
-    220654,
-    221313,
-    238193,
-    252018,
-    255714,
-    271844,
-    275995,
-    278135,
-    279331,
-    287434,
-    292888,
-    310552,
-    315083,
-    318108,
-    323797,
-    353260,
-    363483,
-    367120,
-    380011,
-    385795,
-    388398,
-    414373,
-    423618,
-    450719,
-    454636,
-    457249,
-    466514,
-    467854,
-    475693,
-    499733,
-    505655,
-    512289,
-    534975,
-    536798,
-    546074,
-    548167,
-    555739,
-    560282,
-    567627,
-    573980
-]
-
-NUM_TEST_STIMULI = len(IDS_IMAGES_TEST) * 2
-INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
-INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
-IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
-
-ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
-ACC_CAPTIONS = "pairwise_acc_captions"
-ACC_IMAGES = "pairwise_acc_images"
-
-ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
-ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
-
-ACC_IMAGERY = "pairwise_acc_imagery"
-ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
-
-CORR_ALL = "corr"
-CORR_CAPTIONS = "corr_captions"
-CORR_IMAGES = "corr_images"
-CORR_CROSS_IMAGES_TO_CAPTIONS = "corr_cross_images_to_captions"
-CORR_CROSS_CAPTIONS_TO_IMAGES = "corr_cross_captions_to_images"
-METRIC_CROSS_ENCODING = "corr_cross_encoding"
-
-METRIC_CROSS_ENCODING_ALT = "corr_cross_encoding_alt"
-METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT = "diff_mod_agno_mod_specific_alt"
+def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False, horizontal_cbar=False):
+    plt.savefig(path, dpi=300, transparent=True)
+    image = Image.open(path)
+    if crop_cbar:
+        if horizontal_cbar:
+            image = image.crop((0, int(image.size[1] - image.size[1] / 5), image.size[0], image.size[1]))
+        else:
+            image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
+    if crop_to_content:
+        image = image.crop(image.getbbox())
+    image.save(path)
+    plt.close()
 
 
 def export_to_gifti(scores, path):

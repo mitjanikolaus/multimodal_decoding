@@ -10,11 +10,14 @@ import pickle
 
 from tqdm import tqdm
 
-from analyses.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
+from analyses.cluster_analysis import calc_significance_cutoff
+from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, load_per_subject_scores, CHANCE_VALUES, \
-    load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, get_hparam_suffix, calc_significance_cutoff
-from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, ACC_CAPTIONS, ACC_IMAGES
+    load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
+    get_hparam_suffix
+from eval import ACC_CAPTIONS, ACC_IMAGES
+from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 0.8
@@ -85,7 +88,6 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     #     )
     #     save_plot_and_crop_img(os.path.join(t_values_imgs_dir, "colorbar.png"), crop_cbar=True)
 
-
     # plot remaining test stats
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
@@ -146,8 +148,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
 
 def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    metrics = [
-        ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
+    metrics = [ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES]
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     if subfolder:
@@ -166,7 +167,9 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 score_hemi_avgd = np.nanmean([per_subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
 
-            print(f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_avgd):.2f} | max: {np.nanmax(score_hemi_avgd):.2f}")
+            print(
+                f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_avgd):.2f} | "
+                f"max: {np.nanmax(score_hemi_avgd):.2f}")
 
             for i, view in enumerate(args.views):
                 if cbar_max is None:
@@ -204,20 +207,6 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
             symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
         )
         save_plot_and_crop_img(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
-
-
-def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False, horizontal_cbar=False):
-    plt.savefig(path, dpi=300, transparent=True)
-    image = Image.open(path)
-    if crop_cbar:
-        if horizontal_cbar:
-            image = image.crop((0, int(image.size[1] - image.size[1] / 5), image.size[0], image.size[1]))
-        else:
-            image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
-    if crop_to_content:
-        image = image.crop(image.getbbox())
-    image.save(path)
-    plt.close()
 
 
 def plot_p_values(results_path, args):
@@ -272,27 +261,6 @@ def plot_p_values(results_path, args):
     save_plot_and_crop_img(os.path.join(p_values_imgs_dir, "colorbar.png"), crop_cbar=True)
 
 
-def append_images(images, horizontally=True, padding=5):
-    if horizontally:
-        append_axis = 0
-        other_axis = 1
-    else:
-        append_axis = 1
-        other_axis = 0
-
-    imgs_dims = [0, 0]
-    imgs_dims[append_axis] = np.sum([img.size[append_axis] for img in images]) + (len(images) - 1) * padding
-    imgs_dims[other_axis] = np.max([img.size[other_axis] for img in images])
-    full_img = Image.new("RGBA", (imgs_dims[0], imgs_dims[1]))
-
-    prev_loc = [0, 0]
-    for img in images:
-        full_img.paste(img, (prev_loc[0], prev_loc[1]))
-        prev_loc[append_axis] += img.size[append_axis] + padding
-
-    return full_img
-
-
 def create_composite_image(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
 
@@ -301,7 +269,7 @@ def create_composite_image(args):
     # offset_size = (int(p_val_img.size[0]/10), p_val_img.size[1])
     # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
     cbar = Image.open(os.path.join(tfce_values_img_dir, f"colorbar_{args.metric}.png"))
-    tfce_val_img = append_images([cbar, tfce_val_img], padding=150)     #image_whitespace
+    tfce_val_img = append_images([cbar, tfce_val_img], padding=150)  # image_whitespace
     tfce_val_img = tfce_val_img.resize((int(tfce_val_img.size[0] * 1.1), int(tfce_val_img.size[1] * 1.1)))
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
@@ -314,7 +282,7 @@ def create_composite_image(args):
         else:
             acc_scores_img = append_images([images, cbar], padding=50)
 
-        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0]/1.2), int(acc_scores_img.size[1]/1.2)))
+        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
         acc_scores_imgs.append(acc_scores_img)
 
     acc_scores_imgs_acc = append_images(acc_scores_imgs[:2], horizontally=False, padding=300)
@@ -372,7 +340,6 @@ def run(args):
                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
             test_statistics["tfce-values"] = null_distribution_test_statistic[i]
             plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
-
 
     if args.per_subject_plots:
         metrics = [ACC_CAPTIONS, ACC_IMAGES, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS]
