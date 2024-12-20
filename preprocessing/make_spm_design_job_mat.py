@@ -434,8 +434,7 @@ def run(args):
                 event_files,
                 log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs]
             )
-            print("Number of train conditions:", len([c for c, _ in all_conditions if "train" in c]))
-
+            all_conds = []
             for spec_idx, conditions in enumerate(all_conditions):
                 stage_2_fmri_specs[spec_idx]['sess']['cond'] = fromarrays(
                     [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
@@ -450,6 +449,11 @@ def run(args):
                 jobs['jobs'][0]['spm']['stats'] = dict()
                 jobs['jobs'][0]['spm']['stats']['fmri_spec'] = stage_2_fmri_specs[spec_idx]
                 savemat(os.path.join(stage_2_save_dirs[spec_idx], 'spm_lvl1_job_stage_2.mat'), jobs)
+
+                all_conds.extend([c for c in conditions.conditions])
+
+            print("Number of train conditions:", len([c for c in all_conds if "train" in c]))
+
 
 
 def get_args():
