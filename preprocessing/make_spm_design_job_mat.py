@@ -453,6 +453,8 @@ def run(args):
                 all_conds.extend([c for c in conditions.conditions])
 
             print("Number of train conditions:", len([c for c in all_conds if "train" in c]))
+            print("Number of unique train conditions:", len(set([c for c in all_conds if "train" in c])))
+
 
 
 
