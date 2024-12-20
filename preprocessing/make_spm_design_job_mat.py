@@ -162,7 +162,6 @@ def load_event_files_stage2(tsv_files, log_files=None):
 
         print(condition_names)
         print("Number of conditions:", len(condition_names))
-        print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
 
         if log_files is not None:
             events_df.to_csv(log_files[tsvf_idx], sep="\t")
@@ -435,6 +434,7 @@ def run(args):
                 event_files,
                 log_files=[f"{os.path.join(d, 'dmlog_stage_2.tsv')}" for d in stage_2_save_dirs]
             )
+            print("Number of train conditions:", len([c for c, _ in all_conditions if "train" in c]))
 
             for spec_idx, conditions in enumerate(all_conditions):
                 stage_2_fmri_specs[spec_idx]['sess']['cond'] = fromarrays(
