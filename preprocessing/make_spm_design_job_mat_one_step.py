@@ -85,6 +85,7 @@ def load_event_files(tsv_files, log_file=None):
     print(condition_names)
     print("Number of conditions: ", len(condition_names))
     print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
+    print("Number of unique train conditions:", len(set([c for c in condition_names if "train" in c])))
 
 
     if log_file is not None:
