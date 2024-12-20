@@ -83,7 +83,9 @@ def load_event_files(tsv_files, log_file=None):
         condition_names.remove('null')
 
     print(condition_names)
-    print("Number of conditions:", len(condition_names))
+    print("Number of conditions: ", len(condition_names))
+    print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
+
 
     if log_file is not None:
         events_df.to_csv(log_file, sep="\t")
