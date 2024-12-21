@@ -36,9 +36,9 @@ def get_condition_names(trial):
         conditions.append(f"imagery_{trial['imagery_scene']}")
     else: #TODO elif
         # if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
-        #     if trial['subj_resp'] != 0:
-        #         conditions.append('subj_resp')
-        if trial['one_back'] != 0:
+        if trial['subj_resp'] != 0:
+            conditions.append('subj_resp')
+        elif trial['one_back'] != 0:
             conditions.append('one_back')
         elif trial['condition_name'] != 0:
             if trial['trial_type'] == 1 and trial['train_test'] == 1:
