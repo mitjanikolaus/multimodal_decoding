@@ -34,12 +34,11 @@ def get_condition_names(trial):
         conditions.append('imginst')
     elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
         conditions.append(f"imagery_{trial['imagery_scene']}")
-    # if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
     else:
-        # if trial['subj_resp'] != 0:
-        #     conditions.append('subj_resp')
         if trial['one_back'] != 0:
             conditions.append('one_back')
+        if trial['subj_resp'] != 0:
+            conditions.append('subj_resp')
         if trial['condition_name'] != 0:
             if (trial['trial_type'] == 1) and (trial['train_test'] == 1):
                 conditions.append(f"train_image_{trial['condition_name']}")
