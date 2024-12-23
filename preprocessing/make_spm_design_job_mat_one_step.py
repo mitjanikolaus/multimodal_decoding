@@ -35,19 +35,20 @@ def get_condition_names(trial):
     elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
         conditions.append(f"imagery_{trial['imagery_scene']}")
     # if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
-    # elif trial['subj_resp'] != 0:
-    #     conditions.append('subj_resp')
-    elif trial['one_back'] != 0:
-        conditions.append('one_back')
-    elif trial['condition_name'] != 0:
-        if trial['trial_type'] == 1 and trial['train_test'] == 1:
-            conditions.append(f"train_image_{trial['condition_name']}")
-        if trial['trial_type'] == 2 and trial['train_test'] == 1:
-            conditions.append(f"train_caption_{trial['condition_name']}")
-        if trial['trial_type'] == 1 and trial['train_test'] == 2:
-            conditions.append(f"test_image_{trial['condition_name']}")
-        if trial['trial_type'] == 2 and trial['train_test'] == 2:
-            conditions.append(f"test_caption_{trial['condition_name']}")
+    else:
+        if trial['subj_resp'] != 0:
+            conditions.append('subj_resp')
+        if trial['one_back'] != 0:
+            conditions.append('one_back')
+        if trial['condition_name'] != 0:
+            if trial['trial_type'] == 1 and trial['train_test'] == 1:
+                conditions.append(f"train_image_{trial['condition_name']}")
+            if trial['trial_type'] == 2 and trial['train_test'] == 1:
+                conditions.append(f"train_caption_{trial['condition_name']}")
+            if trial['trial_type'] == 1 and trial['train_test'] == 2:
+                conditions.append(f"test_image_{trial['condition_name']}")
+            if trial['trial_type'] == 2 and trial['train_test'] == 2:
+                conditions.append(f"test_caption_{trial['condition_name']}")
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
