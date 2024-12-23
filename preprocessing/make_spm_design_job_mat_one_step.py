@@ -41,13 +41,13 @@ def get_condition_names(trial):
         if trial['one_back'] != 0:
             conditions.append('one_back')
         if trial['condition_name'] != 0:
-            if trial['trial_type'] == 1 and trial['train_test'] == 1:
+            if (trial['trial_type'] == 1) and (trial['train_test'] == 1):
                 conditions.append(f"train_image_{trial['condition_name']}")
-            if trial['trial_type'] == 2 and trial['train_test'] == 1:
+            if (trial['trial_type'] == 2) and (trial['train_test'] == 1):
                 conditions.append(f"train_caption_{trial['condition_name']}")
-            if trial['trial_type'] == 1 and trial['train_test'] == 2:
+            if (trial['trial_type'] == 1) and (trial['train_test'] == 2):
                 conditions.append(f"test_image_{trial['condition_name']}")
-            if trial['trial_type'] == 2 and trial['train_test'] == 2:
+            if (trial['trial_type'] == 2) and (trial['train_test'] == 2):
                 conditions.append(f"test_caption_{trial['condition_name']}")
 
     if len(conditions) == 0:
