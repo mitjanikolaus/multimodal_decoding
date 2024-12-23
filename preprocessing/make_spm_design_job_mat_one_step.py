@@ -49,8 +49,6 @@ def get_condition_names(trial):
             if (trial['trial_type'] == 2) and (trial['train_test'] == 2):
                 conditions.append(f"test_caption_{trial['condition_name']}")
 
-    if len(conditions) > 1:
-        print(conditions)
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
     return conditions
