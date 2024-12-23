@@ -154,6 +154,9 @@ def run(args):
                     imagery_fmri_betas = imagery_fmri_betas.astype(np.float32)
                     imagery_predicted_latents = clf.predict(imagery_fmri_betas)
 
+                    imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
+                    test_predicted_latents = backend.to_numpy(test_predicted_latents)
+
                     # train_predicted_latents = best_model.predict(train_fmri_betas)
                     # pickle.dump(train_predicted_latents, open(f"{subject}_train_preds.p", 'wb'))
 
