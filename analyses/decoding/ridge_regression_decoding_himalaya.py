@@ -240,6 +240,8 @@ def get_args():
 
     parser.add_argument("--overwrite", action='store_true', default=False)
 
+    parser.add_argument("--cuda", action='store_true', default=False)
+
     return parser.parse_args()
 
 
