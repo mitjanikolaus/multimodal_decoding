@@ -15,8 +15,8 @@ from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES,
     standardize_latents, TESTING_MODE, IMAGERY, remove_nans
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
-from himalaya.himalaya.backend import set_backend
-from himalaya.himalaya.ridge import RidgeCV
+from himalaya.backend import set_backend
+from himalaya.ridge import RidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, MODE_AGNOSTIC, TRAIN_MODE_CHOICES, \
     RIDGE_DECODER_OUT_DIR
 
