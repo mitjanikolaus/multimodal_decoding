@@ -38,7 +38,7 @@ def get_condition_names(trial):
     else:
         if trial['subj_resp'] != 0:
             conditions.append('subj_resp')
-        if trial['one_back'] != 0:
+        elif trial['one_back'] != 0:
             conditions.append('one_back')
         elif trial['condition_name'] != 0:
             if (trial['trial_type'] == 1) and (trial['train_test'] == 1):
