@@ -33,7 +33,7 @@ def run(args):
                       f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
 
                 run_str = get_run_str(
-                    model_name, feats_config, mask=None, surface=False, resolution=None)
+                    args.betas_dir, model_name, feats_config, mask=None, surface=False, resolution=None)
                 results_file_path = os.path.join(
                     PYTORCH_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                 )

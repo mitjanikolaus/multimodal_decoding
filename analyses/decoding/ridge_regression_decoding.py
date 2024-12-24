@@ -22,11 +22,12 @@ DEFAULT_N_PRE_DISPATCH = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
-def get_run_str(model_name, feats_config, mask, surface, resolution,
+def get_run_str(betas_dir, model_name, feats_config, mask, surface, resolution,
                 hemi=None):
     run_str = f"{model_name}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
+    run_str += f"_{betas_dir.split(os.sep)[-1]}"
 
     if mask is not None:
         if mask.startswith("functional_") or mask.startswith("anatomical_"):
@@ -106,7 +107,7 @@ def run(args):
                     print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
                     print(f"train latents shape: {train_latents.shape}")
 
-                    run_str = get_run_str(model, feats_config, mask, args.surface, args.resolution)
+                    run_str = get_run_str(args.betas_dir, model, feats_config, mask, args.surface, args.resolution)
                     results_file_path = os.path.join(
                         RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
