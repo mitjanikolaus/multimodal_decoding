@@ -27,6 +27,8 @@ def get_run_str(betas_dir, model_name, feats_config, mask, surface, resolution,
     run_str = f"{model_name}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
+    if betas_dir.endswith(os.sep):
+        betas_dir = betas_dir[:-1]
     run_str += f"_{betas_dir.split(os.sep)[-1]}"
 
     if mask is not None:
