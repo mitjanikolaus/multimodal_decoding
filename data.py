@@ -603,9 +603,9 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     train_fmri_betas = scaler.transform(train_fmri_betas)
 
-    # test_scaler = StandardScaler()
-    # test_scaler.fit(test_fmri_betas)
-    test_fmri_betas = scaler.transform(test_fmri_betas)
+    test_scaler = StandardScaler()
+    test_scaler.fit(test_fmri_betas)
+    test_fmri_betas = test_scaler.transform(test_fmri_betas)
 
     # print("after standardization:")
     # print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
