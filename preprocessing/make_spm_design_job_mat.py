@@ -62,18 +62,17 @@ def get_condition_names(trial, glm_stage):
             conditions.append('null')
         # elif trial['subj_resp'] != 0:
         #     conditions.append('null')
-        else:
-            if trial['condition_name'] != 0:
-                if trial['trial_type'] == 1 and trial['train_test'] == 1:
-                    conditions.append(f"train_image_{trial['condition_name']}")
-                    conditions.append("train_trial")
-                if trial['trial_type'] == 2 and trial['train_test'] == 1:
-                    conditions.append(f"train_caption_{trial['condition_name']}")
-                    conditions.append("train_trial")
-                if trial['trial_type'] == 1 and trial['train_test'] == 2:
-                    conditions.append('null')
-                if trial['trial_type'] == 2 and trial['train_test'] == 2:
-                    conditions.append('null')
+        elif trial['condition_name'] != 0:
+            if trial['trial_type'] == 1 and trial['train_test'] == 1:
+                conditions.append(f"train_image_{trial['condition_name']}")
+                conditions.append("train_trial")
+            if trial['trial_type'] == 2 and trial['train_test'] == 1:
+                conditions.append(f"train_caption_{trial['condition_name']}")
+                conditions.append("train_trial")
+            if trial['trial_type'] == 1 and trial['train_test'] == 2:
+                conditions.append('null')
+            if trial['trial_type'] == 2 and trial['train_test'] == 2:
+                conditions.append('null')
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
