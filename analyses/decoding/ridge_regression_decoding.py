@@ -22,8 +22,7 @@ DEFAULT_N_PRE_DISPATCH = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
-def get_run_str(betas_dir, model_name, feats_config, mask, surface, resolution,
-                hemi=None):
+def get_run_str(betas_dir, model_name, feats_config, mask=None, surface=False, resolution=None, hemi=None):
     run_str = f"{model_name}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
