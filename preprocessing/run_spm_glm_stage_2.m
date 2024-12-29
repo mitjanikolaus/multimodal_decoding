@@ -15,11 +15,6 @@ function []=run_spm_glm_stage_2(subject)
         spm_jobman('initcfg');
         spm_get_defaults('cmdline',true);
 
-        % increase maximum RAM and keep temporary GLM files in memory
-        global defaults
-        defaults.stats.maxmem = 2^34;
-        defaults.stats.resmem = true;
-
         cd(data_dir)
 
         %design
@@ -46,6 +41,11 @@ function []=run_spm_glm_stage_2(subject)
         setenv('SPM_HTML_BROWSER','0');
         spm_jobman('initcfg');
         spm_get_defaults('cmdline',true);
+
+        % increase maximum RAM and keep temporary GLM files in memory
+        global defaults
+        defaults.stats.maxmem = 2^35;
+        defaults.stats.resmem = true;
 
         spm_jobman('run', matlabbatch);
         % load SPM.mat;
