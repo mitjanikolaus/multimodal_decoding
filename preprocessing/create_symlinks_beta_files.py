@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from utils import SUBJECTS, FMRI_BETAS_DIR
 
-SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank', 'test_trial']
+SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank']
 
 SUFFIX = "*bf(1)"
 
@@ -29,19 +29,6 @@ def create_symlinks_for_beta_files(betas_dir):
     betas_base_dir = os.path.join(betas_dir, 'unstructured')
     beta_file_addresses = sorted(glob(os.path.join(betas_base_dir, '**', 'beta_*.nii'), recursive=True))
 
-    betas_train_trials = []
-    for beta_path in tqdm(beta_file_addresses):
-        beta_file = nib.load(beta_path)
-        beta_name = beta_file.header['descrip'].item().decode()
-        if 'train_trial' in beta_name:
-            betas_train_trials.append(beta_file)
-
-    slink_name = os.path.join(get_subdir('splits', betas_dir), f"beta_train_trial.nii")
-    print(f"averaging: {slink_name} ({len(betas_train_trials)} files)")
-    averaged = np.mean([beta_file.get_fdata() for beta_file in betas_train_trials], axis=0)
-    averaged_img = nib.Nifti1Image(averaged, betas_train_trials[0].affine, betas_train_trials[0].header)
-    nib.save(averaged_img, slink_name)
-
     all_slink_names = set()
     all_beta_relative_paths = set()
     for beta_path in tqdm(beta_file_addresses):
@@ -51,8 +38,6 @@ def create_symlinks_for_beta_files(betas_dir):
             if split_name in beta_name:
                 if split_name == 'blank':
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
-                elif split_name == 'test_trial':
-                    slink_name = os.path.join(get_subdir('splits', betas_dir), f"beta_test_trial.nii")
                 else:
                     stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
