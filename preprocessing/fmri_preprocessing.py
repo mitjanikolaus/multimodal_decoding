@@ -49,7 +49,6 @@ def run(args):
     anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
-        sess = []
         folders = os.listdir(opj(data_root, subj))
         sessions[subj] = sorted(folders)
     print_session_names(sessions)
@@ -108,10 +107,10 @@ def run(args):
     )
 
     # Realignment
-    realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
+    realign_node = Node(Realign(register_to_mean=True, fwhm=0, out_prefix='r'), name='realign')
 
     # Coregistration
-    coregister_node = Node(Coregister(out_prefix='ra'), name='coregister')
+    coregister_node = Node(Coregister(out_prefix='ra, fwhm=[0, 0]'), name='coregister')
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
