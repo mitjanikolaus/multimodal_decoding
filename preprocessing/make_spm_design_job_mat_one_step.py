@@ -14,6 +14,7 @@ from glob import glob
 from nipype.interfaces.base import Bunch
 import pandas as pd
 
+from data import IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from preprocessing.make_spm_design_job_mat import get_sessions
 from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
@@ -40,14 +41,17 @@ def get_condition_names(trial):
         if trial['subj_resp'] != 0:
             conditions.append('subj_resp')
         if trial['condition_name'] != 0:
-            if (trial['trial_type'] == 1) and (trial['train_test'] == 1):
-                conditions.append(f"train_image_{trial['condition_name']}")
-            if (trial['trial_type'] == 2) and (trial['train_test'] == 1):
-                conditions.append(f"train_caption_{trial['condition_name']}")
-            if (trial['trial_type'] == 1) and (trial['train_test'] == 2):
-                conditions.append(f"test_image_{trial['condition_name']}")
-            if (trial['trial_type'] == 2) and (trial['train_test'] == 2):
-                conditions.append(f"test_caption_{trial['condition_name']}")
+            stim_id = trial['condition_name']
+            if trial['trial_type'] == 1:
+                if int(stim_id) in IDS_IMAGES_TEST:
+                    conditions.append(f"test_image_{stim_id}")
+                else:
+                    conditions.append(f"train_image_{stim_id}")
+            elif trial['trial_type'] == 2:
+                if int(stim_id) in IDS_IMAGES_TEST:
+                    conditions.append(f"test_caption_{stim_id}")
+                else:
+                    conditions.append(f"train_caption_{stim_id}")
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
