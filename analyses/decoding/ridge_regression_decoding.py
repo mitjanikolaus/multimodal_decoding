@@ -80,9 +80,9 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = remove_nans(
                     [train_fmri_betas, test_fmri_betas, imagery_fmri_betas]
                 )
-                # train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
-                #     train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
-                # )
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
+                )
 
                 for model in args.models:
                     feats_config = LatentFeatsConfig(
