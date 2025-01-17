@@ -171,6 +171,7 @@ def run(args):
                         "nan_locations": nan_locations,
                         "test_predicted_betas": test_predicted_betas,
                         "test_betas": test_betas,
+                        "weights": clf.coef_,
                     }
                     scores = calc_correlation_metrics(
                         test_betas, test_predicted_betas, test_stim_types, backend
