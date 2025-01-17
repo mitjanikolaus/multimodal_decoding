@@ -4,7 +4,6 @@ import nibabel as nib
 from glob import glob
 import os
 
-import numpy as np
 from tqdm import tqdm
 
 from utils import SUBJECTS, FMRI_BETAS_DIR
@@ -26,14 +25,14 @@ def create_symlinks_for_beta_files(betas_dir):
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
     """
-    betas_base_dir = os.path.join(betas_dir, 'unstructured')
-    beta_file_addresses = sorted(glob(os.path.join(betas_base_dir, '**', 'beta_*.nii'), recursive=True))
+    beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'unstructured', 'beta_*.nii'), recursive=True))
 
     all_slink_names = set()
     all_beta_relative_paths = set()
     for beta_path in tqdm(beta_file_addresses):
         beta_file = nib.load(beta_path)
         beta_name = beta_file.header['descrip'].item().decode()
+
         for split_name in SPLITS:
             if split_name in beta_name:
                 if split_name == 'blank':
@@ -54,7 +53,6 @@ def create_symlinks_for_beta_files(betas_dir):
                 all_beta_relative_paths.add(beta_relative_path)
                 os.symlink(beta_relative_path, slink_name)
 
-    print(all_slink_names)
     print(f"Created symbolic links for {len(all_slink_names)} beta files")
 
 
