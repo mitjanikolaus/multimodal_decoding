@@ -15,7 +15,7 @@ from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, cal
     create_masks
 from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, \
     get_results_file_path
-from data import features_config_from_combined_features, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
+from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig
 from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     METRIC_CROSS_ENCODING, METRIC_CROSS_ENCODING_ALT, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, \
@@ -36,17 +36,18 @@ def load_per_subject_scores(args, return_nan_locations=False):
 
     for subject in tqdm(args.subjects):
         for hemi in HEMIS:
-            feats_config_agnostic = features_config_from_combined_features(
-                args.model, args.features, args.vision_features, args.lang_features
+            feats_config_agnostic = LatentFeatsConfig(
+                args.model, args.features, args.test_features, SELECT_DEFAULT, SELECT_DEFAULT,
             )
             results_agnostic_file = get_results_file_path(
                 subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
             )
 
-            feats_config_mod_specific_vision = features_config_from_combined_features(
+            feats_config_mod_specific_vision = LatentFeatsConfig(
                 args.mod_specific_vision_model,
                 args.mod_specific_vision_features,
-                args.vision_features, args.lang_features,
+                args.mod_specific_vision_test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
             results_mod_specific_vision_file = get_results_file_path(
@@ -56,10 +57,11 @@ def load_per_subject_scores(args, return_nan_locations=False):
                 hemi
             )
 
-            feats_config_mod_specific_lang = features_config_from_combined_features(
+            feats_config_mod_specific_lang = LatentFeatsConfig(
                 args.mod_specific_lang_model,
                 args.mod_specific_lang_features,
-                args.vision_features, args.lang_features,
+                args.mod_specific_lang_test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
             results_mod_specific_lang_file = get_results_file_path(
@@ -287,16 +289,17 @@ def load_null_distr_per_subject_scores(args):
     for subject in args.subjects:
         print(subject)
         for hemi in HEMIS:
-            feats_config_agnostic = features_config_from_combined_features(
-                args.model, args.features, SELECT_DEFAULT, SELECT_DEFAULT
+            feats_config_agnostic = LatentFeatsConfig(
+                args.model, args.features, args.test_features, SELECT_DEFAULT, SELECT_DEFAULT
             )
             null_distr_agnostic_file = get_null_distr_results_path(
                 subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
             )
 
-            feats_config_mod_specific_vision = features_config_from_combined_features(
+            feats_config_mod_specific_vision = LatentFeatsConfig(
                 args.mod_specific_vision_model,
                 args.mod_specific_vision_features,
+                args.mod_specific_vision_test_features,
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
@@ -307,9 +310,10 @@ def load_null_distr_per_subject_scores(args):
                 hemi
             )
 
-            feats_config_mod_specific_lang = features_config_from_combined_features(
+            feats_config_mod_specific_lang = LatentFeatsConfig(
                 args.mod_specific_lang_model,
                 args.mod_specific_lang_features,
+                args.mod_specific_lang_test_features,
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
@@ -530,11 +534,11 @@ def get_args():
 
     parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-vision-features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--mod-specific-vision-features-test", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-vision-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
     parser.add_argument("--mod-specific-lang-features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--mod-specific-lang-features-test", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-lang-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 

@@ -338,11 +338,6 @@ class LatentFeatsConfig:
         self.combined_feats = f"{self.features}_test_{self.test_features}"
 
 
-def features_config_from_combined_features(model, combined_feats, vision_features, lang_features, logging=True):
-    train_feats, test_feats = combined_feats.split("_")
-    return LatentFeatsConfig(model, train_feats, test_feats, vision_features, lang_features, logging)
-
-
 def stim_id_from_beta_file_name(beta_file_name):
     return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(".nii", ''))
 

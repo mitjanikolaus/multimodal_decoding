@@ -9,8 +9,8 @@ from tqdm import tqdm
 from analyses.encoding.encoding_permutation_testing import CORR_IMAGES_MOD_SPECIFIC_IMAGES, \
     CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
 from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_results_file_path
-from data import features_config_from_combined_features, SELECT_DEFAULT, VISION_FEAT_COMBINATION_CHOICES, \
-    LANG_FEAT_COMBINATION_CHOICES
+from data import SELECT_DEFAULT, VISION_FEAT_COMBINATION_CHOICES, \
+    LANG_FEAT_COMBINATION_CHOICES, LatentFeatsConfig
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, MODE_AGNOSTIC, \
     MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
@@ -50,26 +50,27 @@ def calc_averaged_scores(per_subj_scores):
 def create_gifti_results_maps(args):
     results_dir = os.path.join(ENCODING_RESULTS_DIR, "corr_results_maps")
     os.makedirs(results_dir, exist_ok=True)
-    feats_config_agnostic = features_config_from_combined_features(
-        args.model, args.features, args.vision_features, args.lang_features
+    feats_config_agnostic = LatentFeatsConfig(
+        args.model, args.features, args.test_features, args.vision_features, args.lang_features
     )
     subject_scores_mod_agnostic = load_corr_scores(args, MODE_AGNOSTIC, feats_config_agnostic)
     averaged_scores_mod_agnostic = calc_averaged_scores(subject_scores_mod_agnostic)
 
-    feats_config_specific_lang = features_config_from_combined_features(
-        args.mod_specific_lang_model, args.mod_specific_lang_features, args.vision_features, args.lang_features
+    feats_config_specific_lang = LatentFeatsConfig(
+        args.mod_specific_lang_model, args.mod_specific_lang_features, args.mod_specific_lang_test_features,
+        args.vision_features, args.lang_features
     )
     subject_scores_mod_specific_lang = load_corr_scores(args, MOD_SPECIFIC_CAPTIONS, feats_config_specific_lang)
     averaged_scores_mod_specific_lang = calc_averaged_scores(subject_scores_mod_specific_lang)
 
-    feats_config_specific_vision = features_config_from_combined_features(
-        args.mod_specific_vision_model, args.mod_specific_vision_features, args.vision_features, args.lang_features
+    feats_config_specific_vision = LatentFeatsConfig(
+        args.mod_specific_vision_model, args.mod_specific_vision_features, args.mod_specific_vision_test_features,
+        args.vision_features, args.lang_features
     )
     subject_scores_mod_specific_vision = load_corr_scores(args, MOD_SPECIFIC_IMAGES, feats_config_specific_vision)
     averaged_scores_mod_specific_vision = calc_averaged_scores(subject_scores_mod_specific_vision)
 
     print("Creating gifti results maps")
-
     for metric in METRICS:
         for hemi in HEMIS:
             print(
