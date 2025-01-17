@@ -108,7 +108,7 @@ def run(args):
                 print(f"test fMRI betas shape: {test_betas.shape}")
 
                 results_file_path = get_results_file_path(
-                    subject, training_mode, feats_config, args.resolution, hemi
+                    subject, training_mode, feats_config, args.resolution, hemi, corr_threshold=args.corr_threshold
                 )
                 if os.path.isfile(results_file_path) and not args.overwrite:
                     print(f"Skipping encoder training as results are already present at"

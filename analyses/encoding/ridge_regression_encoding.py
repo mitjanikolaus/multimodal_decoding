@@ -52,8 +52,10 @@ def get_run_str(feats_config, resolution, hemi):
     return run_str
 
 
-def get_results_file_path(subject, training_mode, feats_config, resolution, hemi):
+def get_results_file_path(subject, training_mode, feats_config, resolution, hemi, corr_threshold=None):
     run_str = get_run_str(feats_config, resolution, hemi=hemi)
+    if corr_threshold is not None:
+        run_str += f"_corr_thresh_{corr_threshold}"
     results_file_path = os.path.join(ENCODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE)
     return results_file_path
 
