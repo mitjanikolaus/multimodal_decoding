@@ -96,7 +96,7 @@ We generate beta values for each stimulus (images and captions) using a GLM.
 We first create the matlab scripts using python nipype scripts, and then run them:
 
 ```
-python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01
+python preprocessing/make_spm_design_job_mat.py --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01;exit;"  -logfile matlab_output.txt && cd -
 ```
 
