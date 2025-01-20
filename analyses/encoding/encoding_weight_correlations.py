@@ -32,7 +32,7 @@ def calc_feats_corr(subject, args):
     weights = dict()
     for training_mode in [MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]:
         weights[training_mode] = []
-        for hemi in ['left']:#HEMIS:
+        for hemi in HEMIS:
             results_file_path = get_results_file_path(
                 subject, training_mode, feats_config, args.resolution, hemi
             )
