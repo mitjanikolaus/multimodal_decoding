@@ -3,7 +3,7 @@
 ## Encoding analysis
 
 ```
-CUDA_VISIBLE_DEVICES=0 python analyses/ridge_regression_encoding.py --models imagebind --training-modes  train_image train_caption  --cuda
+CUDA_VISIBLE_DEVICES=0 python analyses/encoding/ridge_regression_encoding.py --models imagebind --training-modes  train_image train_caption  --cuda
 ```
 
 ## Searchlight analysis
