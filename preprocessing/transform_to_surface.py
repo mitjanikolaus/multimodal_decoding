@@ -7,17 +7,18 @@ from nilearn.surface import surface
 import os
 import pickle
 
-from analyses.ridge_regression_decoding import get_fmri_data_paths, IMAGERY
-from analyses.searchlight.searchlight import INDICES_TEST_STIM_IMAGE, INDICES_TEST_STIM_CAPTION
+from analyses.decoding.ridge_regression_decoding import IMAGERY
+from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, IDS_TEST_STIM, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import IMAGERY_SCENES, FMRI_SURFACE_LEVEL_DIR, IDS_TEST_STIM, SUBJECTS
+from utils import FMRI_SURFACE_LEVEL_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR
+
 
 def run(args):
     for subject in args.subjects:
         print("\n", subject)
-        train_fmri, train_stim_ids, train_stim_types = get_fmri_data_paths(subject, "train")
-        test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(subject, "test")
-        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(subject, IMAGERY)
+        train_fmri, train_stim_ids, train_stim_types = get_fmri_data_paths(args.betas_dir, subject, "train")
+        test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(args.betas_dir, subject, "test")
+        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(args.betas_dir, subject, IMAGERY)
 
         pickle.dump(train_stim_ids, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_train.p"), 'wb'))
         pickle.dump(train_stim_types, open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_train.p"), 'wb'))
@@ -98,6 +99,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)

@@ -1,3 +1,6 @@
 [submodule "ImageBind"]
 	path = ImageBind
 	url = git@github.com:facebookresearch/ImageBind.git
+[submodule "himalaya"]
+	path = himalaya
+	url = git@github.com:mitjanikolaus/himalaya.git

@@ -1,5 +1,11 @@
 # multimodal_decoding
 
+## Encoding analysis
+
+```
+CUDA_VISIBLE_DEVICES=0 python analyses/encoding/ridge_regression_encoding.py --models imagebind --training-modes  train_image train_caption  --cuda
+```
+
 ## Searchlight analysis
 
 Modality-agnostic decoder:
@@ -86,15 +92,12 @@ Finally, the aforementioned script is also converting the mask to MNI space. The
 
 ### (4) Generation of beta values
 
-We generate beta values for each stimulus (image or caption) using a GLM.
+We generate beta values for each stimulus (images and captions) using a GLM.
 We first create the matlab scripts using python nipype scripts, and then run them:
 
 ```
-python preprocessing/make_spm_design_job_mat.py --stage 1 --subjects sub-01
-cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_1 sub-01;exit;"  -logfile matlab_output.txt && cd -
-
-python preprocessing/make_spm_design_job_mat.py --stage 2 --subjects sub-01
-cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm_stage_2 sub-01;exit;"  -logfile matlab_output.txt &&  cd -
+python preprocessing/make_spm_design_job_mat.py --subjects sub-01
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01;exit;"  -logfile matlab_output.txt && cd -
 ```
 
 __Note:__ Repeat these steps separately for each subject by adapting the subject identifier (`sub-01`) for both matlab and python
