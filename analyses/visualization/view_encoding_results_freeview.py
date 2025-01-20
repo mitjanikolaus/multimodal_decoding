@@ -4,6 +4,7 @@ import os
 from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
 from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR
+from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
 from eval import CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
     METRIC_CROSS_ENCODING
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
@@ -57,20 +58,25 @@ def get_args():
     parser.add_argument("--p-values-threshold", type=float, default=0.05)
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default="avg_test_avg")
+    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+    parser.add_argument("--mod-specific-vision-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-vision-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+    parser.add_argument("--mod-specific-lang-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-lang-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
-    parser.add_argument("--tfce-dh", type=float, default=0.01)
+    parser.add_argument("--tfce-dh", type=float, default=0.1)
     parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--n-clusters", type=int, default=10)
