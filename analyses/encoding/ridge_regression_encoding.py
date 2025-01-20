@@ -44,7 +44,7 @@ def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types, 
 
 
 def get_run_str(feats_config, resolution, hemi):
-    run_str = f"{feats_config.model}_{feats_config.features}"
+    run_str = f"{feats_config.model}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
     run_str += f"_surface_{resolution}"
