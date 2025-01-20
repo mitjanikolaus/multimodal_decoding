@@ -200,8 +200,6 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
-
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--model", type=str, default='imagebind')

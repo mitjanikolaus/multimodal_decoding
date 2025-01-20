@@ -212,8 +212,6 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
-
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)
 
