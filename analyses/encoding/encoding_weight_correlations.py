@@ -53,8 +53,7 @@ def calc_feats_corr(subject, args):
         same_sign = (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps)) & (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_agnostic))
         per_vertex_filters.append(same_sign)
 
-    # return np.array(corrs)
-    return np.array(per_vertex_filters)
+    return np.array(corrs), np.array(per_vertex_filters)
 
 
 
@@ -68,7 +67,7 @@ def run(args):
     random_seeds = create_null_distr_seeds(args.n_permutations_per_subject) if args.create_null_distr else None
 
     for subject in args.subjects:
-        per_vertex_filters = calc_feats_corr(subject, args)
+        corrs, per_vertex_filters = calc_feats_corr(subject, args)
         for hemi in HEMIS:
             for training_mode in [MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS]:
                 train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_surface_data(
@@ -102,14 +101,14 @@ def run(args):
                 test_latents = get_latent_features(
                     args.model, feats_config, test_stim_ids, test_stim_types, test_mode=True
                 )
-                # print(f"Number of feats after corr threshold filtering: {np.sum(corrs > args.corr_threshold)}")
-                # train_latents = train_latents[:, corrs > args.corr_threshold]
-                # test_latents = test_latents[:, corrs > args.corr_threshold]
+                print(f"Number of feats after corr threshold filtering: {np.sum(corrs > args.corr_threshold)}")
+                train_latents = train_latents[:, corrs > args.corr_threshold]
+                test_latents = test_latents[:, corrs > args.corr_threshold]
 
-                filter = np.mean(per_vertex_filters, axis=1) > 0.5
-                print(f"Number of feats after corr threshold filtering: {np.sum(filter)}")
-                train_latents = train_latents[:, filter]
-                test_latents = test_latents[:, filter]
+                # filter = np.mean(per_vertex_filters, axis=1) > 0.5
+                # print(f"Number of feats after corr threshold filtering: {np.sum(filter)}")
+                # train_latents = train_latents[:, filter]
+                # test_latents = test_latents[:, filter]
 
                 train_latents, test_latents = standardize_latents(train_latents, test_latents)
 
