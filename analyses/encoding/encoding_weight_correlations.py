@@ -37,6 +37,7 @@ def calc_feats_corr(subject, args):
             results_file_path = get_results_file_path(
                 subject, training_mode, feats_config, args.resolution, hemi
             )
+            print('loading ', results_file_path)
             results = pickle.load(open(results_file_path, "rb"))
             weights[training_mode].append(results['weights'])
         weights[training_mode] = np.hstack(weights[training_mode])
