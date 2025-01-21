@@ -46,7 +46,7 @@ def calc_feats_corr(subject, args):
     pvals = []
     per_vertex_filters = []
     for weights_mod_spec_imgs, weights_mod_spec_caps, weights_mod_agnostic in zip(weights[MOD_SPECIFIC_IMAGES], weights[MOD_SPECIFIC_CAPTIONS], weights[MODE_AGNOSTIC]):
-        corr = pearsonr(weights_mod_spec_imgs, weights_mod_spec_caps)
+        corr = pearsonr(weights_mod_spec_imgs, weights_mod_agnostic)
         corrs.append(corr[0])
         pvals.append(corr[1])
 
