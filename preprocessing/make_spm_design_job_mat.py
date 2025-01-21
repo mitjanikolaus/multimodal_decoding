@@ -16,8 +16,8 @@ import pandas as pd
 
 from data import IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, \
-    FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, FMRI_DATA_DIR, FMRI_BETAS_DIR
+from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, \
+    FMRI_BETAS_DIR
 
 
 def get_condition_names(trial):
@@ -32,22 +32,24 @@ def get_condition_names(trial):
     elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
         conditions.append(f"imagery_{trial['imagery_scene']}")
     else:
-        if trial['one_back'] != 0:
-            conditions.append('one_back')
-        if trial['subj_resp'] != 0:
-            conditions.append('subj_resp')
-        if trial['condition_name'] != 0:
-            stim_id = trial['condition_name']
-            if trial['trial_type'] == 1:
-                if int(stim_id) in IDS_IMAGES_TEST:
-                    conditions.append(f"test_image_{stim_id}")
-                else:
-                    conditions.append(f"train_image_{stim_id}")
-            elif trial['trial_type'] == 2:
-                if int(stim_id) in IDS_IMAGES_TEST:
-                    conditions.append(f"test_caption_{stim_id}")
-                else:
-                    conditions.append(f"train_caption_{stim_id}")
+        if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
+            if trial['one_back'] != 0:
+                conditions.append('one_back')
+            if trial['subj_resp'] != 0:
+                conditions.append('subj_resp')
+        else:
+            if trial['condition_name'] != 0:
+                stim_id = trial['condition_name']
+                if trial['trial_type'] == 1:
+                    if int(stim_id) in IDS_IMAGES_TEST:
+                        conditions.append(f"test_image_{stim_id}")
+                    else:
+                        conditions.append(f"train_image_{stim_id}")
+                elif trial['trial_type'] == 2:
+                    if int(stim_id) in IDS_IMAGES_TEST:
+                        conditions.append(f"test_caption_{stim_id}")
+                    else:
+                        conditions.append(f"train_caption_{stim_id}")
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
@@ -96,8 +98,6 @@ def load_event_files(tsv_files, log_file=None):
     print("Number of conditions: ", len(condition_names))
     print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
     print("Number of test conditions:", len([c for c in condition_names if "test" in c]))
-
-
 
     if log_file is not None:
         events_df.to_csv(log_file, sep="\t")
