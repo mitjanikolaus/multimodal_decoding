@@ -50,7 +50,7 @@ def calc_feats_corr(subject, args):
         corrs.append(corr[0])
         pvals.append(corr[1])
 
-        same_sign = np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps) == np.sign(weights_mod_agnostic)
+        same_sign = (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps)) & (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_agnostic))
         per_vertex_filters.append(same_sign)
 
     # return np.array(corrs)
