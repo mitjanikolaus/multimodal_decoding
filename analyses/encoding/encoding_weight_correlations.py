@@ -68,8 +68,8 @@ def run(args):
 
     for subject in args.subjects:
         corrs, per_vertex_filters = calc_feats_corr(subject, args)
-        for hemi in HEMIS:
-            for training_mode in [MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS]:
+        for training_mode in [MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS]:
+            for hemi in HEMIS:
                 train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_surface_data(
                     subject,
                     training_mode,
