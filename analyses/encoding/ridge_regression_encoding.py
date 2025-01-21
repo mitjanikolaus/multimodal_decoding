@@ -188,7 +188,9 @@ def run(args):
                         f" | Corr (images): {np.mean(results[CORR_IMAGES]):.2f} |"
                         f" (max: {np.max(results[CORR_IMAGES]):.2f})\n"
                         f"Corr (captions, pos only): {np.mean(results[CORR_CAPTIONS][results[CORR_CAPTIONS]>0]):.2f} |"
-                        f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES]>0]):.2f} |"
+                        f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES]>0]):.2f}\n"
+                        f"Num vertices positive corr (captions): {np.sum(results[CORR_CAPTIONS]>0)}/{len(results[CORR_CAPTIONS])}"
+                        f"Num vertices positive corr (images): {np.sum(results[CORR_IMAGES] > 0)}/{len(results[CORR_IMAGES])}"
                     )
 
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
