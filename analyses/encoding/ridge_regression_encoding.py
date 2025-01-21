@@ -186,7 +186,9 @@ def run(args):
                         f" | Corr (captions): {np.mean(results[CORR_CAPTIONS]):.2f} |"
                         f" (max: {np.max(results[CORR_CAPTIONS]):.2f})"
                         f" | Corr (images): {np.mean(results[CORR_IMAGES]):.2f} |"
-                        f" (max: {np.max(results[CORR_IMAGES]):.2f})\n\n\n"
+                        f" (max: {np.max(results[CORR_IMAGES]):.2f})\n"
+                        f"Corr (captions, pos only): {np.mean(results[CORR_CAPTIONS][results[CORR_CAPTIONS]>0]):.2f} |"
+                        f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES]>0]):.2f} |"
                     )
 
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
