@@ -21,7 +21,8 @@ from analyses.decoding.ridge_regression_decoding import TESTING_MODE, standardiz
     get_latent_features, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, \
     standardize_latents
-from utils import SUBJECTS, DEFAULT_RESOLUTION, HEMIS, FMRI_BETAS_DIR, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS
+from utils import SUBJECTS, DEFAULT_RESOLUTION, HEMIS, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, \
+    MODE_AGNOSTIC
 
 
 def calc_feats_corr(subject, args):
@@ -30,7 +31,7 @@ def calc_feats_corr(subject, args):
     )
 
     weights = dict()
-    for training_mode in [MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]:
+    for training_mode in [MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC]:
         weights[training_mode] = []
         for hemi in HEMIS:
             results_file_path = get_results_file_path(
@@ -43,12 +44,12 @@ def calc_feats_corr(subject, args):
     corrs = []
     pvals = []
     per_vertex_filters = []
-    for weights_mod_spec_imgs, weights_mod_spec_caps in zip(weights[MOD_SPECIFIC_IMAGES], weights[MOD_SPECIFIC_CAPTIONS]):
+    for weights_mod_spec_imgs, weights_mod_spec_caps, weights_mod_agnostic in zip(weights[MOD_SPECIFIC_IMAGES], weights[MOD_SPECIFIC_CAPTIONS], weights[MODE_AGNOSTIC]):
         corr = pearsonr(weights_mod_spec_imgs, weights_mod_spec_caps)
         corrs.append(corr[0])
         pvals.append(corr[1])
 
-        same_sign = np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps)
+        same_sign = np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps) == np.sign(weights_mod_agnostic)
         per_vertex_filters.append(same_sign)
 
     # return np.array(corrs)
@@ -185,7 +186,11 @@ def run(args):
                     f" | Corr (captions): {np.mean(results[CORR_CAPTIONS]):.2f} |"
                     f" (max: {np.max(results[CORR_CAPTIONS]):.2f})"
                     f" | Corr (images): {np.mean(results[CORR_IMAGES]):.2f} |"
-                    f" (max: {np.max(results[CORR_IMAGES]):.2f})\n\n\n"
+                    f" (max: {np.max(results[CORR_IMAGES]):.2f})\n"
+                    f"Corr (captions, pos only): {np.mean(results[CORR_CAPTIONS][results[CORR_CAPTIONS] > 0]):.2f} |"
+                    f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES] > 0]):.2f}\n"
+                    f"Num vertices positive corr (captions): {np.sum(results[CORR_CAPTIONS] > 0)}/{len(results[CORR_CAPTIONS])} |"
+                    f" Num vertices positive corr (images): {np.sum(results[CORR_IMAGES] > 0)}/{len(results[CORR_IMAGES])}\n\n"
                 )
 
                 os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
