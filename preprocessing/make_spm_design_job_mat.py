@@ -17,7 +17,9 @@ import pandas as pd
 from data import IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, \
-    FMRI_BETAS_DIR
+    FMRI_DATA_DIR
+
+FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas_one_step_skip_one_back")
 
 
 def get_condition_names(trial):
