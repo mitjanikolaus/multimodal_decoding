@@ -40,8 +40,7 @@ class CoCoDataset(Dataset):
         id = self.stimuli_ids[index]
         if self.mode == 'image':
             img_path = os.path.join(self.root, self.img_paths[id])
-            img = Image.open(img_path).convert('RGB')
-            return img, id, img_path
+            return id, img_path
 
         elif self.mode == 'caption':
             cap = self.captions[id]

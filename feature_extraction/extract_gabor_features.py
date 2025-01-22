@@ -29,7 +29,7 @@ class GaborFeatureExtractor(FeatureExtractor):
 
     def extract_features(self):
         all_feats = dict()
-        for ids, captions, img_paths in tqdm(self.dloader):
+        for ids, img_paths in tqdm(self.dloader):
             ids = [id.item() for id in ids]
 
             def extract_feats(img_paths):
