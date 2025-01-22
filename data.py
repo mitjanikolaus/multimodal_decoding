@@ -320,21 +320,15 @@ class LatentFeatsConfig:
     def __post_init__(self):
         if self.features == SELECT_DEFAULT:
             self.features = DEFAULT_FEATURES[self.model]
-            if logging:
-                print(f"Selected default features for {self.model}: {self.features}")
         if self.test_features == SELECT_DEFAULT:
             self.test_features = DEFAULT_FEATURES[self.model]
-            if logging:
-                print(f"Selected default test features for {self.model}: {self.test_features}")
         if self.vision_features == SELECT_DEFAULT:
             self.vision_features = DEFAULT_VISION_FEATURES[self.model]
-            if logging:
-                print(f"Selected default vision features for {self.model}: {self.vision_features}")
         if self.lang_features == SELECT_DEFAULT:
             self.lang_features = DEFAULT_LANG_FEATURES[self.model]
-            if logging:
-                print(f"Selected default language features for {self.model}: {self.lang_features}")
-
+        if logging:
+            print(f"Selected features for {self.model}: {self.features} {self.test_features} "
+                  f"{self.vision_features} {self.lang_features}")
         self.combined_feats = f"{self.features}_test_{self.test_features}"
 
 
