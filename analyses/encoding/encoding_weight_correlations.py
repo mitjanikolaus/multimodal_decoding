@@ -70,10 +70,11 @@ def run(args):
 
     for subject in args.subjects:
         corrs, per_vertex_filters, mod_agnostic_weights = calc_feats_corr(subject, args)
-        # print(f"Number of feats after corr threshold filtering: {np.sum(corrs > args.corr_threshold)}")
-
-        filter = np.mean(per_vertex_filters, axis=1) > 0.5
+        filter = corrs > args.corr_threshold
         print(f"Number of feats after corr threshold filtering: {np.sum(filter)}")
+
+        # filter = np.mean(per_vertex_filters, axis=1) > 0.5
+        # print(f"Number of feats after corr threshold filtering: {np.sum(filter)}")
 
         # filter = np.mean(mod_agnostic_weights, axis=1) > 0.5
         # print(f"Number of feats after mod agnostic weights threshold filtering: {np.sum(filter)}")
@@ -111,12 +112,6 @@ def run(args):
                 test_latents = get_latent_features(
                     args.model, feats_config, test_stim_ids, test_stim_types, test_mode=True
                 )
-                # train_latents = train_latents[:, corrs > args.corr_threshold]
-                # test_latents = test_latents[:, corrs > args.corr_threshold]
-
-                # train_latents = train_latents[:, filter]
-                # test_latents = test_latents[:, filter]
-
                 train_latents = train_latents[:, filter]
                 test_latents = test_latents[:, filter]
 
