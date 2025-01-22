@@ -17,7 +17,7 @@ from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, ge
     get_results_file_path
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig
 from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    METRIC_CROSS_ENCODING, METRIC_CROSS_ENCODING_ALT, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT
+    METRIC_CROSS_ENCODING, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, \
     MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, FS_HEMI_NAMES, export_to_gifti
 
@@ -169,12 +169,6 @@ def calculate_metric_from_t_vals(t_vals, metric):
             warnings.simplefilter("ignore", category=RuntimeWarning)
             if metric == METRIC_CROSS_ENCODING:
                 t_vals[hemi][metric] = np.nanmin(
-                    (
-                        t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
-                        t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
-                    axis=0)
-            elif metric == METRIC_CROSS_ENCODING_ALT:
-                t_vals[hemi][metric] = np.nanmax(
                     (
                         t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
                         t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
@@ -440,12 +434,6 @@ def create_null_distribution(args):
                         warnings.simplefilter("ignore", category=RuntimeWarning)
                         if args.metric == METRIC_CROSS_ENCODING:
                             values[hemi] = [np.nanmin(
-                                (
-                                    t_vals[f"{hemi}__{CORR_CROSS_CAPTIONS_TO_IMAGES}"][perm_idx],
-                                    t_vals[f"{hemi}__{CORR_CROSS_IMAGES_TO_CAPTIONS}"][perm_idx]),
-                                axis=0) for perm_idx in iterator]
-                        elif args.metric == METRIC_CROSS_ENCODING_ALT:
-                            values[hemi] = [np.nanmax(
                                 (
                                     t_vals[f"{hemi}__{CORR_CROSS_CAPTIONS_TO_IMAGES}"][perm_idx],
                                     t_vals[f"{hemi}__{CORR_CROSS_IMAGES_TO_CAPTIONS}"][perm_idx]),

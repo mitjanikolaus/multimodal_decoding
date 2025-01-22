@@ -247,6 +247,7 @@ DEFAULT_FEATURES = {
     "dino-base": VISION_FEATS_ONLY,
     "dino-large": VISION_FEATS_ONLY,
     "dino-giant": VISION_FEATS_ONLY,
+    "gabor": FEATS_NA,
 }
 
 DEFAULT_VISION_FEATURES = {
@@ -276,6 +277,7 @@ DEFAULT_VISION_FEATURES = {
     "dino-base": VISION_MEAN_FEAT_KEY,
     "dino-large": VISION_MEAN_FEAT_KEY,
     "dino-giant": VISION_MEAN_FEAT_KEY,
+    "gabor": FEATS_NA,
 }
 
 DEFAULT_LANG_FEATURES = {
@@ -305,16 +307,17 @@ DEFAULT_LANG_FEATURES = {
     "dino-base": FEATS_NA,
     "dino-large": FEATS_NA,
     "dino-giant": FEATS_NA,
+    "gabor": FEATS_NA,
 }
 
 
 @dataclass
 class LatentFeatsConfig:
     model: str
-    features: str
-    test_features: str
-    vision_features: str
-    lang_features: str
+    features: str = SELECT_DEFAULT
+    test_features: str = SELECT_DEFAULT
+    vision_features: str = SELECT_DEFAULT
+    lang_features: str = SELECT_DEFAULT
     logging: bool = True
 
     def __post_init__(self):
@@ -498,14 +501,16 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
     return lang_feats
 
 
-def get_latent_features(model_name, feats_config, stim_ids, stim_types, test_mode=False):
-    latent_vectors_file = model_features_file_path(model_name)
+def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
+    latent_vectors_file = model_features_file_path(feats_config.model)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
     features = feats_config.test_features if test_mode else feats_config.features
     nn_latent_vectors = []
     for stim_id, stim_type in zip(stim_ids, stim_types):
-        if features == VISION_FEATS_ONLY:
+        if feats_config.model == "gabor":
+            feats = latent_vectors[stim_id]
+        elif features == VISION_FEATS_ONLY:
             feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
         elif features == LANG_FEATS_ONLY:
             feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)

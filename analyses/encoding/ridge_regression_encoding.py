@@ -10,7 +10,7 @@ from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFe
     create_null_distr_seeds
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
 from himalaya.backend import set_backend
-from himalaya.ridge import RidgeCV
+from himalaya.ridge import RidgeCV, GroupRidgeCV
 from himalaya.scoring import correlation_score
 import os
 import pickle
@@ -52,10 +52,14 @@ def get_run_str(feats_config, resolution, hemi):
     return run_str
 
 
-def get_results_file_path(subject, training_mode, feats_config, resolution, hemi, corr_threshold=None):
+def get_results_file_path(
+        subject, training_mode, feats_config, resolution, hemi, corr_threshold=None, add_gabor_feats=False
+):
     run_str = get_run_str(feats_config, resolution, hemi=hemi)
     if corr_threshold is not None:
         run_str += f"_corr_thresh_{corr_threshold}"
+    if add_gabor_feats:
+        run_str += f"_gabor"
     results_file_path = os.path.join(ENCODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE)
     return results_file_path
 
@@ -106,9 +110,9 @@ def run(args):
                         model, args.features, args.test_features, args.vision_features, args.lang_features
                     )
 
-                    train_latents = get_latent_features(model, feats_config, train_stim_ids, train_stim_types)
+                    train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
                     test_latents = get_latent_features(
-                        model, feats_config, test_stim_ids, test_stim_types, test_mode=True
+                        feats_config, test_stim_ids, test_stim_types, test_mode=True
                     )
                     train_latents, test_latents = standardize_latents(train_latents, test_latents)
 
@@ -127,31 +131,61 @@ def run(args):
                               f" {results_file_path}")
                         continue
 
-                    clf = RidgeCV(
-                        alphas=args.l2_regularization_alphas,
-                        solver_params=dict(
-                            n_targets_batch=args.n_targets_batch,
-                            n_alphas_batch=args.n_alphas_batch,
-                            n_targets_batch_refit=args.n_targets_batch_refit
-                        )
-                    )
-
-                    start = time.time()
                     train_latents = train_latents.astype(np.float32)
+                    test_latents = test_latents.astype(np.float32)
+
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
 
                     # skip input data checking to limit memory use
                     # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
                     sklearn.set_config(assume_finite=True)
 
-                    clf.fit(train_latents, train_fmri_betas)
-                    end = time.time()
-                    print(f"Elapsed time: {int(end - start)}s")
+                    if args.add_gabor_feats:
+                        feats_config = LatentFeatsConfig("gabor")
+                        train_latents_gabor = get_latent_features(feats_config, train_stim_ids, train_stim_types)
+                        test_latents_gabor = get_latent_features(
+                            feats_config, test_stim_ids, test_stim_types, test_mode=True
+                        )
+                        train_latents_gabor, test_latents_gabor = standardize_latents(
+                            train_latents_gabor, test_latents_gabor
+                        )
+                        train_latents_gabor = train_latents_gabor.astype(np.float32)
+                        test_latents_gabor = test_latents_gabor.astype(np.float32)
 
-                    best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
+                        groups = np.concatenate(
+                            (np.repeat(0, len(train_latents[0])), np.repeat(1, len(train_latents_gabor[0])))
+                        )
+                        clf = GroupRidgeCV(
+                            groups=groups,
+                            solver_params=dict(
+                                alphas=np.array(args.l2_regularization_alphas),
+                                n_targets_batch=args.n_targets_batch,
+                                n_alphas_batch=args.n_alphas_batch,
+                                n_targets_batch_refit=args.n_targets_batch_refit
+                            )
+                        )
 
-                    test_latents = test_latents.astype(np.float32)
-                    test_predicted_betas = clf.predict(test_latents)
+                        clf.fit(np.hstack((train_latents, train_latents_gabor)), train_fmri_betas)
+
+                        best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
+
+                        test_predicted_betas = clf.predict(np.hstack((test_latents, test_latents_gabor)))
+
+                    else:
+                        clf = RidgeCV(
+                            alphas=args.l2_regularization_alphas,
+                            solver_params=dict(
+                                n_targets_batch=args.n_targets_batch,
+                                n_alphas_batch=args.n_alphas_batch,
+                                n_targets_batch_refit=args.n_targets_batch_refit
+                            )
+                        )
+
+                        clf.fit(train_latents, train_fmri_betas)
+
+                        best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
+
+                        test_predicted_betas = clf.predict(test_latents)
 
                     test_betas = backend.to_numpy(test_betas)
                     test_predicted_betas = backend.to_numpy(test_predicted_betas)
@@ -187,9 +221,9 @@ def run(args):
                         f" (max: {np.max(results[CORR_CAPTIONS]):.2f})"
                         f" | Corr (images): {np.mean(results[CORR_IMAGES]):.2f} |"
                         f" (max: {np.max(results[CORR_IMAGES]):.2f})\n"
-                        f"Corr (captions, pos only): {np.mean(results[CORR_CAPTIONS][results[CORR_CAPTIONS]>0]):.2f} |"
-                        f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES]>0]):.2f}\n"
-                        f"Num vertices positive corr (captions): {np.sum(results[CORR_CAPTIONS]>0)}/{len(results[CORR_CAPTIONS])} |"
+                        f"Corr (captions, pos only): {np.mean(results[CORR_CAPTIONS][results[CORR_CAPTIONS] > 0]):.2f} |"
+                        f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES] > 0]):.2f}\n"
+                        f"Num vertices positive corr (captions): {np.sum(results[CORR_CAPTIONS] > 0)}/{len(results[CORR_CAPTIONS])} |"
                         f" Num vertices positive corr (images): {np.sum(results[CORR_IMAGES] > 0)}/{len(results[CORR_IMAGES])}\n\n"
                     )
 
@@ -248,6 +282,8 @@ def get_args():
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
+
+    parser.add_argument("--add-gabor-feats", default=False, action="store_true")
 
     return parser.parse_args()
 

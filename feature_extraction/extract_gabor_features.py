@@ -61,7 +61,7 @@ class GaborFeatureExtractor(FeatureExtractor):
                 )
                 for i in range(N_JOBS)
             )
-            batch_feats = np.concatenate(batch_feats)
+            batch_feats = np.concatenate(batch_feats).squeeze()
 
             for id, feats in zip(ids, batch_feats):
                 all_feats[id] = feats

@@ -22,7 +22,6 @@ CORR_CROSS_IMAGES_TO_CAPTIONS = "corr_cross_images_to_captions"
 CORR_CROSS_CAPTIONS_TO_IMAGES = "corr_cross_captions_to_images"
 METRIC_CROSS_ENCODING = "corr_cross_encoding"
 
-METRIC_CROSS_ENCODING_ALT = "corr_cross_encoding_alt"
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC_ALT = "diff_mod_agno_mod_specific_alt"
 
 DISTANCE_METRIC_COSINE = "cosine"

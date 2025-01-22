@@ -89,12 +89,12 @@ def run(args):
                         model, args.features, args.test_features, args.vision_features, args.lang_features
                     )
 
-                    train_latents = get_latent_features(model, feats_config, train_stim_ids, train_stim_types)
+                    train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
                     test_latents = get_latent_features(
-                        model, feats_config, test_stim_ids, test_stim_types, test_mode=True
+                        feats_config, test_stim_ids, test_stim_types, test_mode=True
                     )
                     imagery_latents = get_latent_features(
-                        model, feats_config, imagery_stim_ids, imagery_stim_types, test_mode=True
+                        feats_config, imagery_stim_ids, imagery_stim_types, test_mode=True
                     )
                     train_latents, test_latents, imagery_latents = standardize_latents(
                         train_latents, test_latents, imagery_latents
