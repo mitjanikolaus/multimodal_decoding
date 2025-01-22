@@ -7,7 +7,7 @@ from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from utils import FUSED_MEAN_FEAT_KEY
+from data import FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 

@@ -6,7 +6,7 @@ from imagebind.models import imagebind_model
 from imagebind.models.imagebind_model import ModalityType
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import VISION_CLS_FEAT_KEY, LANG_CLS_FEAT_KEY
+from data import VISION_CLS_FEAT_KEY, LANG_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
