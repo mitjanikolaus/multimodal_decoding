@@ -18,10 +18,10 @@ def run(args):
     os.system("$FREESURFER_HOME/SetUpFreeSurfer.sh")
     cmd = "freeview"
 
+    results_dir = permutation_results_dir(args)
     for hemi_fs in HEMIS_FS:
         cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
 
-        results_dir = permutation_results_dir(args)
         mask_paths = []
         for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_ENCODING]:
             args.metric = metric
@@ -37,7 +37,7 @@ def run(args):
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
 
-        maps_paths = [os.path.join(ENCODING_RESULTS_DIR, "corr_results_maps", f"{metric}_{hemi_fs}.gii") for metric in METRICS]
+        maps_paths = [os.path.join(results_dir, "results_maps", f"t_values_{metric}_{hemi_fs}.gii") for metric in METRICS]
         for maps_path in maps_paths:
             if os.path.isfile(maps_path):
                 cmd += f":overlay={maps_path}:overlay_zorder=2"
