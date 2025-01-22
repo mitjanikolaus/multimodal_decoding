@@ -59,7 +59,6 @@ def calc_feats_corr(subject, args):
     return np.array(corrs), np.array(per_vertex_filters), np.array(mod_agnostic_weights)
 
 
-
 def run(args):
     if args.cuda:
         print("Setting backend to cuda")
@@ -73,11 +72,11 @@ def run(args):
         corrs, per_vertex_filters, mod_agnostic_weights = calc_feats_corr(subject, args)
         # print(f"Number of feats after corr threshold filtering: {np.sum(corrs > args.corr_threshold)}")
 
-        # filter = np.mean(per_vertex_filters, axis=1) > 0.5
-        # print(f"Number of feats after corr threshold filtering: {np.sum(filter)}")
+        filter = np.mean(per_vertex_filters, axis=1) > 0.5
+        print(f"Number of feats after corr threshold filtering: {np.sum(filter)}")
 
-        filter = np.mean(mod_agnostic_weights, axis=1) > 0.5
-        print(f"Number of feats after mod agnostic weights threshold filtering: {np.sum(filter)}")
+        # filter = np.mean(mod_agnostic_weights, axis=1) > 0.5
+        # print(f"Number of feats after mod agnostic weights threshold filtering: {np.sum(filter)}")
 
         for training_mode in [MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS]:
             for hemi in HEMIS:
