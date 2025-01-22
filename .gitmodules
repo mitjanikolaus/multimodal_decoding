@@ -4,3 +4,6 @@
 [submodule "himalaya"]
 	path = himalaya
 	url = git@github.com:mitjanikolaus/himalaya.git
+[submodule "pymoten"]
+	path = pymoten
+	url = git@github.com:mitjanikolaus/pymoten.git
