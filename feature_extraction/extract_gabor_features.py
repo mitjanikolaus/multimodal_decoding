@@ -19,7 +19,7 @@ N_JOBS = 20
 IMG_SIZE = 256
 
 FONT_NAME = "YaHei.Consolas.1.12.ttf"
-FONT_SIZE = 8
+FONT_SIZE = 6
 TEXT_COLOR = "white"
 TEXT_BACKGROUND = "grey"
 
@@ -109,7 +109,7 @@ def getSize(txt, font):
 
 
 if __name__ == "__main__":
-    # caption = "a train on a train track near a train station"
+    # caption = "The man on the skateboard and the dog are getting their picture taken"
     # font = ImageFont.truetype(FONT_NAME, FONT_SIZE)
     # text_width = int(getSize(caption, font))
     #
