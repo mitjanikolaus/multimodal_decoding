@@ -101,39 +101,6 @@ def load_per_subject_scores(args, return_nan_locations=False):
         return per_subject_scores
 
 
-def calc_image_t_values(data, t_vals_cache=None, precision=2, epsilon=1e-8):
-    # data = data.round(precision)
-    # iterator = tqdm(data.T) if use_tqdm else data.T
-    t_vals = data.mean(axis=0)
-    # if t_vals_cache is None:
-    #     return np.array(
-    #         [calc_t_value(x, popmean, epsilon) for x in iterator]
-    #     )
-    # else:
-    #     t_vals = []
-    #     for x in iterator:
-    #         x_no_nan = x[~np.isnan(x)]
-    #         if x_no_nan.mean() > popmean:
-    #             key = hashlib.sha1(np.sort(x_no_nan)).hexdigest()
-    #             if key in t_vals_cache:
-    #                 t_vals.append(t_vals_cache[key])
-    #             else:
-    #                 if np.all(x_no_nan == x_no_nan[0]):
-    #                     # Add/subtract epsilon for numerical stability
-    #                     x_no_nan[0] = x_no_nan[0] + epsilon
-    #                     x_no_nan[-1] = x_no_nan[-1] - epsilon
-    #                 t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
-    #                 if np.isinf(t_val):
-    #                     print(f"Inf t-val for values: {x_no_nan}")
-    #                 t_vals.append(t_val)
-    #                 t_vals_cache[key] = t_val
-    #         else:
-    #             # mean is below popmean, t value won't be significant
-    #             t_vals.append(0)
-    #
-    #     return np.array(t_vals)
-
-
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
@@ -144,21 +111,6 @@ def calc_t_values(per_subject_scores):
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
             t_values[hemi][metric][enough_data] = np.nanmean(data[:, enough_data], axis=0)
-
-        # with warnings.catch_warnings():
-        #     warnings.simplefilter("ignore", category=RuntimeWarning)
-        #     t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
-        #         (
-        #             t_values[hemi][METRIC_DIFF_CAPTIONS],
-        #             t_values[hemi][METRIC_DIFF_IMAGES],
-        #             t_values[hemi][CORR_IMAGES],
-        #             t_values[hemi][CORR_CAPTIONS]),
-        #         axis=0)
-        #     t_values[hemi][METRIC_CROSS_ENCODING] = np.nanmin(
-        #         (t_values[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
-        #          t_values[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]),
-        #         axis=0
-        #     )
 
     return t_values
 
@@ -376,21 +328,6 @@ def calc_t_values_null_distr(args, out_path):
                         tvals[metric] = np.nanmean(data, axis=0)
                     dsets[hemi][metric][perm_idx] = tvals[metric]
 
-                # with warnings.catch_warnings():
-                #     warnings.simplefilter("ignore", category=RuntimeWarning)
-                #     dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][perm_idx] = np.nanmin(
-                #         (
-                #             tvals[METRIC_DIFF_CAPTIONS],
-                #             tvals[METRIC_DIFF_IMAGES],
-                #             tvals[CORR_IMAGES],
-                #             tvals[CORR_CAPTIONS]),
-                #         axis=0)
-                #     dsets[hemi][METRIC_CROSS_ENCODING][perm_idx] = np.nanmin(
-                #         (tvals[CORR_CROSS_IMAGES_TO_CAPTIONS],
-                #          tvals[CORR_CROSS_CAPTIONS_TO_IMAGES]),
-                #         axis=0
-                #     )
-
 
 def permutation_results_dir(args):
     return str(os.path.join(
@@ -462,10 +399,6 @@ def create_null_distribution(args):
                             clip_value=args.tfce_clip
                         )
                     )
-                # tfce_values = [
-                #     calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
-                #     iterator
-                # ]
                 return tfce_values
 
         n_per_job = math.ceil(args.n_permutations_group_level / args.n_jobs)
