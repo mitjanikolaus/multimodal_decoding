@@ -158,6 +158,7 @@ def run(args):
                         clf = GroupRidgeCV(
                             groups=groups,
                             solver_params=dict(
+                                n_iter=10,
                                 alphas=np.array(args.l2_regularization_alphas),
                                 n_targets_batch=args.n_targets_batch,
                                 n_alphas_batch=args.n_alphas_batch,
