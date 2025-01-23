@@ -25,6 +25,7 @@ FONT_NAME = "YaHei.Consolas.1.12.ttf"
 FONT_SIZE = 5
 TEXT_COLOR = "white"
 TEXT_BACKGROUND = "grey"
+MAX_CAPTION_LEN = 70
 
 
 def make_gabor_filterbank():
@@ -95,6 +96,7 @@ class GaborFeatureExtractor(FeatureExtractor):
                     feats_imgs.append(feats_img.squeeze())
 
                     # make image from caption
+                    caption = caption[:MAX_CAPTION_LEN]
                     font = ImageFont.truetype(FONT_NAME, FONT_SIZE)
                     text_width = int(getSize(caption, font))
 
@@ -122,15 +124,16 @@ class GaborFeatureExtractor(FeatureExtractor):
                 return np.array(feats_imgs), np.array(feats_caps)
 
             n_per_job = math.ceil(len(img_paths) / N_JOBS)
-            batch_feats_imgs, batch_feats_caps = Parallel(n_jobs=N_JOBS)(
+            batch_feats = Parallel(n_jobs=N_JOBS)(
                 delayed(extract_feats)(
                     img_paths[i * n_per_job:(i + 1) * n_per_job],
                     captions[i * n_per_job:(i + 1) * n_per_job],
                 )
                 for i in range(N_JOBS)
             )
-            batch_feats_imgs = np.concatenate(batch_feats_imgs)
-            batch_feats_caps = np.concatenate(batch_feats_caps)
+            batch_feats = np.concatenate(batch_feats)
+            batch_feats_imgs = np.concatenate([batch_feat[0] for batch_feat in batch_feats])
+            batch_feats_caps = np.concatenate([batch_feat[1] for batch_feat in batch_feats])
 
             for id, feats_img, feats_cap in zip(ids, batch_feats_imgs, batch_feats_caps):
                 all_feats[id] = dict()
