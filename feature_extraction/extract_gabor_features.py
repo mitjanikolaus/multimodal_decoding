@@ -19,7 +19,7 @@ N_JOBS = 20
 IMG_SIZE = 256
 
 FONT_NAME = "YaHei.Consolas.1.12.ttf"
-FONT_SIZE = 20
+FONT_SIZE = 8
 TEXT_COLOR = "white"
 TEXT_BACKGROUND = "grey"
 
@@ -63,15 +63,14 @@ class GaborFeatureExtractor(FeatureExtractor):
                     # make image from caption
                     font = ImageFont.truetype(FONT_NAME, FONT_SIZE)
                     text_width = int(getSize(caption, font))
-                    height = FONT_SIZE + 10
-                    width = 800
-                    if not text_width <= width:
+
+                    if not text_width <= IMG_SIZE:
                         print(f"Warning: caption longer than image width! {text_width}")
                         print(caption)
 
-                    image_caption = Image.new('RGB', (width, height), TEXT_BACKGROUND)
+                    image_caption = Image.new('RGB', (IMG_SIZE, IMG_SIZE), TEXT_BACKGROUND)
                     d = ImageDraw.Draw(image_caption)
-                    d.text(((width - text_width) / 2, 0), caption, fill=TEXT_COLOR, font=font)
+                    d.text(((IMG_SIZE - text_width) / 2, IMG_SIZE/2), caption, fill=TEXT_COLOR, font=font)
 
                     luminance_image_caption = moten.io.imagearray2luminance(np.asarray(image_caption))
 
@@ -81,7 +80,7 @@ class GaborFeatureExtractor(FeatureExtractor):
 
                     moten_features_caption = pyramid.project_stimulus(luminance_image_caption, spatial_only=True)
 
-                    feats.append(moten_features_caption)
+                    feats.append(moten_features_caption.squeeze())
 
                 return np.array(feats)
 
@@ -110,5 +109,29 @@ def getSize(txt, font):
 
 
 if __name__ == "__main__":
+    # caption = "a train on a train track near a train station"
+    # font = ImageFont.truetype(FONT_NAME, FONT_SIZE)
+    # text_width = int(getSize(caption, font))
+    #
+    # if not text_width <= IMG_SIZE:
+    #     print(f"Warning: caption longer than image width! {text_width}")
+    #     print(caption)
+    #
+    # image_caption = Image.new('RGB', (IMG_SIZE, IMG_SIZE), TEXT_BACKGROUND)
+    # d = ImageDraw.Draw(image_caption)
+    # d.text(((IMG_SIZE - text_width) / 2, IMG_SIZE/2), caption, fill=TEXT_COLOR, font=font)
+    #
+    # luminance_image_caption = moten.io.imagearray2luminance(np.asarray(image_caption))
+    #
+    # pyramid = moten.get_default_pyramid(
+    #     vhsize=(luminance_image_caption.shape[1], luminance_image_caption.shape[2]),
+    #     temporal_frequencies=[0])
+    #
+    # moten_features_caption = pyramid.project_stimulus(luminance_image_caption, spatial_only=True)
+    #
+    #
+    # plt.imshow(image_caption)
+    # plt.show()
+
     extractor = GaborFeatureExtractor("gabor", BATCH_SIZE)
     extractor.extract_features()
