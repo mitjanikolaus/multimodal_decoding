@@ -21,6 +21,7 @@ CORR_IMAGES = "corr_images"
 CORR_CROSS_IMAGES_TO_CAPTIONS = "corr_cross_images_to_captions"
 CORR_CROSS_CAPTIONS_TO_IMAGES = "corr_cross_captions_to_images"
 METRIC_CROSS_ENCODING = "corr_cross_encoding"
+METRIC_CROSS_ENCODING_MAX = "corr_cross_encoding_max"
 
 DISTANCE_METRIC_COSINE = "cosine"
 
