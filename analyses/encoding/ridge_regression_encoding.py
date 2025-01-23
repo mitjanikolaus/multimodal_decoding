@@ -170,6 +170,7 @@ def run(args):
 
                         best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
 
+                        test_latents_gabor = np.zeros_like(test_latents_gabor)
                         test_predicted_betas = clf.predict(np.hstack((test_latents, test_latents_gabor)))
 
                     else:
