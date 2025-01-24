@@ -56,10 +56,8 @@ def tensor_pairwise_accuracy(
         latents, predictions, metric="cosine", standardize_predictions=True, standardize_latents=False
 ):
     latents = latents.cpu().numpy()
-    predictions = predictions.cpu().numpy()
+    predictions = predictions.cpu().numpy().squeeze()
 
-    print(predictions.shape)
-    predictions = predictions.squeeze()
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
 
@@ -145,7 +143,7 @@ def run(args):
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             local_alpha=False,
-                            score_func=tensor_pairwise_accuracy,
+                            # score_func=tensor_pairwise_accuracy,
                         )
                     )
 
