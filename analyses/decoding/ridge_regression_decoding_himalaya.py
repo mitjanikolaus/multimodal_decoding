@@ -57,6 +57,8 @@ def tensor_pairwise_accuracy(
 ):
     latents = latents.cpu().numpy()
     predictions = predictions.cpu().numpy()
+
+    print(predictions.shape)
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
 
