@@ -196,7 +196,7 @@ def run(args):
                     }
                     scores = calc_all_pairwise_accuracy_scores(
                         test_latents, test_predicted_latents, test_stim_types,
-                        imagery_latents, imagery_predicted_latents
+                        imagery_latents, imagery_predicted_latents, standardize_predictions=True
                     )
                     results.update(scores)
                     print(
