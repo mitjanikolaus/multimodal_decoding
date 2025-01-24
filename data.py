@@ -457,24 +457,20 @@ def get_latent_feats(all_latents, stim_id, stim_type, latent_feats_config):
     return feats
 
 
-def get_fmri_surface_data(subject, mode, resolution, hemis=HEMIS):
+def get_fmri_surface_data(subject, mode, resolution, hemi):
     base_mode = mode.split('_')[0]
-    fmri_betas = {
-        hemi: pickle.load(
-            open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb')) for hemi
-        in tqdm(hemis, desc=f"loading {base_mode} fmri surface data")
-    }
+    print(f"loading {base_mode} {hemi} hemi fmri surface data.. ", end="")
+    fmri_betas = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb'))
+    print("done.")
     stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
     stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
 
     if mode == MOD_SPECIFIC_CAPTIONS:
-        for hemi in hemis:
-            fmri_betas[hemi] = fmri_betas[hemi][stim_types == CAPTION]
+        fmri_betas = fmri_betas[stim_types == CAPTION]
         stim_ids = stim_ids[stim_types == CAPTION]
         stim_types = stim_types[stim_types == CAPTION]
     elif mode == MOD_SPECIFIC_IMAGES:
-        for hemi in hemis:
-            fmri_betas[hemi] = fmri_betas[hemi][stim_types == IMAGE]
+        fmri_betas = fmri_betas[stim_types == IMAGE]
         stim_ids = stim_ids[stim_types == IMAGE]
         stim_types = stim_types[stim_types == IMAGE]
 
@@ -556,7 +552,7 @@ def get_fmri_voxel_data(betas_dir, subject, mode):
 
 def get_fmri_data(betas_dir, subject, mode, surface=False, resolution=None):
     if surface:
-        fmri_betas, stim_ids, stim_types = get_fmri_surface_data(subject, mode, resolution)
+        raise NotImplementedError()
     else:
         fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(betas_dir, subject, mode)
 
@@ -584,26 +580,18 @@ def standardize_latents(train_latents, test_latents, imagery_latents=None):
 
 
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None):
-    # print("before standardization:")
-    # print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
-    # print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
-    # print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
-    # print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
+    nan_locations = np.isnan(train_fmri_betas[0])
+    train_fmri_betas = train_fmri_betas[:, ~nan_locations]
+    test_fmri_betas = test_fmri_betas[:, ~nan_locations]
+    if imagery_fmri_betas is not None:
+        imagery_fmri_betas = imagery_fmri_betas[:, ~nan_locations]
 
     scaler = StandardScaler()
     scaler.fit(train_fmri_betas)
 
     train_fmri_betas = scaler.transform(train_fmri_betas)
 
-    # test_scaler = StandardScaler()
-    # test_scaler.fit(test_fmri_betas)
     test_fmri_betas = scaler.transform(test_fmri_betas)
-
-    # print("after standardization:")
-    # print(f'train fmri mean: {train_fmri_betas.mean(axis=0).mean():.2f}')
-    # print(f'test fmri mean: {test_fmri_betas.mean(axis=0).mean():.2f}')
-    # print(f'train fmri stddev: {train_fmri_betas.std(axis=0).mean():.2f}')
-    # print(f'test fmri stddev: {test_fmri_betas.std(axis=0).mean():.2f}')
 
     if imagery_fmri_betas is not None:
         imagery_fmri_betas = scaler.transform(imagery_fmri_betas)

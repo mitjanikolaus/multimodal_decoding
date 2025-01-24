@@ -11,18 +11,16 @@ from nilearn.surface import surface
 
 from sklearn import neighbors
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import Ridge
 import os
 import pickle
 
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, \
-    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
+    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents, tensor_pairwise_accuracy
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds
+    create_null_distr_seeds, standardize_fmri_betas
+from himalaya.backend import set_backend
+from himalaya.kernel_ridge import KernelRidgeCV, KernelRidge
 
 from utils import SUBJECTS, DATA_DIR, \
     DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES
@@ -31,8 +29,6 @@ DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
-
-METRIC_AGNOSTIC = 'agnostic'
 
 
 def train_and_test(
@@ -43,6 +39,7 @@ def train_and_test(
         train_ids,
         test_ids,
         imagery_ids,
+        backend,
         null_distr_dir=None,
         random_seeds=None,
         list_i=None,
@@ -57,6 +54,9 @@ def train_and_test(
 
     y_pred = estimator.predict(X_test)
     y_pred_imagery = estimator.predict(X_imagery)
+
+    y_pred_imagery = backend.to_numpy(y_pred_imagery)
+    y_pred = backend.to_numpy(y_pred)
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -92,6 +92,7 @@ def custom_group_iter_search_light(
         imagery_ids,
         thread_id,
         total,
+        backend,
         print_interval=500,
         null_distr_dir=None,
         random_seeds=None,
@@ -100,7 +101,7 @@ def custom_group_iter_search_light(
     t0 = time.time()
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
         scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
-                                imagery_ids=imagery_ids,
+                                imagery_ids=imagery_ids, backend=backend,
                                 null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
         results.append(scores)
         if print_interval > 0:
@@ -127,6 +128,7 @@ def custom_search_light(
         train_ids,
         test_ids,
         imagery_ids,
+        backend,
         n_jobs=-1,
         verbose=0,
         print_interval=500,
@@ -148,6 +150,7 @@ def custom_search_light(
                 imagery_ids,
                 thread_id,
                 len(A),
+                backend,
                 print_interval,
                 null_distr_dir,
                 random_seeds.copy() if random_seeds is not None else None,
@@ -158,56 +161,64 @@ def custom_search_light(
 
 
 def run(args):
+    if args.cuda:
+        print("Setting backend to cuda")
+        backend = set_backend("torch_cuda")
+    else:
+        backend = set_backend("numpy")
+
     random_seeds = None
     if args.create_null_distr:
         random_seeds = create_null_distr_seeds(args.n_permutations_per_subject)
 
     for subject in args.subjects:
         for training_mode in args.training_modes:
-            train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(subject, training_mode,
-                                                                                 args.resolution)
-            test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, TESTING_MODE, args.resolution)
-            assert np.all(test_stim_types == TEST_STIM_TYPES)
-            imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(subject, IMAGERY,
-                                                                                       args.resolution)
-
-            feats_config = LatentFeatsConfig(
-                args.model, args.features, args.test_features, args.vision_features, args.lang_features
-            )
-
-            print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
-                  f"MODEL: {feats_config.model} | FEATURES: {feats_config.features}")
-
-            train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
-            test_latents = get_latent_features(
-                feats_config, test_stim_ids, test_stim_types, test_mode=True
-            )
-            imagery_latents = get_latent_features(
-                feats_config, imagery_stim_ids, imagery_stim_types, test_mode=True
-            )
-            train_latents, test_latents, imagery_latents = standardize_latents(
-                train_latents, test_latents, imagery_latents
-            )
-
-            latents = np.concatenate((train_latents, test_latents, imagery_latents))
-
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
             for hemi in args.hemis:
+                train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(subject, training_mode,
+                                                                                     args.resolution, hemi)
+                test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, TESTING_MODE,
+                                                                                  args.resolution, hemi)
+                imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(subject, IMAGERY,
+                                                                                           args.resolution, hemi)
+                nan_locations = np.isnan(train_fmri[0])
+                train_fmri, test_fmri, imagery_fmri = standardize_fmri_betas(train_fmri, test_fmri, imagery_fmri)
+
+                feats_config = LatentFeatsConfig(
+                    args.model, args.features, args.test_features, args.vision_features, args.lang_features
+                )
+
+                print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
+                      f"MODEL: {feats_config.model} | FEATURES: {feats_config.features}")
+
+                train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
+                test_latents = get_latent_features(
+                    feats_config, test_stim_ids, test_stim_types, test_mode=True
+                )
+                imagery_latents = get_latent_features(
+                    feats_config, imagery_stim_ids, imagery_stim_types, test_mode=True
+                )
+                train_latents, test_latents, imagery_latents = standardize_latents(
+                    train_latents, test_latents, imagery_latents
+                )
+
+                latents = np.concatenate((train_latents, test_latents, imagery_latents))
+
                 print("Hemisphere: ", hemi)
                 print(f"train_fmri shape: {train_fmri[hemi].shape}")
                 print(f"test_fmri shape: {test_fmri[hemi].shape}")
                 print(f"imagery_fmri shape: {imagery_fmri[hemi].shape}")
 
-                train_ids = list(range(len(train_fmri[hemi])))
-                test_ids = list(range(len(train_fmri[hemi]), len(train_fmri[hemi]) + len(test_fmri[hemi])))
+                train_ids = list(range(len(train_fmri)))
+                test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
                 imagery_ids = list(range(len(train_ids) + len(test_ids),
-                                         len(train_ids) + len(test_ids) + len(imagery_fmri[hemi])))
+                                         len(train_ids) + len(test_ids) + len(imagery_fmri)))
 
-                X = np.concatenate((train_fmri[hemi], test_fmri[hemi], imagery_fmri[hemi]))
+                X = np.concatenate((train_fmri, test_fmri, imagery_fmri))
 
-                nan_locations = np.isnan(X[0])
-                assert np.all(nan_locations == np.isnan(X[-1]))
-                X = X[:, ~nan_locations]
+                # nan_locations = np.isnan(X[0])
+                # assert np.all(nan_locations == np.isnan(X[-1]))
+                # X = X[:, ~nan_locations]
 
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 coords, _ = surface.load_surf_mesh(infl_mesh)
@@ -233,7 +244,16 @@ def run(args):
                     raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
                 results_dict["adjacency"] = adjacency
-                model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
+
+                # model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
+                model = KernelRidge(
+                    alpha=args.l2_regularization_alpha,
+                    solver_params=dict(
+                        # n_targets_batch=args.n_targets_batch,
+                        # n_targets_batch_refit=args.n_targets_batch_refit,
+                        score_func=tensor_pairwise_accuracy,
+                    )
+                )
                 start = time.time()
 
                 results_dir = get_results_dir(
@@ -244,12 +264,11 @@ def run(args):
                     null_distr_dir = os.path.join(results_dir, "null_distr")
                     os.makedirs(null_distr_dir, exist_ok=True)
 
-                scores = custom_search_light(X, latents, estimator=model, A=adjacency, train_ids=train_ids,
-                                             test_ids=test_ids, imagery_ids=imagery_ids, n_jobs=args.n_jobs,
-                                             verbose=1,
-                                             print_interval=500,
-                                             null_distr_dir=null_distr_dir,
-                                             random_seeds=random_seeds)
+                scores = custom_search_light(
+                    X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
+                    imagery_ids=imagery_ids, backend=backend, n_jobs=args.n_jobs, verbose=1, print_interval=500,
+                    null_distr_dir=null_distr_dir, random_seeds=random_seeds
+                )
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
                 test_scores_caps = [score["pairwise_acc_captions"] for score in scores]

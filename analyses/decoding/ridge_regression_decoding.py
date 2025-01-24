@@ -4,9 +4,6 @@ from collections import Counter
 
 import numpy as np
 import sklearn
-from sklearn.linear_model import Ridge
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV
 import os
 import pickle
 
@@ -17,7 +14,6 @@ from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTI
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from himalaya.ridge import RidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, MODE_AGNOSTIC, TRAIN_MODE_CHOICES, \
     RIDGE_DECODER_OUT_DIR
 

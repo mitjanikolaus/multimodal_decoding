@@ -82,28 +82,19 @@ def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
             for hemi in HEMIS:
-                train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_surface_data(
+                train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_surface_data(
                     subject,
                     training_mode,
                     resolution=args.resolution,
-                    hemis=[hemi],
+                    hemi=hemi,
                 )
-                test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                test_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
                     subject,
                     TESTING_MODE,
                     resolution=args.resolution,
-                    hemis=[hemi]
+                    hemi=hemi,
                 )
-                train_fmri_betas = train_fmri_betas_full[hemi]
-                test_betas = test_fmri_betas_full[hemi]
-
-                nan_locations = np.isnan(train_fmri_betas[0])
-                train_fmri_betas = train_fmri_betas[:, ~nan_locations]
-                test_betas = test_betas[:, ~nan_locations]
-
-                train_fmri_betas, test_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_betas
-                )
+                train_fmri_betas, test_betas = standardize_fmri_betas(train_fmri_betas, test_betas)
 
                 for model in args.models:
                     feats_config = LatentFeatsConfig(

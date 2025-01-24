@@ -46,15 +46,18 @@ def calc_feats_corr(subject, args):
     pvals = []
     per_vertex_filters = []
     mod_agnostic_weights = []
-    for weights_mod_spec_imgs, weights_mod_spec_caps, weights_mod_agnostic in zip(weights[MOD_SPECIFIC_IMAGES], weights[MOD_SPECIFIC_CAPTIONS], weights[MODE_AGNOSTIC]):
+    for weights_mod_spec_imgs, weights_mod_spec_caps, weights_mod_agnostic in zip(weights[MOD_SPECIFIC_IMAGES],
+                                                                                  weights[MOD_SPECIFIC_CAPTIONS],
+                                                                                  weights[MODE_AGNOSTIC]):
         corr = pearsonr(weights_mod_spec_imgs, weights_mod_agnostic)
         corrs.append(corr[0])
         pvals.append(corr[1])
 
-        same_sign = (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps)) & (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_agnostic))
+        same_sign = (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps)) & (
+                    np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_agnostic))
         per_vertex_filters.append(same_sign)
 
-        mod_agnostic_weights.append(weights_mod_agnostic>1e-5)
+        mod_agnostic_weights.append(weights_mod_agnostic > 1e-5)
 
     return np.array(corrs), np.array(per_vertex_filters), np.array(mod_agnostic_weights)
 
@@ -81,28 +84,19 @@ def run(args):
 
         for training_mode in [MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS]:
             for hemi in HEMIS:
-                train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_surface_data(
+                train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_surface_data(
                     subject,
                     training_mode,
                     resolution=args.resolution,
-                    hemis=[hemi],
+                    hemi=hemi,
                 )
-                test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                test_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
                     subject,
                     TESTING_MODE,
                     resolution=args.resolution,
-                    hemis=[hemi]
+                    hemi=hemi,
                 )
-                train_fmri_betas = train_fmri_betas_full[hemi]
-                test_betas = test_fmri_betas_full[hemi]
-
-                nan_locations = np.isnan(train_fmri_betas[0])
-                train_fmri_betas = train_fmri_betas[:, ~nan_locations]
-                test_betas = test_betas[:, ~nan_locations]
-
-                train_fmri_betas, test_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_betas
-                )
+                train_fmri_betas, test_betas = standardize_fmri_betas(train_fmri_betas, test_betas)
 
                 feats_config = LatentFeatsConfig(
                     args.model, args.features, args.test_features, args.vision_features, args.lang_features
