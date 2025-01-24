@@ -16,11 +16,11 @@ import pickle
 
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, \
-    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents, tensor_pairwise_accuracy
+    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_seeds, standardize_fmri_betas
 from himalaya.backend import set_backend
-from himalaya.kernel_ridge import KernelRidgeCV, KernelRidge
+from himalaya.kernel_ridge import KernelRidge
 
 from utils import SUBJECTS, DATA_DIR, \
     DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES
