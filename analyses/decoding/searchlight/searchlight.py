@@ -52,11 +52,14 @@ def train_and_test(
     y_imagery = y[imagery_ids]
     estimator.fit(X_train, y_train)
 
-    y_pred = estimator.predict(X_test)
+    y_pred_test = estimator.predict(X_test)
     y_pred_imagery = estimator.predict(X_imagery)
 
+    y_imagery = backend.to_numpy(y_imagery)
     y_pred_imagery = backend.to_numpy(y_pred_imagery)
-    y_pred = backend.to_numpy(y_pred)
+
+    y_test = backend.to_numpy(y_test)
+    y_pred_test = backend.to_numpy(y_pred_test)
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -70,13 +73,13 @@ def train_and_test(
             shuffled_indices_imagery = derangements[np.random.choice(len(derangements))]
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
 
-            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred, TEST_STIM_TYPES, y_imagery_shuffled,
-                                                       y_pred_imagery)
+            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred_test, TEST_STIM_TYPES,
+                                                       y_imagery_shuffled, y_pred_imagery)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
+    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred_test, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
 
     return scores
 
@@ -248,8 +251,8 @@ def run(args):
                 model = Ridge(
                     alpha=args.l2_regularization_alpha,
                     # solver_params=dict(
-                        # n_targets_batch=args.n_targets_batch,
-                        # n_targets_batch_refit=args.n_targets_batch_refit,
+                    # n_targets_batch=args.n_targets_batch,
+                    # n_targets_batch_refit=args.n_targets_batch_refit,
                     # )
                 )
                 start = time.time()
@@ -348,7 +351,7 @@ def get_args():
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
-    
+
     parser.add_argument("--cuda", action='store_true', default=False)
 
     return parser.parse_args()
