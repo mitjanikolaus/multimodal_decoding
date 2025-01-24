@@ -20,7 +20,7 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_seeds, standardize_fmri_betas
 from himalaya.backend import set_backend
-from himalaya.kernel_ridge import KernelRidge
+from himalaya.ridge import Ridge
 
 from utils import SUBJECTS, DATA_DIR, \
     DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES
@@ -245,8 +245,7 @@ def run(args):
 
                 results_dict["adjacency"] = adjacency
 
-                # model = make_pipeline(StandardScaler(), Ridge(alpha=args.l2_regularization_alpha))
-                model = KernelRidge(
+                model = Ridge(
                     alpha=args.l2_regularization_alpha,
                     solver_params=dict(
                         # n_targets_batch=args.n_targets_batch,
