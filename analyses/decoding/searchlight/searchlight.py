@@ -247,10 +247,10 @@ def run(args):
 
                 model = Ridge(
                     alpha=args.l2_regularization_alpha,
-                    solver_params=dict(
+                    # solver_params=dict(
                         # n_targets_batch=args.n_targets_batch,
                         # n_targets_batch_refit=args.n_targets_batch_refit,
-                    )
+                    # )
                 )
                 start = time.time()
 
