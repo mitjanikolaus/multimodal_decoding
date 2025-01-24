@@ -17,6 +17,7 @@ from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTI
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
+from himalaya.ridge import RidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, MODE_AGNOSTIC, TRAIN_MODE_CHOICES, \
     RIDGE_DECODER_OUT_DIR
 
@@ -125,7 +126,7 @@ def run(args):
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
                         continue
 
-                    clf = KernelRidgeCV(
+                    clf = RidgeCV(
                         alphas=args.l2_regularization_alphas,
                         solver_params=dict(
                             n_targets_batch=args.n_targets_batch,
