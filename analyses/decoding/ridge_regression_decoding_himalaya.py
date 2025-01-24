@@ -53,7 +53,7 @@ def get_run_str(model_name, feats_config, mask, surface, resolution,
 
 
 def tensor_pairwise_accuracy(
-        latents, predictions, metric="cosine", standardize_predictions=True, standardize_latents=False
+        latents, predictions, metric="cosine", standardize_predictions=False, standardize_latents=False
 ):
     latents = latents.cpu().numpy()
     predictions = predictions.cpu().numpy().squeeze()
@@ -143,7 +143,7 @@ def run(args):
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             local_alpha=False,
-                            # score_func=tensor_pairwise_accuracy,
+                            score_func=tensor_pairwise_accuracy,
                         )
                     )
 
