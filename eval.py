@@ -60,7 +60,7 @@ def dist_mat_to_pairwise_acc(dist_mat):
     return score
 
 
-def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=True, standardize_latents=False):
+def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=False, standardize_latents=False):
     if standardize_predictions:
         predictions = StandardScaler().fit_transform(predictions)
     if standardize_latents:
