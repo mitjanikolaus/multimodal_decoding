@@ -126,7 +126,6 @@ def run(args):
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
                         continue
 
-                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                     clf = KernelRidgeCV(
                         cv=NUM_CV_SPLITS,
                         alphas=args.l2_regularization_alphas,
@@ -135,7 +134,7 @@ def run(args):
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             local_alpha=False,
-                            score_func=pairwise_acc_scorer,
+                            score_func=pairwise_accuracy,
                         )
                     )
 
