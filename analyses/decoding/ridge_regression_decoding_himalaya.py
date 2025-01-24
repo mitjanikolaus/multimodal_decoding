@@ -135,7 +135,7 @@ def run(args):
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             local_alpha=False,
-                            scoring=pairwise_acc_scorer,
+                            # scoring=pairwise_acc_scorer,
                         )
                     )
 
