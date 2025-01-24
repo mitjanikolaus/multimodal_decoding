@@ -205,9 +205,9 @@ def run(args):
                 latents = np.concatenate((train_latents, test_latents, imagery_latents))
 
                 print("Hemisphere: ", hemi)
-                print(f"train_fmri shape: {train_fmri[hemi].shape}")
-                print(f"test_fmri shape: {test_fmri[hemi].shape}")
-                print(f"imagery_fmri shape: {imagery_fmri[hemi].shape}")
+                print(f"train_fmri shape: {train_fmri.shape}")
+                print(f"test_fmri shape: {test_fmri.shape}")
+                print(f"imagery_fmri shape: {imagery_fmri.shape}")
 
                 train_ids = list(range(len(train_fmri)))
                 test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
