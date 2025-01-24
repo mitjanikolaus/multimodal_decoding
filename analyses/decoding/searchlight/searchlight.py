@@ -251,7 +251,6 @@ def run(args):
                     solver_params=dict(
                         # n_targets_batch=args.n_targets_batch,
                         # n_targets_batch_refit=args.n_targets_batch_refit,
-                        score_func=tensor_pairwise_accuracy,
                     )
                 )
                 start = time.time()
