@@ -1,6 +1,9 @@
 import argparse
 import time
+from collections import Counter
 
+import numpy as np
+import sklearn
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -12,13 +15,13 @@ from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES,
     standardize_latents, TESTING_MODE, IMAGERY, remove_nans
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
+from himalaya.backend import set_backend
+from himalaya.kernel_ridge import KernelRidgeCV
+from himalaya.ridge import RidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, MODE_AGNOSTIC, TRAIN_MODE_CHOICES, \
     RIDGE_DECODER_OUT_DIR
 
 NUM_CV_SPLITS = 5
-DEFAULT_N_JOBS = 5
-DEFAULT_N_PRE_DISPATCH = 5
-
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
@@ -48,7 +51,22 @@ def get_run_str(betas_dir, model_name, feats_config, mask=None, surface=False, r
     return run_str
 
 
+def tensor_pairwise_accuracy(
+        latents, predictions, metric="cosine", standardize_predictions=False, standardize_latents=False
+):
+    latents = latents.cpu().numpy()
+    predictions = predictions.cpu().numpy().squeeze()
+
+    return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
+
+
 def run(args):
+    if args.cuda:
+        print("Setting backend to cuda")
+        backend = set_backend("torch_cuda")
+    else:
+        backend = set_backend("numpy")
+
     for training_mode in args.training_modes:
         for subject in args.subjects:
             train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
@@ -108,7 +126,7 @@ def run(args):
                     print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
                     print(f"train latents shape: {train_latents.shape}")
 
-                    run_str = get_run_str(args.betas_dir, model, feats_config, mask, args.surface, args.resolution)
+                    run_str = get_run_str(model, feats_config, mask, args.surface, args.resolution)
                     results_file_path = os.path.join(
                         RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
@@ -116,29 +134,42 @@ def run(args):
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
                         continue
 
-                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    clf = GridSearchCV(
-                        Ridge(), param_grid={"alpha": args.l2_regularization_alphas}, scoring=pairwise_acc_scorer,
-                        cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, pre_dispatch=args.n_pre_dispatch_jobs, refit=True,
-                        verbose=3
+                    clf = KernelRidgeCV(
+                        cv=NUM_CV_SPLITS,
+                        alphas=args.l2_regularization_alphas,
+                        solver_params=dict(
+                            n_targets_batch=args.n_targets_batch,
+                            n_alphas_batch=args.n_alphas_batch,
+                            n_targets_batch_refit=args.n_targets_batch_refit,
+                            score_func=tensor_pairwise_accuracy,
+                        )
                     )
+
+                    train_latents = train_latents.astype(np.float32)
+                    train_fmri_betas = train_fmri_betas.astype(np.float32)
+
+                    # skip input data checking to limit memory use
+                    # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
+                    sklearn.set_config(assume_finite=True)
+
                     start = time.time()
                     clf.fit(train_fmri_betas, train_latents)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
-                    best_alpha = clf.best_params_["alpha"]
+                    best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
 
-                    best_model = clf.best_estimator_
+                    test_fmri_betas = test_fmri_betas.astype(np.float32)
+                    test_predicted_latents = clf.predict(test_fmri_betas)
 
-                    test_predicted_latents = best_model.predict(test_fmri_betas)
-                    imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
+                    imagery_fmri_betas = imagery_fmri_betas.astype(np.float32)
+                    imagery_predicted_latents = clf.predict(imagery_fmri_betas)
 
-                    train_predicted_latents = best_model.predict(train_fmri_betas)
-                    pickle.dump(train_predicted_latents, open(f"{subject}_train_preds.p", 'wb'))
+                    imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
+                    test_predicted_latents = backend.to_numpy(test_predicted_latents)
 
                     results = {
-                        "alpha": best_alpha,
+                        "alphas": best_alphas,
                         "model": model,
                         "subject": subject,
                         "features": feats_config.features,
@@ -148,7 +179,6 @@ def run(args):
                         "training_mode": training_mode,
                         "mask": mask,
                         "num_voxels": test_fmri_betas.shape[1],
-                        "cv_results": clf.cv_results_,
                         "stimulus_ids": test_stim_ids,
                         "stimulus_types": test_stim_types,
                         "imagery_stimulus_ids": imagery_stim_ids,
@@ -165,7 +195,7 @@ def run(args):
                     )
                     results.update(scores)
                     print(
-                        f"Best alpha: {best_alpha}"
+                        f"Best alphas: {Counter(best_alphas)}"
                         f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                         f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
                         f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
@@ -215,10 +245,13 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
-    parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
-    parser.add_argument("--n-pre-dispatch-jobs", type=int, default=DEFAULT_N_PRE_DISPATCH)
+    parser.add_argument("--n-targets-batch", type=int, default=3000)
+    parser.add_argument("--n-targets-batch-refit", type=int, default=3000)
+    parser.add_argument("--n-alphas-batch", type=int, default=1)
 
     parser.add_argument("--overwrite", action='store_true', default=False)
+
+    parser.add_argument("--cuda", action='store_true', default=False)
 
     return parser.parse_args()
 
