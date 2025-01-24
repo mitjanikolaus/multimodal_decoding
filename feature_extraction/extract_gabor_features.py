@@ -22,7 +22,7 @@ N_JOBS = 20
 IMG_SIZE = 256
 
 FONT_NAME = "YaHei.Consolas.1.12.ttf"
-FONT_SIZE = 5
+FONT_SIZE = 6
 TEXT_COLOR = "white"
 TEXT_BACKGROUND = "grey"
 MAX_CAPTION_LEN = 70

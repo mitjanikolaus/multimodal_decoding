@@ -247,7 +247,7 @@ DEFAULT_FEATURES = {
     "dino-base": VISION_FEATS_ONLY,
     "dino-large": VISION_FEATS_ONLY,
     "dino-giant": VISION_FEATS_ONLY,
-    "gabor": FEATS_NA,
+    "gabor": MATCHED_FEATS,
 }
 
 DEFAULT_VISION_FEATURES = {
@@ -277,7 +277,7 @@ DEFAULT_VISION_FEATURES = {
     "dino-base": VISION_MEAN_FEAT_KEY,
     "dino-large": VISION_MEAN_FEAT_KEY,
     "dino-giant": VISION_MEAN_FEAT_KEY,
-    "gabor": FEATS_NA,
+    "gabor": VISION_CLS_FEAT_KEY,
 }
 
 DEFAULT_LANG_FEATURES = {
@@ -307,7 +307,7 @@ DEFAULT_LANG_FEATURES = {
     "dino-base": FEATS_NA,
     "dino-large": FEATS_NA,
     "dino-giant": FEATS_NA,
-    "gabor": FEATS_NA,
+    "gabor": LANG_CLS_FEAT_KEY,
 }
 
 
@@ -508,9 +508,7 @@ def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
     features = feats_config.test_features if test_mode else feats_config.features
     nn_latent_vectors = []
     for stim_id, stim_type in zip(stim_ids, stim_types):
-        if feats_config.model == "gabor":
-            feats = latent_vectors[stim_id]
-        elif features == VISION_FEATS_ONLY:
+        if features == VISION_FEATS_ONLY:
             feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
         elif features == LANG_FEATS_ONLY:
             feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
