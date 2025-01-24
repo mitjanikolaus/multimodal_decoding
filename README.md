@@ -1,5 +1,12 @@
 # multimodal_decoding
 
+## Decoding analysis
+```
+CUDA_AVAILABLE_DEVICE=0 python analyses/decoding/ridge_regression_decoding.py --cuda
+```
+
+
+
 ## Encoding analysis
 
 ```
