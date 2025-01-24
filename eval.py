@@ -71,7 +71,7 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
 
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
-                                      imagery_predictions=None, metric="cosine", standardize_predictions=True,
+                                      imagery_predictions=None, metric="cosine", standardize_predictions=False,
                                       standardize_latents=False, norm_imagery_preds_with_test_preds=False,
                                       comp_cross_decoding_scores=True):
     results = dict()

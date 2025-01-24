@@ -196,7 +196,7 @@ METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST,
                                             'imagery_latents']
 
 
-def update_acc_scores(results, metric="cosine", standardize_predictions=True, standardize_targets=False,
+def update_acc_scores(results, metric="cosine", standardize_predictions=False, standardize_targets=False,
                       norm_imagery_preds_with_test_preds=False):
     results.update(
         calc_all_pairwise_accuracy_scores(
@@ -211,7 +211,7 @@ def update_acc_scores(results, metric="cosine", standardize_predictions=True, st
 
 
 def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine",
-                      standardize_predictions=True, standardize_targets=False,
+                      standardize_predictions=False, standardize_targets=False,
                       norm_imagery_preds_with_test_preds=False):
     data = []
 
