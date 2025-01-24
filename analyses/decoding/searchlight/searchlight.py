@@ -102,6 +102,9 @@ def custom_group_iter_search_light(
 ):
     results = []
     t0 = time.time()
+    # if args.cuda:
+    #     X = backend.to_gpu(X)
+    #     y = backend.to_gpu(y)
     for (i, row), list_i in zip(enumerate(list_rows), list_indices):
         scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
                                 imagery_ids=imagery_ids, backend=backend,
@@ -267,9 +270,6 @@ def run(args):
 
                 X = X.astype(np.float32)
                 latents = latents.astype(np.float32)
-                if args.cuda:
-                    X = backend.to_gpu(X)
-                    latents = backend.to_gpu(latents)
                 scores = custom_search_light(
                     X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
                     imagery_ids=imagery_ids, backend=backend, n_jobs=args.n_jobs, verbose=1, print_interval=500,
