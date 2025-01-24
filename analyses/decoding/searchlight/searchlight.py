@@ -265,6 +265,8 @@ def run(args):
                     null_distr_dir = os.path.join(results_dir, "null_distr")
                     os.makedirs(null_distr_dir, exist_ok=True)
 
+                X = X.astype(np.float32)
+                latents = latents.astype(np.float32)
                 if args.cuda:
                     X = backend.to_gpu(X)
                     latents = backend.to_gpu(latents)
