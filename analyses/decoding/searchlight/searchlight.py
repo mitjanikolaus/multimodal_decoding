@@ -85,7 +85,7 @@ def train_and_test(
 
 
 def custom_group_iter_search_light(
-        list_rows,
+        # list_rows,
         list_indices,
         estimator,
         X,
@@ -102,25 +102,25 @@ def custom_group_iter_search_light(
 ):
     results = []
     t0 = time.time()
-    # if args.cuda:
-    #     X = backend.to_gpu(X)
-    #     y = backend.to_gpu(y)
-    for (i, row), list_i in zip(enumerate(list_rows), list_indices):
-        scores = train_and_test(estimator, X[:, row], y, train_ids=train_ids, test_ids=test_ids,
+    # if args.cuda: #TODO
+    X = backend.to_gpu(X)
+    y = backend.to_gpu(y)
+    for i, list_i in enumerate(list_indices):
+        scores = train_and_test(estimator, X[:, i], y, train_ids=train_ids, test_ids=test_ids,
                                 imagery_ids=imagery_ids, backend=backend,
                                 null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
         results.append(scores)
         if print_interval > 0:
             if i % print_interval == 0:
                 # If there is only one job, progress information is fixed
-                crlf = "\r" if total == len(list_rows) else "\n"
-                percent = float(i) / len(list_rows)
+                crlf = "\r" if total == X.shape[1] else "\n"
+                percent = float(i) / X.shape[1]
                 percent = round(percent * 100, 2)
                 dt = time.time() - t0
                 # We use a max to avoid a division by zero
                 remaining = (100.0 - percent) / max(0.01, percent) * dt
                 sys.stderr.write(
-                    f"Job #{thread_id}, processed {i}/{len(list_rows)} vertices "
+                    f"Job #{thread_id}, processed {i}/{X.shape[1]} vertices "
                     f"({percent:0.2f}%, {round(remaining / 60)} minutes remaining){crlf}"
                 )
     return results
@@ -146,10 +146,9 @@ def custom_search_light(
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
-                [A[i] for i in list_i],
                 list_i,
                 estimator,
-                X,
+                X[:, [A[i] for i in list_i]],
                 y,
                 train_ids,
                 test_ids,
