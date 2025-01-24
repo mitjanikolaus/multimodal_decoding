@@ -102,9 +102,6 @@ def custom_group_iter_search_light(
 ):
     results = []
     t0 = time.time()
-    # if args.cuda: #TODO
-    X = backend.to_gpu(X)
-    y = backend.to_gpu(y)
     for i, list_i in enumerate(list_indices):
         scores = train_and_test(estimator, X[:, i], y, train_ids=train_ids, test_ids=test_ids,
                                 imagery_ids=imagery_ids, backend=backend,
@@ -142,13 +139,14 @@ def custom_search_light(
         random_seeds=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
+    y = backend.to_gpu(y)
     with warnings.catch_warnings():  # might not converge
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
                 list_i,
                 estimator,
-                X[:, [A[i] for i in list_i]],
+                backend.to_gpu(X[:, [A[i] for i in list_i]]),
                 y,
                 train_ids,
                 test_ids,
