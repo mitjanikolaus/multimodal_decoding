@@ -142,7 +142,7 @@ def run(args):
                             n_targets_batch=args.n_targets_batch,
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
-                            local_alpha=False,
+                            local_alpha=True,
                             score_func=tensor_pairwise_accuracy,
                         )
                     )
@@ -169,9 +169,6 @@ def run(args):
 
                     imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
                     test_predicted_latents = backend.to_numpy(test_predicted_latents)
-
-                    # train_predicted_latents = best_model.predict(train_fmri_betas)
-                    # pickle.dump(train_predicted_latents, open(f"{subject}_train_preds.p", 'wb'))
 
                     results = {
                         "alphas": best_alphas,
