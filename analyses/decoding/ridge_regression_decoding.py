@@ -207,10 +207,11 @@ def run(args):
                         imagery_latents, imagery_predicted_latents, standardize_predictions=False
                     )
                     print(
-                        f"Pairwise acc (no std) (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
-                        f" | Pairwise acc (no std) (images): {results_no_standardization[ACC_IMAGES]:.2f}"
-                        f" | Pairwise acc (no std) (imagery): {results_no_standardization[ACC_IMAGERY]:.2f}"
-                        f" | Pairwise acc (no std) (imagery whole test set): "
+                        f"Without standardization of predictions:\n"
+                        f"Pairwise acc (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
+                        f" | Pairwise acc (images): {results_no_standardization[ACC_IMAGES]:.2f}"
+                        f" | Pairwise acc (imagery): {results_no_standardization[ACC_IMAGERY]:.2f}"
+                        f" | Pairwise acc (imagery whole test set): "
                         f"{results_no_standardization[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                     )
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
