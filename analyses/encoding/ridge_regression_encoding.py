@@ -94,6 +94,7 @@ def run(args):
                     resolution=args.resolution,
                     hemi=hemi,
                 )
+                nan_locations = np.isnan(train_fmri_betas[0])
                 train_fmri_betas, test_betas = standardize_fmri_betas(train_fmri_betas, test_betas)
 
                 for model in args.models:
@@ -124,7 +125,6 @@ def run(args):
 
                     train_latents = train_latents.astype(np.float32)
                     test_latents = test_latents.astype(np.float32)
-
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
 
                     # skip input data checking to limit memory use
