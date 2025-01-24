@@ -347,6 +347,8 @@ def get_args():
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
+    
+    parser.add_argument("--cuda", action='store_true', default=False)
 
     return parser.parse_args()
 
