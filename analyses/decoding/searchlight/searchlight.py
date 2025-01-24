@@ -262,6 +262,9 @@ def run(args):
                     null_distr_dir = os.path.join(results_dir, "null_distr")
                     os.makedirs(null_distr_dir, exist_ok=True)
 
+                if args.cuda:
+                    X = backend.to_gpu(X)
+                    latents = backend.to_gpu(latents)
                 scores = custom_search_light(
                     X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
                     imagery_ids=imagery_ids, backend=backend, n_jobs=args.n_jobs, verbose=1, print_interval=500,
