@@ -101,6 +101,7 @@ def custom_group_iter_search_light(
         random_seeds=None,
 ):
     results = []
+    print(X.shape)
     t0 = time.time()
     for i, list_i in enumerate(list_indices):
         scores = train_and_test(estimator, X[:, i], y, train_ids=train_ids, test_ids=test_ids,
@@ -139,6 +140,7 @@ def custom_search_light(
         random_seeds=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
+    print(X.shape)
     y = backend.to_gpu(y)
     with warnings.catch_warnings():  # might not converge
         warnings.simplefilter("ignore", ConvergenceWarning)
