@@ -14,6 +14,8 @@ from sklearn.exceptions import ConvergenceWarning
 import os
 import pickle
 
+from tqdm import tqdm
+
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, \
     ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
@@ -91,12 +93,15 @@ def custom_group_iter_search_light(
         null_distr_dir=None,
         random_seeds=None,
 ):
+    print(f'job {thread_id} started')
     results = []
     t0 = time.time()
-    for i, list_row in enumerate(list_rows):
-        scores = train_and_test(estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids,
-                                imagery_ids=imagery_ids, null_distr_dir=null_distr_dir, random_seeds=random_seeds,
-                                list_i=list_indices[i])
+    iterator = tqdm(enumerate(list_rows)) if thread_id == 0 else enumerate(list_rows)
+    for i, list_row in iterator:
+        scores = train_and_test(
+            estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
+            null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_indices[i]
+        )
         results.append(scores)
         if print_interval > 0:
             if i % print_interval == 0:
