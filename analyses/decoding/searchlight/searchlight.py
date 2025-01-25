@@ -88,34 +88,33 @@ def custom_group_iter_search_light(
         test_ids,
         imagery_ids,
         thread_id,
-        total,
-        print_interval=500,
+        # total,
+        # print_interval=500,
         null_distr_dir=None,
         random_seeds=None,
 ):
-    print(f'job {thread_id} started')
     results = []
-    t0 = time.time()
-    iterator = tqdm(enumerate(list_rows)) if thread_id == 0 else enumerate(list_rows)
+    # t0 = time.time()
+    iterator = tqdm(enumerate(list_rows), total=len(list_rows)) if thread_id == 0 else enumerate(list_rows)
     for i, list_row in iterator:
         scores = train_and_test(
             estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
             null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_indices[i]
         )
         results.append(scores)
-        if print_interval > 0:
-            if i % print_interval == 0:
-                # If there is only one job, progress information is fixed
-                crlf = "\r" if total == X.shape[1] else "\n"
-                percent = float(i) / X.shape[1]
-                percent = round(percent * 100, 2)
-                dt = time.time() - t0
-                # We use a max to avoid a division by zero
-                remaining = (100.0 - percent) / max(0.01, percent) * dt
-                sys.stderr.write(
-                    f"Job #{thread_id}, processed {i}/{len(list_rows)} vertices "
-                    f"({percent:0.2f}%, {round(remaining / 60)} minutes remaining){crlf}"
-                )
+        # if print_interval > 0:
+        #     if i % print_interval == 0:
+        #         # If there is only one job, progress information is fixed
+        #         crlf = "\r" if total == X.shape[1] else "\n"
+        #         percent = float(i) / X.shape[1]
+        #         percent = round(percent * 100, 2)
+        #         dt = time.time() - t0
+        #         # We use a max to avoid a division by zero
+        #         remaining = (100.0 - percent) / max(0.01, percent) * dt
+        #         sys.stderr.write(
+        #             f"Job #{thread_id}, processed {i}/{len(list_rows)} vertices "
+        #             f"({percent:0.2f}%, {round(remaining / 60)} minutes remaining){crlf}"
+        #         )
     return results
 
 
@@ -129,7 +128,7 @@ def custom_search_light(
         imagery_ids,
         n_jobs=-1,
         verbose=0,
-        print_interval=500,
+        # print_interval=500,
         null_distr_dir=None,
         random_seeds=None,
 ):
@@ -147,8 +146,8 @@ def custom_search_light(
                 test_ids,
                 imagery_ids,
                 thread_id,
-                len(A),
-                print_interval,
+                # len(A),
+                # print_interval,
                 null_distr_dir,
                 random_seeds.copy() if random_seeds is not None else None,
             )
@@ -248,8 +247,8 @@ def run(args):
 
                 scores = custom_search_light(
                     X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
-                    imagery_ids=imagery_ids, n_jobs=args.n_jobs, verbose=1, print_interval=500,
-                    null_distr_dir=null_distr_dir, random_seeds=random_seeds
+                    imagery_ids=imagery_ids, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
+                    random_seeds=random_seeds
                 )
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
