@@ -19,7 +19,6 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_seeds, standardize_fmri_betas
-from himalaya.backend import set_backend
 from himalaya.ridge import Ridge
 
 from utils import SUBJECTS, DATA_DIR, \
@@ -39,7 +38,6 @@ def train_and_test(
         train_ids,
         test_ids,
         imagery_ids,
-        backend,
         null_distr_dir=None,
         random_seeds=None,
         list_i=None,
@@ -54,12 +52,6 @@ def train_and_test(
 
     y_pred_test = estimator.predict(X_test)
     y_pred_imagery = estimator.predict(X_imagery)
-
-    y_imagery = backend.to_numpy(y_imagery)
-    y_pred_imagery = backend.to_numpy(y_pred_imagery)
-
-    y_test = backend.to_numpy(y_test)
-    y_pred_test = backend.to_numpy(y_pred_test)
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -95,7 +87,6 @@ def custom_group_iter_search_light(
         imagery_ids,
         thread_id,
         total,
-        backend,
         print_interval=500,
         null_distr_dir=None,
         random_seeds=None,
@@ -104,8 +95,8 @@ def custom_group_iter_search_light(
     t0 = time.time()
     for i, list_row in enumerate(list_rows):
         scores = train_and_test(estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids,
-                                imagery_ids=imagery_ids, backend=backend,
-                                null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_indices[i])
+                                imagery_ids=imagery_ids, null_distr_dir=null_distr_dir, random_seeds=random_seeds,
+                                list_i=list_indices[i])
         results.append(scores)
         if print_interval > 0:
             if i % print_interval == 0:
@@ -131,7 +122,6 @@ def custom_search_light(
         train_ids,
         test_ids,
         imagery_ids,
-        backend,
         n_jobs=-1,
         verbose=0,
         print_interval=500,
@@ -139,8 +129,6 @@ def custom_search_light(
         random_seeds=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
-    print(X.shape)
-    y = backend.to_gpu(y)
     with warnings.catch_warnings():  # might not converge
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
@@ -155,7 +143,6 @@ def custom_search_light(
                 imagery_ids,
                 thread_id,
                 len(A),
-                backend,
                 print_interval,
                 null_distr_dir,
                 random_seeds.copy() if random_seeds is not None else None,
@@ -166,12 +153,6 @@ def custom_search_light(
 
 
 def run(args):
-    if args.cuda:
-        print("Setting backend to cuda")
-        backend = set_backend("torch_cuda")
-    else:
-        backend = set_backend("numpy")
-
     random_seeds = None
     if args.create_null_distr:
         random_seeds = create_null_distr_seeds(args.n_permutations_per_subject)
@@ -352,8 +333,6 @@ def get_args():
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
-
-    parser.add_argument("--cuda", action='store_true', default=False)
 
     return parser.parse_args()
 
