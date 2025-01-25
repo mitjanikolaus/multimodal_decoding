@@ -14,6 +14,7 @@ from sklearn.exceptions import ConvergenceWarning
 import os
 import pickle
 
+from sklearn.linear_model import Ridge
 from tqdm import tqdm
 
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
@@ -21,7 +22,6 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_seeds, standardize_fmri_betas
-from himalaya.ridge import Ridge
 
 from utils import SUBJECTS, DATA_DIR, \
     DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES
@@ -235,14 +235,7 @@ def run(args):
                     raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
                 results_dict["adjacency"] = adjacency
-
-                model = Ridge(
-                    alpha=args.l2_regularization_alpha,
-                    # solver_params=dict(
-                    # n_targets_batch=args.n_targets_batch,
-                    # n_targets_batch_refit=args.n_targets_batch_refit,
-                    # )
-                )
+                model = Ridge(alpha=args.l2_regularization_alpha)
                 start = time.time()
 
                 results_dir = get_results_dir(
