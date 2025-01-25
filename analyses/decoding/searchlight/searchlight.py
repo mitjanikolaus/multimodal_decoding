@@ -85,7 +85,7 @@ def train_and_test(
 
 
 def custom_group_iter_search_light(
-        # list_rows,
+        list_rows,
         list_indices,
         estimator,
         X,
@@ -101,12 +101,11 @@ def custom_group_iter_search_light(
         random_seeds=None,
 ):
     results = []
-    print(X.shape)
     t0 = time.time()
-    for i, list_i in enumerate(list_indices):
-        scores = train_and_test(estimator, X[:, i], y, train_ids=train_ids, test_ids=test_ids,
+    for i, list_row in enumerate(list_rows):
+        scores = train_and_test(estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids,
                                 imagery_ids=imagery_ids, backend=backend,
-                                null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_i)
+                                null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_indices[i])
         results.append(scores)
         if print_interval > 0:
             if i % print_interval == 0:
@@ -146,9 +145,10 @@ def custom_search_light(
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
+                [A[i] for i in list_i],
                 list_i,
                 estimator,
-                backend.to_gpu(X[:, [A[i] for i in list_i]]),
+                X,
                 y,
                 train_ids,
                 test_ids,
