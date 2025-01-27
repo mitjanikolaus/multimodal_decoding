@@ -10,14 +10,14 @@ import pickle
 import torch
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
-    LANG_FEAT_COMBINATION_CHOICES, get_fmri_data, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, TESTING_MODE, IMAGERY, remove_nans, MODALITY_AGNOSTIC, TRAINING_MODES, get_fmri_voxel_data, \
+    LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
+    standardize_latents, remove_nans, MODALITY_AGNOSTIC, TRAINING_MODES, get_fmri_voxel_data, \
     SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, RIDGE_DECODER_OUT_DIR
+from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
