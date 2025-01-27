@@ -145,7 +145,6 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
     return significance_cutoff, max_test_statistic_distr
 
 
-
 def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resolution):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
@@ -185,7 +184,6 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resoluti
     compute_results_clusters(masks, results_dir, hparam_suffix, metric, resolution)
 
 
-
 def get_edge_lengths_dicts_based_on_edges(resolution):
     edge_lengths_dicts = dict()
     fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
@@ -201,7 +199,6 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
         edge_lengths_dicts[hemi] = {(e[0], e[1]): l for e, l in zip(edges, lengths)}
 
     return edge_lengths_dicts
-
 
 
 def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clip_value=100,
