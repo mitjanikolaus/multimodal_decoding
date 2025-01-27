@@ -120,7 +120,7 @@ def run(args):
                     print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
                     print(f"train latents shape: {train_latents.shape}")
 
-                    run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution)
+                    run_str = get_run_str(args.betas_dir, feats_config, mask)
                     results_file_path = os.path.join(
                         RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
@@ -180,8 +180,6 @@ def run(args):
                         "imagery_predictions": imagery_predicted_latents,
                         "latents": test_latents,
                         "imagery_latents": imagery_latents,
-                        "surface": args.surface,
-                        "resolution": args.resolution,
                     }
                     scores = calc_all_pairwise_accuracy_scores(
                         test_latents, test_predicted_latents, test_stim_types,
