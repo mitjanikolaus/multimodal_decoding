@@ -656,18 +656,18 @@ def remove_nans(betas_list):
     return betas_list
 
 
-def create_null_distr_seeds(n_permutations_per_subject):
-    random_seeds = []
+def create_null_distr_shuffled_indices(n_permutations_per_subject):
+    shuffled_indices = []
     seed = 0
     for _ in range(n_permutations_per_subject):
         # shuffle indices for captions and images separately until all indices have changed
-        shuffled_indices = create_shuffled_indices(seed)
-        while any(shuffled_indices == np.arange(NUM_TEST_STIMULI)):
+        indices = create_shuffled_indices(seed)
+        while any(indices == np.arange(NUM_TEST_STIMULI)):
             seed += 1
-            shuffled_indices = create_shuffled_indices(seed)
-        random_seeds.append(seed)
+            indices = create_shuffled_indices(seed)
+        shuffled_indices.append(indices)
         seed += 1
-    return random_seeds
+    return shuffled_indices
 
 
 def create_shuffled_indices(seed):

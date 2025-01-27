@@ -27,7 +27,6 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIO
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_DIFF_CAPTIONS, \
     METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 
-
 DEFAULT_N_JOBS = 10
 
 CHANCE_VALUES = {
@@ -63,27 +62,14 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
             scores_specific_images[metric][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
 
-        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
-        scores[ACC_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = np.array(
-            [score[ACC_CROSS_IMAGES_TO_CAPTIONS] for score in scores_mod_specific_captions])
-
-        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
-        scores[ACC_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = np.array(
-            [score[ACC_CROSS_CAPTIONS_TO_IMAGES] for score in scores_mod_specific_images])
+        scores[ACC_CROSS_IMAGES_TO_CAPTIONS] = scores_specific_images[ACC_CAPTIONS]
+        scores[ACC_CROSS_CAPTIONS_TO_IMAGES] = scores_specific_captions[ACC_IMAGES]
 
         scores[METRIC_DIFF_IMAGES] = np.array(
-            [ai - si for ai, ac, si, sc in
-             zip(scores[ACC_IMAGES],
-                 scores[ACC_CAPTIONS],
-                 scores_specific_images[ACC_IMAGES],
-                 scores_specific_captions[ACC_CAPTIONS])]
+            [ai - si for ai, si in zip(scores[ACC_IMAGES], scores_specific_images[ACC_IMAGES])]
         )
         scores[METRIC_DIFF_CAPTIONS] = np.array(
-            [ac - sc for ai, ac, si, sc in
-             zip(scores[ACC_IMAGES],
-                 scores[ACC_CAPTIONS],
-                 scores_specific_images[ACC_IMAGES],
-                 scores_specific_captions[ACC_CAPTIONS])]
+            [ac - sc for ac, sc in zip(scores[ACC_CAPTIONS], scores_specific_captions[ACC_CAPTIONS])]
         )
 
     return scores

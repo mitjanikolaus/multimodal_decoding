@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 
 from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC
+    create_null_distr_shuffled_indices, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV, GroupRidgeCV
@@ -75,7 +75,7 @@ def run(args):
     else:
         backend = set_backend("numpy")
 
-    random_seeds = create_null_distr_seeds(args.n_permutations_per_subject) if args.create_null_distr else None
+    random_seeds = create_null_distr_shuffled_indices(args.n_permutations_per_subject) if args.create_null_distr else None
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
