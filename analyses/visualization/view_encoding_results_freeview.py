@@ -3,7 +3,6 @@ import os
 
 from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
-from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES
 from eval import CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
     METRIC_CROSS_ENCODING
