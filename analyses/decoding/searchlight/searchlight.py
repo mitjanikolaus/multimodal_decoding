@@ -217,7 +217,7 @@ def run(args):
                 model = Ridge(alpha=args.l2_regularization_alpha)
 
                 results_dir = get_results_dir(
-                    args, feats_config.combined_feats, hemi, feats_config.model, subject, training_mode
+                    feats_config, hemi, subject, training_mode, args.resolution, mode_from_args(args)
                 )
                 null_distr_dir = None
                 if args.create_null_distr:
@@ -271,9 +271,11 @@ def mode_from_args(args):
         return f"n_neighbors_{args.n_neighbors}"
 
 
-def get_results_dir(args, features, hemi, model_name, subject, training_mode):
-    results_dir = os.path.join(SEARCHLIGHT_OUT_DIR, training_mode, model_name, features, subject, args.resolution, hemi)
-    results_dir = os.path.join(results_dir, mode_from_args(args))
+def get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode):
+    results_dir = os.path.join(
+        SEARCHLIGHT_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats, subject, resolution,
+        hemi, mode
+    )
     os.makedirs(results_dir, exist_ok=True)
     return results_dir
 
@@ -289,10 +291,8 @@ def get_args():
     parser.add_argument("--model", type=str, default="imagebind")
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
-
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
-
     parser.add_argument("--vision-features", type=str, default=SELECT_DEFAULT,
                         choices=VISION_FEAT_COMBINATION_CHOICES)
     parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,

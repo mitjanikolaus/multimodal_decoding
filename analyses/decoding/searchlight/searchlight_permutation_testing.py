@@ -16,13 +16,16 @@ from nilearn.surface import surface
 from scipy import stats
 from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
+from torchgen.packaged.autograd.gen_trace_type import SELECT
 from tqdm import tqdm
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, calc_significance_cutoff, \
     create_masks
 from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
-from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
-from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
+from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, \
+    get_results_dir
+from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
+    FEATURE_COMBINATION_CHOICES, LANG_FEATS_ONLY, VISION_FEATS_ONLY, LatentFeatsConfig
 from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_DIFF_CAPTIONS, \
     METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
@@ -84,22 +87,39 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
 
     for subject in tqdm(args.subjects):
         for hemi in HEMIS:
-            results_agnostic_file = os.path.join(
-                SEARCHLIGHT_OUT_DIR,
-                f'{MODALITY_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
-                f'alpha_{str(args.l2_regularization_alpha)}.p'
+            feats_config_mod_agnostic = LatentFeatsConfig(
+                args.model,
+                args.features,
+                args.test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
+                logging=False
             )
-            results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
+            results_mod_agnostic_dir = get_results_dir(
+                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution, args.mode,
+            )
+            results_mod_agnostic_file = os.path.join(
+                results_mod_agnostic_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
             scores_agnostic = results_agnostic['scores']
             nan_locations = results_agnostic['nan_locations']
             n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
             per_subject_n_neighbors[subject][hemi] = n_neighbors
             per_subject_nan_locations[subject][hemi] = nan_locations
 
+            feats_config_mod_specific_images = LatentFeatsConfig(
+                args.mod_specific_images_model,
+                args.mod_specific_images_features,
+                args.mod_specific_images_test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
+                logging=False
+            )
+            results_mod_specific_images_dir = get_results_dir(
+                feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
+                args.mode,
+            )
             results_mod_specific_images_file = os.path.join(
-                SEARCHLIGHT_OUT_DIR,
-                f'{MODALITY_SPECIFIC_IMAGES}/{args.mod_specific_images_model}/{args.mod_specific_images_features}/{subject}/'
-                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+                results_mod_specific_images_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
             if os.path.isfile(results_mod_specific_images_file):
                 scores_images = pickle.load(open(results_mod_specific_images_file, 'rb'))['scores']
@@ -107,10 +127,19 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
                 print(f"Missing modality-specific results: {results_mod_specific_images_file}")
                 scores_images = None
 
+            feats_config_mod_specific_captions = LatentFeatsConfig(
+                args.mod_specific_captions_model,
+                args.mod_specific_captions_features,
+                args.mod_specific_captions_test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
+                logging=False
+            )
+            results_mod_specific_captions_dir = get_results_dir(
+                feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
+                args.mode,
+            )
             results_mod_specific_captions_file = os.path.join(
-                SEARCHLIGHT_OUT_DIR,
-                f'{MODALITY_SPECIFIC_CAPTIONS}/{args.mod_specific_captions_model}/{args.mod_specific_captions_features}/{subject}/'
-                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+                results_mod_specific_captions_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
             if os.path.isfile(results_mod_specific_captions_file):
                 scores_captions = pickle.load(open(results_mod_specific_captions_file, 'rb'))['scores']
@@ -366,23 +395,50 @@ def load_null_distr_per_subject_scores(args):
 
     for subject in tqdm(args.subjects):
         for hemi in HEMIS:
-            results_agnostic_file = os.path.join(
-                SEARCHLIGHT_OUT_DIR,
-                f'{MODALITY_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
-                f'alpha_{str(args.l2_regularization_alpha)}.p'
+            feats_config_mod_agnostic = LatentFeatsConfig(
+                args.model,
+                args.features,
+                args.test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
+                logging=False
             )
-            results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
+            results_mod_agnostic_dir = get_results_dir(
+                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution, args.mode,
+            )
+            results_mod_agnostic_file = os.path.join(
+                results_mod_agnostic_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+            results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
             nan_locations = results_agnostic['nan_locations']
 
+            feats_config_mod_specific_images = LatentFeatsConfig(
+                args.mod_specific_images_model,
+                args.mod_specific_images_features,
+                args.mod_specific_images_test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
+                logging=False
+            )
+            results_mod_specific_images_dir = get_results_dir(
+                feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
+                args.mode,
+            )
             results_mod_specific_images_file = os.path.join(
-                SEARCHLIGHT_OUT_DIR,
-                f'{MODALITY_SPECIFIC_IMAGES}/{args.mod_specific_images_model}/{args.mod_specific_images_features}/{subject}/'
-                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+                results_mod_specific_images_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+            )
+
+            feats_config_mod_specific_captions = LatentFeatsConfig(
+                args.mod_specific_captions_model,
+                args.mod_specific_captions_features,
+                args.mod_specific_captions_test_features,
+                SELECT_DEFAULT, SELECT_DEFAULT,
+                logging=False
+            )
+            results_mod_specific_captions_dir = get_results_dir(
+                feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
+                args.mode,
             )
             results_mod_specific_captions_file = os.path.join(
-                SEARCHLIGHT_OUT_DIR,
-                f'{MODALITY_SPECIFIC_CAPTIONS}/{args.mod_specific_captions_model}/{args.mod_specific_captions_features}/{subject}/'
-                f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
+                results_mod_specific_captions_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
 
             def load_null_distr_scores(base_path):
@@ -412,7 +468,7 @@ def load_null_distr_per_subject_scores(args):
                 )
                 return np.concatenate(all_scores)
 
-            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_agnostic_file))
+            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_mod_agnostic_file))
             null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
             null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
 
@@ -619,13 +675,18 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default="avg_test_avg")
+    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-images-features", type=str, default="vision_test_vision")
+    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
     parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-captions-features", type=str, default="lang_test_lang")
+    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
