@@ -5,7 +5,7 @@ import seaborn as sns
 from data import DEFAULT_FEATURES, DEFAULT_VISION_FEATURES, DEFAULT_LANG_FEATURES
 from eval import ACC_MODALITY_AGNOSTIC, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, \
     calc_all_pairwise_accuracy_scores
-from utils import SUBJECTS, RIDGE_DECODER_OUT_DIR, MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES
+from utils import SUBJECTS, RIDGE_DECODER_OUT_DIR
 from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 from tqdm import tqdm
@@ -175,7 +175,8 @@ def create_result_graph(data, x_variable="model_feat", order=None,
 
     for m, metric in enumerate(metrics):
         catplot_g.axes[m, 0].set_title(
-            metrics[m].replace("pairwise_acc_mean", "").replace("pairwise_acc_", "").replace("_", "-"), fontsize=35,
+            metrics[m].replace("pairwise_acc_mean", "").replace("pairwise_acc_", "").replace("_", "-"),
+            fontsize=35,
             y=row_title_height)
         catplot_g.axes[m, 0].set_ylabel('pairwise accuracy')
 
@@ -204,7 +205,7 @@ def update_acc_scores(results, metric="cosine", standardize_predictions=False, s
             imagery_latents=results["imagery_latents"] if "imagery_latents" in results else None,
             imagery_predictions=results["imagery_predictions"] if "imagery_predictions" in results else None,
             metric=metric, standardize_predictions=standardize_predictions, standardize_latents=standardize_targets,
-            norm_imagery_preds_with_test_preds=True
+            norm_imagery_preds_with_test_preds=norm_imagery_preds_with_test_preds
         )
     )
     return results
@@ -245,9 +246,6 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
 
     if "test_features" in df.columns:
         df = df[(df.test_features == df.features) | df.test_features.isna()].copy()
-
-    df["training_mode"] = df.training_mode.replace(
-        {MODE_AGNOSTIC: "modality-agnostic", MOD_SPECIFIC_CAPTIONS: "captions", MOD_SPECIFIC_IMAGES: "images"})
 
     if "surface" in df.columns:
         df["surface"] = df.surface.fillna(False)
@@ -294,8 +292,8 @@ def get_data_default_feats(data):
         default_lang_feats = DEFAULT_LANG_FEATURES[model]
         data_default_feats = data_default_feats[
             ((data_default_feats.model == model) & (data_default_feats.features == default_feats) & (
-                        data_default_feats.vision_features == default_vision_feats) & (
-                         data_default_feats.lang_features == default_lang_feats)) | (data_default_feats.model != model)
+                    data_default_feats.vision_features == default_vision_feats) & (
+                     data_default_feats.lang_features == default_lang_feats)) | (data_default_feats.model != model)
             ]
 
     return data_default_feats
