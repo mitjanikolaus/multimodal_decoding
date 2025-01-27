@@ -5,7 +5,7 @@ import torch.cuda
 import os
 import pickle
 
-from data import fMRIDataModule, LatentFeatsConfig, TRAIN_MODE_CHOICES, MODALITY_AGNOSTIC, SELECT_DEFAULT
+from data import fMRIDataModule, LatentFeatsConfig, TRAINING_MODES, MODALITY_AGNOSTIC, SELECT_DEFAULT
 from new_decoding.decoder import Decoder, test_set_pairwise_acc_scores
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, \
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, get_run_str
@@ -143,7 +143,7 @@ def get_args():
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
-                        choices=TRAIN_MODE_CHOICES)
+                        choices=TRAINING_MODES)
 
     parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
 

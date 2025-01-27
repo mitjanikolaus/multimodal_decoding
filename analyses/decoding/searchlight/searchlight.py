@@ -21,10 +21,10 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, \
     ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds, standardize_fmri_betas
+    create_null_distr_seeds, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST
 
 from utils import SUBJECTS, DATA_DIR, \
-    DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES
+    DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES, FMRI_BETAS_SURFACE_DIR
 
 DEFAULT_N_JOBS = 10
 
@@ -165,12 +165,15 @@ def run(args):
         for training_mode in args.training_modes:
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
             for hemi in args.hemis:
-                train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(subject, training_mode,
-                                                                                     args.resolution, hemi)
-                test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(subject, TESTING_MODE,
-                                                                                  args.resolution, hemi)
-                imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(subject, IMAGERY,
-                                                                                           args.resolution, hemi)
+                train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(
+                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, args.resolution, hemi
+                )
+                test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                    args.betas_dir, subject, SPLIT_TEST, resolution=args.resolution, hemi=hemi
+                )
+                imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(
+                    args.betas_dir, subject, IMAGERY, resolution=args.resolution, hemi=hemi
+                )
                 nan_locations = np.isnan(train_fmri[0])
                 train_fmri, test_fmri, imagery_fmri = standardize_fmri_betas(train_fmri, test_fmri, imagery_fmri)
 
@@ -206,10 +209,6 @@ def run(args):
 
                 X = np.concatenate((train_fmri, test_fmri, imagery_fmri))
 
-                # nan_locations = np.isnan(X[0])
-                # assert np.all(nan_locations == np.isnan(X[-1]))
-                # X = X[:, ~nan_locations]
-
                 infl_mesh = fsaverage[f"infl_{hemi}"]
                 coords, _ = surface.load_surf_mesh(infl_mesh)
                 coords = coords[~nan_locations]
@@ -232,10 +231,9 @@ def run(args):
                     print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
                 else:
                     raise RuntimeError("Need to set either radius or n_neighbors arg!")
-
                 results_dict["adjacency"] = adjacency
+
                 model = Ridge(alpha=args.l2_regularization_alpha)
-                start = time.time()
 
                 results_dir = get_results_dir(
                     args, feats_config.combined_feats, hemi, feats_config.model, subject, training_mode
@@ -247,6 +245,8 @@ def run(args):
 
                 X = X.astype(np.float16)
                 latents = latents.astype(np.float16)
+
+                start = time.time()
                 scores = custom_search_light(
                     X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
                     imagery_ids=imagery_ids, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
@@ -300,7 +300,9 @@ def get_results_dir(args, features, hemi, model_name, subject, training_mode):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
+
+    parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAIN_MODE_CHOICES)
 
     parser.add_argument("--model", type=str, default="imagebind")

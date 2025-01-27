@@ -11,17 +11,14 @@ import nibabel as nib
 from tqdm import tqdm, trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import model_features_file_path, FMRI_NORMALIZATIONS_DIR, \
-    LATENT_FEATURES_NORMALIZATIONS_DIR, FMRI_SURFACE_LEVEL_DIR, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, HEMIS
+from utils import model_features_file_path, FMRI_NORMALIZATIONS_DIR, LATENT_FEATURES_NORMALIZATIONS_DIR, HEMIS, \
+    DEFAULT_RESOLUTION
 import lightning as pl
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
 MODALITY_AGNOSTIC = "agnostic"
-
-TRAIN_MODE_CHOICES = [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]
-
-TESTING_MODE = "test"
+TRAINING_MODES = [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]
 
 SPLIT_TRAIN = "train"
 SPLIT_TEST = "test"
@@ -339,19 +336,15 @@ def stim_id_from_beta_file_name(beta_file_name):
     return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(".nii", ''))
 
 
-def get_fmri_data_paths(betas_dir, subject, mode, surface=False, hemi=None, resolution=None):
-    if surface:
-        if hemi is None or resolution is None:
-            raise ValueError("Hemi and resolution needs to be specified to load surface-level data")
-        filename_suffix = f"*_{hemi}.gii"
-        fmri_addresses_regex = os.path.join(
-            FMRI_SURFACE_LEVEL_DIR, resolution, subject, f'betas_{mode}*', filename_suffix
-        )
-    else:
-        filename_suffix = "*.nii"
-        fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{mode}*', filename_suffix)
-
+def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
+    mode_suffix = ""
+    if mode == MODALITY_SPECIFIC_CAPTIONS:
+        mode_suffix = f"_{CAPTION}"
+    elif mode == MODALITY_SPECIFIC_IMAGES:
+        mode_suffix = f"_{IMAGE}"
+    fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{split}{mode_suffix}*', "*.nii")
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
+
     stim_ids = []
     stim_types = []
     for path in fmri_betas_paths:
@@ -457,19 +450,19 @@ def get_latent_feats(all_latents, stim_id, stim_type, latent_feats_config):
     return feats
 
 
-def get_fmri_surface_data(subject, mode, resolution, hemi):
-    base_mode = mode.split('_')[0]
-    print(f"loading {base_mode} {hemi} hemi fmri surface data.. ", end="")
-    fmri_betas = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_{hemi}_{resolution}_{base_mode}.p"), 'rb'))
+def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, resolution=DEFAULT_RESOLUTION,
+                          hemi=HEMIS[0]):
+    print(f"loading {mode} {split} {hemi} hemi fmri surface data.. ", end="")
+    fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
     print("done.")
-    stim_ids = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_ids_{base_mode}.p"), 'rb'))
-    stim_types = pickle.load(open(os.path.join(FMRI_SURFACE_LEVEL_DIR, f"{subject}_stim_types_{base_mode}.p"), 'rb'))
+    stim_ids = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_ids_{split}.p"), 'rb'))
+    stim_types = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_types_{split}.p"), 'rb'))
 
-    if mode == MOD_SPECIFIC_CAPTIONS:
+    if mode == MODALITY_SPECIFIC_CAPTIONS:
         fmri_betas = fmri_betas[stim_types == CAPTION]
         stim_ids = stim_ids[stim_types == CAPTION]
         stim_types = stim_types[stim_types == CAPTION]
-    elif mode == MOD_SPECIFIC_IMAGES:
+    elif mode == MODALITY_SPECIFIC_IMAGES:
         fmri_betas = fmri_betas[stim_types == IMAGE]
         stim_ids = stim_ids[stim_types == IMAGE]
         stim_types = stim_types[stim_types == IMAGE]
@@ -535,8 +528,8 @@ def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
     return nn_latent_vectors
 
 
-def get_fmri_voxel_data(betas_dir, subject, mode):
-    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, mode)
+def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode)
 
     graymatter_mask = load_graymatter_mask(subject)
     fmri_betas = []
@@ -547,15 +540,6 @@ def get_fmri_voxel_data(betas_dir, subject, mode):
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
-    return fmri_betas, stim_ids, stim_types
-
-
-def get_fmri_data(betas_dir, subject, mode, surface=False, resolution=None):
-    if surface:
-        raise NotImplementedError()
-    else:
-        fmri_betas, stim_ids, stim_types = get_fmri_voxel_data(betas_dir, subject, mode)
-
     return fmri_betas, stim_ids, stim_types
 
 

@@ -83,12 +83,14 @@ def run(args):
         for subject in args.subjects:
             for hemi in HEMIS:
                 train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_surface_data(
+                    args.betas_dir,
                     subject,
                     training_mode,
                     resolution=args.resolution,
                     hemi=hemi,
                 )
                 test_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                    args.betas_dir,
                     subject,
                     TESTING_MODE,
                     resolution=args.resolution,
@@ -242,6 +244,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
                         choices=TRAIN_MODE_CHOICES)

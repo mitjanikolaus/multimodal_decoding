@@ -10,7 +10,7 @@ import pickle
 from analyses.decoding.ridge_regression_decoding import IMAGERY
 from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, IDS_TEST_STIM, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import FMRI_SURFACE_LEVEL_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR
+from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR
 
 
 def run(args):
@@ -101,7 +101,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
-    parser.add_argument("--out-dir", type=str, default=FMRI_SURFACE_LEVEL_DIR)
+    parser.add_argument("--out-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)

@@ -29,7 +29,7 @@ FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni305")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
-FMRI_SURFACE_LEVEL_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
+FMRI_BETAS_SURFACE_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
@@ -45,11 +45,6 @@ HEMIS_FS = ['lh', 'rh']
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
 DEFAULT_RESOLUTION = "fsaverage7"
-
-MOD_SPECIFIC_IMAGES = "train_image"
-MOD_SPECIFIC_CAPTIONS = "train_caption"
-MODE_AGNOSTIC = "train"
-TRAIN_MODE_CHOICES = [MODE_AGNOSTIC, MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES]
 
 METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'
 METRIC_DIFF_IMAGES = 'diff_imgs_agno_imgs_specific'

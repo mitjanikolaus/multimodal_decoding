@@ -7,15 +7,17 @@ import sklearn
 import os
 import pickle
 
+import torch
+
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, get_fmri_data, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, TESTING_MODE, IMAGERY, remove_nans
+    standardize_latents, TESTING_MODE, IMAGERY, remove_nans, MODALITY_AGNOSTIC, TRAINING_MODES, get_fmri_voxel_data, \
+    SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, MODE_AGNOSTIC, TRAIN_MODE_CHOICES, \
-    RIDGE_DECODER_OUT_DIR
+from utils import FMRI_BETAS_DIR, SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, RIDGE_DECODER_OUT_DIR
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -50,8 +52,9 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=No
 def tensor_pairwise_accuracy(
         latents, predictions, metric="cosine", standardize_predictions=False, standardize_latents=False
 ):
-    latents = latents.cpu().numpy()
-    predictions = predictions.cpu().numpy().squeeze()
+    if latents.device == torch.device("cuda"):
+        latents = latents.cpu().numpy()
+        predictions = predictions.cpu().numpy().squeeze()
 
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
@@ -65,26 +68,21 @@ def run(args):
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
-            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
+            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_voxel_data(
                 args.betas_dir,
                 subject,
+                SPLIT_TRAIN,
                 training_mode,
-                surface=args.surface,
-                resolution=args.resolution,
             )
-            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
+            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_voxel_data(
                 args.betas_dir,
                 subject,
-                TESTING_MODE,
-                surface=args.surface,
-                resolution=args.resolution,
+                SPLIT_TEST,
             )
-            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
+            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_voxel_data(
                 args.betas_dir,
                 subject,
-                IMAGERY,
-                surface=args.surface,
-                resolution=args.resolution,
+                SPLIT_IMAGERY,
             )
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
@@ -219,11 +217,8 @@ def get_args():
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
-    parser.add_argument("--training-modes", type=str, nargs="+", default=[MODE_AGNOSTIC],
-                        choices=TRAIN_MODE_CHOICES)
-
-    parser.add_argument("--surface", action="store_true", default=False)
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
+    parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
+                        choices=TRAINING_MODES)
 
     parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
