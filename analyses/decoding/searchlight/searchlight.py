@@ -18,13 +18,13 @@ from sklearn.linear_model import Ridge
 from tqdm import tqdm
 
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
-    get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, IMAGERY, TESTING_MODE, \
-    ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, standardize_latents
+    get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, ACC_IMAGERY, \
+    ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST
+    create_null_distr_seeds, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, SPLIT_IMAGERY, \
+    TRAINING_MODES
 
-from utils import SUBJECTS, DATA_DIR, \
-    DEFAULT_RESOLUTION, TRAIN_MODE_CHOICES, FMRI_BETAS_SURFACE_DIR
+from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
 
 DEFAULT_N_JOBS = 10
 
@@ -172,7 +172,7 @@ def run(args):
                     args.betas_dir, subject, SPLIT_TEST, resolution=args.resolution, hemi=hemi
                 )
                 imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, IMAGERY, resolution=args.resolution, hemi=hemi
+                    args.betas_dir, subject, SPLIT_IMAGERY, resolution=args.resolution, hemi=hemi
                 )
                 nan_locations = np.isnan(train_fmri[0])
                 train_fmri, test_fmri, imagery_fmri = standardize_fmri_betas(train_fmri, test_fmri, imagery_fmri)
@@ -303,7 +303,7 @@ def get_args():
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
-                        choices=TRAIN_MODE_CHOICES)
+                        choices=TRAINING_MODES)
 
     parser.add_argument("--model", type=str, default="imagebind")
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
