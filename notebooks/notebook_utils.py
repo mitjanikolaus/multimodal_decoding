@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from data import DEFAULT_FEATURES, DEFAULT_VISION_FEATURES, DEFAULT_LANG_FEATURES
+from data import DEFAULT_FEATURES, DEFAULT_VISION_FEATURES, DEFAULT_LANG_FEATURES, TRAINING_MODES, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import ACC_MODALITY_AGNOSTIC, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, \
     calc_all_pairwise_accuracy_scores
 from utils import SUBJECTS, RIDGE_DECODER_OUT_DIR
@@ -122,11 +122,12 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
                         verify_num_datapoints=True, plot_legend=True, shorten_label_texts=True):
-    data_training_mode_full = data[data.training_mode == "modality-agnostic"]
-    data_training_mode_captions = data[data.training_mode == "captions"]
-    data_training_mode_images = data[data.training_mode == "images"]
+    
+    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
+    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
+    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
-    for mode in ["modality-agnostic", "captions", "images"]:
+    for mode in TRAINING_MODES:
         data_mode = data[data.training_mode == mode]
         for x_variable_value in order:
             length = len(data_mode[(data_mode[x_variable] == x_variable_value) & (data_mode.metric == metrics[0])])
@@ -252,27 +253,27 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     else:
         df["surface"] = False
 
-    df["vision_features"] = df.vision_features.replace(
-        {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
+    # df["vision_features"] = df.vision_features.replace(
+    #     {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
 
-    # imagebind only supports extraction of cls features
-    df.loc[df.model == "imagebind", "lang_features"] = "lang_features_cls"
+    # # imagebind only supports extraction of cls features
+    # df.loc[df.model == "imagebind", "lang_features"] = "lang_features_cls"
 
-    # we currently always compute mean features from language models 
-    df.loc[df.model.isin(
-        ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
-         "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "lang_features"] = "lang_features_mean"
+    # # we currently always compute mean features from language models 
+    # df.loc[df.model.isin(
+    #     ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
+    #      "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "lang_features"] = "lang_features_mean"
 
-    # update unimodal feat values for fused feats of multimodal models:
-    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n_a"
-    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n_a"
+    # # update unimodal feat values for fused feats of multimodal models:
+    # df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n_a"
+    # df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n_a"
 
-    # default values for unimodal models:
-    df.loc[df.model.isin(
-        ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
-         "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n_a"
-    df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large",
-                          "dino-giant"]), "lang_features"] = "n_a"
+    # # default values for unimodal models:
+    # df.loc[df.model.isin(
+    #     ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
+    #      "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n_a"
+    # df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large",
+    #                       "dino-giant"]), "lang_features"] = "n_a"
 
     # df["lang_features"] = df["lang_features"].fillna("unk")
 
