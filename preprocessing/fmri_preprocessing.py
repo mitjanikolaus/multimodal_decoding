@@ -1,11 +1,3 @@
-##########################################################
-# PREPROCESSING fMRI IMAGES with nipype
-# Note: Matlab and SPM are required for this script
-# This script performs the following steps:
-#   1. Slice Time Correction (STC)
-#   2. Realignment (to the first image of each run)
-#   3. Coregistration (to T1w anatomical image)
-##########################################################
 import argparse
 import os
 import numpy as np

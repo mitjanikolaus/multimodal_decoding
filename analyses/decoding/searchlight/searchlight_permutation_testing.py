@@ -20,13 +20,13 @@ from tqdm import tqdm
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, calc_significance_cutoff, \
     create_masks
-from analyses.decoding.ridge_regression_decoding import MODE_AGNOSTIC, ACC_CAPTIONS, \
-    ACC_IMAGES
+from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
 from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
+from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_DIFF_CAPTIONS, \
-    METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, MOD_SPECIFIC_IMAGES, \
-    MOD_SPECIFIC_CAPTIONS
+    METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
+
 
 DEFAULT_N_JOBS = 10
 
@@ -100,7 +100,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
         for hemi in HEMIS:
             results_agnostic_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
+                f'{MODALITY_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
                 f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
             results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
@@ -110,26 +110,26 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
             per_subject_n_neighbors[subject][hemi] = n_neighbors
             per_subject_nan_locations[subject][hemi] = nan_locations
 
-            results_mod_specific_vision_file = os.path.join(
+            results_mod_specific_images_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
+                f'{MODALITY_SPECIFIC_IMAGES}/{args.mod_specific_images_model}/{args.mod_specific_images_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            if os.path.isfile(results_mod_specific_vision_file):
-                scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))['scores']
+            if os.path.isfile(results_mod_specific_images_file):
+                scores_images = pickle.load(open(results_mod_specific_images_file, 'rb'))['scores']
             else:
-                print(f"Missing modality-specific results: {results_mod_specific_vision_file}")
+                print(f"Missing modality-specific results: {results_mod_specific_images_file}")
                 scores_images = None
 
-            results_mod_specific_lang_file = os.path.join(
+            results_mod_specific_captions_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
+                f'{MODALITY_SPECIFIC_CAPTIONS}/{args.mod_specific_captions_model}/{args.mod_specific_captions_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            if os.path.isfile(results_mod_specific_lang_file):
-                scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))['scores']
+            if os.path.isfile(results_mod_specific_captions_file):
+                scores_captions = pickle.load(open(results_mod_specific_captions_file, 'rb'))['scores']
             else:
-                print(f"Missing modality-specific results: {results_mod_specific_lang_file}")
+                print(f"Missing modality-specific results: {results_mod_specific_captions_file}")
                 scores_captions = None
 
             scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
@@ -248,10 +248,6 @@ def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
     return edge_lengths_dicts
 
 
-
-
-
-
 def calc_t_value(values, popmean, epsilon=1e-8):
     # use heuristic (mean needs to be greater than popmean) to speed up calculation
     values_no_nan = values[~np.isnan(values)]
@@ -327,7 +323,6 @@ def calc_t_values(per_subject_scores):
     return t_values
 
 
-
 def calc_test_statistics(args):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
@@ -387,20 +382,20 @@ def load_null_distr_per_subject_scores(args):
         for hemi in HEMIS:
             results_agnostic_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MODE_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
+                f'{MODALITY_AGNOSTIC}/{args.model}/{args.features}/{subject}/{args.resolution}/{hemi}/{args.mode}/'
                 f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
             results_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
             nan_locations = results_agnostic['nan_locations']
 
-            results_mod_specific_vision_file = os.path.join(
+            results_mod_specific_images_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MOD_SPECIFIC_IMAGES}/{args.mod_specific_vision_model}/{args.mod_specific_vision_features}/{subject}/'
+                f'{MODALITY_SPECIFIC_IMAGES}/{args.mod_specific_images_model}/{args.mod_specific_images_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
-            results_mod_specific_lang_file = os.path.join(
+            results_mod_specific_captions_file = os.path.join(
                 SEARCHLIGHT_OUT_DIR,
-                f'{MOD_SPECIFIC_CAPTIONS}/{args.mod_specific_lang_model}/{args.mod_specific_lang_features}/{subject}/'
+                f'{MODALITY_SPECIFIC_CAPTIONS}/{args.mod_specific_captions_model}/{args.mod_specific_captions_features}/{subject}/'
                 f'{args.resolution}/{hemi}/{args.mode}/alpha_{str(args.l2_regularization_alpha)}.p'
             )
 
@@ -432,8 +427,8 @@ def load_null_distr_per_subject_scores(args):
                 return np.concatenate(all_scores)
 
             null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_agnostic_file))
-            null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_vision_file))
-            null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_lang_file))
+            null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
+            null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
 
             num_permutations = len(null_distribution_agnostic[0])
             print('final per subject scores null distribution dict creation:')
@@ -571,8 +566,8 @@ def calc_t_values_null_distr(args, out_path):
 
 def permutation_results_dir(args):
     return str(os.path.join(
-        SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_vision_model,
-        args.mod_specific_vision_features, args.mod_specific_lang_model, args.mod_specific_lang_features,
+        SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_images_model,
+        args.mod_specific_images_features, args.mod_specific_captions_model, args.mod_specific_captions_features,
         args.resolution, args.mode
     ))
 
@@ -632,7 +627,6 @@ def create_null_distribution(args):
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
-
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -641,11 +635,11 @@ def get_args():
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-features", type=str, default="vision_test_vision")
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 

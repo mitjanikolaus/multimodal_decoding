@@ -10,19 +10,17 @@ from tqdm import tqdm
 from analyses.encoding.ridge_regression_encoding import get_results_file_path, get_null_distr_results_path, \
     calc_correlation_metrics
 from data import get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds
+    create_null_distr_seeds, SPLIT_TRAIN, SPLIT_TEST, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
+    MODALITY_AGNOSTIC
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV
 import os
 import pickle
 
-from analyses.decoding.ridge_regression_decoding import TESTING_MODE, standardize_fmri_betas, \
-    get_latent_features, \
-    LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, \
-    standardize_latents
-from utils import SUBJECTS, DEFAULT_RESOLUTION, HEMIS, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, \
-    MODE_AGNOSTIC
+from analyses.decoding.ridge_regression_decoding import standardize_fmri_betas, get_latent_features, \
+    LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, standardize_latents
+from utils import SUBJECTS, DEFAULT_RESOLUTION, HEMIS, FMRI_BETAS_SURFACE_DIR
 
 
 def calc_feats_corr(subject, args):
@@ -31,7 +29,7 @@ def calc_feats_corr(subject, args):
     )
 
     weights = dict()
-    for training_mode in [MOD_SPECIFIC_CAPTIONS, MOD_SPECIFIC_IMAGES, MODE_AGNOSTIC]:
+    for training_mode in [MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, MODALITY_AGNOSTIC]:
         weights[training_mode] = []
         for hemi in HEMIS:
             results_file_path = get_results_file_path(
@@ -46,15 +44,15 @@ def calc_feats_corr(subject, args):
     pvals = []
     per_vertex_filters = []
     mod_agnostic_weights = []
-    for weights_mod_spec_imgs, weights_mod_spec_caps, weights_mod_agnostic in zip(weights[MOD_SPECIFIC_IMAGES],
-                                                                                  weights[MOD_SPECIFIC_CAPTIONS],
-                                                                                  weights[MODE_AGNOSTIC]):
+    for weights_mod_spec_imgs, weights_mod_spec_caps, weights_mod_agnostic in zip(weights[MODALITY_SPECIFIC_IMAGES],
+                                                                                  weights[MODALITY_SPECIFIC_CAPTIONS],
+                                                                                  weights[MODALITY_AGNOSTIC]):
         corr = pearsonr(weights_mod_spec_imgs, weights_mod_agnostic)
         corrs.append(corr[0])
         pvals.append(corr[1])
 
         same_sign = (np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_spec_caps)) & (
-                    np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_agnostic))
+                np.sign(weights_mod_spec_imgs) == np.sign(weights_mod_agnostic))
         per_vertex_filters.append(same_sign)
 
         mod_agnostic_weights.append(weights_mod_agnostic > 1e-5)
@@ -82,20 +80,24 @@ def run(args):
         # filter = np.mean(mod_agnostic_weights, axis=1) > 0.5
         # print(f"Number of feats after mod agnostic weights threshold filtering: {np.sum(filter)}")
 
-        for training_mode in [MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS]:
+        for training_mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
             for hemi in HEMIS:
                 train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_surface_data(
+                    args.betas_dir,
                     subject,
+                    SPLIT_TRAIN,
                     training_mode,
                     resolution=args.resolution,
                     hemi=hemi,
                 )
                 test_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                    args.betas_dir,
                     subject,
-                    TESTING_MODE,
+                    SPLIT_TEST,
                     resolution=args.resolution,
                     hemi=hemi,
                 )
+                nan_locations = np.isnan(train_fmri_betas[0])
                 train_fmri_betas, test_betas = standardize_fmri_betas(train_fmri_betas, test_betas)
 
                 feats_config = LatentFeatsConfig(
@@ -214,6 +216,8 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 

@@ -1,6 +1,3 @@
-#########################################################
-# Transform coregistered scans from the subject space to MNI305 space
-#########################################################
 import argparse
 import os
 from glob import glob

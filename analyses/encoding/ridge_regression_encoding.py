@@ -1,5 +1,4 @@
 import argparse
-import time
 from collections import Counter
 
 import numpy as np
@@ -7,7 +6,7 @@ import sklearn
 from tqdm import tqdm
 
 from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds
+    create_null_distr_seeds, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV, GroupRidgeCV
@@ -15,11 +14,9 @@ from himalaya.scoring import correlation_score
 import os
 import pickle
 
-from analyses.decoding.ridge_regression_decoding import TESTING_MODE, standardize_fmri_betas, \
-    get_latent_features, \
-    LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, TRAIN_MODE_CHOICES, \
-    standardize_latents
-from utils import SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, HEMIS, FMRI_BETAS_DIR, DATA_DIR
+from analyses.decoding.ridge_regression_decoding import standardize_fmri_betas, get_latent_features, \
+    LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, standardize_latents
+from utils import SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, HEMIS, DATA_DIR, FMRI_BETAS_SURFACE_DIR
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 ENCODING_RESULTS_DIR = os.path.join(DATA_DIR, "encoding_results")
@@ -85,6 +82,7 @@ def run(args):
                 train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_surface_data(
                     args.betas_dir,
                     subject,
+                    SPLIT_TRAIN,
                     training_mode,
                     resolution=args.resolution,
                     hemi=hemi,
@@ -92,7 +90,7 @@ def run(args):
                 test_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
                     args.betas_dir,
                     subject,
-                    TESTING_MODE,
+                    SPLIT_TEST,
                     resolution=args.resolution,
                     hemi=hemi,
                 )
@@ -247,8 +245,8 @@ def get_args():
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
 
-    parser.add_argument("--training-modes", type=str, nargs="+", default=['train'],
-                        choices=TRAIN_MODE_CHOICES)
+    parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
+                        choices=TRAINING_MODES)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 

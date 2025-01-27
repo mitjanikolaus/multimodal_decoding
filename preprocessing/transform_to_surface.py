@@ -7,8 +7,8 @@ from nilearn.surface import surface
 import os
 import pickle
 
-from analyses.decoding.ridge_regression_decoding import IMAGERY
-from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, IDS_TEST_STIM, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES
+from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, IDS_TEST_STIM, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES, \
+    SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR
 
@@ -16,9 +16,9 @@ from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BET
 def run(args):
     for subject in args.subjects:
         print("\n", subject)
-        train_fmri, train_stim_ids, train_stim_types = get_fmri_data_paths(args.betas_dir, subject, "train")
-        test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(args.betas_dir, subject, "test")
-        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(args.betas_dir, subject, IMAGERY)
+        train_fmri, train_stim_ids, train_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TRAIN)
+        test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TEST)
+        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_IMAGERY)
 
         pickle.dump(train_stim_ids, open(os.path.join(args.out_dir, f"{subject}_stim_ids_train.p"), 'wb'))
         pickle.dump(train_stim_types, open(os.path.join(args.out_dir, f"{subject}_stim_types_train.p"), 'wb'))

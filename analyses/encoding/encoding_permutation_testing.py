@@ -15,11 +15,12 @@ from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, cal
     create_masks
 from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, \
     get_results_file_path
-from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig
+from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, MODALITY_AGNOSTIC, \
+    MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     METRIC_CROSS_ENCODING, METRIC_CROSS_ENCODING_MAX
-from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, MODE_AGNOSTIC, \
-    MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, FS_HEMI_NAMES, export_to_gifti
+from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_DIFF_IMAGES, \
+    METRIC_DIFF_CAPTIONS, FS_HEMI_NAMES, export_to_gifti
 
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
@@ -40,33 +41,33 @@ def load_per_subject_scores(args, return_nan_locations=False):
                 args.model, args.features, args.test_features, SELECT_DEFAULT, SELECT_DEFAULT,
             )
             results_agnostic_file = get_results_file_path(
-                subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
+                subject, MODALITY_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
             )
 
-            feats_config_mod_specific_vision = LatentFeatsConfig(
-                args.mod_specific_vision_model,
-                args.mod_specific_vision_features,
-                args.mod_specific_vision_test_features,
+            feats_config_mod_specific_images = LatentFeatsConfig(
+                args.mod_specific_images_model,
+                args.mod_specific_images_features,
+                args.mod_specific_images_test_features,
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_specific_vision_file = get_results_file_path(
-                subject, MOD_SPECIFIC_IMAGES,
-                feats_config_mod_specific_vision,
+            results_mod_specific_images_file = get_results_file_path(
+                subject, MODALITY_SPECIFIC_IMAGES,
+                feats_config_mod_specific_images,
                 args.resolution,
                 hemi
             )
 
-            feats_config_mod_specific_lang = LatentFeatsConfig(
-                args.mod_specific_lang_model,
-                args.mod_specific_lang_features,
-                args.mod_specific_lang_test_features,
+            feats_config_mod_specific_captions = LatentFeatsConfig(
+                args.mod_specific_captions_model,
+                args.mod_specific_captions_features,
+                args.mod_specific_captions_test_features,
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_specific_lang_file = get_results_file_path(
-                subject, MOD_SPECIFIC_CAPTIONS,
-                feats_config_mod_specific_lang,
+            results_mod_specific_captions_file = get_results_file_path(
+                subject, MODALITY_SPECIFIC_CAPTIONS,
+                feats_config_mod_specific_captions,
                 args.resolution,
                 hemi
             )
@@ -75,16 +76,16 @@ def load_per_subject_scores(args, return_nan_locations=False):
             nan_locations = scores_agnostic['nan_locations']
             per_subject_nan_locations[subject][hemi] = nan_locations
 
-            if os.path.isfile(results_mod_specific_vision_file):
-                scores_images = pickle.load(open(results_mod_specific_vision_file, 'rb'))
+            if os.path.isfile(results_mod_specific_images_file):
+                scores_images = pickle.load(open(results_mod_specific_images_file, 'rb'))
             else:
-                print(f"Missing modality-specific results: {results_mod_specific_vision_file}")
+                print(f"Missing modality-specific results: {results_mod_specific_images_file}")
                 scores_images = None
 
-            if os.path.isfile(results_mod_specific_lang_file):
-                scores_captions = pickle.load(open(results_mod_specific_lang_file, 'rb'))
+            if os.path.isfile(results_mod_specific_captions_file):
+                scores_captions = pickle.load(open(results_mod_specific_captions_file, 'rb'))
             else:
-                print(f"Missing modality-specific results: {results_mod_specific_lang_file}")
+                print(f"Missing modality-specific results: {results_mod_specific_captions_file}")
                 scores_captions = None
 
             scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
@@ -237,43 +238,43 @@ def load_null_distr_per_subject_scores(args):
                 args.model, args.features, args.test_features, SELECT_DEFAULT, SELECT_DEFAULT
             )
             null_distr_agnostic_file = get_null_distr_results_path(
-                subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
+                subject, MODALITY_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
             )
 
-            feats_config_mod_specific_vision = LatentFeatsConfig(
-                args.mod_specific_vision_model,
-                args.mod_specific_vision_features,
-                args.mod_specific_vision_test_features,
+            feats_config_mod_specific_images = LatentFeatsConfig(
+                args.mod_specific_images_model,
+                args.mod_specific_images_features,
+                args.mod_specific_images_test_features,
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            null_distr_results_mod_specific_vision_file = get_null_distr_results_path(
-                subject, MOD_SPECIFIC_IMAGES,
-                feats_config_mod_specific_vision,
+            null_distr_results_mod_specific_images_file = get_null_distr_results_path(
+                subject, MODALITY_SPECIFIC_IMAGES,
+                feats_config_mod_specific_images,
                 args.resolution,
                 hemi
             )
 
-            feats_config_mod_specific_lang = LatentFeatsConfig(
-                args.mod_specific_lang_model,
-                args.mod_specific_lang_features,
-                args.mod_specific_lang_test_features,
+            feats_config_mod_specific_captions = LatentFeatsConfig(
+                args.mod_specific_captions_model,
+                args.mod_specific_captions_features,
+                args.mod_specific_captions_test_features,
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            null_distr_results_mod_specific_lang_file = get_null_distr_results_path(
-                subject, MOD_SPECIFIC_CAPTIONS,
-                feats_config_mod_specific_lang,
+            null_distr_results_mod_specific_captions_file = get_null_distr_results_path(
+                subject, MODALITY_SPECIFIC_CAPTIONS,
+                feats_config_mod_specific_captions,
                 args.resolution,
                 hemi
             )
 
             null_distribution_agnostic = pickle.load(open(null_distr_agnostic_file, 'rb'))
-            null_distribution_images = pickle.load(open(null_distr_results_mod_specific_vision_file, 'rb'))
-            null_distribution_captions = pickle.load(open(null_distr_results_mod_specific_lang_file, 'rb'))
+            null_distribution_images = pickle.load(open(null_distr_results_mod_specific_images_file, 'rb'))
+            null_distribution_captions = pickle.load(open(null_distr_results_mod_specific_captions_file, 'rb'))
 
             results_agnostic_file = get_results_file_path(
-                subject, MODE_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
+                subject, MODALITY_AGNOSTIC, feats_config_agnostic, args.resolution, hemi
             )
             nan_locations = pickle.load(open(results_agnostic_file, 'rb'))['nan_locations']
 
@@ -331,8 +332,8 @@ def calc_t_values_null_distr(args, out_path):
 
 def permutation_results_dir(args):
     return str(os.path.join(
-        ENCODING_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_vision_model,
-        args.mod_specific_vision_features, args.mod_specific_lang_model, args.mod_specific_lang_features,
+        ENCODING_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_images_model,
+        args.mod_specific_images_features, args.mod_specific_captions_model, args.mod_specific_captions_features,
         args.resolution,
     ))
 
@@ -448,13 +449,13 @@ def get_args():
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--mod-specific-vision-test-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=SELECT_DEFAULT)
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--mod-specific-lang-test-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
