@@ -16,7 +16,6 @@ from nilearn.surface import surface
 from scipy import stats
 from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
-from torchgen.packaged.autograd.gen_trace_type import SELECT
 from tqdm import tqdm
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, calc_significance_cutoff, \
