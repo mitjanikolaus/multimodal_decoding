@@ -3,6 +3,7 @@ from collections import Counter
 
 import numpy as np
 import sklearn
+import torch
 from tqdm import tqdm
 
 from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
@@ -68,7 +69,7 @@ def get_null_distr_results_path(subject, training_mode, feats_config, resolution
 
 
 def run(args):
-    if args.cuda:
+    if torch.cuda.is_available():
         print("Setting backend to cuda")
         backend = set_backend("torch_cuda")
     else:
@@ -272,8 +273,6 @@ def get_args():
     parser.add_argument("--n-alphas-batch", type=int, default=2)
 
     parser.add_argument("--overwrite", action='store_true', default=False)
-
-    parser.add_argument("--cuda", action='store_true', default=False)
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)

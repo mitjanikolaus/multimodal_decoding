@@ -60,7 +60,7 @@ def tensor_pairwise_accuracy(
 
 
 def run(args):
-    if args.cuda:
+    if torch.cuda.is_available():
         print("Setting backend to cuda")
         backend = set_backend("torch_cuda")
     else:
@@ -240,8 +240,6 @@ def get_args():
     parser.add_argument("--n-alphas-batch", type=int, default=1)
 
     parser.add_argument("--overwrite", action='store_true', default=False)
-
-    parser.add_argument("--cuda", action='store_true', default=False)
 
     return parser.parse_args()
 
