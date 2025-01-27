@@ -76,7 +76,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
                                       comp_cross_decoding_scores=True):
     results = dict()
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
-        preds_mod = predictions[stim_types == modality].copy()
+        preds_mod = predictions[stim_types == modality]
         latents_mod = latents[stim_types == modality]
 
         results[acc_metric_name] = pairwise_accuracy(
@@ -87,7 +87,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
         for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
                                                            [ACC_CROSS_CAPTIONS_TO_IMAGES,
                                                             ACC_CROSS_IMAGES_TO_CAPTIONS]):
-            preds_mod = predictions[stim_types == mod_preds].copy()
+            preds_mod = predictions[stim_types == mod_preds]
             latents_mod = latents[stim_types == mod_latents]
 
             results[acc_metric_name] = pairwise_accuracy(
@@ -109,16 +109,16 @@ def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, 
                                           standardize_predictions=True, standardize_latents=False, test_set_preds=None):
     results = dict()
 
-    results[ACC_IMAGERY] = pairwise_accuracy(
-        imagery_latents, imagery_predictions, metric, standardize_predictions, standardize_latents
-    )
-
     if test_set_preds is not None:
         all_preds = np.concatenate((imagery_predictions, test_set_preds))
         scaler = StandardScaler().fit(all_preds)
         imagery_predictions = scaler.transform(imagery_predictions)
 
         standardize_predictions = False  # Do not standardize again
+
+    results[ACC_IMAGERY] = pairwise_accuracy(
+        imagery_latents, imagery_predictions, metric, standardize_predictions, standardize_latents
+    )
 
     target_latents = np.concatenate((imagery_latents, latents))
     results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(

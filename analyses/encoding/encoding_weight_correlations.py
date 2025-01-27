@@ -10,7 +10,7 @@ from tqdm import tqdm
 from analyses.encoding.ridge_regression_encoding import get_results_file_path, get_null_distr_results_path, \
     calc_correlation_metrics
 from data import get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds, SPLIT_TRAIN, SPLIT_TEST, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
+    create_null_distr_shuffled_indices, SPLIT_TRAIN, SPLIT_TEST, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
     MODALITY_AGNOSTIC
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES
 from himalaya.backend import set_backend
@@ -67,7 +67,7 @@ def run(args):
     else:
         backend = set_backend("numpy")
 
-    random_seeds = create_null_distr_seeds(args.n_permutations_per_subject) if args.create_null_distr else None
+    random_seeds = create_null_distr_shuffled_indices(args.n_permutations_per_subject) if args.create_null_distr else None
 
     for subject in args.subjects:
         corrs, per_vertex_filters, mod_agnostic_weights = calc_feats_corr(subject, args)

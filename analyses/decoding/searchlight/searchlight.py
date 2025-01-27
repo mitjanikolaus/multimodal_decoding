@@ -21,7 +21,8 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_seeds, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, SPLIT_IMAGERY, \
+    create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, \
+    SPLIT_IMAGERY, \
     TRAINING_MODES
 
 from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
@@ -30,6 +31,8 @@ DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
+
+DERANGEMENTS_THREE_DIMS = [[1, 2, 0], [2, 0, 1]]
 
 
 def train_and_test(
@@ -41,7 +44,7 @@ def train_and_test(
         test_ids,
         imagery_ids,
         null_distr_dir=None,
-        random_seeds=None,
+        shuffled_indices=None,
         list_i=None,
 ):
     X_train = X[train_ids]
@@ -57,18 +60,14 @@ def train_and_test(
 
     if null_distr_dir is not None:
         scores_null_distr = []
-        for seed in random_seeds:
-            shuffled_indices = create_shuffled_indices(seed)
-            y_test_shuffled = y_test[shuffled_indices]
-
-            np.random.seed(seed)
-            assert len(y_imagery) == 3
-            derangements = [[1, 2, 0], [2, 0, 1]]  # possible permutations that are different from original
-            shuffled_indices_imagery = derangements[np.random.choice(len(derangements))]
+        for indices in shuffled_indices:
+            y_test_shuffled = y_test[indices]
+            shuffled_indices_imagery = DERANGEMENTS_THREE_DIMS[np.random.choice(len(DERANGEMENTS_THREE_DIMS))]
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
 
             scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred_test, TEST_STIM_TYPES,
-                                                       y_imagery_shuffled, y_pred_imagery)
+                                                       y_imagery_shuffled, y_pred_imagery,
+                                                       comp_cross_decoding_scores=False)
             scores_null_distr.append(scores)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
@@ -88,10 +87,8 @@ def custom_group_iter_search_light(
         test_ids,
         imagery_ids,
         thread_id,
-        # total,
-        # print_interval=500,
         null_distr_dir=None,
-        random_seeds=None,
+        shuffled_indices=None,
 ):
     results = []
     # t0 = time.time()
@@ -99,22 +96,9 @@ def custom_group_iter_search_light(
     for i, list_row in iterator:
         scores = train_and_test(
             estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
-            null_distr_dir=null_distr_dir, random_seeds=random_seeds, list_i=list_indices[i]
+            null_distr_dir=null_distr_dir, shuffled_indices=shuffled_indices, list_i=list_indices[i]
         )
         results.append(scores)
-        # if print_interval > 0:
-        #     if i % print_interval == 0:
-        #         # If there is only one job, progress information is fixed
-        #         crlf = "\r" if total == X.shape[1] else "\n"
-        #         percent = float(i) / X.shape[1]
-        #         percent = round(percent * 100, 2)
-        #         dt = time.time() - t0
-        #         # We use a max to avoid a division by zero
-        #         remaining = (100.0 - percent) / max(0.01, percent) * dt
-        #         sys.stderr.write(
-        #             f"Job #{thread_id}, processed {i}/{len(list_rows)} vertices "
-        #             f"({percent:0.2f}%, {round(remaining / 60)} minutes remaining){crlf}"
-        #         )
     return results
 
 
@@ -128,9 +112,8 @@ def custom_search_light(
         imagery_ids,
         n_jobs=-1,
         verbose=0,
-        # print_interval=500,
         null_distr_dir=None,
-        random_seeds=None,
+        shuffled_indices=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
     with warnings.catch_warnings():  # might not converge
@@ -146,10 +129,8 @@ def custom_search_light(
                 test_ids,
                 imagery_ids,
                 thread_id,
-                # len(A),
-                # print_interval,
                 null_distr_dir,
-                random_seeds.copy() if random_seeds is not None else None,
+                shuffled_indices if shuffled_indices is not None else None,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
@@ -157,9 +138,9 @@ def custom_search_light(
 
 
 def run(args):
-    random_seeds = None
+    shuffled_indices = None
     if args.create_null_distr:
-        random_seeds = create_null_distr_seeds(args.n_permutations_per_subject)
+        shuffled_indices = create_null_distr_shuffled_indices(args.n_permutations_per_subject)
 
     for subject in args.subjects:
         for training_mode in args.training_modes:
@@ -250,7 +231,7 @@ def run(args):
                 scores = custom_search_light(
                     X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
                     imagery_ids=imagery_ids, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
-                    random_seeds=random_seeds
+                    shuffled_indices=shuffled_indices
                 )
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
