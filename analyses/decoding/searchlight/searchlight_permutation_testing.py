@@ -76,7 +76,7 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
     return scores
 
 
-def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
+def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, hemis=HEMIS):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -84,7 +84,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False):
     per_subject_nan_locations = {subj: dict() for subj in args.subjects}
 
     for subject in tqdm(args.subjects):
-        for hemi in HEMIS:
+        for hemi in hemis:
             feats_config_mod_agnostic = LatentFeatsConfig(
                 args.model,
                 args.features,
