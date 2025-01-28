@@ -39,19 +39,19 @@ def get_condition_names(trial):
                 conditions.append('one_back')
             if trial['subj_resp'] != 0:
                 conditions.append('subj_resp')
-        # else:
-        if trial['condition_name'] != 0:
-            stim_id = trial['condition_name']
-            if trial['trial_type'] == 1:
-                if int(stim_id) in IDS_IMAGES_TEST:
-                    conditions.append(f"test_image_{stim_id}")
-                else:
-                    conditions.append(f"train_image_{stim_id}")
-            elif trial['trial_type'] == 2:
-                if int(stim_id) in IDS_IMAGES_TEST:
-                    conditions.append(f"test_caption_{stim_id}")
-                else:
-                    conditions.append(f"train_caption_{stim_id}")
+        else:
+            if trial['condition_name'] != 0:
+                stim_id = trial['condition_name']
+                if trial['trial_type'] == 1:
+                    if int(stim_id) in IDS_IMAGES_TEST:
+                        conditions.append(f"test_image_{stim_id}")
+                    else:
+                        conditions.append(f"train_image_{stim_id}")
+                elif trial['trial_type'] == 2:
+                    if int(stim_id) in IDS_IMAGES_TEST:
+                        conditions.append(f"test_caption_{stim_id}")
+                    else:
+                        conditions.append(f"train_caption_{stim_id}")
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
