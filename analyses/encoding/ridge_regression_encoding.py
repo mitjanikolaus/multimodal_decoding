@@ -17,7 +17,7 @@ import pickle
 
 from analyses.decoding.ridge_regression_decoding import standardize_fmri_betas, get_latent_features, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, standardize_latents
-from utils import SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, HEMIS, DATA_DIR, FMRI_BETAS_SURFACE_DIR
+from utils import SUBJECTS, DEFAULT_RESOLUTION, RESULTS_FILE, HEMIS, DATA_DIR, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL
 
 ENCODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_encoding/")
 ENCODING_RESULTS_DIR = os.path.join(DATA_DIR, "encoding_results")
