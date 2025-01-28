@@ -101,6 +101,21 @@ def run(args):
                         model, args.features, args.test_features, args.vision_features, args.lang_features
                     )
 
+                    print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                          f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
+                          f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
+                    print(f"train fMRI betas shape: {train_fmri_betas.shape}")
+                    print(f"test fMRI betas shape: {test_fmri_betas.shape}")
+                    print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
+
+                    run_str = get_run_str(args.betas_dir, feats_config, mask)
+                    results_file_path = os.path.join(
+                        RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
+                    )
+                    if os.path.isfile(results_file_path) and not args.overwrite:
+                        print(f"Skipping decoder training as results are already present at {results_file_path}")
+                        continue
+
                     train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
                     test_latents = get_latent_features(
                         feats_config, test_stim_ids, test_stim_types, test_mode=True
@@ -111,22 +126,7 @@ def run(args):
                     train_latents, test_latents, imagery_latents = standardize_latents(
                         train_latents, test_latents, imagery_latents
                     )
-
-                    print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
-                          f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
-                          f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
-                    print(f"train fMRI betas shape: {train_fmri_betas.shape}")
-                    print(f"test fMRI betas shape: {test_fmri_betas.shape}")
-                    print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
                     print(f"train latents shape: {train_latents.shape}")
-
-                    run_str = get_run_str(args.betas_dir, feats_config, mask)
-                    results_file_path = os.path.join(
-                        RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
-                    )
-                    if os.path.isfile(results_file_path) and not args.overwrite:
-                        print(f"Skipping decoder training as results are already present at {results_file_path}")
-                        continue
 
                     clf = KernelRidgeCV(
                         cv=NUM_CV_SPLITS,
