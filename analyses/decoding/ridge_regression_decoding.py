@@ -95,6 +95,9 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
                 )
+                print(f"train fMRI betas shape: {train_fmri_betas.shape}")
+                print(f"test fMRI betas shape: {test_fmri_betas.shape}")
+                print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
                 for model in args.models:
                     feats_config = LatentFeatsConfig(
@@ -104,9 +107,6 @@ def run(args):
                     print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
                           f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
                           f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
-                    print(f"train fMRI betas shape: {train_fmri_betas.shape}")
-                    print(f"test fMRI betas shape: {test_fmri_betas.shape}")
-                    print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
                     run_str = get_run_str(args.betas_dir, feats_config, mask)
                     results_file_path = os.path.join(
