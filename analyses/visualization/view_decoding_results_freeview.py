@@ -3,6 +3,7 @@ import glob
 import os
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
+from data import VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, \
     ACC_CROSS_CAPTIONS_TO_IMAGES
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, \
@@ -62,11 +63,13 @@ def get_args():
     parser.add_argument("--model", type=str, default='imagebind')
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 
     parser.add_argument("--mode", type=str, default='n_neighbors_750')
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)

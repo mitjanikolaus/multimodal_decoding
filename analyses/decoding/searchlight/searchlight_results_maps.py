@@ -7,9 +7,9 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy.stats import pearsonr
 
-from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir
+from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, METRIC_DIFF_CAPTIONS, \
@@ -21,7 +21,7 @@ def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_
     all_neighbors = []
     for subject in args.subjects:
         for hemi in HEMIS:
-            for metric in ["captions", "images"]:
+            for metric in [ACC_CAPTIONS, ACC_IMAGES]:
                 nans = nan_locations[subject][hemi]
                 all_scores.extend(scores[subject][hemi][metric][~nans])
                 all_neighbors.extend(n_neighbors[subject][hemi])
@@ -95,13 +95,18 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--model", type=str, default='imagebind')
-    parser.add_argument("--features", type=str, default="avg_test_avg")
+    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
+    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
+    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
@@ -112,7 +117,6 @@ def get_args():
 
 
 if __name__ == "__main__":
-    os.makedirs(SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
 
     create_gifti_results_maps(args)
