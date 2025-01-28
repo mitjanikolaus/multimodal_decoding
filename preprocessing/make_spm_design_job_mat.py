@@ -98,6 +98,9 @@ def load_event_files(tsv_files, log_file=None):
         condition_names.remove('null')
 
     print("Number of conditions: ", len(condition_names))
+    print("Number of train image conditions:", len([c for c in condition_names if "train_image" in c]))
+    print("Number of train caption conditions:", len([c for c in condition_names if "train_caption" in c]))
+
     print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
     print("Number of test conditions:", len([c for c in condition_names if "test" in c]))
 
