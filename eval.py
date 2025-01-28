@@ -106,7 +106,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
 
 
 def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
-                                          standardize_predictions=True, standardize_latents=False, test_set_preds=None):
+                                          standardize_predictions=False, standardize_latents=False, test_set_preds=None):
     results = dict()
 
     if test_set_preds is not None:
