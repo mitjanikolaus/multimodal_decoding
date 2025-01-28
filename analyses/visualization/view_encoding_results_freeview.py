@@ -22,23 +22,21 @@ def run(args):
     for hemi_fs in HEMIS_FS:
         cmd += f" -f $FREESURFER_HOME/subjects/fsaverage/surf/{hemi_fs}.inflated"
 
-        mask_paths = []
         for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_ENCODING]:
             args.metric = metric
-            mask_paths.append(
-                os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
+            mask_path = os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii")
 
             # if metric == METRIC_CROSS_ENCODING:
             #     clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
             #     for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
             #         mask_paths.append(file)
-
-        for mask_path in mask_paths:
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
+            else:
+                print(f'missing file: {mask_path}')
 
-        maps_paths = [os.path.join(results_dir, "results_maps", f"t_values_{metric}_{hemi_fs}.gii") for metric in METRICS]
-        for maps_path in maps_paths:
+        for metric in METRICS:
+            maps_path = os.path.join(results_dir, "results_maps", f"t_values_{metric}_{hemi_fs}.gii")
             if os.path.isfile(maps_path):
                 cmd += f":overlay={maps_path}:overlay_zorder=2"
 
