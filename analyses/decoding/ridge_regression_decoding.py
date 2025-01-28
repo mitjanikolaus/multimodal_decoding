@@ -17,7 +17,7 @@ from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTI
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR
+from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -218,7 +218,7 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
 
-    parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
+    parser.add_argument("--models", type=str, nargs='+', default=[DEFAULT_MODEL])
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,

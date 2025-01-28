@@ -44,6 +44,7 @@ HEMIS_FS = ['lh', 'rh']
 
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 
+DEFAULT_MODEL = "blip2"
 DEFAULT_RESOLUTION = "fsaverage7"
 
 METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'

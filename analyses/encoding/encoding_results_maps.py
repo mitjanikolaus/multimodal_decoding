@@ -13,7 +13,7 @@ from data import SELECT_DEFAULT, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, LatentFeatsConfig, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, \
     MODALITY_SPECIFIC_IMAGES
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION
+from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, DEFAULT_MODEL
 
 METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
 
@@ -147,14 +147,14 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
     parser.add_argument("--mod-specific-images-test-features", type=str, default=SELECT_DEFAULT)
 
-    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-captions-features", type=str, default=SELECT_DEFAULT)
     parser.add_argument("--mod-specific-captions-test-features", type=str, default=SELECT_DEFAULT)
 

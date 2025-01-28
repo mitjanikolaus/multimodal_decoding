@@ -20,7 +20,7 @@ from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig,
 from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     METRIC_CROSS_ENCODING, METRIC_CROSS_ENCODING_MAX
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_DIFF_IMAGES, \
-    METRIC_DIFF_CAPTIONS, FS_HEMI_NAMES, export_to_gifti
+    METRIC_DIFF_CAPTIONS, FS_HEMI_NAMES, export_to_gifti, DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
@@ -443,17 +443,17 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
     parser.add_argument("--mod-specific-images-test-features", type=str, default=SELECT_DEFAULT)
 
-    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-captions-features", type=str, default=SELECT_DEFAULT)
     parser.add_argument("--mod-specific-captions-test-features", type=str, default=SELECT_DEFAULT)
 

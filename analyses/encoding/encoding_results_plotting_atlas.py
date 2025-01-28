@@ -13,7 +13,7 @@ from analyses.encoding.encoding_permutation_testing import permutation_results_d
 from analyses.visualization.plotting_utils import plot_surf_stat_map_custom, plot_surf_contours_custom
 from eval import METRIC_CROSS_ENCODING
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, append_images, \
-    save_plot_and_crop_img
+    save_plot_and_crop_img, DEFAULT_MODEL
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -236,13 +236,13 @@ def create_composite_image(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)

@@ -6,7 +6,8 @@ import numpy as np
 
 from analyses.cluster_analysis import calc_significance_cutoff, compute_results_clusters
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
-from utils import HEMIS, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
+from utils import HEMIS, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
+    DEFAULT_MODEL
 
 
 def split_clusters(args):
@@ -40,13 +41,13 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)

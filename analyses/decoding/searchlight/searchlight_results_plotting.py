@@ -17,7 +17,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC
     load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
     get_hparam_suffix
 from eval import ACC_CAPTIONS, ACC_IMAGES
-from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, save_plot_and_crop_img, append_images
+from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, save_plot_and_crop_img, append_images, DEFAULT_MODEL
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 0.8
@@ -392,13 +392,13 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-vision-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-vision-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
 
-    parser.add_argument("--mod-specific-lang-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-lang-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)

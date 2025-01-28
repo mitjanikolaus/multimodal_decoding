@@ -26,7 +26,7 @@ from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_
     FEATURE_COMBINATION_CHOICES, LANG_FEATS_ONLY, VISION_FEATS_ONLY, LatentFeatsConfig
 from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_DIFF_CAPTIONS, \
-    METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
+    METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 10
 
@@ -672,17 +672,17 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
     parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
-    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
     parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 

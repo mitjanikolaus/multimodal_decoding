@@ -6,7 +6,8 @@ from analyses.encoding.encoding_permutation_testing import permutation_results_d
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
     METRIC_CROSS_ENCODING
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
+    DEFAULT_MODEL
 
 METRICS = [CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
            CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
@@ -56,17 +57,17 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--p-values-threshold", type=float, default=0.05)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
 
-    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
     parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
-    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
     parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 

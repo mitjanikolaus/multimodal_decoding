@@ -9,7 +9,7 @@ from data import fMRIDataModule, LatentFeatsConfig, TRAINING_MODES, MODALITY_AGN
 from new_decoding.decoder import Decoder, test_set_pairwise_acc_scores
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, \
     VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, get_run_str
-from utils import SUBJECTS, RESULTS_FILE, PYTORCH_DECODER_OUT_DIR, FMRI_BETAS_DIR
+from utils import SUBJECTS, RESULTS_FILE, PYTORCH_DECODER_OUT_DIR, FMRI_BETAS_DIR, DEFAULT_MODEL
 import lightning as pl
 
 DEFAULT_NUM_WORKERS = 10
@@ -145,7 +145,7 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
 
-    parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
+    parser.add_argument("--models", type=str, nargs='+', default=[DEFAULT_MODEL])
 
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)

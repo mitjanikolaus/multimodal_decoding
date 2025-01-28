@@ -7,8 +7,8 @@ from data import VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, \
     ACC_CROSS_CAPTIONS_TO_IMAGES
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, \
-    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
-
+    METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
+    DEFAULT_MODEL
 
 METRIC_AGNOSTIC = 'agnostic'
 METRICS = [ACC_CAPTIONS, ACC_IMAGES, METRIC_AGNOSTIC, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
@@ -60,14 +60,14 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--p-values-threshold", type=float, default=0.05)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default="avg_test_avg")
 
-    parser.add_argument("--mod-specific-images-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
     parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
-    parser.add_argument("--mod-specific-captions-model", type=str, default='imagebind')
+    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
     parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 

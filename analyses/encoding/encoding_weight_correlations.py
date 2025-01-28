@@ -20,7 +20,7 @@ import pickle
 
 from analyses.decoding.ridge_regression_decoding import standardize_fmri_betas, get_latent_features, \
     LANG_FEAT_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, FEATURE_COMBINATION_CHOICES, standardize_latents
-from utils import SUBJECTS, DEFAULT_RESOLUTION, HEMIS, FMRI_BETAS_SURFACE_DIR
+from utils import SUBJECTS, DEFAULT_RESOLUTION, HEMIS, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL
 
 
 def calc_feats_corr(subject, args):
@@ -221,7 +221,7 @@ def get_args():
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
-    parser.add_argument("--model", type=str, default='imagebind')
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
 
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)

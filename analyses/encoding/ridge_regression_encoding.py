@@ -251,7 +251,7 @@ def get_args():
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
-    parser.add_argument("--models", type=str, nargs='+', default=['imagebind'])
+    parser.add_argument("--models", type=str, nargs='+', default=[DEFAULT_MODEL])
 
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
