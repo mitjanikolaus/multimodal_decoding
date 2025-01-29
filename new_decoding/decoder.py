@@ -27,14 +27,14 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
 
 def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=False,
                       standardize_latents=False):
-    if predictions.is_cuda:
-        predictions = predictions.cpu()
-    if latents.is_cuda:
-        latents = latents.cpu()
     if standardize_predictions:
-        predictions = StandardScaler().fit_transform(predictions)
+        means = predictions.mean(dim=1, keepdim=True)
+        stds = predictions.std(dim=1, keepdim=True)
+        predictions = (predictions - means) / stds
     if standardize_latents:
-        latents = StandardScaler().fit_transform(latents)
+        means = latents.mean(dim=1, keepdim=True)
+        stds = latents.std(dim=1, keepdim=True)
+        latents = (latents - means) / stds
 
     dist_mat = get_distance_matrix(predictions, latents, metric)
     return dist_mat_to_pairwise_acc(dist_mat)
