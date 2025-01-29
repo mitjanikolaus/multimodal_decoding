@@ -630,7 +630,7 @@ class DecodingDataset(Dataset):
 
         betas = betas.astype('float32').reshape(-1)
         if self.betas_transform is not None:
-            betas = self.betas_transform.transform(betas)
+            betas = self.betas_transform.transform(betas.reshape(1, -1)).squeeze()
 
         betas = np.nan_to_num(betas)
 
@@ -639,7 +639,7 @@ class DecodingDataset(Dataset):
 
         latents = get_latent_feats(self.latent_features, stim_id, stim_type, self.latent_feats_config)
         if self.latent_feats_transform is not None:
-            latents = self.latent_feats_transform.transform(latents)
+            latents = self.latent_feats_transform.transform(latents.reshape(1, -1)).squeeze()
 
         if self.split == SPLIT_TRAIN:
             return betas, latents
