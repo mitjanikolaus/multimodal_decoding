@@ -551,8 +551,7 @@ def get_latents_scaler_path(subject, feats_config, mode):
 
 
 def standardize_latents(train_latents, test_latents, imagery_latents=None):
-    scaler = StandardScaler()
-    scaler.fit(train_latents)
+    scaler = StandardScaler().fit(train_latents)
     train_latents = scaler.transform(train_latents)
     test_latents = scaler.transform(test_latents)
 
@@ -631,7 +630,7 @@ class DecodingDataset(Dataset):
 
         betas = betas.astype('float32').reshape(-1)
         if self.betas_transform is not None:
-            betas = self.betas_transform(betas)
+            betas = self.betas_transform.transform(betas)
 
         betas = np.nan_to_num(betas)
 
@@ -640,7 +639,7 @@ class DecodingDataset(Dataset):
 
         latents = get_latent_feats(self.latent_features, stim_id, stim_type, self.latent_feats_config)
         if self.latent_feats_transform is not None:
-            latents = self.latent_feats_transform(latents)
+            latents = self.latent_feats_transform.transform(latents)
 
         if self.split == SPLIT_TRAIN:
             return betas, latents
