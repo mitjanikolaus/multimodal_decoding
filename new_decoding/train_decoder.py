@@ -166,9 +166,6 @@ def get_args():
     parser.add_argument("--mse-loss-weight", type=float, default=DEFAULT_MSE_LOSS_WEIGHT)
     parser.add_argument("--cosine-loss", action='store_true', default=False)
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs='+',
-                        default=[1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
-
     parser.add_argument("--overwrite", action='store_true', default=False)
 
     return parser.parse_args()
