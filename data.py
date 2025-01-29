@@ -477,6 +477,7 @@ def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
 
 def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):
     if surface:
+        betas_dir += "_surface_level"
         betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, resolution,
                                                                       "left")
         betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, resolution, "right")
