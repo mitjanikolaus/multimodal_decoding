@@ -388,7 +388,7 @@ def get_fmri_betas_nan_locations(betas_dir, subject, training_mode, split, feats
         ds = DecodingDataset(betas_dir, subject, split, latent_features, feats_config, graymatter_mask,
                              mode=training_mode)
         if split == SPLIT_TRAIN:
-            fmri_beta = next(iter(ds))
+            fmri_beta, _ = next(iter(ds))
         else:
             fmri_beta, _, _, _ = next(iter(ds))
 
