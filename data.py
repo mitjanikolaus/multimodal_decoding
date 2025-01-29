@@ -379,13 +379,13 @@ def get_fmri_betas_nan_locations_path(subject):
     return os.path.join(FMRI_NORMALIZATIONS_DIR, "normalizations", subject, 'betas_nan_locations.p')
 
 
-def get_fmri_betas_nan_locations(betas_dir, subject, training_mode, split, latent_feats_config):
+def get_fmri_betas_nan_locations(betas_dir, subject, training_mode, split, feats_config):
     nan_locations_path = get_fmri_betas_nan_locations_path(subject)
     if not os.path.isfile(nan_locations_path):
         os.makedirs(os.path.dirname(nan_locations_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
-        latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, latent_feats_config,
+        latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
+        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, feats_config,
                              graymatter_mask)
         if split == SPLIT_TRAIN:
             fmri_beta = next(iter(ds))
@@ -399,14 +399,14 @@ def get_fmri_betas_nan_locations(betas_dir, subject, training_mode, split, laten
     return nan_locations
 
 
-def get_fmri_betas_standardization_scaler(betas_dir, subject, training_mode, split, latent_feats_config):
+def get_fmri_betas_standardization_scaler(betas_dir, subject, training_mode, split, feats_config):
     scaler_path = get_fmri_betas_scaler_path(subject, training_mode)
     if not os.path.isfile(scaler_path):
         print(f"Calculating mean and std over whole {training_mode} set betas for standardization.")
         os.makedirs(os.path.dirname(scaler_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
-        latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, latent_feats_config,
+        latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
+        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, feats_config,
                              graymatter_mask)
         if split == SPLIT_TRAIN:
             fmri_betas = [beta for beta, _ in tqdm(iter(ds), total=len(ds))]
@@ -545,7 +545,7 @@ def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
 
 def get_latents_scaler_path(subject, feats_config, mode):
     scaler_file_name = (
-        f'scaler_{feats_config.model_name}_{feats_config.features}_{feats_config.vision_features}_'
+        f'scaler_{feats_config.model}_{feats_config.features}_{feats_config.vision_features}_'
         f'{feats_config.lang_features}_{mode}.p')
     return os.path.join(LATENT_FEATURES_NORMALIZATIONS_DIR, subject, scaler_file_name)
 
@@ -582,14 +582,14 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     return train_fmri_betas, test_fmri_betas
 
 
-def get_latent_feats_standardization_scaler(betas_dir, subject, latent_feats_config, training_mode):
-    scaler_path = get_latents_scaler_path(subject, latent_feats_config, training_mode)
+def get_latent_feats_standardization_scaler(betas_dir, subject, feats_config, training_mode):
+    scaler_path = get_latents_scaler_path(subject, feats_config, training_mode)
     if not os.path.isfile(scaler_path):
         print("Calculating mean and std over whole train set latents for standardization.")
         os.makedirs(os.path.dirname(scaler_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
-        latent_features = pickle.load(open(model_features_file_path(latent_feats_config.model_name), 'rb'))
-        train_ds = DecodingDataset(betas_dir, subject, training_mode, SPLIT_TRAIN, latent_features, latent_feats_config,
+        latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
+        train_ds = DecodingDataset(betas_dir, subject, training_mode, SPLIT_TRAIN, latent_features, feats_config,
                                    graymatter_mask)
         train_latents = np.array([latents for _, latents in tqdm(iter(train_ds), total=len(train_ds))])
 
@@ -724,7 +724,7 @@ class fMRIDataModule(pl.LightningDataModule):
         self.betas_nan_locations = get_fmri_betas_nan_locations(betas_dir, subject, training_mode, SPLIT_TRAIN,
                                                                 feats_config)
         print("Loading pickle with latent feats..", end=" ")
-        latent_features = pickle.load(open(model_features_file_path(feats_config.model_name), 'rb'))
+        latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
         print("done.")
 
         self.data = DecodingDataset(
