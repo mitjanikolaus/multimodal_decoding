@@ -179,6 +179,8 @@ def run(args):
                         "imagery_predictions": imagery_predicted_latents,
                         "latents": test_latents,
                         "imagery_latents": imagery_latents,
+                        "surface": args.surface,
+                        "resolution": args.resolution,
                     }
                     scores = calc_all_pairwise_accuracy_scores(
                         test_latents, test_predicted_latents, test_stim_types,
