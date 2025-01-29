@@ -129,7 +129,7 @@ class Decoder(pl.LightningModule):
         preds = self.test_outputs["preds"]
         stim_types = np.array(self.test_outputs["stim_types"])
 
-        results = test_set_pairwise_acc_scores(targets, preds, stim_types)
+        results = test_set_pairwise_acc_scores(targets, preds, stim_types, standardize_predictions=True)
         self.log_dict(results)
         results_no_standardization = test_set_pairwise_acc_scores(
             targets, preds, stim_types, standardize_predictions=False
