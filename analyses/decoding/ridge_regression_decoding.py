@@ -89,9 +89,6 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask(
                     mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
                 )
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = remove_nans(
-                    [train_fmri_betas, test_fmri_betas, imagery_fmri_betas]
-                )
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
                 )
