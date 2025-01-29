@@ -11,7 +11,7 @@ import torch
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, remove_nans, MODALITY_AGNOSTIC, TRAINING_MODES, get_fmri_voxel_data, \
+    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, get_fmri_voxel_data, \
     SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
