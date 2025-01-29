@@ -385,8 +385,8 @@ def get_fmri_betas_nan_locations(betas_dir, subject, training_mode, split, feats
         os.makedirs(os.path.dirname(nan_locations_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
-        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, feats_config,
-                             graymatter_mask)
+        ds = DecodingDataset(betas_dir, subject, split, latent_features, feats_config, graymatter_mask,
+                             mode=training_mode)
         if split == SPLIT_TRAIN:
             fmri_beta = next(iter(ds))
         else:
@@ -406,8 +406,8 @@ def get_fmri_betas_standardization_scaler(betas_dir, subject, training_mode, spl
         os.makedirs(os.path.dirname(scaler_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
-        ds = DecodingDataset(betas_dir, subject, training_mode, split, latent_features, feats_config,
-                             graymatter_mask)
+        ds = DecodingDataset(betas_dir, subject, split, latent_features, feats_config,
+                             graymatter_mask, mode=training_mode)
         if split == SPLIT_TRAIN:
             fmri_betas = [beta for beta, _ in tqdm(iter(ds), total=len(ds))]
         else:
@@ -589,8 +589,8 @@ def get_latent_feats_standardization_scaler(betas_dir, subject, feats_config, tr
         os.makedirs(os.path.dirname(scaler_path), exist_ok=True)
         graymatter_mask = load_graymatter_mask(subject)
         latent_features = pickle.load(open(model_features_file_path(feats_config.model), 'rb'))
-        train_ds = DecodingDataset(betas_dir, subject, training_mode, SPLIT_TRAIN, latent_features, feats_config,
-                                   graymatter_mask)
+        train_ds = DecodingDataset(betas_dir, subject, SPLIT_TRAIN, latent_features, feats_config,
+                                   graymatter_mask, mode=training_mode)
         train_latents = np.array([latents for _, latents in tqdm(iter(train_ds), total=len(train_ds))])
 
         scaler = StandardScaler().fit(train_latents)
