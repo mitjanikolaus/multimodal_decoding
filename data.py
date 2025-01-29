@@ -475,6 +475,18 @@ def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
     return nn_latent_vectors
 
 
+def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):
+    if surface:
+        betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, resolution,
+                                                                      "left")
+        betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, resolution, "right")
+
+        betas = np.concatenate((betas_left_hemi, betas_right_hemi))
+        return betas, stim_ids, stim_types
+    else:
+        return get_fmri_voxel_data(betas_dir, subject, split, mode)
+
+
 def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode)
 
@@ -548,7 +560,7 @@ def create_shuffled_indices(seed):
 def apply_mask(mask_name, betas_list, args):
     if mask_name is not None:
         if not args.surface:
-            raise NotImplementedError()
+            raise NotImplementedError("The --surface option needs to be specified when using masks")
         mask = pickle.load(open(mask_name, 'rb'))
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]

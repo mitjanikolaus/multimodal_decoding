@@ -11,19 +11,18 @@ import torch
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, get_fmri_voxel_data, \
-    SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY
+    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, get_fmri_data
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL
+from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
-def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=None, hemi=None):
+def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=None):
     run_str = f"{feats_config.model}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
@@ -42,9 +41,6 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=No
 
     if surface:
         run_str += f"_surface_{resolution}"
-
-    if hemi:
-        run_str += f"_{hemi}_hemi"
 
     return run_str
 
@@ -68,21 +64,27 @@ def run(args):
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
-            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_voxel_data(
+            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
                 args.betas_dir,
                 subject,
                 SPLIT_TRAIN,
                 training_mode,
+                surface=args.surface,
+                resolution=args.resolution,
             )
-            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_voxel_data(
+            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
                 args.betas_dir,
                 subject,
                 SPLIT_TEST,
+                surface=args.surface,
+                resolution=args.resolution,
             )
-            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_voxel_data(
+            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
                 args.betas_dir,
                 subject,
                 SPLIT_IMAGERY,
+                surface=args.surface,
+                resolution=args.resolution,
             )
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
@@ -105,7 +107,7 @@ def run(args):
                           f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
                           f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
 
-                    run_str = get_run_str(args.betas_dir, feats_config, mask)
+                    run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution)
                     results_file_path = os.path.join(
                         RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
@@ -226,8 +228,6 @@ def get_args():
     parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
-    parser.add_argument("--masks", type=str, nargs='+', default=[None])
-
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
@@ -235,6 +235,10 @@ def get_args():
     parser.add_argument("--n-targets-batch", type=int, default=3000)
     parser.add_argument("--n-targets-batch-refit", type=int, default=3000)
     parser.add_argument("--n-alphas-batch", type=int, default=1)
+
+    parser.add_argument("--surface", action='store_true', default=False)
+    parser.add_argument("--resolution", default=DEFAULT_RESOLUTION)
+    parser.add_argument("--masks", nargs='+', type=str, default=[None])
 
     parser.add_argument("--overwrite", action='store_true', default=False)
 
