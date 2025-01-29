@@ -32,8 +32,7 @@ def run(args):
                       f"MODEL: {model_name} | FEATURES: {feats_config.features} {feats_config.vision_features} "
                       f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
 
-                run_str = get_run_str(
-                    args.betas_dir, model_name, feats_config, mask=None, surface=False, resolution=None)
+                run_str = get_run_str(args.betas_dir, feats_config)
                 results_file_path = os.path.join(
                     PYTORCH_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                 )
@@ -92,10 +91,10 @@ def run(args):
                     # "alpha": best_alpha,
                     "model": model_name,
                     "subject": subject,
-                    "features": features,
-                    "test_features": test_features,
-                    "vision_features": vision_features,
-                    "lang_features": lang_features,
+                    # "features": features,
+                    # "test_features": test_features,
+                    # "vision_features": vision_features,
+                    # "lang_features": lang_features,
                     "training_mode": training_mode,
                     # "num_voxels": test_fmri_betas.shape[1],
                     # "cv_results": clf.cv_results_,

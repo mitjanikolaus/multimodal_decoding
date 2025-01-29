@@ -570,11 +570,9 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
     if imagery_fmri_betas is not None:
         imagery_fmri_betas = imagery_fmri_betas[:, ~nan_locations]
 
-    scaler = StandardScaler()
-    scaler.fit(train_fmri_betas)
+    scaler = StandardScaler().fit(train_fmri_betas)
 
     train_fmri_betas = scaler.transform(train_fmri_betas)
-
     test_fmri_betas = scaler.transform(test_fmri_betas)
 
     if imagery_fmri_betas is not None:
@@ -605,9 +603,9 @@ def get_latent_feats_standardization_scaler(betas_dir, subject, latent_feats_con
 
 
 class DecodingDataset(Dataset):
-    def __init__(self, betas_dir, subject, mode, split, latent_features, latent_feats_config, graymatter_mask,
-                 betas_transform=None, latent_feats_transform=None, betas_nan_locations=None):
-        self.data_paths, self.stim_ids, self.stim_types = get_fmri_data_paths(betas_dir, subject, mode, split)
+    def __init__(self, betas_dir, subject, split, latent_features, latent_feats_config, graymatter_mask,
+                 betas_transform=None, latent_feats_transform=None, betas_nan_locations=None, mode=MODALITY_AGNOSTIC):
+        self.data_paths, self.stim_ids, self.stim_types = get_fmri_data_paths(betas_dir, subject, split, mode)
         self.betas_transform = betas_transform
         self.betas_nan_locations = betas_nan_locations
         self.graymatter_mask = graymatter_mask
@@ -731,8 +729,8 @@ class fMRIDataModule(pl.LightningDataModule):
 
         self.data = DecodingDataset(
             self.betas_dir,
-            self.subject, self.training_mode, SPLIT_TRAIN, latent_features, feats_config, self.graymatter_mask,
-            self.betas_transform, self.latents_transform, self.betas_nan_locations,
+            self.subject, SPLIT_TRAIN, latent_features, feats_config, self.graymatter_mask,
+            self.betas_transform, self.latents_transform, self.betas_nan_locations, mode=self.training_mode
         )
         indices = list(range(len(self.data)))
         val_split_size = round(len(self.data) / num_cv_splits)
@@ -742,12 +740,12 @@ class fMRIDataModule(pl.LightningDataModule):
         self.ds_val = Subset(self.data, val_indices)
         self.ds_test = DecodingDataset(
             self.betas_dir,
-            self.subject, TESTING_MODE, SPLIT_TEST, latent_features, feats_config, self.graymatter_mask,
+            self.subject, SPLIT_TEST, latent_features, feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform, self.betas_nan_locations,
         )
         self.ds_imagery = DecodingDataset(
             self.betas_dir,
-            self.subject, IMAGERY, SPLIT_IMAGERY, latent_features, feats_config, self.graymatter_mask,
+            self.subject, SPLIT_IMAGERY, latent_features, feats_config, self.graymatter_mask,
             self.betas_transform, self.latents_transform, self.betas_nan_locations,
         )
 
