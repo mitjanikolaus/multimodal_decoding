@@ -482,7 +482,7 @@ def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=Fal
                                                                       "left")
         betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, resolution, "right")
 
-        betas = np.concatenate((betas_left_hemi, betas_right_hemi))
+        betas = np.hstack((betas_left_hemi, betas_right_hemi))
         return betas, stim_ids, stim_types
     else:
         return get_fmri_voxel_data(betas_dir, subject, split, mode)
