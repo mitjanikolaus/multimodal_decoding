@@ -28,9 +28,9 @@ def get_distance_matrix(predictions, originals, metric='cosine'):
 def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predictions=False,
                       standardize_latents=False):
     if predictions.is_cuda:
-        predictions = predictions.cpu().numpy()
+        predictions = predictions.cpu()
     if latents.is_cuda:
-        latents = latents.cpu().numpy()
+        latents = latents.cpu()
     if standardize_predictions:
         predictions = StandardScaler().fit_transform(predictions)
     if standardize_latents:
