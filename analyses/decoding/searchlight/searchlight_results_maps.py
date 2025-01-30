@@ -75,10 +75,9 @@ def create_gifti_results_maps(args):
     METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
                ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]
 
-    subject_scores_avgd = dict()
+    subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
     for metric in METRICS:
         for hemi in HEMIS:
-            subject_scores_avgd[hemi] = dict()
             for subj in args.subjects:
                 if metric in subject_scores[subj][hemi]:
                     score_hemi = subject_scores[subj][hemi][metric]
