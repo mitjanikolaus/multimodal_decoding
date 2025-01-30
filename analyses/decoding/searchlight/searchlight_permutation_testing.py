@@ -21,7 +21,8 @@ from tqdm import tqdm
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, \
     calc_significance_cutoff, create_masks
 from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
-from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, get_results_dir
+from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, get_results_dir, \
+    searchlight_mode_from_args
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LANG_FEATS_ONLY, VISION_FEATS_ONLY, LatentFeatsConfig
 from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES
@@ -93,7 +94,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 logging=False
             )
             results_mod_agnostic_dir = get_results_dir(
-                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution, args.mode,
+                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
+                searchlight_mode_from_args(args)
             )
             results_mod_agnostic_file = os.path.join(
                 results_mod_agnostic_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
@@ -114,7 +116,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
             )
             results_mod_specific_images_dir = get_results_dir(
                 feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
-                args.mode,
+                searchlight_mode_from_args(args),
             )
             results_mod_specific_images_file = os.path.join(
                 results_mod_specific_images_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
@@ -134,7 +136,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
             )
             results_mod_specific_captions_dir = get_results_dir(
                 feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
-                args.mode,
+                searchlight_mode_from_args(args),
             )
             results_mod_specific_captions_file = os.path.join(
                 results_mod_specific_captions_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
@@ -401,7 +403,8 @@ def load_null_distr_per_subject_scores(args):
                 logging=False
             )
             results_mod_agnostic_dir = get_results_dir(
-                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution, args.mode,
+                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
+                searchlight_mode_from_args(args),
             )
             results_mod_agnostic_file = os.path.join(
                 results_mod_agnostic_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
@@ -418,7 +421,7 @@ def load_null_distr_per_subject_scores(args):
             )
             results_mod_specific_images_dir = get_results_dir(
                 feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
-                args.mode,
+                searchlight_mode_from_args(args),
             )
             results_mod_specific_images_file = os.path.join(
                 results_mod_specific_images_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
@@ -433,7 +436,7 @@ def load_null_distr_per_subject_scores(args):
             )
             results_mod_specific_captions_dir = get_results_dir(
                 feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
-                args.mode,
+                searchlight_mode_from_args(args),
             )
             results_mod_specific_captions_file = os.path.join(
                 results_mod_specific_captions_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
@@ -608,7 +611,7 @@ def permutation_results_dir(args):
     return str(os.path.join(
         SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, args.model, args.features, args.mod_specific_images_model,
         args.mod_specific_images_features, args.mod_specific_captions_model, args.mod_specific_captions_features,
-        args.resolution, args.mode
+        args.resolution, searchlight_mode_from_args(args)
     ))
 
 
@@ -689,7 +692,9 @@ def get_args():
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_750')
+
+    parser.add_argument("--radius", type=float, default=None)
+    parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)

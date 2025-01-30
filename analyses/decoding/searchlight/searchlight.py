@@ -218,7 +218,7 @@ def run(args):
                 model = Ridge(alpha=args.l2_regularization_alpha)
 
                 results_dir = get_results_dir(
-                    feats_config, hemi, subject, training_mode, args.resolution, mode_from_args(args)
+                    feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args)
                 )
                 null_distr_dir = None
                 if args.create_null_distr:
@@ -268,7 +268,7 @@ def run(args):
                 gc.collect()
 
 
-def mode_from_args(args):
+def searchlight_mode_from_args(args):
     if args.radius is not None:
         return f"radius_{args.radius}"
     else:
