@@ -103,7 +103,7 @@ def run(args):
                         model, args.features, args.test_features, args.vision_features, args.lang_features
                     )
 
-                    print(f"\nTRAIN MODE: {training_mode} | MASK: {mask} | SUBJECT: {subject} | "
+                    print(f"\nTRAIN MODE: {training_mode} | MASK: {os.path.basename(mask)} | SUBJECT: {subject} | "
                           f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
                           f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
 
