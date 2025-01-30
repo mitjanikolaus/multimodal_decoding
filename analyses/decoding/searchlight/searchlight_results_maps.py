@@ -96,9 +96,6 @@ def create_gifti_results_maps(args):
             else:
                 print(f"missing metric: {args.subjects[-1]} {metric} {hemi}")
 
-    print(list(subject_scores_avgd["left"].keys()))
-    print(list(subject_scores_avgd["right"].keys()))
-
     for hemi in HEMIS:
         for subj in args.subjects:
             subject_scores[subj][hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
