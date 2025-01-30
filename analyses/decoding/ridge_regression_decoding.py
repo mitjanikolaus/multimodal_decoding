@@ -36,6 +36,9 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=No
         elif "p_values" in mask:
             mask_name = os.path.basename(mask).replace(".p", "")
             run_str += f"_mask_{mask_name}"
+        elif "cluster" in mask:
+            mask_name = os.path.basename(mask).replace(".p", "")
+            run_str += f"_mask_{mask_name}"
         else:
             raise RuntimeError(f"Unsupported mask: {mask}")
 
