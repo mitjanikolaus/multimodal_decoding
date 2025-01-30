@@ -73,7 +73,7 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def compute_results_clusters(values, results_dir, hparam_suffix, metric, resolution):
+def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution):
     t_values_path = os.path.join(results_dir, "t_values.p")
     t_values = pickle.load(open(t_values_path, "rb"))
 
@@ -140,7 +140,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
         val = np.quantile(max_test_statistic_distr, 1 - thresh)
         print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
 
-    print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff}")
+    print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
 
     return significance_cutoff, max_test_statistic_distr
 
@@ -169,8 +169,7 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resoluti
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
     for hemi in HEMIS:
-        path_out = os.path.join(results_maps_path,
-                                f"tfce_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(results_maps_path, f"tfce_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(tfce_values[hemi][metric], path_out)
 
     # p value masks
@@ -181,7 +180,7 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resoluti
         masks[hemi][np.isnan(p_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
-    compute_results_clusters(masks, results_dir, hparam_suffix, metric, resolution)
+    create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution)
 
 
 def get_edge_lengths_dicts_based_on_edges(resolution):

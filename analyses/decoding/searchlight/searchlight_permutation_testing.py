@@ -14,15 +14,14 @@ import pickle
 
 from nilearn.surface import surface
 from scipy import stats
-from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, \
     calc_significance_cutoff, create_masks
 from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
-from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, get_results_dir, \
-    searchlight_mode_from_args
+from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, \
+    searchlight_mode_from_args, get_results_file_path
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LANG_FEATS_ONLY, VISION_FEATS_ONLY, LatentFeatsConfig
 from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES
@@ -93,12 +92,9 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_agnostic_dir = get_results_dir(
+            results_mod_agnostic_file = get_results_file_path(
                 feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
-                searchlight_mode_from_args(args)
-            )
-            results_mod_agnostic_file = os.path.join(
-                results_mod_agnostic_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+                searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
             results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
             scores_agnostic = results_agnostic['scores']
@@ -114,12 +110,9 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_specific_images_dir = get_results_dir(
+            results_mod_specific_images_file = get_results_file_path(
                 feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
-                searchlight_mode_from_args(args),
-            )
-            results_mod_specific_images_file = os.path.join(
-                results_mod_specific_images_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+                searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
             if os.path.isfile(results_mod_specific_images_file):
                 scores_images = pickle.load(open(results_mod_specific_images_file, 'rb'))['scores']
@@ -134,12 +127,9 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_specific_captions_dir = get_results_dir(
+            results_mod_specific_captions_file = get_results_file_path(
                 feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
-                searchlight_mode_from_args(args),
-            )
-            results_mod_specific_captions_file = os.path.join(
-                results_mod_specific_captions_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+                searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
             if os.path.isfile(results_mod_specific_captions_file):
                 scores_captions = pickle.load(open(results_mod_specific_captions_file, 'rb'))['scores']
@@ -159,77 +149,6 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
         return per_subject_scores, per_subject_nan_locations, per_subject_n_neighbors
     else:
         return per_subject_scores
-
-
-def compute_adjacency_matrix(surface, values='ones'):
-    """Computes the adjacency matrix for a surface.
-    The adjacency matrix is a matrix with one row and one column for each vertex
-    such that the value of a cell `(u,v)` in the matrix is 1 if nodes `u` and
-    `v` are adjacent and 0 otherwise.
-    Parameters
-    ----------
-    surface : Surface-like
-        The surface whose adjacency matrix is to be computed.
-    values : { 'euclidean' | 'inveuclidean' | 'ones'}, optional
-        If `values` is `'ones'` (the default), then the returned matrix
-        contains uniform values in the cells representing edges. If the value is
-        `'euclidean'` then the cells contain the edge length of the represented
-        edge. If the value is `'inveuclidean'`, then the inverse of the distances
-        are returned.
-    dtype : numpy dtype-like or None, optional
-        The dtype that should be used for the returned sparse matrix.
-    Returns
-    -------
-    matrix : scipy.sparse.csr_matrix
-        A sparse matrix representing the edge relationships in `surface`.
-    """
-    n = surface.coordinates.shape[0]
-    edges = np.vstack([surface.faces[:, [0, 1]],
-                       surface.faces[:, [0, 2]],
-                       surface.faces[:, [1, 2]]])
-
-    bigcol = edges[:, 0] > edges[:, 1]
-    lilcol = ~bigcol
-    edges = np.concatenate([edges[bigcol, 0] + edges[bigcol, 1] * n,
-                            edges[lilcol, 1] + edges[lilcol, 0] * n])
-    edges = np.unique(edges)
-    (u, v) = (edges // n, edges % n)
-    # Calculate distances between pairs. We use this as a weighting to make sure that
-    # smoothing takes into account the distance between each vertex neighbor
-    if values == 'euclidean' or values == 'inveuclidean':
-        coords = surface.coordinates
-        edge_lens = np.sqrt(np.sum((coords[u, :] - coords[v, :]) ** 2, axis=1))
-        if values == 'inveuclidean':
-            edge_lens = 1 / edge_lens
-    elif values == 'ones':
-        edge_lens = np.ones(edges.shape)
-    else:
-        raise ValueError(f"unrecognized values argument: {values}")
-    # We can now make a sparse matrix.
-    ee = np.concatenate([edge_lens, edge_lens])
-    uv = np.concatenate([u, v])
-    vu = np.concatenate([v, u])
-    return csr_matrix((ee, (uv, vu)), shape=(n, n))
-
-
-def _compute_vertex_neighborhoods(surface):
-    """For each vertex, compute the neighborhood.
-    The neighborhood is  defined as all the vertices that are connected by a
-    face.
-
-    Parameters
-    ----------
-    surface : Surface-like
-        The surface whose vertex neighborhoods are to be computed.
-
-    Returns
-    -------
-    neighbors : list
-        A list of all the vertices that are connected to each vertex
-    """
-    from scipy.sparse import find
-    matrix = compute_adjacency_matrix(surface)
-    return [find(row)[1] for row in matrix]
 
 
 def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
@@ -402,12 +321,9 @@ def load_null_distr_per_subject_scores(args):
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_agnostic_dir = get_results_dir(
+            results_mod_agnostic_file = get_results_file_path(
                 feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
-                searchlight_mode_from_args(args),
-            )
-            results_mod_agnostic_file = os.path.join(
-                results_mod_agnostic_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+                searchlight_mode_from_args(args), args.l2_regularization_alpha,
             )
             results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
             nan_locations = results_agnostic['nan_locations']
@@ -419,12 +335,9 @@ def load_null_distr_per_subject_scores(args):
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_specific_images_dir = get_results_dir(
+            results_mod_specific_images_file = get_results_file_path(
                 feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
-                searchlight_mode_from_args(args),
-            )
-            results_mod_specific_images_file = os.path.join(
-                results_mod_specific_images_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+                searchlight_mode_from_args(args), args.l2_regularization_alpha,
             )
 
             feats_config_mod_specific_captions = LatentFeatsConfig(
@@ -434,12 +347,9 @@ def load_null_distr_per_subject_scores(args):
                 SELECT_DEFAULT, SELECT_DEFAULT,
                 logging=False
             )
-            results_mod_specific_captions_dir = get_results_dir(
+            results_mod_specific_captions_file = get_results_file_path(
                 feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
-                searchlight_mode_from_args(args),
-            )
-            results_mod_specific_captions_file = os.path.join(
-                results_mod_specific_captions_dir, f'alpha_{str(args.l2_regularization_alpha)}.p'
+                searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
             )
 
             def load_null_distr_scores(base_path):

@@ -4,7 +4,7 @@ import os
 import nibabel
 import numpy as np
 
-from analyses.cluster_analysis import calc_significance_cutoff, compute_results_clusters
+from analyses.cluster_analysis import calc_significance_cutoff, create_results_cluster_masks
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
 from utils import HEMIS, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     DEFAULT_MODEL
@@ -33,7 +33,7 @@ def split_clusters(args):
         tfce_vals_hemi.darrays[0].data[np.isnan(tfce_vals_hemi.darrays[0].data)] = 0
         tfce_vals[hemi] = tfce_vals_hemi.darrays[0].data
 
-    compute_results_clusters(tfce_vals, args)
+    create_results_cluster_masks(tfce_vals, args)
 
 
 def get_args():

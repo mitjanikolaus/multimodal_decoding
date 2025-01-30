@@ -220,6 +220,8 @@ def run(args):
                 results_dir = get_results_dir(
                     feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args)
                 )
+                os.makedirs(results_dir, exist_ok=True)
+
                 null_distr_dir = None
                 if args.create_null_distr:
                     null_distr_dir = os.path.join(results_dir, "null_distr")
@@ -261,8 +263,11 @@ def run(args):
                 )
 
                 results_dict["scores"] = scores
-                results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
-                pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
+                results_file_path = get_results_file_path(
+                    feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args),
+                    args.l2_regularization_alpha
+                )
+                pickle.dump(results_dict, open(results_file_path, 'wb'))
 
                 del X, latents, train_fmri
                 gc.collect()
@@ -280,8 +285,12 @@ def get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode
         SEARCHLIGHT_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats, subject, resolution,
         hemi, mode
     )
-    os.makedirs(results_dir, exist_ok=True)
     return results_dir
+
+
+def get_results_file_path(feats_config, hemi, subject, training_mode, resolution, mode, l2_regularization_alpha):
+    results_dir = get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode)
+    return os.path.join(results_dir, f"alpha_{str(l2_regularization_alpha)}.p")
 
 
 def get_args():
