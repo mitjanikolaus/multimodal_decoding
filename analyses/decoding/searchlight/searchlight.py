@@ -138,15 +138,15 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
-def get_adjacency_matrix(hemi, nan_locations=None, radius=None, num_neighbors=None):
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+def get_adjacency_matrix(hemi, resolution, nan_locations=None, radius=None, num_neighbors=None):
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
 
     infl_mesh = fsaverage[f"infl_{hemi}"]
     coords, _ = surface.load_surf_mesh(infl_mesh)
     if nan_locations is not None:
         coords = coords[~nan_locations]
 
-    nn = neighbors.NearestNeighbors(radius=args.radius)
+    nn = neighbors.NearestNeighbors(radius=radius)
 
     nearest_neighbors = None
     distances = None
@@ -225,7 +225,7 @@ def run(args):
                 X = np.concatenate((train_fmri, test_fmri, imagery_fmri))
 
                 adjacency, n_neighbors, distances = get_adjacency_matrix(
-                    hemi, nan_locations, args.radius, args.n_neighbors
+                    hemi, args.resolution, nan_locations, args.radius, args.n_neighbors
                 )
 
                 model = Ridge(alpha=args.l2_regularization_alpha)

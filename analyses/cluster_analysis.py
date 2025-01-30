@@ -92,7 +92,7 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     for hemi in HEMIS:
         print(f"\nclusters for {hemi} hemi")
 
-        adj, _, _ = get_adjacency_matrix(hemi, radius=radius, num_neighbors=n_neighbors)
+        adj, _, _ = get_adjacency_matrix(hemi, resolution, radius=radius, num_neighbors=n_neighbors)
         # TODO use adjacency
 
         mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
