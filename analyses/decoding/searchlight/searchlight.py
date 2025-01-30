@@ -1,4 +1,5 @@
 import argparse
+import gc
 import sys
 import time
 import warnings
@@ -262,6 +263,9 @@ def run(args):
                 results_dict["scores"] = scores
                 results_file_name = f"alpha_{args.l2_regularization_alpha}.p"
                 pickle.dump(results_dict, open(os.path.join(results_dir, results_file_name), 'wb'))
+
+                del X, latents, train_fmri
+                gc.collect()
 
 
 def mode_from_args(args):
