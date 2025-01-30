@@ -121,12 +121,27 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map, path_out)
 
+            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.p"
+            path_out = os.path.join(results_maps_path, f"cluster_masks{hparam_suffix}", fname)
+            os.makedirs(os.path.dirname(path_out), exist_ok=True)
+            mask = {hemi: np.repeat(np.nan, p_values[hemi].shape) for hemi in HEMIS}
+            mask[hemi] = cluster_map
+            pickle.dump(mask, open(path_out, "wb"))
+
             cluster_map_extended = np.repeat(np.nan, p_values[hemi].shape)
             cluster_map_extended[np.unique([adj[cluster_idx] for cluster_idx in cluster])] = 1
             fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
             path_out = os.path.join(results_maps_path, f"clusters_extended{hparam_suffix}", fname)
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map_extended, path_out)
+
+            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.p"
+            path_out = os.path.join(results_maps_path, f"cluster_extended_masks{hparam_suffix}", fname)
+            os.makedirs(os.path.dirname(path_out), exist_ok=True)
+            mask = {hemi: np.repeat(np.nan, p_values[hemi].shape) for hemi in HEMIS}
+            mask[hemi] = cluster_map_extended
+            pickle.dump(mask, open(path_out, "wb"))
+
 
     df = pd.DataFrame.from_records(clusters_df, index=["hemi", "id"])
     print(df.style.format(precision=3).to_latex(hrules=True))
