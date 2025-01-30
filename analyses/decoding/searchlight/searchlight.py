@@ -138,6 +138,34 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
+def get_adjacency_matrix(hemi, nan_locations, args):
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+
+    infl_mesh = fsaverage[f"infl_{hemi}"]
+    coords, _ = surface.load_surf_mesh(infl_mesh)
+    coords = coords[~nan_locations]
+
+    nn = neighbors.NearestNeighbors(radius=args.radius)
+
+    n_neighbors = None
+    distances = None
+    if args.radius is not None:
+        adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
+                     nn.fit(coords).radius_neighbors_graph(coords).toarray()]
+        n_neighbors = [len(adj) for adj in adjacency]
+
+        print(
+            f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} "
+            f"(max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
+    elif args.n_neighbors is not None:
+        distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
+        print(f"Max radius {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+        print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
+    else:
+        raise RuntimeError("Need to set either radius or n_neighbors arg!")
+    return adjacency, n_neighbors, distances
+
+
 def run(args):
     shuffled_indices = None
     if args.create_null_distr:
@@ -145,7 +173,6 @@ def run(args):
 
     for subject in args.subjects:
         for training_mode in args.training_modes:
-            fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
             for hemi in args.hemis:
                 train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(
                     args.betas_dir, subject, SPLIT_TRAIN, training_mode, args.resolution, hemi
@@ -191,29 +218,7 @@ def run(args):
 
                 X = np.concatenate((train_fmri, test_fmri, imagery_fmri))
 
-                infl_mesh = fsaverage[f"infl_{hemi}"]
-                coords, _ = surface.load_surf_mesh(infl_mesh)
-                coords = coords[~nan_locations]
-
-                nn = neighbors.NearestNeighbors(radius=args.radius)
-                results_dict = {}
-                results_dict["nan_locations"] = nan_locations
-                if args.radius is not None:
-                    adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
-                                 nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-                    n_neighbors = [len(adj) for adj in adjacency]
-                    results_dict["n_neighbors"] = n_neighbors
-                    print(
-                        f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} "
-                        f"(max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
-                elif args.n_neighbors is not None:
-                    distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-                    results_dict["distances"] = distances
-                    print(f"Max radius {args.n_neighbors} neighbors: {distances.max():.2f}mm")
-                    print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
-                else:
-                    raise RuntimeError("Need to set either radius or n_neighbors arg!")
-                results_dict["adjacency"] = adjacency
+                adjacency, n_neighbors, distances = get_adjacency_matrix(hemi, nan_locations, args)
 
                 model = Ridge(alpha=args.l2_regularization_alpha)
 
@@ -262,7 +267,13 @@ def run(args):
                     f"Max score: {np.max(imagery_whole_test_set_scores):.2f}"
                 )
 
-                results_dict["scores"] = scores
+                results_dict = {
+                    "nan_locations": nan_locations,
+                    "adjacency": adjacency,
+                    "n_neighbors": n_neighbors,
+                    "distances": distances,
+                    "scores": scores,
+                }
                 results_file_path = get_results_file_path(
                     feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args),
                     args.l2_regularization_alpha
