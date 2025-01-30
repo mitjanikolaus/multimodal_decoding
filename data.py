@@ -6,14 +6,11 @@ from glob import glob
 
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from torch.utils.data import DataLoader, Dataset, Subset
 import nibabel as nib
-from tqdm import tqdm, trange
+from tqdm import trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import model_features_file_path, FMRI_NORMALIZATIONS_DIR, LATENT_FEATURES_NORMALIZATIONS_DIR, HEMIS, \
-    DEFAULT_RESOLUTION
-import lightning as pl
+from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
@@ -558,11 +555,11 @@ def create_shuffled_indices(seed):
     return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
 
 
-def apply_mask(mask_name, betas_list, args):
-    if mask_name is not None:
+def apply_mask(mask_path, betas_list, args):
+    if mask_path is not None:
         if not args.surface:
             raise NotImplementedError("The --surface option needs to be specified when using masks")
-        mask = pickle.load(open(mask_name, 'rb'))
+        mask = pickle.load(open(mask_path, 'rb'))
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
