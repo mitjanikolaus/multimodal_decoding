@@ -9,11 +9,10 @@ from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir, add_searchlight_permutation_args
-from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY
-from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, METRIC_DIFF_CAPTIONS, \
-    METRIC_DIFF_IMAGES, DEFAULT_MODEL, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
+from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, \
+    METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
@@ -90,12 +89,13 @@ def create_gifti_results_maps(args):
                     print(f"missing metric: {subj} {metric} {hemi}")
 
             if metric in subject_scores[args.subjects[-1]][hemi]:
-                subject_scores_avgd[hemi][metric] = np.mean( #TODO at least 3 datapoints?
+                subject_scores_avgd[hemi][metric] = np.mean(  # TODO at least 3 datapoints?
                     [subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.mean(subject_scores_avgd[hemi][metric])}")
                 path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 export_to_gifti(subject_scores_avgd[hemi][metric], path_out)
-
+            else:
+                print(f"missing metric: {subj} {metric} {hemi}")
 
     for hemi in HEMIS:
         for subj in args.subjects:
