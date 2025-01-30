@@ -93,7 +93,6 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
         print(f"\nclusters for {hemi} hemi")
 
         adj, _, _ = get_adjacency_matrix(hemi, resolution, radius=radius, num_neighbors=n_neighbors)
-        # TODO use adjacency
 
         mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
         results = calc_clusters(values[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
@@ -117,16 +116,17 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
 
             cluster_map = np.repeat(np.nan, p_values[hemi].shape)
             cluster_map[list(cluster)] = values[hemi][cluster]
-
             fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
             path_out = os.path.join(results_maps_path, f"clusters{hparam_suffix}", fname)
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map, path_out)
 
-            # cluster_mask = {h: np.zeros_like(cluster_map, dtype=np.uint8) for h in HEMIS}
-            # cluster_mask[hemi][list(cluster)] = 1
-            # path_out = os.path.join(masks_path, f"p_values_thresh_{args.p_value_threshold}_{hemi}_cluster_{i}.p")
-            # pickle.dump(cluster_mask, open(path_out, mode='wb'))
+            cluster_map_extended = np.repeat(np.nan, p_values[hemi].shape)
+            cluster_map_extended[np.unique([adj[cluster_idx] for cluster_idx in cluster])] = 1
+            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            path_out = os.path.join(results_maps_path, f"clusters_extended{hparam_suffix}", fname)
+            os.makedirs(os.path.dirname(path_out), exist_ok=True)
+            export_to_gifti(cluster_map_extended, path_out)
 
     df = pd.DataFrame.from_records(clusters_df, index=["hemi", "id"])
     print(df.style.format(precision=3).to_latex(hrules=True))
