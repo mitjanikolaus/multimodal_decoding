@@ -7,6 +7,7 @@ import pandas as pd
 from nilearn import datasets
 from nilearn.surface import surface
 
+from analyses.decoding.searchlight.searchlight import get_adjacency_matrix
 from utils import export_to_gifti, HEMIS, FS_HEMI_NAMES
 
 
@@ -73,7 +74,7 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution):
+def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors):
     t_values_path = os.path.join(results_dir, "t_values.p")
     t_values = pickle.load(open(t_values_path, "rb"))
 
@@ -90,6 +91,10 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     clusters_df = []
     for hemi in HEMIS:
         print(f"\nclusters for {hemi} hemi")
+
+        adj, _, _ = get_adjacency_matrix(hemi, radius=radius, num_neighbors=n_neighbors)
+        # TODO use adjacency
+
         mesh = surface.load_surf_mesh(fsaverage[f"white_{hemi}"])
         results = calc_clusters(values[hemi], threshold=1e-8, edge_lengths=edge_lengths[hemi], return_clusters=True)
         clusters = results['clusters']
@@ -145,7 +150,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
     return significance_cutoff, max_test_statistic_distr
 
 
-def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resolution):
+def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resolution, radius, n_neighbors):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
 
@@ -160,8 +165,7 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resoluti
     log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     for hemi in HEMIS:
-        path_out = os.path.join(results_maps_path,
-                                f"p_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(results_maps_path, f"p_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(log_10_p_values[hemi], path_out)
 
     # tfce values
@@ -180,7 +184,7 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resoluti
         masks[hemi][np.isnan(p_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
-    create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution)
+    create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors)
 
 
 def get_edge_lengths_dicts_based_on_edges(resolution):

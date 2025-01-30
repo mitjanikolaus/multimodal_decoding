@@ -138,32 +138,33 @@ def custom_search_light(
     return np.concatenate(scores)
 
 
-def get_adjacency_matrix(hemi, nan_locations, args):
+def get_adjacency_matrix(hemi, nan_locations=None, radius=None, num_neighbors=None):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     infl_mesh = fsaverage[f"infl_{hemi}"]
     coords, _ = surface.load_surf_mesh(infl_mesh)
-    coords = coords[~nan_locations]
+    if nan_locations is not None:
+        coords = coords[~nan_locations]
 
     nn = neighbors.NearestNeighbors(radius=args.radius)
 
-    n_neighbors = None
+    nearest_neighbors = None
     distances = None
-    if args.radius is not None:
+    if radius is not None:
         adjacency = [np.argwhere(arr == 1)[:, 0] for arr in
                      nn.fit(coords).radius_neighbors_graph(coords).toarray()]
-        n_neighbors = [len(adj) for adj in adjacency]
+        nearest_neighbors = [len(adj) for adj in adjacency]
 
         print(
-            f"Number of neighbors within {args.radius}mm radius: {np.mean(n_neighbors):.1f} "
-            f"(max: {np.max(n_neighbors):.0f} | min: {np.min(n_neighbors):.0f})")
-    elif args.n_neighbors is not None:
-        distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=args.n_neighbors)
-        print(f"Max radius {args.n_neighbors} neighbors: {distances.max():.2f}mm")
+            f"Number of neighbors within {radius}mm radius: {np.mean(nearest_neighbors):.1f} "
+            f"(max: {np.max(nearest_neighbors):.0f} | min: {np.min(nearest_neighbors):.0f})")
+    elif num_neighbors is not None:
+        distances, adjacency = nn.fit(coords).kneighbors(coords, n_neighbors=num_neighbors)
+        print(f"Max radius {num_neighbors} neighbors: {distances.max():.2f}mm")
         print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
     else:
-        raise RuntimeError("Need to set either radius or n_neighbors arg!")
-    return adjacency, n_neighbors, distances
+        raise RuntimeError("Need to set either radius or num_neighbors arg!")
+    return adjacency, nearest_neighbors, distances
 
 
 def run(args):
@@ -218,7 +219,9 @@ def run(args):
 
                 X = np.concatenate((train_fmri, test_fmri, imagery_fmri))
 
-                adjacency, n_neighbors, distances = get_adjacency_matrix(hemi, nan_locations, args)
+                adjacency, n_neighbors, distances = get_adjacency_matrix(
+                    hemi, nan_locations, args.radius, args.n_neighbors
+                )
 
                 model = Ridge(alpha=args.l2_regularization_alpha)
 

@@ -39,11 +39,15 @@ def run(args):
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
                 cmd += f":overlay={mask_path}:overlay_zorder=2"
+            else:
+                print(f"missing mask: {mask_path}")
 
         maps_paths = [os.path.join(results_dir, "acc_results_maps", f"{metric}_{hemi_fs}.gii") for metric in METRICS]
         for maps_path in maps_paths:
             if os.path.isfile(maps_path):
                 cmd += f":overlay={maps_path}:overlay_zorder=2"
+            else:
+                print(f"missing acc result map: {maps_path}")
 
         annot_paths = [os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.{atlas_name}") for
                        atlas_name in ["aparc.annot", "aparc.a2009s.annot"]]
@@ -72,7 +76,9 @@ def get_args():
     parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
     parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 
-    parser.add_argument("--mode", type=str, default='n_neighbors_750')
+    parser.add_argument("--radius", type=float, default=None)
+    parser.add_argument("--n-neighbors", type=int, default=None)
+
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 

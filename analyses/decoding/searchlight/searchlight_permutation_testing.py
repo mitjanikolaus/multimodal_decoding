@@ -629,4 +629,4 @@ if __name__ == "__main__":
     create_null_distribution(args)
     calc_test_statistics(args)
     create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
-                 args.resolution)
+                 args.resolution, args.radius, args.n_neighbors)
