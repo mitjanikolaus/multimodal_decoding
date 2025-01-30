@@ -15,7 +15,7 @@ from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
 from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_IMAGES, \
     METRIC_DIFF_CAPTIONS, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
-    get_hparam_suffix
+    get_hparam_suffix, add_searchlight_permutation_args
 from eval import ACC_CAPTIONS, ACC_IMAGES
 from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, save_plot_and_crop_img, append_images, DEFAULT_MODEL
 
@@ -389,29 +389,10 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+    parser = add_searchlight_permutation_args(parser)
 
-    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
-
-    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default="avg_test_avg")
-
-    parser.add_argument("--mod-specific-vision-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
-
-    parser.add_argument("--mod-specific-lang-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
-
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
-
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_750')
     parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)
-
-    parser.add_argument("--tfce-h", type=float, default=2.0)
-    parser.add_argument("--tfce-e", type=float, default=1.0)
-
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
 

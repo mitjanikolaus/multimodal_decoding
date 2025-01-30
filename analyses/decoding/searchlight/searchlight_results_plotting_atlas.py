@@ -10,8 +10,9 @@ import os
 import pickle
 
 from analyses.cluster_analysis import calc_significance_cutoff
-from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
-    get_hparam_suffix
+from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
+    permutation_results_dir, \
+    get_hparam_suffix, add_searchlight_permutation_args
 from analyses.decoding.searchlight.searchlight_results_plotting import DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
@@ -236,30 +237,9 @@ def create_composite_image(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default="avg_test_avg")
-
-    parser.add_argument("--mod-specific-vision-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
-
-    parser.add_argument("--mod-specific-lang-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
-
-    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
-
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
-
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_200')
-
-    parser.add_argument("--tfce-h", type=float, default=2.0)
-    parser.add_argument("--tfce-e", type=float, default=1.0)
-
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
+    parser = add_searchlight_permutation_args(parser)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
-
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
 
     return parser.parse_args()

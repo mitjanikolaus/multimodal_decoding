@@ -163,7 +163,7 @@ def get_adjacency_matrix(hemi, nan_locations=None, radius=None, num_neighbors=No
         print(f"Max radius {num_neighbors} neighbors: {distances.max():.2f}mm")
         print(f"Mean radius: {distances.max(axis=1).mean():.2f}mm")
     else:
-        raise RuntimeError("Need to set either radius or num_neighbors arg!")
+        raise RuntimeError("Need to set either radius or n_neighbors arg!")
     return adjacency, nearest_neighbors, distances
 
 
@@ -207,6 +207,11 @@ def run(args):
 
                 latents = np.concatenate((train_latents, test_latents, imagery_latents))
 
+                results_dir = get_results_dir(
+                    feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args)
+                )
+                os.makedirs(results_dir, exist_ok=True)
+
                 print("Hemisphere: ", hemi)
                 print(f"train_fmri shape: {train_fmri.shape}")
                 print(f"test_fmri shape: {test_fmri.shape}")
@@ -224,11 +229,6 @@ def run(args):
                 )
 
                 model = Ridge(alpha=args.l2_regularization_alpha)
-
-                results_dir = get_results_dir(
-                    feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args)
-                )
-                os.makedirs(results_dir, exist_ok=True)
 
                 null_distr_dir = None
                 if args.create_null_distr:
@@ -290,8 +290,10 @@ def run(args):
 def searchlight_mode_from_args(args):
     if args.radius is not None:
         return f"radius_{args.radius}"
-    else:
+    elif args.n_neighbors is not None:
         return f"n_neighbors_{args.n_neighbors}"
+    else:
+        raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
 
 def get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode):

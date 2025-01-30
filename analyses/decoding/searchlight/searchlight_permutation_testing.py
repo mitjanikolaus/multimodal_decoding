@@ -580,9 +580,7 @@ def create_null_distribution(args):
         pickle.dump(tfce_values, open(tfce_values_null_distribution_path, 'wb'))
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-
+def add_searchlight_permutation_args(parser):
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
@@ -611,10 +609,17 @@ def get_args():
     parser.add_argument("--tfce-dh", type=float, default=0.1)
     parser.add_argument("--tfce-clip", type=float, default=100)
 
+    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
+
+    return parser
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser = add_searchlight_permutation_args(parser)
+
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
-
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
 

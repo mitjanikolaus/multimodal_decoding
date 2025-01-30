@@ -8,7 +8,7 @@ import seaborn as sns
 from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
-    permutation_results_dir
+    permutation_results_dir, add_searchlight_permutation_args
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, \
     ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY
@@ -139,29 +139,7 @@ def create_gifti_results_maps(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
-
-    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
-
-    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
-    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
-
-    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
-    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
-
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
-
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-
-    parser.add_argument("--radius", type=float, default=None)
-    parser.add_argument("--n-neighbors", type=int, default=None)
+    parser = add_searchlight_permutation_args(parser)
 
     return parser.parse_args()
 

@@ -5,9 +5,9 @@ import nibabel
 import numpy as np
 
 from analyses.cluster_analysis import calc_significance_cutoff, create_results_cluster_masks
-from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix
-from utils import HEMIS, FS_HEMI_NAMES, DEFAULT_RESOLUTION, SUBJECTS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
-    DEFAULT_MODEL
+from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
+    add_searchlight_permutation_args
+from utils import HEMIS, FS_HEMI_NAMES
 
 
 def split_clusters(args):
@@ -17,7 +17,8 @@ def split_clusters(args):
 
     tfce_vals = dict()
     for hemi in HEMIS:
-        tfce_vals_path = os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
+        tfce_vals_path = os.path.join(results_dir, "results_maps",
+                                      f"tfce_values{get_hparam_suffix(args)}_{FS_HEMI_NAMES[hemi]}.gii")
         tfce_vals_hemi = nibabel.load(tfce_vals_path)
 
         if hemi == 'left':
@@ -33,34 +34,13 @@ def split_clusters(args):
         tfce_vals_hemi.darrays[0].data[np.isnan(tfce_vals_hemi.darrays[0].data)] = 0
         tfce_vals[hemi] = tfce_vals_hemi.darrays[0].data
 
-    create_results_cluster_masks(tfce_vals, args)
+    create_results_cluster_masks(tfce_vals, permutation_results_dir(args), get_hparam_suffix(args), args.metric,
+                                 args.resolution, args.radius, args.n_neighbors)
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
-
-    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default="avg_test_avg")
-
-    parser.add_argument("--mod-specific-vision-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-vision-features", type=str, default="vision_test_vision")
-
-    parser.add_argument("--mod-specific-lang-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-lang-features", type=str, default="lang_test_lang")
-
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
-
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--mode", type=str, default='n_neighbors_750')
-    parser.add_argument("--per-subject-plots", default=False, action=argparse.BooleanOptionalAction)
-    parser.add_argument("--plot-null-distr", default=False, action=argparse.BooleanOptionalAction)
-
-    parser.add_argument("--tfce-h", type=float, default=2.0)
-    parser.add_argument("--tfce-e", type=float, default=1.0)
-
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
+    parser = add_searchlight_permutation_args(parser)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
 
