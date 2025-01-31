@@ -116,13 +116,12 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
 
             cluster_map = np.repeat(np.nan, p_values[hemi].shape)
             cluster_map[list(cluster)] = values[hemi][cluster]
-            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
-            path_out = os.path.join(results_maps_path, f"clusters{hparam_suffix}", fname)
+            fname = f"{metric}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            path_out = os.path.join(results_maps_path, f"clusters", fname)
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map, path_out)
 
-            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.p"
-            path_out = os.path.join(results_maps_path, f"cluster_masks{hparam_suffix}", fname)
+            path_out = os.path.join(results_maps_path, f"cluster_masks", fname.replace(".gii", ".p"))
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             mask = {hemi: np.repeat(np.nan, p_values[hemi].shape) for hemi in HEMIS}
             mask[hemi] = cluster_map
@@ -130,13 +129,12 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
 
             cluster_map_extended = np.repeat(np.nan, p_values[hemi].shape)
             cluster_map_extended[np.unique([adj[cluster_idx] for cluster_idx in cluster])] = 1
-            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
-            path_out = os.path.join(results_maps_path, f"clusters_extended{hparam_suffix}", fname)
+            fname = f"{metric}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            path_out = os.path.join(results_maps_path, f"clusters_extended", fname)
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map_extended, path_out)
 
-            fname = f"{FS_HEMI_NAMES[hemi]}_cluster_{i}.p"
-            path_out = os.path.join(results_maps_path, f"cluster_extended_masks{hparam_suffix}", fname)
+            path_out = os.path.join(results_maps_path, f"cluster_extended_masks", fname.replace(".gii", ".p"))
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             mask = {hemi: np.repeat(np.nan, p_values[hemi].shape) for hemi in HEMIS}
             mask[hemi] = cluster_map_extended
