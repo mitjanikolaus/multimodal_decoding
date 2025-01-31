@@ -239,8 +239,8 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
-    parser.add_argument("--n-targets-batch", type=int, default=3000)
-    parser.add_argument("--n-targets-batch-refit", type=int, default=3000)
+    parser.add_argument("--n-targets-batch", type=int, default=1024)
+    parser.add_argument("--n-targets-batch-refit", type=int, default=1024)
     parser.add_argument("--n-alphas-batch", type=int, default=1)
 
     parser.add_argument("--surface", action='store_true', default=False)
