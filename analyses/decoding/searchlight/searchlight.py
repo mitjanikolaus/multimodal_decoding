@@ -3,8 +3,10 @@ import gc
 import sys
 import time
 import warnings
+from collections import Counter
 
 import numpy as np
+import sklearn
 from joblib import Parallel, delayed
 from nilearn import datasets
 from nilearn.decoding.searchlight import GroupIterator
@@ -15,16 +17,17 @@ from sklearn.exceptions import ConvergenceWarning
 import os
 import pickle
 
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import Ridge, RidgeCV
 from tqdm import tqdm
 
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, ACC_IMAGERY, \
-    ACC_IMAGERY_WHOLE_TEST, standardize_latents
+    ACC_IMAGERY_WHOLE_TEST, standardize_latents, tensor_pairwise_accuracy
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, \
     SPLIT_IMAGERY, \
     TRAINING_MODES
+from himalaya.kernel_ridge import KernelRidgeCV
 
 from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
 
@@ -58,6 +61,9 @@ def train_and_test(
 
     y_pred_test = estimator.predict(X_test)
     y_pred_imagery = estimator.predict(X_imagery)
+
+    best_alphas = np.round(estimator.best_alphas_)
+    print(f"Best alphas: {Counter(best_alphas)}\n")
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -228,7 +234,20 @@ def run(args):
                     hemi, args.resolution, nan_locations, args.radius, args.n_neighbors
                 )
 
-                model = Ridge(alpha=args.l2_regularization_alpha)
+                # model = Ridge(alpha=args.l2_regularization_alpha)
+                model = KernelRidgeCV(
+                    cv=5,
+                    alphas=args.l2_regularization_alphas,
+                    solver_params=dict(
+                        n_targets_batch=128,
+                        n_alphas_batch=1,
+                        n_targets_batch_refit=128,
+                        score_func=tensor_pairwise_accuracy,
+                    )
+                )
+                # skip input data checking to limit memory use
+                # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
+                sklearn.set_config(assume_finite=True)
 
                 null_distr_dir = None
                 if args.create_null_distr:
@@ -333,7 +352,7 @@ def get_args():
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs="+", default=[1e-1,1,1e2,1e4])
 
     parser.add_argument("--radius", type=float, default=None)
     parser.add_argument("--n-neighbors", type=int, default=None)
