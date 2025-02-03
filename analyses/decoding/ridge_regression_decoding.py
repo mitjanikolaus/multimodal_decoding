@@ -133,6 +133,10 @@ def run(args):
                     )
                     print(f"train latents shape: {train_latents.shape}")
 
+                    # skip input data checking to limit memory use
+                    # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
+                    sklearn.set_config(assume_finite=True)
+
                     clf = KernelRidgeCV(
                         cv=NUM_CV_SPLITS,
                         alphas=args.l2_regularization_alphas,
@@ -141,15 +145,12 @@ def run(args):
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             score_func=tensor_pairwise_accuracy,
+                            local_alpha=False,
                         )
                     )
 
                     train_latents = train_latents.astype(np.float32)
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
-
-                    # skip input data checking to limit memory use
-                    # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
-                    sklearn.set_config(assume_finite=True)
 
                     start = time.time()
                     clf.fit(train_fmri_betas, train_latents)
