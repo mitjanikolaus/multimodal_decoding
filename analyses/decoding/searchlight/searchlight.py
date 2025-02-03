@@ -297,8 +297,8 @@ def searchlight_mode_from_args(args):
 
 def get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode):
     results_dir = os.path.join(
-        SEARCHLIGHT_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats, subject, resolution,
-        hemi, mode
+        SEARCHLIGHT_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats,
+        feats_config.vision_features, feats_config.lang_features, subject, resolution, hemi, mode
     )
     return results_dir
 
