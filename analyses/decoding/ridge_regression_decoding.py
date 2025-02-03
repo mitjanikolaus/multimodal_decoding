@@ -139,7 +139,6 @@ def run(args):
                     clf = KernelRidgeCV(
                         cv=NUM_CV_SPLITS,
                         alphas=args.l2_regularization_alphas,
-                        solver="svd",
                         solver_params=dict(
                             n_targets_batch=args.n_targets_batch,
                             n_alphas_batch=args.n_alphas_batch,
