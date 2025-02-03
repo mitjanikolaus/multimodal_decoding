@@ -53,7 +53,8 @@ def tensor_pairwise_accuracy(
 ):
     if torch.is_tensor(latents) and latents.is_cuda:
         latents = latents.cpu().numpy()
-        predictions = predictions.cpu().numpy().squeeze()
+        predictions = predictions.cpu().numpy()
+    predictions = predictions.squeeze()
 
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
