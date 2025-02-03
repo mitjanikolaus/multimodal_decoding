@@ -27,6 +27,7 @@ from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentF
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, \
     SPLIT_IMAGERY, \
     TRAINING_MODES
+from eval import ACC_IMAGES, ACC_CAPTIONS
 from himalaya.kernel_ridge import KernelRidgeCV
 from himalaya.ridge import RidgeCV
 
@@ -64,7 +65,6 @@ def train_and_test(
     y_pred_imagery = estimator.predict(X_imagery)
 
     best_alphas = np.round(estimator.best_alphas_)
-    print(f"Best alphas: {Counter(best_alphas)}\n")
 
     if null_distr_dir is not None:
         scores_null_distr = []
@@ -81,6 +81,7 @@ def train_and_test(
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
     scores = calc_all_pairwise_accuracy_scores(y_test, y_pred_test, TEST_STIM_TYPES, y_imagery, y_pred_imagery)
+    print(f"mean acc: {np.mean((scores[ACC_CAPTIONS], scores[ACC_IMAGES])):.2f} | Best alphas: {Counter(best_alphas)}\n")
 
     return scores
 
@@ -353,7 +354,7 @@ def get_args():
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs="+", default=[1e-1,1,1e2,1e3])
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs="+", default=[1e-1,1,1e1,1e2,1e3,1e4,1e5])
 
     parser.add_argument("--radius", type=float, default=None)
     parser.add_argument("--n-neighbors", type=int, default=None)
