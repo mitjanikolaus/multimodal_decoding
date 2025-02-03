@@ -353,7 +353,7 @@ def get_args():
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
-    parser.add_argument("--l2-regularization-alphas", type=float, nargs="+", default=[1e-1,1,1e2,1e4])
+    parser.add_argument("--l2-regularization-alphas", type=float, nargs="+", default=[1e-1,1,1e2,1e3])
 
     parser.add_argument("--radius", type=float, default=None)
     parser.add_argument("--n-neighbors", type=int, default=None)
