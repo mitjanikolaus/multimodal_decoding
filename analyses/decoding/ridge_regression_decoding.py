@@ -1,6 +1,5 @@
 import argparse
 import time
-from collections import Counter
 
 import numpy as np
 import sklearn
@@ -157,7 +156,7 @@ def run(args):
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
-                    best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
+                    best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
 
                     test_fmri_betas = test_fmri_betas.astype(np.float32)
                     test_predicted_latents = clf.predict(test_fmri_betas)
@@ -169,7 +168,7 @@ def run(args):
                     test_predicted_latents = backend.to_numpy(test_predicted_latents)
 
                     results = {
-                        "alphas": best_alphas,
+                        "alpha": best_alpha,
                         "model": model,
                         "subject": subject,
                         "features": feats_config.features,
@@ -195,7 +194,7 @@ def run(args):
                     )
                     results.update(scores)
                     print(
-                        f"Best alphas: {Counter(best_alphas)}\n"
+                        f"Best alphas: {best_alpha}\n"
                         f"Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                         f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
                         f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"

@@ -24,6 +24,7 @@ from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentF
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, \
     SPLIT_IMAGERY, \
     TRAINING_MODES
+from eval import ACC_CAPTIONS, ACC_IMAGES
 
 from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
 
@@ -244,13 +245,13 @@ def run(args):
                 )
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
-                test_scores_caps = [score["pairwise_acc_captions"] for score in scores]
+                test_scores_caps = [score[ACC_CAPTIONS] for score in scores]
                 print(
                     f"Mean score (captions): {np.mean(test_scores_caps):.2f} | "
                     f"Max score: {np.max(test_scores_caps):.2f}"
                 )
 
-                test_scores_imgs = [score["pairwise_acc_images"] for score in scores]
+                test_scores_imgs = [score[ACC_IMAGES] for score in scores]
                 print(
                     f"Mean score (images): {np.mean(test_scores_imgs):.2f} | "
                     f"Max score: {np.max(test_scores_imgs):.2f}"
