@@ -17,7 +17,7 @@ from sklearn.exceptions import ConvergenceWarning
 import os
 import pickle
 
-from sklearn.linear_model import Ridge, RidgeCV
+from sklearn.linear_model import Ridge
 from tqdm import tqdm
 
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
@@ -28,6 +28,7 @@ from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentF
     SPLIT_IMAGERY, \
     TRAINING_MODES
 from himalaya.kernel_ridge import KernelRidgeCV
+from himalaya.ridge import RidgeCV
 
 from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
 
@@ -235,7 +236,7 @@ def run(args):
                 )
 
                 # model = Ridge(alpha=args.l2_regularization_alpha)
-                model = KernelRidgeCV(
+                model = RidgeCV(
                     cv=5,
                     alphas=args.l2_regularization_alphas,
                     solver_params=dict(

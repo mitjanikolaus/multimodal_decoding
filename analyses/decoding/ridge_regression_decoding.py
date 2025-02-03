@@ -51,7 +51,7 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=No
 def tensor_pairwise_accuracy(
         latents, predictions, metric="cosine", standardize_predictions=False, standardize_latents=False
 ):
-    if latents.is_cuda:
+    if torch.is_tensor(latents) and latents.is_cuda:
         latents = latents.cpu().numpy()
         predictions = predictions.cpu().numpy().squeeze()
 
