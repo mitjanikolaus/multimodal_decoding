@@ -30,21 +30,16 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         print(f'input ids : {inputs["input_ids"]}')
         print(f'input ids shape: {inputs["input_ids"].shape}')
 
-        inputs_no_padding = self.preprocessor(
-            text=captions, images=images, return_tensors="pt",
-            padding=False
-        )
-        print(f'input ids no padding : {inputs_no_padding["input_ids"]}')
-        print(f'input ids np padding shape: {inputs_no_padding["input_ids"].shape}')
-
-        inputs_no_padding = inputs_no_padding.to(device)
+        inputs = inputs.to(device)
         with torch.no_grad():
-            outputs = self.model(**inputs_no_padding, output_hidden_states=True)
+            outputs = self.model(**inputs, output_hidden_states=True)
 
         last_hidden_states = outputs.hidden_states[-1]
 
         # Average hidden states while ignoring padding tokens
-        mask = inputs_no_padding["attention_mask"]
+        mask = captions["attention_mask"]
+        print(f"mask:\n {mask}")
+
         mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
         print(f"last_hidden_states shape {last_hidden_states.shape}")
         print(f"mask expanded shape {mask_expanded.shape}")
