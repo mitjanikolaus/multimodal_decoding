@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
+from transformers import AutoProcessor, PaliGemmaForConditionalGeneration, PaliGemmaProcessor
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
@@ -27,7 +27,16 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             text=captions, images=images, return_tensors="pt",
             padding=True
         )
-        print(f'inputs shape: {inputs.shape}')
+        print(f'input ids : {inputs["input_ids"]}')
+        print(f'input ids shape: {inputs["input_ids"].shape}')
+
+        inputs_no_padding = self.preprocessor(
+            text=captions, images=images, return_tensors="pt",
+            padding=True
+        )
+        print(f'input ids no padding : {inputs_no_padding["input_ids"]}')
+        print(f'input ids np padding shape: {inputs_no_padding["input_ids"].shape}')
+
         inputs = inputs.to(device)
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
@@ -58,3 +67,10 @@ if __name__ == "__main__":
 
     extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, device)
     extractor.extract_features()
+
+    # model_name = "google/paligemma2-3b-pt-224"
+    # model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, device_map="auto").eval()
+    # processor = PaliGemmaProcessor.from_pretrained(model_name)
+    #
+    # extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device)
+    # extractor.extract_features()
