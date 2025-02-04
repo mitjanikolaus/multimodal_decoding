@@ -45,12 +45,12 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
         print(f"last_hidden_states shape {last_hidden_states.shape}")
         print(f"mask expanded shape {mask_expanded.shape}")
-        print(f"mask_expanded[0]:\n {mask_expanded[0]}")
-        print(f"mask_expanded[1]:\n {mask_expanded[1]}")
-        print(f"mask_expanded[2]:\n {mask_expanded[2]}")
+        print(f"mask_expanded[0]:\n {torch.sum(mask_expanded[0])}")
+        print(f"mask_expanded[1]:\n {torch.sum(mask_expanded[1])}")
+        print(f"mask_expanded[3]:\n {torch.sum(mask_expanded[3])}")
         print(f"last_hidden_states[0]:\n {last_hidden_states[0]}")
         print(f"last_hidden_states[1]:\n {last_hidden_states[1]}")
-        print(f"last_hidden_states[2]:\n {last_hidden_states[2]}")
+        print(f"last_hidden_states[3]:\n {last_hidden_states[3]}")
 
         last_hidden_states[mask_expanded == 0] = 0
 
