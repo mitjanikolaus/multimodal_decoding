@@ -24,7 +24,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
         inputs = self.preprocessor(
-            text=captions, images=images, return_tensors="pt",
+            text=captions, images=images, return_tensors="pt", padding=True,
         )
         # print(f'input ids : {inputs["input_ids"]}')
         # print(f'input ids shape: {inputs["input_ids"].shape}')
