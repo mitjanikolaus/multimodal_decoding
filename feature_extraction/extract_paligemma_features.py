@@ -14,7 +14,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 # device = "cuda:1" if torch.cuda.is_available() else "cpu"
 device = "cpu"
 
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 
 
 class PaliGemmaFeatureExtractor(FeatureExtractor):
@@ -29,6 +29,8 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         )
         print(f'input ids : {inputs["input_ids"]}')
         print(f'input ids shape: {inputs["input_ids"].shape}')
+        print(f'pixel_values shape: {inputs["pixel_values"].shape}')
+
         mask = inputs["attention_mask"]
         print(f"mask:\n {mask}")
         print(f"inputs: {inputs}")
