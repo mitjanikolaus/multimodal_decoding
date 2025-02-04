@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor
+from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor, BitsAndBytesConfig
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
@@ -69,8 +69,10 @@ if __name__ == "__main__":
     # extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, device)
     # extractor.extract_features()
 
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
     model_name = "google/paligemma2-3b-pt-224"
-    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, device_map="cuda:0")
+    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, quantization_config=quantization_config, device_map="cuda:0")
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
     extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device, move_model=False)
