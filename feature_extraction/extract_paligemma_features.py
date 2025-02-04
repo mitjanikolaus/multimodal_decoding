@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from transformers import AutoProcessor, PaliGemmaForConditionalGeneration, PaliGemmaProcessor
+from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
@@ -11,8 +11,8 @@ from data import FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-# device = "cpu"
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 
 BATCH_SIZE = 1
 
@@ -25,13 +25,12 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         inputs = self.preprocessor(
             text=captions, images=images, return_tensors="pt",
-            padding=True
         )
         # print(f'input ids : {inputs["input_ids"]}')
         # print(f'input ids shape: {inputs["input_ids"].shape}')
         # print(f'pixel_values shape: {inputs["pixel_values"].shape}')
 
-        mask = inputs["attention_mask"]
+        # mask = inputs["attention_mask"]
         # print(f"mask:\n {mask}")
         # print(f"inputs: {inputs}")
 
@@ -42,17 +41,16 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         last_hidden_states = outputs.hidden_states[-1]
 
         # Average hidden states while ignoring padding tokens
-        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
-        print(f"last_hidden_states shape {last_hidden_states.shape}")
-        print(f"mask expanded shape {mask_expanded.shape}")
-        print(f"mask_expanded[0]:\n {torch.sum(mask_expanded[0])}")
-        print(f"mask_expanded[1]:\n {torch.sum(mask_expanded[1])}")
-        print(f"mask_expanded[3]:\n {torch.sum(mask_expanded[3])}")
-        print(f"last_hidden_states[0]:\n {last_hidden_states[0]}")
-        print(f"last_hidden_states[1]:\n {last_hidden_states[1]}")
-        print(f"last_hidden_states[3]:\n {last_hidden_states[3]}")
-
-        last_hidden_states[mask_expanded == 0] = 0
+        # mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
+        # print(f"last_hidden_states shape {last_hidden_states.shape}")
+        # print(f"mask expanded shape {mask_expanded.shape}")
+        # print(f"mask_expanded[0]:\n {torch.sum(mask_expanded[0])}")
+        # print(f"mask_expanded[1]:\n {torch.sum(mask_expanded[1])}")
+        # print(f"mask_expanded[3]:\n {torch.sum(mask_expanded[3])}")
+        # print(f"last_hidden_states[0]:\n {last_hidden_states[0]}")
+        # print(f"last_hidden_states[1]:\n {last_hidden_states[1]}")
+        # print(f"last_hidden_states[3]:\n {last_hidden_states[3]}")
+        # last_hidden_states[mask_expanded == 0] = 0
 
         feats_fused_mean = last_hidden_states.mean(dim=1)
         print(f"feats_fused_mean shape {feats_fused_mean.shape}")
