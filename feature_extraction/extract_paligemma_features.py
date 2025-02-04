@@ -48,12 +48,14 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
         print(f"last_hidden_states shape {last_hidden_states.shape}")
         print(f"mask expanded shape {mask_expanded.shape}")
-        print(f"mask mean: {torch.mean(mask_expanded)}")
-        print(mask_expanded)
+        print(f"mask_expanded:\n {mask_expanded}")
+        print(f"last_hidden_states:\n {last_hidden_states}")
 
         last_hidden_states[mask_expanded == 0] = 0
+
         feats_fused_mean = last_hidden_states.mean(dim=1)
         print(f"feats_fused_mean shape {feats_fused_mean.shape}")
+        print(f"feats_fused_mean {feats_fused_mean}")
 
         return {
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
