@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # extractor.extract_features()
 
     model_name = "google/paligemma2-3b-pt-224"
-    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, device_map="auto")
+    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, device_map="cuda:0")
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
     extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device, move_model=False)
