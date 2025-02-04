@@ -4,7 +4,7 @@ from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from data import LANG_CLS_FEAT_KEY, VISION_CLS_FEAT_KEY, LANG_MEAN_FEAT_KEY, VISION_MEAN_FEAT_KEY
+from data import LANG_CLS_FEAT_KEY, VISION_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 
