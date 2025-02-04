@@ -31,6 +31,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         print(f'input ids shape: {inputs["input_ids"].shape}')
         mask = inputs["attention_mask"]
         print(f"mask:\n {mask}")
+        print(f"inputs: {inputs}")
 
         inputs = inputs.to(device)
         with torch.no_grad():
@@ -59,7 +60,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 if __name__ == "__main__":
     model_name = "google/paligemma-3b-pt-224"
     model = PaliGemmaForConditionalGeneration.from_pretrained(model_name).eval()
-    processor = AutoProcessor.from_pretrained(model_name)
+    processor = PaliGemmaProcessor.from_pretrained(model_name)
 
     extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, device)
     extractor.extract_features()
