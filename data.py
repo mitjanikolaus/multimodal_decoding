@@ -215,6 +215,7 @@ LANG_FEAT_COMBINATION_CHOICES = [LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, SELECT_D
 FEATS_NA = "n_a"
 
 DEFAULT_FEATURES = {
+    "paligemma2": FUSED_MEAN_FEAT_KEY,
     "clip": AVG_FEATS,
     "imagebind": AVG_FEATS,
     "random-imagebind": AVG_FEATS,
@@ -245,6 +246,7 @@ DEFAULT_FEATURES = {
 }
 
 DEFAULT_VISION_FEATURES = {
+    "paligemma2": FEATS_NA,
     "clip": VISION_CLS_FEAT_KEY,
     "imagebind": VISION_CLS_FEAT_KEY,
     "random-imagebind": VISION_CLS_FEAT_KEY,
@@ -275,6 +277,7 @@ DEFAULT_VISION_FEATURES = {
 }
 
 DEFAULT_LANG_FEATURES = {
+    "paligemma2": FEATS_NA,
     "clip": LANG_CLS_FEAT_KEY,
     "imagebind": LANG_CLS_FEAT_KEY,
     "random-imagebind": LANG_CLS_FEAT_KEY,
