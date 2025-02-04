@@ -11,10 +11,10 @@ from data import FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-# device = "cuda:1" if torch.cuda.is_available() else "cpu"
-device = "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+# device = "cpu"
 
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 
 
 class PaliGemmaFeatureExtractor(FeatureExtractor):
@@ -64,16 +64,16 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model_name = "google/paligemma-3b-pt-224"
-    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name).eval()
-    processor = PaliGemmaProcessor.from_pretrained(model_name)
-
-    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    # model_name = "google/paligemma2-3b-pt-224"
-    # model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, device_map="auto").eval()
+    # model_name = "google/paligemma-3b-pt-224"
+    # model = PaliGemmaForConditionalGeneration.from_pretrained(model_name).eval()
     # processor = PaliGemmaProcessor.from_pretrained(model_name)
     #
-    # extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device)
+    # extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, device)
     # extractor.extract_features()
+
+    model_name = "google/paligemma2-3b-pt-224"
+    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, device_map="auto").eval()
+    processor = PaliGemmaProcessor.from_pretrained(model_name)
+
+    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device)
+    extractor.extract_features()
