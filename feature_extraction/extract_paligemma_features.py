@@ -11,8 +11,8 @@ from data import FUSED_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-device = "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cpu"
 
 BATCH_SIZE = 1
 
@@ -34,7 +34,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         # print(f"mask:\n {mask}")
         # print(f"inputs: {inputs}")
 
-        inputs = inputs.to(device) # .to(torch.bfloat16)
+        inputs = inputs.to(torch.bfloat16).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
 
