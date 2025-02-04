@@ -94,7 +94,7 @@ class FeatureExtractor:
 
             feats_batch = self.extract_features_from_batch(ids, captions, img_paths)
             for key, feats in feats_batch.items():
-                feats_numpy = feats.cpu().numpy()
+                feats_numpy = feats.cpu().float().numpy()
                 for id, feat in zip(ids, feats_numpy):
                     all_feats[id][key] = feat
 
