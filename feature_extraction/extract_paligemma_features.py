@@ -14,7 +14,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 # device = "cuda:1" if torch.cuda.is_available() else "cpu"
 device = "cpu"
 
-BATCH_SIZE = 2
+BATCH_SIZE = 5
 
 
 class PaliGemmaFeatureExtractor(FeatureExtractor):
@@ -45,8 +45,12 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
         print(f"last_hidden_states shape {last_hidden_states.shape}")
         print(f"mask expanded shape {mask_expanded.shape}")
-        print(f"mask_expanded:\n {mask_expanded}")
-        print(f"last_hidden_states:\n {last_hidden_states}")
+        print(f"mask_expanded[0]:\n {mask_expanded[0]}")
+        print(f"mask_expanded[1]:\n {mask_expanded[1]}")
+        print(f"mask_expanded[2]:\n {mask_expanded[2]}")
+        print(f"last_hidden_states[0]:\n {last_hidden_states[0]}")
+        print(f"last_hidden_states[1]:\n {last_hidden_states[1]}")
+        print(f"last_hidden_states[2]:\n {last_hidden_states[2]}")
 
         last_hidden_states[mask_expanded == 0] = 0
 
