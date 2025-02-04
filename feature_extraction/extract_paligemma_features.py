@@ -14,7 +14,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 # device = "cpu"
 
-BATCH_SIZE = 10
+BATCH_SIZE = 1
 
 
 class PaliGemmaFeatureExtractor(FeatureExtractor):
