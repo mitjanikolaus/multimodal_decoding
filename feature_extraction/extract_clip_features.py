@@ -26,9 +26,7 @@ class CLIPFeatureExtractor(FeatureExtractor):
 
         return {
             LANG_CLS_FEAT_KEY: outputs.text_embeds,
-            LANG_MEAN_FEAT_KEY: outputs.text_model_output.last_hidden_state.mean(dim=1),
             VISION_CLS_FEAT_KEY: outputs.image_embeds,
-            VISION_MEAN_FEAT_KEY: outputs.vision_model_output.last_hidden_state.mean(dim=1),
         }
 
 

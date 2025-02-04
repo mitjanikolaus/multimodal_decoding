@@ -248,8 +248,8 @@ DEFAULT_VISION_FEATURES = {
     "clip": VISION_CLS_FEAT_KEY,
     "imagebind": VISION_CLS_FEAT_KEY,
     "random-imagebind": VISION_CLS_FEAT_KEY,
-    "flava": VISION_MEAN_FEAT_KEY,
-    "blip2": VISION_MEAN_FEAT_KEY,
+    "flava": VISION_CLS_FEAT_KEY,
+    "blip2": VISION_CLS_FEAT_KEY,
     "visualbert": FEATS_NA,
     "vilt": FEATS_NA,
     "bridgetower": FEATS_NA,
@@ -278,8 +278,8 @@ DEFAULT_LANG_FEATURES = {
     "clip": LANG_CLS_FEAT_KEY,
     "imagebind": LANG_CLS_FEAT_KEY,
     "random-imagebind": LANG_CLS_FEAT_KEY,
-    "flava": LANG_MEAN_FEAT_KEY,
-    "blip2": LANG_MEAN_FEAT_KEY,
+    "flava": LANG_CLS_FEAT_KEY,
+    "blip2": LANG_CLS_FEAT_KEY,
     "visualbert": FEATS_NA,
     "vilt": FEATS_NA,
     "bridgetower": FEATS_NA,
@@ -365,33 +365,41 @@ def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_latent_feats(all_latents, stim_id, stim_type, latent_feats_config):
-    if latent_feats_config.features == VISION_FEATS_ONLY:
-        feats = get_vision_feats(all_latents, stim_id, latent_feats_config.vision_features)
-    elif latent_feats_config.features == LANG_FEATS_ONLY:
-        feats = get_lang_feats(all_latents, stim_id, latent_feats_config.lang_features)
-    elif latent_feats_config.features == AVG_FEATS:
-        vision_feats = get_vision_feats(all_latents, stim_id, latent_feats_config.vision_features)
-        lang_feats = get_lang_feats(all_latents, stim_id, latent_feats_config.lang_features)
-        feats = np.stack((lang_feats, vision_feats))
-        feats = feats.mean(axis=0)
-    elif latent_feats_config.features == FUSED_FEATS_CLS:
-        feats = all_latents[stim_id][FUSED_CLS_FEAT_KEY]
-    elif latent_feats_config.features == FUSED_FEATS_MEAN:
-        feats = all_latents[stim_id][FUSED_MEAN_FEAT_KEY]
-    elif latent_feats_config.features == MATCHED_FEATS:
-        if stim_type == CAPTION:
-            feats = get_lang_feats(all_latents, stim_id, latent_feats_config.lang_features)
-        elif stim_type == IMAGE:
-            feats = get_vision_feats(all_latents, stim_id, latent_feats_config.vision_features)
-        elif stim_type == IMAGERY:
-            feats = get_vision_feats(all_latents, stim_id, latent_feats_config.vision_features)
-        else:
-            raise RuntimeError(f"Unknown stim type: {stim_type}")
-    else:
-        raise RuntimeError(f"Unknown feature selection/combination method: {latent_feats_config.features}")
+def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
+    latent_vectors_file = model_features_file_path(feats_config.model)
+    latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
-    return feats
+    features = feats_config.test_features if test_mode else feats_config.features
+    nn_latent_vectors = []
+    for stim_id, stim_type in zip(stim_ids, stim_types):
+        if features == VISION_FEATS_ONLY:
+            feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
+        elif features == LANG_FEATS_ONLY:
+            feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
+        elif features == AVG_FEATS:
+            vision_feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
+            lang_feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
+            feats = np.mean((lang_feats, vision_feats), axis=0)
+        elif features == FUSED_FEATS_CLS:
+            feats = latent_vectors[stim_id][FUSED_CLS_FEAT_KEY]
+        elif features == FUSED_FEATS_MEAN:
+            feats = latent_vectors[stim_id][FUSED_MEAN_FEAT_KEY]
+        elif features == MATCHED_FEATS:
+            if stim_type == CAPTION:
+                feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
+            elif stim_type == IMAGE:
+                feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
+            elif stim_type == IMAGERY:
+                feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
+            else:
+                raise RuntimeError(f"Unknown stim type: {stim_type}")
+        else:
+            raise RuntimeError(f"Unknown feature selection/combination method: {features}")
+        nn_latent_vectors.append(feats)
+
+    nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
+
+    return nn_latent_vectors
 
 
 def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, resolution=DEFAULT_RESOLUTION,
@@ -432,44 +440,6 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
     else:
         raise RuntimeError("Unknown lang feature choice: ", lang_features_mode)
     return lang_feats
-
-
-def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
-    latent_vectors_file = model_features_file_path(feats_config.model)
-    latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
-
-    features = feats_config.test_features if test_mode else feats_config.features
-    nn_latent_vectors = []
-    for stim_id, stim_type in zip(stim_ids, stim_types):
-        if features == VISION_FEATS_ONLY:
-            feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
-        elif features == LANG_FEATS_ONLY:
-            feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
-        elif features == AVG_FEATS:
-            vision_feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
-            lang_feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
-            feats = np.stack((lang_feats, vision_feats))
-            feats = feats.mean(axis=0)
-        elif features == FUSED_FEATS_CLS:
-            feats = latent_vectors[stim_id][FUSED_CLS_FEAT_KEY]
-        elif features == FUSED_FEATS_MEAN:
-            feats = latent_vectors[stim_id][FUSED_MEAN_FEAT_KEY]
-        elif features == MATCHED_FEATS:
-            if stim_type == CAPTION:
-                feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
-            elif stim_type == IMAGE:
-                feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
-            elif stim_type == IMAGERY:
-                feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
-            else:
-                raise RuntimeError(f"Unknown stim type: {stim_type}")
-        else:
-            raise RuntimeError(f"Unknown feature selection/combination method: {features}")
-        nn_latent_vectors.append(feats)
-
-    nn_latent_vectors = np.array(nn_latent_vectors, dtype=np.float32)
-
-    return nn_latent_vectors
 
 
 def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):

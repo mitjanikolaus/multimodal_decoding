@@ -41,16 +41,11 @@ class FlavaFeatureExtractor(FeatureExtractor):
             image_embedding = model.image_projection(image_embeddings[:, 0, :])
             image_embedding = nn.functional.normalize(image_embedding, dim=-1)
 
-        feats_vision_mean = image_embeddings.mean(axis=1)
-        feats_lang_mean = text_embeddings.mean(axis=1)
-
         feats_fused_cls = outputs.multimodal_output.pooler_output
         feats_fused_mean = outputs.multimodal_output.last_hidden_state.mean(dim=1)
 
         return {
-            LANG_MEAN_FEAT_KEY: feats_lang_mean,
             LANG_CLS_FEAT_KEY: text_embedding,
-            VISION_MEAN_FEAT_KEY: feats_vision_mean,
             VISION_CLS_FEAT_KEY: image_embedding,
             FUSED_MEAN_FEAT_KEY: feats_fused_mean,
             FUSED_CLS_FEAT_KEY: feats_fused_cls
@@ -59,15 +54,14 @@ class FlavaFeatureExtractor(FeatureExtractor):
 
 if __name__ == "__main__":
     model_name = "facebook/flava-full"
-    # processor = FlavaProcessor.from_pretrained(model_name)
-    # model = FlavaModel.from_pretrained(model_name)
-    #
-    # extractor = FlavaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
-    # extractor.extract_features()
+
+    processor = FlavaProcessor.from_pretrained(model_name)
+    model = FlavaModel.from_pretrained(model_name)
+    extractor = FlavaFeatureExtractor(model, processor, "flava", BATCH_SIZE, device)
+    extractor.extract_features()
 
     processor = FlavaProcessor.from_pretrained(model_name)
     model = FlavaModel(FlavaModel.from_pretrained(model_name).config)
     model.init_weights()
-
     extractor = FlavaFeatureExtractor(model, processor, "random-flava", BATCH_SIZE, device)
     extractor.extract_features()
