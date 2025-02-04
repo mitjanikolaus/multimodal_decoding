@@ -72,7 +72,9 @@ if __name__ == "__main__":
     quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
     model_name = "google/paligemma2-3b-pt-224"
-    model = PaliGemmaForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.bfloat16, quantization_config=quantization_config, device_map="cuda:0")
+    model = PaliGemmaForConditionalGeneration.from_pretrained(
+        model_name, torch_dtype=torch.bfloat16, quantization_config=quantization_config, device_map="cuda:0"
+    )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
     extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device, move_model=False)
