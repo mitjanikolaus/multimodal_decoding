@@ -35,7 +35,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         print(f"mask:\n {mask}")
         print(f"inputs: {inputs}")
 
-        inputs = inputs.to(device)
+        inputs = inputs.to(torch.bfloat16).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
 
