@@ -30,6 +30,7 @@ FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni30
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
 FMRI_BETAS_SURFACE_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
+FMRI_STIM_INFO_DIR = os.path.join(FMRI_DATA_DIR, "stim_info")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"

@@ -104,9 +104,9 @@ def run(args):
                     )
 
                     train_latents = get_latent_features(
-                        feats_config, args.betas_dir, subject, SPLIT_TRAIN, training_mode
+                        feats_config, subject, SPLIT_TRAIN, training_mode
                     )
-                    test_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_TEST)
+                    test_latents = get_latent_features(feats_config, subject, SPLIT_TEST)
                     train_latents, test_latents = standardize_latents(train_latents, test_latents)
 
                     print(f"\nTRAIN MODE: {training_mode} | HEMI: {hemi} | SUBJECT: {subject} | "
@@ -134,9 +134,9 @@ def run(args):
 
                     if args.add_gabor_feats:
                         feats_config = LatentFeatsConfig("gabor")
-                        train_latents_gabor = get_latent_features(feats_config, train_stim_ids, train_stim_types)
+                        train_latents_gabor = get_latent_features(feats_config, subject, SPLIT_TRAIN, mode=training_mode)
                         test_latents_gabor = get_latent_features(
-                            feats_config, test_stim_ids, test_stim_types, test_mode=True
+                            feats_config, subject, SPLIT_TEST
                         )
                         train_latents_gabor, test_latents_gabor = standardize_latents(
                             train_latents_gabor, test_latents_gabor

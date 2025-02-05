@@ -7,10 +7,10 @@ from nilearn.surface import surface
 import os
 import pickle
 
-from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, IDS_TEST_STIM, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES, \
-    SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST
+from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES, \
+    SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST, TEST_STIM_TYPES, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR
+from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR, FMRI_STIM_INFO_DIR
 
 
 def run(args):
@@ -20,16 +20,15 @@ def run(args):
         test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TEST)
         imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_IMAGERY)
 
-        pickle.dump(train_stim_ids, open(os.path.join(args.out_dir, f"{subject}_stim_ids_train.p"), 'wb'))
-        pickle.dump(train_stim_types, open(os.path.join(args.out_dir, f"{subject}_stim_types_train.p"), 'wb'))
-        pickle.dump(test_stim_ids, open(os.path.join(args.out_dir, f"{subject}_stim_ids_test.p"), 'wb'))
-        pickle.dump(test_stim_types, open(os.path.join(args.out_dir, f"{subject}_stim_types_test.p"), 'wb'))
-        pickle.dump(imagery_stim_ids, open(os.path.join(args.out_dir, f"{subject}_stim_ids_imagery.p"), 'wb'))
-        pickle.dump(imagery_stim_types, open(os.path.join(args.out_dir, f"{subject}_stim_types_imagery.p"), 'wb'))
+        pickle.dump(train_stim_ids, open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_ids_train.p"), 'wb'))
+        pickle.dump(train_stim_types, open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_types_train.p"), 'wb'))
 
         assert np.all(test_stim_types[INDICES_TEST_STIM_IMAGE] == "image")
         assert np.all(test_stim_types[INDICES_TEST_STIM_CAPTION] == "caption")
-        assert np.all(test_stim_ids == IDS_TEST_STIM)
+        assert np.all(test_stim_ids == TEST_STIM_IDS)
+        assert np.all(test_stim_types == TEST_STIM_TYPES)
+        assert np.all(imagery_stim_ids == IMAGERY_STIMS_IDS[subject])
+        assert np.all(imagery_stim_types == IMAGERY_STIMS_TYPES[subject])
 
         assert np.all(imagery_stim_ids == [i[1] for i in IMAGERY_SCENES[subject]])
 

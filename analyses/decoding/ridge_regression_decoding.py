@@ -121,10 +121,10 @@ def run(args):
                         continue
 
                     train_latents = get_latent_features(
-                        feats_config, args.betas_dir, subject, SPLIT_TRAIN, training_mode
+                        feats_config, subject, SPLIT_TRAIN, training_mode
                     )
-                    test_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_TEST)
-                    imagery_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_IMAGERY)
+                    test_latents = get_latent_features(feats_config, subject, SPLIT_TEST)
+                    imagery_latents = get_latent_features(feats_config, subject, SPLIT_IMAGERY)
                     train_latents, test_latents, imagery_latents = standardize_latents(
                         train_latents, test_latents, imagery_latents
                     )

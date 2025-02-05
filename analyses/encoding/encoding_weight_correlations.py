@@ -105,9 +105,9 @@ def run(args):
                 )
 
                 train_latents = get_latent_features(
-                    feats_config, args.betas_dir, subject, SPLIT_TRAIN, training_mode
+                    feats_config, subject, SPLIT_TRAIN, training_mode
                 )
-                test_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_TEST)
+                test_latents = get_latent_features(feats_config, subject, SPLIT_TEST)
                 train_latents = train_latents[:, filter]
                 test_latents = test_latents[:, filter]
 

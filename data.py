@@ -10,7 +10,7 @@ import nibabel as nib
 from tqdm import trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION
+from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, STIM_INFO_PATH, FMRI_STIM_INFO_DIR
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
@@ -104,7 +104,8 @@ IMAGERY_SCENES = {
         ],
 }
 
-IDS_IMAGES_IMAGERY = [scene[1] for scenes_subj in IMAGERY_SCENES.values() for scene in scenes_subj]
+IMAGERY_STIMS_IDS = {sub: [scenes_subj[1] for scenes_subj in scene] for sub, scene in IMAGERY_SCENES.items()}
+IMAGERY_STIMS_TYPES = {sub: [IMAGERY for scenes_subj in scene] for sub, scene in IMAGERY_SCENES.items()}
 
 IDS_IMAGES_TEST = [
     3862,
@@ -182,11 +183,11 @@ IDS_IMAGES_TEST = [
 NUM_TEST_STIMULI = len(IDS_IMAGES_TEST) * 2
 INDICES_TEST_STIM_CAPTION = list(range(NUM_TEST_STIMULI // 2))
 INDICES_TEST_STIM_IMAGE = list(range(NUM_TEST_STIMULI // 2, NUM_TEST_STIMULI))
-IDS_TEST_STIM = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 
+TEST_STIM_IDS = np.array(IDS_IMAGES_TEST + IDS_IMAGES_TEST)
 TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] * len(INDICES_TEST_STIM_IMAGE))
 
-TEST_BATCH_SIZE = len(IDS_TEST_STIM)
+TEST_BATCH_SIZE = len(TEST_STIM_IDS)
 
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
@@ -371,12 +372,25 @@ def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_latent_features(feats_config, betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
+def get_stim_info(subject, split):
+    if split == SPLIT_TRAIN:
+        stim_ids = pickle.load(open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_ids_{split}.p"), 'rb'))
+        stim_types = pickle.load(open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_types_{split}.p"), 'rb'))
+    elif split == SPLIT_TEST:
+        stim_ids, stim_types = TEST_STIM_IDS, TEST_STIM_TYPES
+    elif split == SPLIT_IMAGERY:
+        stim_ids, stim_types = IMAGERY_STIMS_IDS[subject], IMAGERY_STIMS_TYPES[subject]
+    else:
+        raise RuntimeError(f"Unknown split name: {split}")
+
+    return stim_ids, stim_types
+
+
+def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
     latent_vectors_file = model_features_file_path(feats_config.model)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
-    stim_ids = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_ids_{split}.p"), 'rb'))
-    stim_types = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_types_{split}.p"), 'rb'))
+    stim_ids, stim_types = get_stim_info(subject, split)
 
     if mode == MODALITY_SPECIFIC_CAPTIONS:
         stim_ids = stim_ids[stim_types == CAPTION]
@@ -424,8 +438,8 @@ def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, res
     print(f"loading {mode} {split} {hemi} hemi fmri surface data.. ", end="")
     fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
     print("done.")
-    stim_ids = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_ids_{split}.p"), 'rb'))
-    stim_types = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_types_{split}.p"), 'rb'))
+
+    stim_ids, stim_types = get_stim_info(subject, split)
 
     if mode == MODALITY_SPECIFIC_CAPTIONS:
         fmri_betas = fmri_betas[stim_types == CAPTION]
