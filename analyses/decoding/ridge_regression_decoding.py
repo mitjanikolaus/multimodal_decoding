@@ -120,13 +120,11 @@ def run(args):
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
                         continue
 
-                    train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
-                    test_latents = get_latent_features(
-                        feats_config, test_stim_ids, test_stim_types, test_mode=True
+                    train_latents = get_latent_features(
+                        feats_config, args.betas_dir, subject, SPLIT_TRAIN, training_mode
                     )
-                    imagery_latents = get_latent_features(
-                        feats_config, imagery_stim_ids, imagery_stim_types, test_mode=True
-                    )
+                    test_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_TEST)
+                    imagery_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_IMAGERY)
                     train_latents, test_latents, imagery_latents = standardize_latents(
                         train_latents, test_latents, imagery_latents
                     )

@@ -371,13 +371,23 @@ def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     return fmri_betas_paths, stim_ids, stim_types
 
 
-def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
+def get_latent_features(feats_config, betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     latent_vectors_file = model_features_file_path(feats_config.model)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
 
-    features = feats_config.test_features if test_mode else feats_config.features
+    stim_ids = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_ids_{split}.p"), 'rb'))
+    stim_types = pickle.load(open(os.path.join(betas_dir, f"{subject}_stim_types_{split}.p"), 'rb'))
+
+    if mode == MODALITY_SPECIFIC_CAPTIONS:
+        stim_ids = stim_ids[stim_types == CAPTION]
+        stim_types = stim_types[stim_types == CAPTION]
+    elif mode == MODALITY_SPECIFIC_IMAGES:
+        stim_ids = stim_ids[stim_types == IMAGE]
+        stim_types = stim_types[stim_types == IMAGE]
+
+    features = feats_config.test_features if split in [SPLIT_TEST, SPLIT_IMAGERY] else feats_config.features
     nn_latent_vectors = []
-    for stim_id, stim_type in zip(stim_ids, stim_types):
+    for i, stim_id in enumerate(stim_ids):
         if features == VISION_FEATS_ONLY:
             feats = get_vision_feats(latent_vectors, stim_id, feats_config.vision_features)
         elif features == LANG_FEATS_ONLY:
@@ -391,6 +401,7 @@ def get_latent_features(feats_config, stim_ids, stim_types, test_mode=False):
         elif features == FUSED_FEATS_MEAN:
             feats = latent_vectors[stim_id][FUSED_MEAN_FEAT_KEY]
         elif features == MATCHED_FEATS:
+            stim_type = stim_types[i]
             if stim_type == CAPTION:
                 feats = get_lang_feats(latent_vectors, stim_id, feats_config.lang_features)
             elif stim_type == IMAGE:

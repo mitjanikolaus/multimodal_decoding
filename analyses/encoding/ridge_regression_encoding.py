@@ -103,10 +103,10 @@ def run(args):
                         model, args.features, args.test_features, args.vision_features, args.lang_features
                     )
 
-                    train_latents = get_latent_features(feats_config, train_stim_ids, train_stim_types)
-                    test_latents = get_latent_features(
-                        feats_config, test_stim_ids, test_stim_types, test_mode=True
+                    train_latents = get_latent_features(
+                        feats_config, args.betas_dir, subject, SPLIT_TRAIN, training_mode
                     )
+                    test_latents = get_latent_features(feats_config, args.betas_dir, subject, SPLIT_TEST)
                     train_latents, test_latents = standardize_latents(train_latents, test_latents)
 
                     print(f"\nTRAIN MODE: {training_mode} | HEMI: {hemi} | SUBJECT: {subject} | "
