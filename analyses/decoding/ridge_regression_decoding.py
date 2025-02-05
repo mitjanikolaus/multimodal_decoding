@@ -145,6 +145,7 @@ def run(args):
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             score_func=tensor_pairwise_accuracy,
                             local_alpha=False,
+                            diagonalize_method='svd'
                         )
                     )
 
