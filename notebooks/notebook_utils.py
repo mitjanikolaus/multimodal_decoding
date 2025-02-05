@@ -20,7 +20,25 @@ METRIC_NAMES = {"acc_cosine": "pairwise_acc", "acc_cosine_captions": "pairwise_a
 
 ACC_MEAN = "pairwise_acc_mean"
 ACC_CROSS_MEAN = "pairwise_acc_cross_mean"
+FEATS_MULTIMODAL = ["fused_mean", "fused_cls", "avg", "matched"]
+DEFAULT_FEAT_OPTIONS = ["vision", "lang"] + FEATS_MULTIMODAL
 
+
+def calc_model_feat_order(data, feat_options=DEFAULT_FEAT_OPTIONS):
+    all_model_feats = data.model_feat.unique()
+    all_models = data.model.unique()
+    for model in all_models:
+        if model not in MODELS:
+            raise RuntimeError(f"Model missing in order: {model}")
+    model_feat_order = []
+    for model in MODELS:
+        for feats in feat_options:
+            model_feat = f"{model}_{feats}"
+            if model_feat in all_model_feats:
+                model_feat_order.append(model_feat)
+
+    return model_feat_order
+    
 
 def plot_metric(data, kind="bar", x_variable="model_feat", order=None, hue_variable="model_feat", hue_order=None,
                 metric="pairwise_acc_mean", ylim=(0.5, 1), plot_legend=True, palette=None,
@@ -135,7 +153,7 @@ def create_result_graph(data, x_variable="model_feat", order=None,
             if hue_variable != "features":
                 expected_num_datapoints *= len(data[hue_variable].unique())
             if (length > 0) and (length != expected_num_datapoints):
-                message = f"unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) ({x_variable}: {x_variable_value} {mode}"
+                message = f"{mode} unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) ({x_variable}: {x_variable_value}) "
                 if verify_num_datapoints:
                     raise RuntimeError(message)
                 else:
