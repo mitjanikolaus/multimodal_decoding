@@ -89,8 +89,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 args.model,
                 args.features,
                 args.test_features,
-                SELECT_DEFAULT, SELECT_DEFAULT,
-                logging=False
+                args.vision_features,
+                args.lang_features,
             )
             results_mod_agnostic_file = get_results_file_path(
                 feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
@@ -107,7 +107,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 args.mod_specific_images_model,
                 args.mod_specific_images_features,
                 args.mod_specific_images_test_features,
-                SELECT_DEFAULT, SELECT_DEFAULT,
+                args.vision_features,
+                args.lang_features,
                 logging=False
             )
             results_mod_specific_images_file = get_results_file_path(
@@ -124,7 +125,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 args.mod_specific_captions_model,
                 args.mod_specific_captions_features,
                 args.mod_specific_captions_test_features,
-                SELECT_DEFAULT, SELECT_DEFAULT,
+                args.vision_features,
+                args.lang_features,
                 logging=False
             )
             results_mod_specific_captions_file = get_results_file_path(
@@ -318,7 +320,8 @@ def load_null_distr_per_subject_scores(args):
                 args.model,
                 args.features,
                 args.test_features,
-                SELECT_DEFAULT, SELECT_DEFAULT,
+                args.vision_features,
+                args.lang_features,
                 logging=False
             )
             results_mod_agnostic_file = get_results_file_path(
@@ -332,7 +335,8 @@ def load_null_distr_per_subject_scores(args):
                 args.mod_specific_images_model,
                 args.mod_specific_images_features,
                 args.mod_specific_images_test_features,
-                SELECT_DEFAULT, SELECT_DEFAULT,
+                args.vision_features,
+                args.lang_features,
                 logging=False
             )
             results_mod_specific_images_file = get_results_file_path(
@@ -344,7 +348,8 @@ def load_null_distr_per_subject_scores(args):
                 args.mod_specific_captions_model,
                 args.mod_specific_captions_features,
                 args.mod_specific_captions_test_features,
-                SELECT_DEFAULT, SELECT_DEFAULT,
+                args.vision_features,
+                args.lang_features,
                 logging=False
             )
             results_mod_specific_captions_file = get_results_file_path(
@@ -588,6 +593,10 @@ def add_searchlight_permutation_args(parser):
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--vision-features", type=str, default=SELECT_DEFAULT,
+                        choices=VISION_FEAT_COMBINATION_CHOICES)
+    parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,
+                        choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
