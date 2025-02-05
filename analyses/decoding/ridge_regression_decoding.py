@@ -15,6 +15,7 @@ from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTI
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
+from himalaya.ridge import RidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
 
 NUM_CV_SPLITS = 5
@@ -136,7 +137,7 @@ def run(args):
                     # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
                     sklearn.set_config(assume_finite=True)
 
-                    clf = KernelRidgeCV(
+                    clf = RidgeCV(
                         cv=NUM_CV_SPLITS,
                         alphas=args.l2_regularization_alphas,
                         solver_params=dict(
@@ -145,7 +146,6 @@ def run(args):
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             score_func=tensor_pairwise_accuracy,
                             local_alpha=False,
-                            diagonalize_method='svd'
                         )
                     )
 
