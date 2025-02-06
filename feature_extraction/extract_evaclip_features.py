@@ -45,8 +45,7 @@ if __name__ == "__main__":
         trust_remote_code=True,
         quantization_config=quantization_config,
     )
-    model = model.to(device).eval()
 
     processor.tokenizer = CLIPTokenizer.from_pretrained(model_name_or_path)
-    extractor = EVACLIPFeatureExtractor(model, processor, "eva-clip", BATCH_SIZE, device)
+    extractor = EVACLIPFeatureExtractor(model, processor, "eva-clip", BATCH_SIZE, device, move_model=False)
     extractor.extract_features()
