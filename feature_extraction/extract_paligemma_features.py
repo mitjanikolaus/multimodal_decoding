@@ -11,7 +11,7 @@ from data import FUSED_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY,
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 10
 
@@ -23,9 +23,9 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
         inputs_image_only = self.preprocessor(
-            text=["" for _ in images], images=images, return_tensors="pt", padding=True,
+            images=images, return_tensors="pt", padding=True,
         )
-        print("pixel values: ", inputs_image_only["pixel_values"])
+        print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
         mask_img_only = inputs_image_only["attention_mask"]
 
         inputs_image_only = inputs_image_only.to(torch.bfloat16).to(device)
@@ -45,7 +45,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         vision_feats_mean = last_hidden_states.mean(dim=1)
 
         inputs_text_only = self.preprocessor(
-            text=captions, images=[[] for _ in captions], return_tensors="pt", padding=True,
+            text=captions, return_tensors="pt", padding=True,
         )
         print("input_id values: ", inputs_text_only["input_ids"])
         mask_text_only = inputs_text_only["attention_mask"]
