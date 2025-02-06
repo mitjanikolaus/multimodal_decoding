@@ -1,17 +1,18 @@
 import os
 from PIL import Image
-from transformers import AutoModel, BitsAndBytesConfig
+from transformers import AutoModel
 from transformers import CLIPImageProcessor, CLIPTokenizer
 import torch
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from data import LANG_CLS_FEAT_KEY, VISION_CLS_FEAT_KEY
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+device="cpu"
 
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 
 
 class EVACLIPFeatureExtractor(FeatureExtractor):
@@ -19,8 +20,10 @@ class EVACLIPFeatureExtractor(FeatureExtractor):
     def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(img_path).convert('RGB') for img_path in img_paths]
 
-        input_ids = self.preprocessor.tokenizer(captions, return_tensors="pt", padding=True).input_ids.to(torch.float16).to(device)
-        input_pixels = self.preprocessor(images=images, return_tensors="pt", padding=True).pixel_values.to(torch.float16).to(device)
+        input_ids = self.preprocessor.tokenizer(captions, return_tensors="pt", padding=True).input_ids.to(
+            torch.float16).to(device)
+        input_pixels = self.preprocessor(images=images, return_tensors="pt", padding=True).pixel_values.to(
+            torch.float16).to(device)
 
         with torch.no_grad(), torch.cuda.amp.autocast():
             image_features = self.model.encode_image(input_pixels)
@@ -38,12 +41,10 @@ if __name__ == "__main__":
     model_name_or_path = "BAAI/EVA-CLIP-8B"
     processor = CLIPImageProcessor.from_pretrained("openai/clip-vit-large-patch14")
 
-    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
     model = AutoModel.from_pretrained(
         model_name_or_path,
         torch_dtype=torch.float16,
         trust_remote_code=True,
-        quantization_config=quantization_config,
     )
 
     processor.tokenizer = CLIPTokenizer.from_pretrained(model_name_or_path)
