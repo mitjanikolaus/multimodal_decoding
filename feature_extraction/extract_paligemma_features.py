@@ -24,10 +24,9 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
         inputs_image_only = self.preprocessor(
-            text=[IMAGE_TOKEN for _ in images], images=images, return_tensors="pt", padding=True,
+            text=[IMAGE_TOKEN for _ in images], images=images, return_tensors="pt",
         )
         print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
-        mask_img_only = inputs_image_only["attention_mask"]
 
         inputs_image_only = inputs_image_only.to(torch.float16).to(device)
         with torch.no_grad():
@@ -35,20 +34,12 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         last_hidden_states = outputs.hidden_states[-1]
 
-        # Average hidden states while ignoring padding tokens
-        mask_img_only_expanded = mask_img_only.unsqueeze(-1).expand(
-            (mask_img_only.shape[0], mask_img_only.shape[1], last_hidden_states.shape[-1])
-        )
-        last_hidden_states[mask_img_only_expanded == 0] = 0
-
         print("image_hidden_states shape: ", outputs.image_hidden_states.shape)
         print("last_hidden_states shape: ", last_hidden_states.shape)
-        vision_feats_cls = outputs.image_hidden_states.mean(dim=1)
+        vision_feats_cls = outputs.last_hidden_states[:, 0]
+        vision_feats_mean_alt = outputs.image_hidden_states.mean(dim=1)
         vision_feats_mean = last_hidden_states.mean(dim=1)
 
-        # inputs_text_only = self.preprocessor(
-        #     images=[[] for _ in captions], text=captions, return_tensors="pt", padding=True,
-        # )
         input_strings = [
             build_string_from_input(
                 prompt=caption,
@@ -61,11 +52,9 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         ]
         return_data = processor.tokenizer(
             input_strings,
-            # text_pair=suffix,
             return_token_type_ids=False,
             return_tensors="pt",
             padding=True,
-            # **output_kwargs["text_kwargs"],
         )
         inputs_text_only = BatchFeature(data=return_data)
 
@@ -84,7 +73,6 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         last_hidden_states[mask_text_only_expanded == 0] = 0
 
         print("last_hidden_states shape: ", last_hidden_states.shape)
-        lang_feats_cls = last_hidden_states[:, 0]
         lang_feats_mean = last_hidden_states.mean(dim=1)
 
         # inputs = self.preprocessor(
@@ -107,8 +95,8 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         return {
             LANG_MEAN_FEAT_KEY: lang_feats_mean,
-            LANG_CLS_FEAT_KEY: lang_feats_cls,
             VISION_MEAN_FEAT_KEY: vision_feats_mean,
+            "vision_features_mean_alt": vision_feats_mean_alt,
             VISION_CLS_FEAT_KEY: vision_feats_cls,
             # FUSED_MEAN_FEAT_KEY: feats_fused_mean,
         }
