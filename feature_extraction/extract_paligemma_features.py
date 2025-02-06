@@ -13,7 +13,7 @@ from data import FUSED_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY,
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 10
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     model_name = "google/paligemma2-3b-pt-224"
     model = PaliGemmaForConditionalGeneration.from_pretrained(
-        model_name, quantization_config=quantization_config, device_map="cuda:0"
+        model_name, quantization_config=quantization_config, device_map="cuda"
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     model_name = "google/paligemma-3b-pt-224"
     model = PaliGemmaForConditionalGeneration.from_pretrained(
-        model_name, quantization_config=quantization_config, device_map="cuda:0"
+        model_name, quantization_config=quantization_config, device_map="cuda"
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
