@@ -101,10 +101,10 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0]).cpu().item()
             print(f'bos_index: {bos_index}')
 
-            img_token_index = ((inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0]).cpu().item()
-            print(f'img_token_index: {img_token_index}')
+            first_img_token_index = ((inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0][0]).cpu().item()
+            print(f'first_img_token_index: {first_img_token_index}')
 
-            img_feats = last_hidden_state[img_token_index:bos_index]
+            img_feats = last_hidden_state[first_img_token_index:bos_index]
             print(f'img_feats shape: {img_feats.shape}')
 
             lang_feats = last_hidden_state[bos_index:]
