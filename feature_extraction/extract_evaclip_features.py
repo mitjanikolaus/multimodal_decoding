@@ -19,8 +19,8 @@ class EVACLIPFeatureExtractor(FeatureExtractor):
     def extract_features_from_batch(self, ids, captions, img_paths):
         images = [Image.open(img_path).convert('RGB') for img_path in img_paths]
 
-        input_ids = self.preprocessor.tokenizer(captions, return_tensors="pt", padding=True).input_ids.to(device)
-        input_pixels = self.preprocessor(images=images, return_tensors="pt", padding=True).pixel_values.to(device)
+        input_ids = self.preprocessor.tokenizer(captions, return_tensors="pt", padding=True).input_ids.to(torch.float8).to(device)
+        input_pixels = self.preprocessor(images=images, return_tensors="pt", padding=True).pixel_values.to(torch.float8).to(device)
 
         with torch.no_grad(), torch.cuda.amp.autocast():
             image_features = self.model.encode_image(input_pixels)
