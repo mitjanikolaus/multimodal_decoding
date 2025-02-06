@@ -86,12 +86,13 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         feats_fused_mean = []
         for last_hidden_state, inputs in zip(last_hidden_states, input_ids):
             # we need to find the first img token idx to ignore the padding tokens that are prepended
-            first_img_token_index = ((inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0][0]).cpu().item()
+            first_img_token_index = (inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0][0]
+            first_img_token_index = first_img_token_index.cpu().item()
 
-            bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0]).cpu().item()
+            bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0])
+            bos_index = bos_index.cpu().item()
 
             img_feats = last_hidden_state[first_img_token_index:bos_index]
-
             lang_feats = last_hidden_state[bos_index:]
 
             fused = torch.mean(torch.vstack((torch.mean(img_feats, dim=0), torch.mean(lang_feats, dim=0))), dim=0)
@@ -118,7 +119,8 @@ if __name__ == "__main__":
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
-    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2_new_fused", BATCH_SIZE, device, move_model=False)
+    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2_new_fused", BATCH_SIZE, device,
+                                          move_model=False)
     extractor.extract_features()
 
     model_name = "google/paligemma-3b-pt-224"
