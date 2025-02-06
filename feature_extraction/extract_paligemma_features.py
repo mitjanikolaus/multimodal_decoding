@@ -36,7 +36,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         # print("image_hidden_states shape: ", outputs.image_hidden_states.shape)
         # print("last_hidden_states shape: ", last_hidden_states.shape)
-        vision_feats_cls = outputs.last_hidden_states[:, 0]
+        vision_feats_cls = last_hidden_states[:, 0]
         vision_feats_mean_alt = outputs.image_hidden_states.mean(dim=1)
         vision_feats_mean = last_hidden_states.mean(dim=1)
 
