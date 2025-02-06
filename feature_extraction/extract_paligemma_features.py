@@ -95,13 +95,13 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             print(f'inputs shape: {inputs.shape}')
             print(f'inputs: {inputs}')
 
-            print(f'last_hidden_states shape: {last_hidden_states.shape}')
-            print(f'last_hidden_states: {last_hidden_states}')
+            print(f'last_hidden_state shape: {last_hidden_state.shape}')
+            print(f'last_hidden_state: {last_hidden_state}')
 
-            bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0])
+            bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0]).cpu().item()
             print(f'bos_index: {bos_index}')
 
-            img_token_index = ((inputs == self.preprocessor.tokenizer.image_token_id).nonzero(as_tuple=True)[0])
+            img_token_index = ((inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0]).cpu().item()
             print(f'img_token_index: {img_token_index}')
 
             img_feats = last_hidden_state[img_token_index:bos_index]
