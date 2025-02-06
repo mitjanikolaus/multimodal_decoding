@@ -26,9 +26,6 @@ class SigLipFeatureExtractor(FeatureExtractor):
         text_mean_feats = outputs.text_model_output.last_hidden_state.mean(dim=1)
         vision_mean_feats = outputs.vision_model_output.last_hidden_state.mean(dim=1)
 
-        print(f"text_mean_feats shape: {text_mean_feats.shape}")
-        print(f"vision_mean_feats shape: {vision_mean_feats.shape}")
-
         return {
             LANG_CLS_FEAT_KEY: outputs.text_embeds,
             VISION_CLS_FEAT_KEY: outputs.image_embeds,
