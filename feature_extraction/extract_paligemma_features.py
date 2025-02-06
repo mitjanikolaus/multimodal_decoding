@@ -63,6 +63,8 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             input_strings,
             # text_pair=suffix,
             return_token_type_ids=False,
+            return_tensors="pt",
+            padding=True,
             # **output_kwargs["text_kwargs"],
         )
         inputs_text_only = BatchFeature(data=return_data)
