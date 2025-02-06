@@ -110,7 +110,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             lang_feats = last_hidden_state[bos_index:]
             print(f'lang_feats shape: {lang_feats.shape}')
 
-            fused = torch.mean(torch.stack((torch.mean(img_feats, dim=0), torch.mean(lang_feats, dim=0))), dim=0)
+            fused = torch.mean(torch.vstack((torch.mean(img_feats, dim=0), torch.mean(lang_feats, dim=0))), dim=0)
             print(f'fused shape: {fused.shape}')
             feats_fused_mean.append(fused)
 
