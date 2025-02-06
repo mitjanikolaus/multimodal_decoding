@@ -75,7 +75,6 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             text=captions, images=images, return_tensors="pt", padding=True,
         )
         input_ids = inputs["input_ids"]
-        mask = inputs["attention_mask"]
 
         inputs = inputs.to(torch.float16).to(device)
         with torch.no_grad():
@@ -83,41 +82,23 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         last_hidden_states = outputs.hidden_states[-1]
 
-        # Average hidden states while ignoring padding tokens
-        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
-        # last_hidden_states[mask_expanded == 0] = 0
-
+        # Average hidden states separately for img and text feats, then average across modalities
         feats_fused_mean = []
-        for last_hidden_state, mask, inputs in zip(last_hidden_states, mask_expanded, input_ids):
-            print(f'mask shape: {mask.shape}')
-            print(f'mask: {mask}')
-
-            print(f'inputs shape: {inputs.shape}')
-            print(f'inputs: {inputs}')
-
-            print(f'last_hidden_state shape: {last_hidden_state.shape}')
-            print(f'last_hidden_state: {last_hidden_state}')
+        for last_hidden_state, inputs in zip(last_hidden_states, input_ids):
+            # we need to find the first img token idx to ignore the padding tokens that are prepended
+            first_img_token_index = ((inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0][0]).cpu().item()
 
             bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0]).cpu().item()
-            print(f'bos_index: {bos_index}')
-
-            first_img_token_index = ((inputs == self.preprocessor.image_token_id).nonzero(as_tuple=True)[0][0]).cpu().item()
-            print(f'first_img_token_index: {first_img_token_index}')
 
             img_feats = last_hidden_state[first_img_token_index:bos_index]
-            print(f'img_feats shape: {img_feats.shape}')
 
             lang_feats = last_hidden_state[bos_index:]
-            print(f'lang_feats shape: {lang_feats.shape}')
 
             fused = torch.mean(torch.vstack((torch.mean(img_feats, dim=0), torch.mean(lang_feats, dim=0))), dim=0)
-            print(f'fused shape: {fused.shape}')
             feats_fused_mean.append(fused)
 
         feats_fused_mean = torch.stack(feats_fused_mean)
-        print(f'feats_fused_mean.shape = {feats_fused_mean.shape}')
         # feats_fused_mean = last_hidden_states.mean(dim=1)
-
 
         return {
             # LANG_MEAN_FEAT_KEY: lang_feats_mean,
@@ -137,7 +118,7 @@ if __name__ == "__main__":
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
-    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2", BATCH_SIZE, device, move_model=False)
+    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma2_new_fused", BATCH_SIZE, device, move_model=False)
     extractor.extract_features()
 
     model_name = "google/paligemma-3b-pt-224"
@@ -146,5 +127,5 @@ if __name__ == "__main__":
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
-    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma", BATCH_SIZE, move_model=False)
+    extractor = PaliGemmaFeatureExtractor(model, processor, "paligemma_new_fused", BATCH_SIZE, move_model=False)
     extractor.extract_features()
