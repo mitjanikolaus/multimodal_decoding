@@ -26,7 +26,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         inputs_image_only = self.preprocessor(
             text=[IMAGE_TOKEN for _ in images], images=images, return_tensors="pt",
         )
-        print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
+        # print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
 
         inputs_image_only = inputs_image_only.to(torch.float16).to(device)
         with torch.no_grad():
@@ -34,8 +34,8 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
 
         last_hidden_states = outputs.hidden_states[-1]
 
-        print("image_hidden_states shape: ", outputs.image_hidden_states.shape)
-        print("last_hidden_states shape: ", last_hidden_states.shape)
+        # print("image_hidden_states shape: ", outputs.image_hidden_states.shape)
+        # print("last_hidden_states shape: ", last_hidden_states.shape)
         vision_feats_cls = outputs.last_hidden_states[:, 0]
         vision_feats_mean_alt = outputs.image_hidden_states.mean(dim=1)
         vision_feats_mean = last_hidden_states.mean(dim=1)
@@ -58,7 +58,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         )
         inputs_text_only = BatchFeature(data=return_data)
 
-        print("input_id values: ", inputs_text_only["input_ids"])
+        # print("input_id values: ", inputs_text_only["input_ids"])
         mask_text_only = inputs_text_only["attention_mask"]
 
         inputs_text_only = inputs_text_only.to(torch.float16).to(device)
@@ -72,7 +72,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
             (mask_text_only.shape[0], mask_text_only.shape[1], last_hidden_states.shape[-1]))
         last_hidden_states[mask_text_only_expanded == 0] = 0
 
-        print("last_hidden_states shape: ", last_hidden_states.shape)
+        # print("last_hidden_states shape: ", last_hidden_states.shape)
         lang_feats_mean = last_hidden_states.mean(dim=1)
 
         # inputs = self.preprocessor(
