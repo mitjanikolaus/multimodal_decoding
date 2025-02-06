@@ -7,7 +7,7 @@ from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor, 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
 
-from data import FUSED_MEAN_FEAT_KEY
+from data import FUSED_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, LANG_MEAN_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
@@ -22,26 +22,73 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [Image.open(path) for path in img_paths]
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
-        inputs = self.preprocessor(
-            text=captions, images=images, return_tensors="pt", padding=True,
+        inputs_image_only = self.preprocessor(
+            text=["" for _ in images], images=images, return_tensors="pt", padding=True,
         )
+        print("pixel values: ", inputs_image_only["pixel_values"])
+        mask_img_only = inputs_image_only["attention_mask"]
 
-        mask = inputs["attention_mask"]
-
-        inputs = inputs.to(torch.bfloat16).to(device)
+        inputs_image_only = inputs_image_only.to(torch.bfloat16).to(device)
         with torch.no_grad():
-            outputs = self.model(**inputs, output_hidden_states=True)
+            outputs = self.model(**inputs_image_only, output_hidden_states=True)
 
         last_hidden_states = outputs.hidden_states[-1]
 
         # Average hidden states while ignoring padding tokens
-        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
-        last_hidden_states[mask_expanded == 0] = 0
+        mask_img_only_expanded = mask_img_only.unsqueeze(-1).expand(
+            (mask_img_only.shape[0], mask_img_only.shape[1], last_hidden_states.shape[-1])
+        )
+        last_hidden_states[mask_img_only_expanded == 0] = 0
 
-        feats_fused_mean = last_hidden_states.mean(dim=1)
+        print("last_hidden_states shape: ", last_hidden_states.shape)
+        vision_feats_cls = last_hidden_states[:, 0]
+        vision_feats_mean = last_hidden_states.mean(dim=1)
+
+        inputs_text_only = self.preprocessor(
+            text=captions, images=[[] for _ in captions], return_tensors="pt", padding=True,
+        )
+        print("input_id values: ", inputs_text_only["input_ids"])
+        mask_text_only = inputs_text_only["attention_mask"]
+
+        inputs_text_only = inputs_text_only.to(torch.bfloat16).to(device)
+        with torch.no_grad():
+            outputs = self.model(**inputs_text_only, output_hidden_states=True)
+
+        last_hidden_states = outputs.hidden_states[-1]
+
+        # Average hidden states while ignoring padding tokens
+        mask_text_only_expanded = mask_text_only.unsqueeze(-1).expand(
+            (mask_text_only.shape[0], mask_text_only.shape[1], last_hidden_states.shape[-1]))
+        last_hidden_states[mask_text_only_expanded == 0] = 0
+
+        print("last_hidden_states shape: ", last_hidden_states.shape)
+        lang_feats_cls = last_hidden_states[:, 0]
+        lang_feats_mean = last_hidden_states.mean(dim=1)
+
+        # inputs = self.preprocessor(
+        #     text=captions, images=images, return_tensors="pt", padding=True,
+        # )
+        #
+        # mask = inputs["attention_mask"]
+        #
+        # inputs = inputs.to(torch.bfloat16).to(device)
+        # with torch.no_grad():
+        #     outputs = self.model(**inputs, output_hidden_states=True)
+        #
+        # last_hidden_states = outputs.hidden_states[-1]
+        #
+        # # Average hidden states while ignoring padding tokens
+        # mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
+        # last_hidden_states[mask_expanded == 0] = 0
+        #
+        # feats_fused_mean = last_hidden_states.mean(dim=1)
 
         return {
-            FUSED_MEAN_FEAT_KEY: feats_fused_mean,
+            LANG_MEAN_FEAT_KEY: lang_feats_mean,
+            LANG_CLS_FEAT_KEY: lang_feats_cls,
+            VISION_MEAN_FEAT_KEY: vision_feats_mean,
+            VISION_CLS_FEAT_KEY: vision_feats_cls,
+            # FUSED_MEAN_FEAT_KEY: feats_fused_mean,
         }
 
 
