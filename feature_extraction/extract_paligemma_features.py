@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import torch
 
 from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor, BitsAndBytesConfig, BatchFeature
@@ -23,82 +24,107 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [Image.open(path) for path in img_paths]
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
-        inputs_image_only = self.preprocessor(
-            text=[IMAGE_TOKEN for _ in images], images=images, return_tensors="pt",
-        )
-        # print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
-
-        inputs_image_only = inputs_image_only.to(torch.float16).to(device)
-        with torch.no_grad():
-            outputs = self.model(**inputs_image_only, output_hidden_states=True)
-
-        last_hidden_states = outputs.hidden_states[-1]
-
-        # print("image_hidden_states shape: ", outputs.image_hidden_states.shape)
-        # print("last_hidden_states shape: ", last_hidden_states.shape)
-        vision_feats_cls = last_hidden_states[:, 0]
-        vision_feats_mean_alt = outputs.image_hidden_states.mean(dim=1)
-        vision_feats_mean = last_hidden_states.mean(dim=1)
-
-        input_strings = [
-            build_string_from_input(
-                prompt=caption,
-                bos_token=processor.tokenizer.bos_token,
-                image_seq_len=processor.image_seq_length,
-                image_token=IMAGE_TOKEN,
-                num_images=0
-            )
-            for caption in captions
-        ]
-        return_data = processor.tokenizer(
-            input_strings,
-            return_token_type_ids=False,
-            return_tensors="pt",
-            padding=True,
-        )
-        inputs_text_only = BatchFeature(data=return_data)
-
-        # print("input_id values: ", inputs_text_only["input_ids"])
-        mask_text_only = inputs_text_only["attention_mask"]
-
-        inputs_text_only = inputs_text_only.to(torch.float16).to(device)
-        with torch.no_grad():
-            outputs = self.model(**inputs_text_only, output_hidden_states=True)
-
-        last_hidden_states = outputs.hidden_states[-1]
-
-        # Average hidden states while ignoring padding tokens
-        mask_text_only_expanded = mask_text_only.unsqueeze(-1).expand(
-            (mask_text_only.shape[0], mask_text_only.shape[1], last_hidden_states.shape[-1]))
-        last_hidden_states[mask_text_only_expanded == 0] = 0
-
-        # print("last_hidden_states shape: ", last_hidden_states.shape)
-        lang_feats_mean = last_hidden_states.mean(dim=1)
-
-        # inputs = self.preprocessor(
-        #     text=captions, images=images, return_tensors="pt", padding=True,
+        # inputs_image_only = self.preprocessor(
+        #     text=[IMAGE_TOKEN for _ in images], images=images, return_tensors="pt",
         # )
         #
-        # mask = inputs["attention_mask"]
-        #
-        # inputs = inputs.to(torch.float16).to(device)
+        # inputs_image_only = inputs_image_only.to(torch.float16).to(device)
         # with torch.no_grad():
-        #     outputs = self.model(**inputs, output_hidden_states=True)
+        #     outputs = self.model(**inputs_image_only, output_hidden_states=True)
+        #
+        # last_hidden_states = outputs.hidden_states[-1]
+        #
+        # vision_feats_cls = last_hidden_states[:, 0]
+        # vision_feats_mean_alt = outputs.image_hidden_states.mean(dim=1)
+        # vision_feats_mean = last_hidden_states.mean(dim=1)
+        #
+        # input_strings = [
+        #     build_string_from_input(
+        #         prompt=caption,
+        #         bos_token=processor.tokenizer.bos_token,
+        #         image_seq_len=processor.image_seq_length,
+        #         image_token=IMAGE_TOKEN,
+        #         num_images=0
+        #     )
+        #     for caption in captions
+        # ]
+        # return_data = processor.tokenizer(
+        #     input_strings,
+        #     return_token_type_ids=False,
+        #     return_tensors="pt",
+        #     padding=True,
+        # )
+        # inputs_text_only = BatchFeature(data=return_data)
+        #
+        # mask_text_only = inputs_text_only["attention_mask"]
+        #
+        # inputs_text_only = inputs_text_only.to(torch.float16).to(device)
+        # with torch.no_grad():
+        #     outputs = self.model(**inputs_text_only, output_hidden_states=True)
         #
         # last_hidden_states = outputs.hidden_states[-1]
         #
         # # Average hidden states while ignoring padding tokens
-        # mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
-        # last_hidden_states[mask_expanded == 0] = 0
+        # mask_text_only_expanded = mask_text_only.unsqueeze(-1).expand(
+        #     (mask_text_only.shape[0], mask_text_only.shape[1], last_hidden_states.shape[-1]))
+        # last_hidden_states[mask_text_only_expanded == 0] = 0
         #
+        # lang_feats_mean = last_hidden_states.mean(dim=1)
+
+        inputs = self.preprocessor(
+            text=captions, images=images, return_tensors="pt", padding=True,
+        )
+        input_ids = inputs["input_ids"]
+        mask = inputs["attention_mask"]
+
+        inputs = inputs.to(torch.float16).to(device)
+        with torch.no_grad():
+            outputs = self.model(**inputs, output_hidden_states=True)
+
+        last_hidden_states = outputs.hidden_states[-1]
+
+        # Average hidden states while ignoring padding tokens
+        mask_expanded = mask.unsqueeze(-1).expand((mask.shape[0], mask.shape[1], last_hidden_states.shape[-1]))
+        # last_hidden_states[mask_expanded == 0] = 0
+
+        feats_fused_mean = []
+        for last_hidden_state, mask, inputs in zip(last_hidden_states, mask_expanded, input_ids):
+            print(f'mask shape: {mask.shape}')
+            print(f'mask: {mask}')
+
+            print(f'inputs shape: {inputs.shape}')
+            print(f'inputs: {inputs}')
+
+            print(f'last_hidden_states shape: {last_hidden_states.shape}')
+            print(f'last_hidden_states: {last_hidden_states}')
+
+            bos_index = ((inputs == self.preprocessor.tokenizer.bos_token_id).nonzero(as_tuple=True)[0])
+            print(f'bos_index: {bos_index}')
+
+            img_token_index = ((inputs == self.preprocessor.tokenizer.image_token_id).nonzero(as_tuple=True)[0])
+            print(f'img_token_index: {img_token_index}')
+
+            img_feats = last_hidden_state[img_token_index:bos_index]
+            print(f'img_feats shape: {img_feats.shape}')
+
+            lang_feats = last_hidden_state[bos_index:]
+            print(f'lang_feats shape: {lang_feats.shape}')
+
+            fused = torch.mean((torch.mean(img_feats, dim=1), torch.mean(lang_feats, dim=1)), dim=1)
+            print(f'fused shape: {fused.shape}')
+            feats_fused_mean.append(fused)
+
+        feats_fused_mean = torch.stack(feats_fused_mean)
+        print(f'feats_fused_mean.shape = {feats_fused_mean.shape}')
         # feats_fused_mean = last_hidden_states.mean(dim=1)
 
+
         return {
-            LANG_MEAN_FEAT_KEY: lang_feats_mean,
-            VISION_MEAN_FEAT_KEY: vision_feats_mean,
-            "vision_features_mean_alt": vision_feats_mean_alt,
-            VISION_CLS_FEAT_KEY: vision_feats_cls,
-            # FUSED_MEAN_FEAT_KEY: feats_fused_mean,
+            # LANG_MEAN_FEAT_KEY: lang_feats_mean,
+            # VISION_MEAN_FEAT_KEY: vision_feats_mean,
+            # "vision_features_mean_alt": vision_feats_mean_alt,
+            # VISION_CLS_FEAT_KEY: vision_feats_cls,
+            FUSED_MEAN_FEAT_KEY: feats_fused_mean,
         }
 
 
