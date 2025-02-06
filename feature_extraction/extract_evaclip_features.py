@@ -1,6 +1,6 @@
 import os
 from PIL import Image
-from transformers import AutoModel
+from transformers import AutoModel, BitsAndBytesConfig
 from transformers import CLIPImageProcessor, CLIPTokenizer
 import torch
 
@@ -37,10 +37,13 @@ class EVACLIPFeatureExtractor(FeatureExtractor):
 if __name__ == "__main__":
     model_name_or_path = "BAAI/EVA-CLIP-8B"
     processor = CLIPImageProcessor.from_pretrained("openai/clip-vit-large-patch14")
+
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
     model = AutoModel.from_pretrained(
         model_name_or_path,
         torch_dtype=torch.float16,
-        trust_remote_code=True
+        trust_remote_code=True,
+        quantization_config=quantization_config,
     )
     model = model.to(device).eval()
 
