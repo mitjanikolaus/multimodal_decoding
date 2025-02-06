@@ -45,7 +45,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         vision_feats_mean = last_hidden_states.mean(dim=1)
 
         inputs_text_only = self.preprocessor(
-            text=captions, return_tensors="pt", padding=True,
+            images=[[] for _ in captions], text=captions, return_tensors="pt", padding=True,
         )
         print("input_id values: ", inputs_text_only["input_ids"])
         mask_text_only = inputs_text_only["attention_mask"]
