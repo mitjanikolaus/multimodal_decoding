@@ -2,7 +2,8 @@ import os
 
 import torch
 
-from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor, BitsAndBytesConfig
+from transformers import PaliGemmaForConditionalGeneration, PaliGemmaProcessor, BitsAndBytesConfig, BatchFeature
+from transformers.models.paligemma.processing_paligemma import IMAGE_TOKEN, build_string_from_input
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from PIL import Image
@@ -23,12 +24,12 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
         inputs_image_only = self.preprocessor(
-            text=["" for _ in images], images=images, return_tensors="pt", padding=True,
+            text=[IMAGE_TOKEN for _ in images], images=images, return_tensors="pt", padding=True,
         )
         print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
         mask_img_only = inputs_image_only["attention_mask"]
 
-        inputs_image_only = inputs_image_only.to(torch.bfloat16).to(device)
+        inputs_image_only = inputs_image_only.to(torch.float16).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs_image_only, output_hidden_states=True)
 
@@ -44,13 +45,31 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         vision_feats_cls = last_hidden_states[:, 0]
         vision_feats_mean = last_hidden_states.mean(dim=1)
 
-        inputs_text_only = self.preprocessor(
-            images=[[] for _ in captions], text=captions, return_tensors="pt", padding=True,
+        # inputs_text_only = self.preprocessor(
+        #     images=[[] for _ in captions], text=captions, return_tensors="pt", padding=True,
+        # )
+        input_strings = [
+            build_string_from_input(
+                prompt=caption,
+                bos_token=processor.tokenizer.bos_token,
+                image_seq_len=processor.image_seq_length,
+                image_token=IMAGE_TOKEN,
+                num_images=0
+            )
+            for caption in captions
+        ]
+        return_data = processor.tokenizer(
+            input_strings,
+            # text_pair=suffix,
+            return_token_type_ids=False,
+            # **output_kwargs["text_kwargs"],
         )
+        inputs_text_only = BatchFeature(data=return_data)
+
         print("input_id values: ", inputs_text_only["input_ids"])
         mask_text_only = inputs_text_only["attention_mask"]
 
-        inputs_text_only = inputs_text_only.to(torch.bfloat16).to(device)
+        inputs_text_only = inputs_text_only.to(torch.float16).to(device)
         with torch.no_grad():
             outputs = self.model(**inputs_text_only, output_hidden_states=True)
 
@@ -71,7 +90,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         #
         # mask = inputs["attention_mask"]
         #
-        # inputs = inputs.to(torch.bfloat16).to(device)
+        # inputs = inputs.to(torch.float16).to(device)
         # with torch.no_grad():
         #     outputs = self.model(**inputs, output_hidden_states=True)
         #
@@ -97,7 +116,7 @@ if __name__ == "__main__":
 
     model_name = "google/paligemma2-3b-pt-224"
     model = PaliGemmaForConditionalGeneration.from_pretrained(
-        model_name, torch_dtype=torch.bfloat16, quantization_config=quantization_config, device_map="cuda:0"
+        model_name, quantization_config=quantization_config, device_map="cuda:0"
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
@@ -106,7 +125,7 @@ if __name__ == "__main__":
 
     model_name = "google/paligemma-3b-pt-224"
     model = PaliGemmaForConditionalGeneration.from_pretrained(
-        model_name, torch_dtype=torch.bfloat16, quantization_config=quantization_config, device_map="cuda:0"
+        model_name, quantization_config=quantization_config, device_map="cuda:0"
     )
     processor = PaliGemmaProcessor.from_pretrained(model_name)
 
