@@ -23,7 +23,7 @@ class PaliGemmaFeatureExtractor(FeatureExtractor):
         images = [img.convert('RGB') if img.mode != 'RGB' else img for img in images]
 
         inputs_image_only = self.preprocessor(
-            images=images, return_tensors="pt", padding=True,
+            text=["" for _ in images], images=images, return_tensors="pt", padding=True,
         )
         print("pixel values shape: ", inputs_image_only["pixel_values"].shape)
         mask_img_only = inputs_image_only["attention_mask"]
