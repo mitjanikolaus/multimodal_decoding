@@ -23,17 +23,21 @@ def export_to_gifti(scores, path):
 def create_masks(args):
     masks = []
     for path in args.paths:
-        masks.append(pickle.load(open(path, "rb")))
+        mask = pickle.load(open(path, "rb"))
+        for hemi in HEMIS:
+            mask[hemi][np.isnan(mask[hemi])] = 0
+        masks.append(mask)
 
     combined_mask = dict()
     for hemi in HEMIS:
         combined_mask[hemi] = np.logical_or.reduce([mask[hemi] for mask in masks], axis=0).astype(int)
+        print(f'{hemi} hemi combined mask size: {np.sum(combined_mask[hemi])}')
     pickle.dump(combined_mask, open(args.path_out, mode='wb'))
 
     for hemi in HEMIS:
         if not args.path_out.endswith(".p"):
             raise RuntimeError("Output path must end with .p")
-        path_out = args.path_out.replace(".p", f"{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = args.path_out.replace(".p", f"_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(combined_mask[hemi], path_out)
 
 
