@@ -217,8 +217,8 @@ FEATS_NA = "n_a"
 
 DEFAULT_FEATURES = {
     "siglip": AVG_FEATS,
-    "paligemma": FUSED_FEATS_MEAN,
-    "paligemma2": FUSED_FEATS_MEAN,
+    "paligemma": AVG_FEATS,
+    "paligemma2": AVG_FEATS,
     "clip": AVG_FEATS,
     "imagebind": AVG_FEATS,
     "random-imagebind": AVG_FEATS,
@@ -250,8 +250,8 @@ DEFAULT_FEATURES = {
 
 DEFAULT_VISION_FEATURES = {
     "siglip": VISION_CLS_FEAT_KEY,
-    "paligemma": FEATS_NA,
-    "paligemma2": FEATS_NA,
+    "paligemma": VISION_MEAN_FEAT_KEY,
+    "paligemma2": VISION_MEAN_FEAT_KEY,
     "clip": VISION_CLS_FEAT_KEY,
     "imagebind": VISION_CLS_FEAT_KEY,
     "random-imagebind": VISION_CLS_FEAT_KEY,
@@ -283,8 +283,8 @@ DEFAULT_VISION_FEATURES = {
 
 DEFAULT_LANG_FEATURES = {
     "siglip": LANG_CLS_FEAT_KEY,
-    "paligemma": FEATS_NA,
-    "paligemma2": FEATS_NA,
+    "paligemma": LANG_MEAN_FEAT_KEY,
+    "paligemma2": LANG_MEAN_FEAT_KEY,
     "clip": LANG_CLS_FEAT_KEY,
     "imagebind": LANG_CLS_FEAT_KEY,
     "random-imagebind": LANG_CLS_FEAT_KEY,
