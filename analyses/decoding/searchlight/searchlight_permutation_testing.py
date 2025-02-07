@@ -199,9 +199,9 @@ def calc_t_value(values, popmean, epsilon=1e-8):
         return 0
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2, epsilon=1e-8):
+def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2, epsilon=1e-8, metric=None):
     data = data.round(precision)
-    iterator = tqdm(data.T) if use_tqdm else data.T
+    iterator = tqdm(data.T, desc=f'calculating t-values for {metric}') if use_tqdm else data.T
     if t_vals_cache is None:
         return np.array(
             [calc_t_value(x, popmean, epsilon) for x in iterator]
@@ -233,6 +233,7 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
 
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
+    t_vals_cache = {}
     for hemi in HEMIS:
         for metric in [METRIC_DIFF_IMAGES, METRIC_DIFF_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS,
                        ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]:
@@ -240,7 +241,9 @@ def calc_t_values(per_subject_scores):
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
-            t_values[hemi][metric][enough_data] = calc_image_t_values(data[:, enough_data], popmean, True)
+            t_values[hemi][metric][enough_data] = calc_image_t_values(
+                data[:, enough_data], popmean, t_vals_cache=t_vals_cache, use_tqdm=True, metric=metric
+            )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
