@@ -1,16 +1,11 @@
 import argparse
 import os
 
-from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, \
-    CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
+from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, T_VAL_METRICS
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEATS_ONLY, LANG_FEATS_ONLY
-from eval import CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, \
-    METRIC_CROSS_ENCODING
+from eval import METRIC_CROSS_ENCODING
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     DEFAULT_MODEL
-
-METRICS = [CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-           CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
 
 
 def run(args):
@@ -35,7 +30,7 @@ def run(args):
             else:
                 print(f'missing file: {mask_path}')
 
-        for metric in METRICS:
+        for metric in T_VAL_METRICS:
             maps_path = os.path.join(results_dir, "results_maps", f"t_values_{metric}_{hemi_fs}.gii")
             if os.path.isfile(maps_path):
                 cmd += f":overlay={maps_path}:overlay_zorder=2"

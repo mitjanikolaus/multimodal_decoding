@@ -346,7 +346,6 @@ def create_null_distribution(args):
 
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
             indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
-            iterator = tqdm(indices) if proc_id == 0 else indices
 
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
                 values = dict()
@@ -361,7 +360,7 @@ def create_null_distribution(args):
                                     t_vals[f"{hemi}__{CORR_IMAGES_MOD_SPECIFIC_IMAGES}"][perm_idx],
                                     t_vals[f"{hemi}__{CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS}"][perm_idx]
                                 ),
-                                axis=0) for perm_idx in iterator]
+                                axis=0) for perm_idx in indices]
                         elif args.metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
                             values[hemi] = [np.nanmin(
                                 (
@@ -370,7 +369,7 @@ def create_null_distribution(args):
                                     t_vals[f"{hemi}__{CORR_IMAGES_MOD_AGNOSTIC}"][perm_idx],
                                     t_vals[f"{hemi}__{CORR_CAPTIONS_MOD_AGNOSTIC}"][perm_idx]
                                 ),
-                                axis=0) for perm_idx in iterator]
+                                axis=0) for perm_idx in indices]
                         else:
                             raise RuntimeError(f"Unknown metric: {args.metric}")
 
