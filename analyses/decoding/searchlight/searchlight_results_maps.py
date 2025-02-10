@@ -8,10 +8,11 @@ import seaborn as sns
 from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
-    permutation_results_dir, add_searchlight_permutation_args
-from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, \
-    ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY
-from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES, \
+    permutation_results_dir, add_searchlight_permutation_args, T_VAL_METRICS
+from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
+from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+    ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 
 
@@ -20,7 +21,7 @@ def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_
     all_neighbors = []
     for subject in args.subjects:
         for hemi in HEMIS:
-            for metric in [ACC_CAPTIONS, ACC_IMAGES]:
+            for metric in [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC]:
                 nans = nan_locations[subject][hemi]
                 all_scores.extend(scores[subject][hemi][metric][~nans])
                 all_neighbors.extend(n_neighbors[subject][hemi])
@@ -72,11 +73,8 @@ def create_gifti_results_maps(args):
         create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)
         plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
-    METRICS = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, METRIC_DIFF_CAPTIONS, METRIC_DIFF_IMAGES,
-               ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES]
-
     subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
-    for metric in METRICS:
+    for metric in T_VAL_METRICS:
         for hemi in HEMIS:
             for subj in args.subjects:
                 if metric in subject_scores[subj][hemi]:
@@ -100,18 +98,20 @@ def create_gifti_results_maps(args):
         for subj in args.subjects:
             subject_scores[subj][hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
                 (
-                    subject_scores[subj][hemi][METRIC_DIFF_CAPTIONS],
-                    subject_scores[subj][hemi][METRIC_DIFF_IMAGES],
-                    subject_scores[subj][hemi][ACC_IMAGES],
-                    subject_scores[subj][hemi][ACC_CAPTIONS]),
+                    subject_scores[subj][hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                    subject_scores[subj][hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                    subject_scores[subj][hemi][ACC_IMAGES_MOD_AGNOSTIC],
+                    subject_scores[subj][hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
                 axis=0)
             path_out = os.path.join(results_dir, subj,
                                     f"{METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(subject_scores[subj][hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC], path_out)
 
             subject_scores[subj][hemi][METRIC_CROSS_DECODING] = np.nanmin(
-                (subject_scores[subj][hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
-                 subject_scores[subj][hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
+                (subject_scores[subj][hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
+                 subject_scores[subj][hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
+                 subject_scores[subj][hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS],
+                 subject_scores[subj][hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
                 axis=0
             )
             path_out = os.path.join(results_dir, subj, f"{METRIC_CROSS_DECODING}_{FS_HEMI_NAMES[hemi]}.gii")
@@ -119,17 +119,19 @@ def create_gifti_results_maps(args):
 
         subject_scores_avgd[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
             (
-                subject_scores_avgd[hemi][METRIC_DIFF_CAPTIONS],
-                subject_scores_avgd[hemi][METRIC_DIFF_IMAGES],
-                subject_scores_avgd[hemi][ACC_IMAGES],
-                subject_scores_avgd[hemi][ACC_CAPTIONS]),
+                subject_scores_avgd[hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                subject_scores_avgd[hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                subject_scores_avgd[hemi][ACC_IMAGES_MOD_AGNOSTIC],
+                subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
             axis=0)
         path_out = os.path.join(results_dir, f"{METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(subject_scores_avgd[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC], path_out)
 
         subject_scores_avgd[hemi][METRIC_CROSS_DECODING] = np.nanmin(
-            (subject_scores_avgd[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
-             subject_scores_avgd[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
+            (subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
+             subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
+             subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS],
+             subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
             axis=0
         )
         path_out = os.path.join(results_dir, f"{METRIC_CROSS_DECODING}_{FS_HEMI_NAMES[hemi]}.gii")

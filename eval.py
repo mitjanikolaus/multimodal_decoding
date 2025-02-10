@@ -12,6 +12,17 @@ ACC_IMAGES = "pairwise_acc_images"
 ACC_CROSS_IMAGES_TO_CAPTIONS = "pairwise_acc_cross_images_to_captions"
 ACC_CROSS_CAPTIONS_TO_IMAGES = "pairwise_acc_cross_captions_to_images"
 
+ACC_IMAGES_MOD_AGNOSTIC = "pairwise_acc_images_mod_agnostic"
+ACC_CAPTIONS_MOD_AGNOSTIC = "pairwise_acc_captions_mod_agnostic"
+ACC_IMAGERY_MOD_AGNOSTIC = "pairwise_acc_imagery_mod_agnostic"
+ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC = "pairwise_acc_imagery_whole_test_set_mod_agnostic"
+
+ACC_IMAGES_MOD_SPECIFIC_IMAGES = "pairwise_acc_images_mod_specific_images"
+ACC_CAPTIONS_MOD_SPECIFIC_IMAGES = "pairwise_acc_captions_mod_specific_images"
+
+ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_captions_mod_specific_captions"
+ACC_IMAGES_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_images_mod_specific_captions"
+
 ACC_IMAGERY = "pairwise_acc_imagery"
 ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 

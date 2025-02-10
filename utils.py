@@ -48,8 +48,8 @@ FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
 DEFAULT_MODEL = "imagebind"
 DEFAULT_RESOLUTION = "fsaverage7"
 
-METRIC_DIFF_CAPTIONS = 'diff_captions_agno_captions_specific'
-METRIC_DIFF_IMAGES = 'diff_imgs_agno_imgs_specific'
+ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_captions_agno_captions_specific'
+ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_imgs_agno_imgs_specific'
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
 
