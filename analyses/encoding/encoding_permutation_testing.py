@@ -16,7 +16,7 @@ from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, cal
 from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_null_distr_results_path, \
     get_results_file_path
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, MODALITY_AGNOSTIC, \
-    MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
+    MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
     METRIC_CROSS_ENCODING, METRIC_CROSS_ENCODING_MAX
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_DIFF_IMAGES, \
@@ -450,12 +450,12 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--mod-specific-images-test-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
 
     parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-captions-features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--mod-specific-captions-test-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
