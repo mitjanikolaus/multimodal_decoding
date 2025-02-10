@@ -174,8 +174,8 @@ def calc_test_statistics(null_distr_tfce_values, args):
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
-        print("calculating p values..")
-        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
+        desc = f"calculating p values for {hemi} hemi"
+        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0], desc=desc):
             test_stat = tfce_values[hemi][args.metric][vertex]
             value_index = np.searchsorted(max_test_statistic_distr, test_stat)
             if value_index >= len(max_test_statistic_distr):
