@@ -29,8 +29,8 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES_MOD_SPECIFIC_IM
     ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_AGNOSTIC, \
     ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, \
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
-from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, DEFAULT_MODEL
+from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 10
 
@@ -43,12 +43,12 @@ CHANCE_VALUES = {
     ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS: 0.5,
     ACC_CAPTIONS_MOD_SPECIFIC_IMAGES: 0.5,
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS: 0.5,
-    ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
-    ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
+    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
 }
 
 T_VAL_METRICS = [
-    ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC,
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC,
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS,
     ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES,
@@ -79,10 +79,10 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
             scores[metric_specific_name][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
 
-        scores[ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
+        scores[METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
             [ai - si for ai, si in zip(scores[ACC_IMAGES_MOD_AGNOSTIC], scores[ACC_IMAGES_MOD_SPECIFIC_IMAGES])]
         )
-        scores[ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
+        scores[METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
             [ac - sc for ac, sc in zip(scores[ACC_CAPTIONS_MOD_AGNOSTIC], scores[ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS])]
         )
 
@@ -260,8 +260,8 @@ def calc_t_values(per_subject_scores):
             warnings.simplefilter("ignore", category=RuntimeWarning)
             t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
                 (
-                    t_values[hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                    t_values[hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                    t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                    t_values[hemi][METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
                     t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
                     t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
                 axis=0)
@@ -460,8 +460,8 @@ def calc_t_values_null_distr(args, out_path):
                         warnings.simplefilter("ignore", category=RuntimeWarning)
                         dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
                             (
-                                t_values[hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                                t_values[hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                                t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                                t_values[hemi][METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
                                 t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
                                 t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
                             axis=0)

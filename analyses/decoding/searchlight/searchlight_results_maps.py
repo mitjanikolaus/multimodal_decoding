@@ -11,8 +11,8 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import load_p
     permutation_results_dir, add_searchlight_permutation_args, T_VAL_METRICS
 from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
-from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 
 
@@ -98,8 +98,8 @@ def create_gifti_results_maps(args):
         for subj in args.subjects:
             subject_scores[subj][hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
                 (
-                    subject_scores[subj][hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                    subject_scores[subj][hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                    subject_scores[subj][hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                    subject_scores[subj][hemi][METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
                     subject_scores[subj][hemi][ACC_IMAGES_MOD_AGNOSTIC],
                     subject_scores[subj][hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
                 axis=0)
@@ -119,8 +119,8 @@ def create_gifti_results_maps(args):
 
         subject_scores_avgd[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
             (
-                subject_scores_avgd[hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                subject_scores_avgd[hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                subject_scores_avgd[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                subject_scores_avgd[hemi][METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
                 subject_scores_avgd[hemi][ACC_IMAGES_MOD_AGNOSTIC],
                 subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
             axis=0)

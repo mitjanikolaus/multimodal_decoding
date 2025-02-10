@@ -17,16 +17,20 @@ from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, ge
     get_results_file_path
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, MODALITY_AGNOSTIC, \
     MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, VISION_FEATS_ONLY, LANG_FEATS_ONLY
-from eval import CORR_IMAGES, CORR_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    METRIC_CROSS_ENCODING
-from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, FS_HEMI_NAMES, export_to_gifti, DEFAULT_MODEL
+from eval import CORR_IMAGES, CORR_CAPTIONS, METRIC_CROSS_ENCODING, CORR_CAPTIONS_MOD_AGNOSTIC, \
+    CORR_IMAGES_MOD_AGNOSTIC, CORR_IMAGES_MOD_SPECIFIC_CAPTIONS, \
+    CORR_CAPTIONS_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS, CORR_IMAGES_MOD_SPECIFIC_IMAGES
+from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, FS_HEMI_NAMES, export_to_gifti, DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 3
 ENCODING_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(ENCODING_RESULTS_DIR, "permutation_testing")
 
-CORR_IMAGES_MOD_SPECIFIC_IMAGES = 'corr_images_mod_specific_images'
-CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS = 'corr_captions_mod_specific_captions'
+T_VAL_METRICS = [CORR_IMAGES_MOD_AGNOSTIC, CORR_CAPTIONS_MOD_AGNOSTIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC,
+                 METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC,
+                 CORR_IMAGES_MOD_SPECIFIC_CAPTIONS, CORR_CAPTIONS_MOD_SPECIFIC_IMAGES,
+                 CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS, CORR_IMAGES_MOD_SPECIFIC_IMAGES]
 
 
 def load_per_subject_scores(args, return_nan_locations=False):
@@ -105,9 +109,7 @@ def load_per_subject_scores(args, return_nan_locations=False):
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
-        for metric in [ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, CORR_IMAGES, CORR_CAPTIONS,
-                       CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_IMAGES_MOD_SPECIFIC_IMAGES,
-                       CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
+        for metric in T_VAL_METRICS:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
@@ -123,8 +125,8 @@ def calculate_metric_from_t_vals(t_vals, metric):
             if metric == METRIC_CROSS_ENCODING:
                 t_vals[hemi][metric] = np.nanmin(
                     (
-                        t_vals[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
-                        t_vals[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS],
+                        t_vals[hemi][CORR_IMAGES_MOD_SPECIFIC_CAPTIONS],
+                        t_vals[hemi][CORR_CAPTIONS_MOD_SPECIFIC_IMAGES],
                         t_vals[hemi][CORR_IMAGES_MOD_SPECIFIC_IMAGES],
                         t_vals[hemi][CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS],
                     ),
@@ -132,10 +134,10 @@ def calculate_metric_from_t_vals(t_vals, metric):
             elif metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
                 t_vals[hemi][metric] = np.nanmin(
                     (
-                        t_vals[hemi][ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                        t_vals[hemi][ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                        t_vals[hemi][CORR_IMAGES],
-                        t_vals[hemi][CORR_CAPTIONS]),
+                        t_vals[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                        t_vals[hemi][METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
+                        t_vals[hemi][CORR_IMAGES_MOD_AGNOSTIC],
+                        t_vals[hemi][CORR_CAPTIONS_MOD_AGNOSTIC]),
                     axis=0)
             else:
                 raise RuntimeError(f"Unknown metric: {metric}")
@@ -167,7 +169,8 @@ def calc_test_statistics(null_distr_tfce_values, args):
     significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distr_tfce_values, args.metric,
                                                                              args.p_value_threshold)
 
-    p_values = {hemi: np.repeat(np.nan, t_values[hemi][CORR_IMAGES].shape) for hemi, t_vals in t_values.items()}
+    p_values = {hemi: np.repeat(np.nan, t_values[hemi][CORR_IMAGES_MOD_AGNOSTIC].shape) for hemi, t_vals in
+                t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
@@ -189,38 +192,28 @@ def calc_test_statistics(null_distr_tfce_values, args):
 
 def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
     scores = dict()
-    for metric in [CORR_CAPTIONS, CORR_IMAGES]:
-        scores[metric] = np.repeat(np.nan, nan_locations.shape)
-        scores[metric][~nan_locations] = scores_agnostic[metric]
+    for metric_agnostic_name, metric in zip([CORR_CAPTIONS_MOD_AGNOSTIC, CORR_IMAGES_MOD_AGNOSTIC],
+                                            [CORR_CAPTIONS, CORR_IMAGES]):
+        scores[metric_agnostic_name] = np.repeat(np.nan, nan_locations.shape)
+        scores[metric_agnostic_name][~nan_locations] = scores_agnostic[metric]
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
-        scores_specific_captions = dict()
-        for metric in [CORR_CAPTIONS, CORR_IMAGES]:
-            scores_specific_captions[metric] = np.repeat(np.nan, nan_locations.shape)
-            scores_specific_captions[metric][~nan_locations] = scores_mod_specific_captions[metric]
+        for metric_specific_name, metric in zip(
+                [CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS, CORR_IMAGES_MOD_SPECIFIC_CAPTIONS], [CORR_CAPTIONS, CORR_IMAGES]):
+            scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
+            scores[metric_specific_name][~nan_locations] = scores_mod_specific_captions[metric]
 
-        scores_specific_images = dict()
-        for metric in [CORR_CAPTIONS, CORR_IMAGES]:
-            scores_specific_images[metric] = np.repeat(np.nan, nan_locations.shape)
-            scores_specific_images[metric][~nan_locations] = scores_mod_specific_images[metric]
+        for metric_specific_name, metric in zip([CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_IMAGES],
+                                                [CORR_IMAGES, CORR_CAPTIONS]):
+            scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
+            scores[metric_specific_name][~nan_locations] = scores_mod_specific_images[metric]
 
-        scores[CORR_CROSS_CAPTIONS_TO_IMAGES] = np.repeat(np.nan, nan_locations.shape)
-        scores[CORR_CROSS_CAPTIONS_TO_IMAGES][~nan_locations] = scores_mod_specific_captions[
-            CORR_CROSS_CAPTIONS_TO_IMAGES]
-
-        scores[CORR_CROSS_IMAGES_TO_CAPTIONS] = np.repeat(np.nan, nan_locations.shape)
-        scores[CORR_CROSS_IMAGES_TO_CAPTIONS][~nan_locations] = scores_mod_specific_images[
-            CORR_CROSS_IMAGES_TO_CAPTIONS]
-
-        scores[ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
-            [ai - si for ai, si in zip(scores[CORR_IMAGES], scores_specific_images[CORR_IMAGES])]
+        scores[METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
+            [ai - si for ai, si in zip(scores[CORR_IMAGES_MOD_AGNOSTIC], scores[CORR_IMAGES_MOD_SPECIFIC_IMAGES])]
         )
-        scores[ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
-            [ac - sc for ac, sc in zip(scores[CORR_CAPTIONS], scores_specific_captions[CORR_CAPTIONS])]
+        scores[METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
+            [ac - sc for ac, sc in zip(scores[CORR_CAPTIONS_MOD_AGNOSTIC], scores[CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS])]
         )
-
-        scores[CORR_IMAGES_MOD_SPECIFIC_IMAGES] = scores_specific_images[CORR_IMAGES]
-        scores[CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS] = scores_specific_captions[CORR_CAPTIONS]
 
     return scores
 
@@ -305,21 +298,16 @@ def calc_t_values_null_distr(args, out_path):
         dsets = dict()
         for hemi in HEMIS:
             print(hemi)
-            n_vertices = per_subject_scores[0][args.subjects[0]][hemi][CORR_IMAGES].size
+            n_vertices = per_subject_scores[0][args.subjects[0]][hemi][CORR_IMAGES_MOD_AGNOSTIC].size
             tvals_shape = (args.n_permutations_group_level, n_vertices)
             dsets[hemi] = dict()
 
-            for metric in [ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, CORR_IMAGES, CORR_CAPTIONS,
-                           CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-                           CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS
-                           ]:
+            for metric in T_VAL_METRICS:
                 dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
             for perm_idx in tqdm(range(args.n_permutations_group_level)):
                 tvals = dict()
-                for metric in [ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, CORR_IMAGES, CORR_CAPTIONS,
-                               CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-                               ]:
+                for metric in T_VAL_METRICS:
                     data = [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                             zip(permutations[perm_idx], args.subjects)]
                     with warnings.catch_warnings():
@@ -368,8 +356,8 @@ def create_null_distribution(args):
                         if args.metric == METRIC_CROSS_ENCODING:
                             values[hemi] = [np.nanmin(
                                 (
-                                    t_vals[f"{hemi}__{CORR_CROSS_CAPTIONS_TO_IMAGES}"][perm_idx],
-                                    t_vals[f"{hemi}__{CORR_CROSS_IMAGES_TO_CAPTIONS}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_IMAGES_MOD_SPECIFIC_CAPTIONS}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_CAPTIONS_MOD_SPECIFIC_IMAGES}"][perm_idx],
                                     t_vals[f"{hemi}__{CORR_IMAGES_MOD_SPECIFIC_IMAGES}"][perm_idx],
                                     t_vals[f"{hemi}__{CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS}"][perm_idx]
                                 ),
@@ -377,10 +365,10 @@ def create_null_distribution(args):
                         elif args.metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
                             values[hemi] = [np.nanmin(
                                 (
-                                    t_vals[f"{hemi}__{ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC}"][perm_idx],
-                                    t_vals[f"{hemi}__{ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC}"][perm_idx],
-                                    t_vals[f"{hemi}__{CORR_IMAGES}"][perm_idx],
-                                    t_vals[f"{hemi}__{CORR_CAPTIONS}"][perm_idx]
+                                    t_vals[f"{hemi}__{METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC}"][perm_idx],
+                                    t_vals[f"{hemi}__{METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_IMAGES_MOD_AGNOSTIC}"][perm_idx],
+                                    t_vals[f"{hemi}__{CORR_CAPTIONS_MOD_AGNOSTIC}"][perm_idx]
                                 ),
                                 axis=0) for perm_idx in iterator]
                         else:
@@ -427,9 +415,7 @@ def create_t_value_maps(results_dir):
     t_values = pickle.load(open(t_values_path, "rb"))
 
     for hemi in HEMIS:
-        for metric in [CORR_IMAGES, CORR_CAPTIONS, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC,
-                       CORR_CROSS_IMAGES_TO_CAPTIONS, CORR_CROSS_CAPTIONS_TO_IMAGES,
-                       CORR_IMAGES_MOD_SPECIFIC_IMAGES, CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
+        for metric in T_VAL_METRICS:
             path_out = os.path.join(results_maps_path, f"t_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
             export_to_gifti(t_values[hemi][metric], path_out)
 

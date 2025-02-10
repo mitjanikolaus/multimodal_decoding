@@ -31,6 +31,14 @@ CORR_CAPTIONS = "corr_captions"
 CORR_IMAGES = "corr_images"
 CORR_CROSS_IMAGES_TO_CAPTIONS = "corr_cross_images_to_captions"
 CORR_CROSS_CAPTIONS_TO_IMAGES = "corr_cross_captions_to_images"
+
+CORR_CAPTIONS_MOD_AGNOSTIC = "corr_captions_mod_agnostic"
+CORR_IMAGES_MOD_AGNOSTIC = "corr_images_mod_agnostic"
+CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS = "corr_captions_mod_specific_captions"
+CORR_IMAGES_MOD_SPECIFIC_CAPTIONS = "corr_images_mod_specific_captions"
+CORR_IMAGES_MOD_SPECIFIC_IMAGES = "corr_images_mod_specific_images"
+CORR_CAPTIONS_MOD_SPECIFIC_IMAGES = "corr_captions_mod_specific_images"
+
 METRIC_CROSS_ENCODING = "corr_cross_encoding"
 
 DISTANCE_METRIC_COSINE = "cosine"

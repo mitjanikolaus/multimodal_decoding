@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
-from analyses.decoding.searchlight.searchlight_permutation_testing import ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, load_per_subject_scores, CHANCE_VALUES, \
+from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
 from eval import ACC_CAPTIONS, ACC_IMAGES
@@ -148,7 +148,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
 
 def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC]
+    metrics = [ACC_CAPTIONS, ACC_IMAGES, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC]
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     if subfolder:
@@ -274,7 +274,7 @@ def create_composite_image(args):
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
-    for metric in [ACC_IMAGES, ACC_CAPTIONS, ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC]:
+    for metric in [ACC_IMAGES, ACC_CAPTIONS, METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC]:
         images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_medial_left.png"))
         cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
         if metric in [ACC_IMAGES, ACC_CAPTIONS]:
@@ -342,7 +342,7 @@ def run(args):
             plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
 
     if args.per_subject_plots:
-        metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, ACC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC]
+        metrics = [ACC_CAPTIONS, ACC_IMAGES, METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC]
         print("\n\nCreating per-subject plots..")
         for subject, scores in tqdm(per_subject_scores.items()):
             fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
