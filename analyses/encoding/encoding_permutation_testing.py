@@ -297,7 +297,6 @@ def calc_t_values_null_distr(args, out_path):
     with h5py.File(out_path, 'w') as all_t_vals_file:
         dsets = dict()
         for hemi in HEMIS:
-            print(hemi)
             n_vertices = per_subject_scores[0][args.subjects[0]][hemi][CORR_IMAGES_MOD_AGNOSTIC].size
             tvals_shape = (args.n_permutations_group_level, n_vertices)
             dsets[hemi] = dict()
@@ -305,7 +304,7 @@ def calc_t_values_null_distr(args, out_path):
             for metric in T_VAL_METRICS:
                 dsets[hemi][metric] = all_t_vals_file.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
-            for perm_idx in tqdm(range(args.n_permutations_group_level)):
+            for perm_idx in tqdm(range(args.n_permutations_group_level), desc=f'calculating t vals for {hemi} hemi'):
                 tvals = dict()
                 for metric in T_VAL_METRICS:
                     data = [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
