@@ -92,7 +92,7 @@ def run(args):
                 train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
                     train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
                 )
-                print(f"train fMRI betas shape: {train_fmri_betas.shape}")
+                print(f"\n\ntrain fMRI betas shape: {train_fmri_betas.shape}")
                 print(f"test fMRI betas shape: {test_fmri_betas.shape}")
                 print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
 
