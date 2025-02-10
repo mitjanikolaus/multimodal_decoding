@@ -375,7 +375,8 @@ def create_null_distribution(args):
                             raise RuntimeError(f"Unknown metric: {args.metric}")
 
                 tfce_values = []
-                iterator = trange(len(values[HEMIS[0]])) if proc_id == 0 else range(len(values[HEMIS[0]]))
+                desc = 'calculating tfce values'
+                iterator = trange(len(values[HEMIS[0]]), desc=desc) if proc_id == 0 else range(len(values[HEMIS[0]]))
                 for iteration in iterator:
                     vals = {hemi: {args.metric: values[hemi][iteration]} for hemi in HEMIS}
                     tfce_values.append(
