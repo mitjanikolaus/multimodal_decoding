@@ -9,7 +9,7 @@ from tqdm import tqdm
 from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_shuffled_indices, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC, SPLIT_IMAGERY
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
-    pairwise_accuracy
+    pairwise_accuracy, ACC_CAPTIONS, ACC_IMAGES
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV, GroupRidgeCV
 from himalaya.scoring import correlation_score
@@ -217,14 +217,24 @@ def run(args):
                     )
 
                     candidate_betas = np.concatenate((imagery_fmri_betas, test_fmri_betas))
-                    acc_imagery_no_std = pairwise_accuracy(
-                        candidate_betas, imagery_predicted_betas, standardize_predictions=False, standardize_latents=False
+                    scores["acc_imagery_no_std"] = pairwise_accuracy(
+                        candidate_betas, imagery_predicted_betas, standardize_predictions=False,
+                        standardize_latents=False
                     )
-                    acc_imagery_std = pairwise_accuracy(
-                        candidate_betas, imagery_predicted_betas, standardize_predictions=True, standardize_latents=False
+                    scores["acc_imagery"] = pairwise_accuracy(
+                        candidate_betas, imagery_predicted_betas, standardize_predictions=True,
+                        standardize_latents=False
                     )
-                    scores["acc_imagery_no_std"] = acc_imagery_no_std
-                    scores["acc_imagery"] = acc_imagery_std
+
+                    for modality, metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
+                        preds_mod = test_predicted_betas[test_stim_types == modality].copy()
+                        targets_mod = test_fmri_betas[test_stim_types == modality]
+                        scores[f"{metric_name}_no_std"] = pairwise_accuracy(
+                            targets_mod, preds_mod, standardize_predictions=False, standardize_latents=False
+                        )
+                        scores[metric_name] = pairwise_accuracy(
+                            targets_mod, preds_mod, standardize_predictions=True, standardize_latents=False
+                        )
 
                     results.update(scores)
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
@@ -241,7 +251,8 @@ def run(args):
                         f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES] > 0]):.2f}\n"
                         f"Num vertices positive corr (captions): {np.sum(results[CORR_CAPTIONS] > 0)}/{len(results[CORR_CAPTIONS])} |"
                         f" Num vertices positive corr (images): {np.sum(results[CORR_IMAGES] > 0)}/{len(results[CORR_IMAGES])}\n"
-                        f"Imagery: {scores['acc_imagery']} | Imagery (no std): {scores['acc_imagery_no_std']}\n\n"
+                        f"Imagery: {scores['acc_imagery']} | Imagery (no std): {scores['acc_imagery_no_std']}\n"
+                        f"Scores: {scores}\n\n"
                     )
 
                     if args.create_null_distr:
