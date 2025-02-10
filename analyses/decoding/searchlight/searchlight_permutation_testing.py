@@ -269,8 +269,8 @@ def calc_t_values(per_subject_scores):
 def calc_test_statistics(args):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
-        per_subject_scores = load_per_subject_scores(args)
         print(f"Calculating t-values")
+        per_subject_scores = load_per_subject_scores(args)
         t_values = calc_t_values(per_subject_scores)
         pickle.dump(t_values, open(t_values_path, 'wb'))
     else:
