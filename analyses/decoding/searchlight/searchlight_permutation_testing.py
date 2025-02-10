@@ -255,8 +255,11 @@ def calc_t_values(per_subject_scores):
                     t_values[hemi][ACC_CAPTIONS]),
                 axis=0)
             t_values[hemi][METRIC_CROSS_DECODING] = np.nanmin(
-                (t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
-                 t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
+                (
+                    t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
+                    t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES],
+                    t_values[hemi][ACC_IMAGES], #TODO should be mod specific acc!
+                    t_values[hemi][ACC_CAPTIONS]), #TODO should be mod specific acc!
                 axis=0
             )
 
@@ -457,8 +460,11 @@ def calc_t_values_null_distr(args, out_path):
                                 t_values[hemi][ACC_CAPTIONS]),
                             axis=0)
                         dsets[hemi][METRIC_CROSS_DECODING][iteration] = np.nanmin(
-                            (t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
-                             t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES]),
+                            (
+                                t_values[hemi][ACC_CROSS_IMAGES_TO_CAPTIONS],
+                                t_values[hemi][ACC_CROSS_CAPTIONS_TO_IMAGES],
+                                t_values[hemi][ACC_IMAGES], #TODO should be mod specific acc!
+                                t_values[hemi][ACC_CAPTIONS]), #TODO should be mod specific acc!
                             axis=0
                         )
 
