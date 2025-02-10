@@ -7,8 +7,9 @@ import torch
 from tqdm import tqdm
 
 from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
-    create_null_distr_shuffled_indices, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC
-from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
+    create_null_distr_shuffled_indices, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC, SPLIT_IMAGERY
+from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS, \
+    pairwise_accuracy
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV, GroupRidgeCV
 from himalaya.scoring import correlation_score
@@ -75,28 +76,25 @@ def run(args):
     else:
         backend = set_backend("numpy")
 
-    random_seeds = create_null_distr_shuffled_indices(args.n_permutations_per_subject) if args.create_null_distr else None
+    random_seeds = create_null_distr_shuffled_indices(
+        args.n_permutations_per_subject) if args.create_null_distr else None
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
             for hemi in HEMIS:
                 train_fmri_betas, train_stim_ids, train_stim_types = get_fmri_surface_data(
-                    args.betas_dir,
-                    subject,
-                    SPLIT_TRAIN,
-                    training_mode,
-                    resolution=args.resolution,
-                    hemi=hemi,
+                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, resolution=args.resolution, hemi=hemi,
                 )
-                test_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
-                    args.betas_dir,
-                    subject,
-                    SPLIT_TEST,
-                    resolution=args.resolution,
-                    hemi=hemi,
+                test_fmri_betas, test_stim_ids, test_stim_types = get_fmri_surface_data(
+                    args.betas_dir, subject, SPLIT_TEST, resolution=args.resolution, hemi=hemi,
+                )
+                imagery_fmri_betas, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(
+                    args.betas_dir, subject, SPLIT_IMAGERY, resolution=args.resolution, hemi=hemi
                 )
                 nan_locations = np.isnan(train_fmri_betas[0])
-                train_fmri_betas, test_betas = standardize_fmri_betas(train_fmri_betas, test_betas)
+                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
+                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas
+                )
 
                 for model in args.models:
                     feats_config = LatentFeatsConfig(
@@ -107,14 +105,18 @@ def run(args):
                         feats_config, subject, SPLIT_TRAIN, training_mode
                     )
                     test_latents = get_latent_features(feats_config, subject, SPLIT_TEST)
-                    train_latents, test_latents = standardize_latents(train_latents, test_latents)
+                    imagery_latents = get_latent_features(feats_config, subject, SPLIT_IMAGERY)
+
+                    train_latents, test_latents, imagery_latents = standardize_latents(
+                        train_latents, test_latents, imagery_latents
+                    )
 
                     print(f"\nTRAIN MODE: {training_mode} | HEMI: {hemi} | SUBJECT: {subject} | "
                           f"MODEL: {model} | FEATURES: {feats_config.features} "
                           f"{feats_config.vision_features} {feats_config.lang_features} | "
                           f"TEST FEATURES: {feats_config.test_features}")
                     print(f"train fMRI betas shape: {train_fmri_betas.shape}")
-                    print(f"test fMRI betas shape: {test_betas.shape}")
+                    print(f"test fMRI betas shape: {test_fmri_betas.shape}")
 
                     results_file_path = get_results_file_path(
                         subject, training_mode, feats_config, args.resolution, hemi
@@ -126,6 +128,7 @@ def run(args):
 
                     train_latents = train_latents.astype(np.float32)
                     test_latents = test_latents.astype(np.float32)
+                    imagery_latents = imagery_latents.astype(np.float32)
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
 
                     # skip input data checking to limit memory use
@@ -134,7 +137,8 @@ def run(args):
 
                     if args.add_gabor_feats:
                         feats_config = LatentFeatsConfig("gabor")
-                        train_latents_gabor = get_latent_features(feats_config, subject, SPLIT_TRAIN, mode=training_mode)
+                        train_latents_gabor = get_latent_features(feats_config, subject, SPLIT_TRAIN,
+                                                                  mode=training_mode)
                         test_latents_gabor = get_latent_features(
                             feats_config, subject, SPLIT_TEST
                         )
@@ -180,9 +184,11 @@ def run(args):
                         best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
 
                         test_predicted_betas = clf.predict(test_latents)
+                        imagery_predicted_betas = clf.predict(imagery_latents)
 
-                    test_betas = backend.to_numpy(test_betas)
+                    test_fmri_betas = backend.to_numpy(test_fmri_betas)
                     test_predicted_betas = backend.to_numpy(test_predicted_betas)
+                    imagery_predicted_betas = backend.to_numpy(imagery_predicted_betas)
 
                     results = {
                         "alpha": best_alphas,
@@ -194,19 +200,34 @@ def run(args):
                         "lang_features": feats_config.lang_features,
                         "training_mode": training_mode,
                         "hemi": hemi,
-                        "num_voxels": test_betas.shape[1],
+                        "num_voxels": test_fmri_betas.shape[1],
                         "stimulus_ids": test_stim_ids,
                         "stimulus_types": test_stim_types,
                         "resolution": args.resolution,
                         "nan_locations": nan_locations,
                         "test_predicted_betas": test_predicted_betas,
-                        "test_betas": test_betas,
+                        "imagery_predicted_betas": imagery_predicted_betas,
+                        "test_betas": test_fmri_betas,
+                        "imagery_betas": imagery_fmri_betas,
                         "weights": clf.coef_,
                     }
                     scores = calc_correlation_metrics(
-                        test_betas, test_predicted_betas, test_stim_types, backend
+                        test_fmri_betas, test_predicted_betas, test_stim_types, backend
                     )
+
+                    candidate_betas = np.concatenate((imagery_fmri_betas, test_fmri_betas))
+                    acc_imagery_no_std = pairwise_accuracy(
+                        candidate_betas, imagery_predicted_betas, standardize_predictions=False, standardize_latents=False
+                    )
+                    acc_imagery_std = pairwise_accuracy(
+                        candidate_betas, imagery_predicted_betas, standardize_predictions=True, standardize_latents=False
+                    )
+                    scores["acc_imagery_no_std"] = acc_imagery_no_std
+                    scores["acc_imagery"] = acc_imagery_std
+
                     results.update(scores)
+                    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
+                    pickle.dump(results, open(results_file_path, 'wb'))
                     print(
                         f"Best alphas: {Counter(best_alphas)}\n"
                         f"Corr (all): {np.mean(results[CORR_ALL]):.2f} |"
@@ -218,17 +239,15 @@ def run(args):
                         f"Corr (captions, pos only): {np.mean(results[CORR_CAPTIONS][results[CORR_CAPTIONS] > 0]):.2f} |"
                         f" Corr (images, pos only): {np.mean(results[CORR_IMAGES][results[CORR_IMAGES] > 0]):.2f}\n"
                         f"Num vertices positive corr (captions): {np.sum(results[CORR_CAPTIONS] > 0)}/{len(results[CORR_CAPTIONS])} |"
-                        f" Num vertices positive corr (images): {np.sum(results[CORR_IMAGES] > 0)}/{len(results[CORR_IMAGES])}\n\n"
+                        f" Num vertices positive corr (images): {np.sum(results[CORR_IMAGES] > 0)}/{len(results[CORR_IMAGES])}\n"
+                        f"Imagery: {scores['acc_imagery']} | Imagery (no std): {scores['acc_imagery_no_std']}\n\n"
                     )
-
-                    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
-                    pickle.dump(results, open(results_file_path, 'wb'))
 
                     if args.create_null_distr:
                         scores_null_distr = []
                         for seed in tqdm(random_seeds, desc="creating null distribution"):
                             shuffled_indices = create_shuffled_indices(seed)
-                            test_fmri_betas_shuffled = test_betas[shuffled_indices]
+                            test_fmri_betas_shuffled = test_fmri_betas[shuffled_indices]
 
                             scores = calc_correlation_metrics(
                                 test_fmri_betas_shuffled, test_predicted_betas, test_stim_types, backend
