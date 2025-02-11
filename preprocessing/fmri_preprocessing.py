@@ -11,7 +11,7 @@ from nipype.algorithms.misc import Gunzip
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR
+from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_ANAT_DATA_DIR
 
 mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
 
@@ -37,12 +37,10 @@ def run(args):
     print()
 
     # list subject sessions
-    data_root = FMRI_RAW_BIDS_DATA_DIR
-    anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
         sess = []
-        folders = os.listdir(opj(data_root, subj))
+        folders = os.listdir(opj(args.fmri_bids_dir, subj))
         sessions[subj] = sorted(folders)
     print_session_names(sessions)
 
@@ -51,10 +49,10 @@ def run(args):
     for subj in subjects:
         for ses in sessions[subj]:
             rns = []
-            files = os.listdir(opj(data_root, subj, ses, 'func'))
+            files = os.listdir(opj(args.fmri_bids_dir, subj, ses, 'func'))
             for file in files:
                 if file.endswith("bold.nii.gz"):
-                    rns.append(opj(data_root, subj, ses, 'func', file[:-12]))
+                    rns.append(opj(args.fmri_bids_dir, subj, ses, 'func', file[:-12]))
             runs[(subj, ses)] = sorted(rns)
     print_run_names(runs)
 
@@ -120,19 +118,18 @@ def run(args):
     func_file = opj('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
-        SelectFiles({'anat': anat_file}, base_directory=anat_root), name="selectfiles_anat"
+        SelectFiles({'anat': anat_file}, base_directory=args.fmri_anat_dir), name="selectfiles_anat"
     )
 
     selectfiles_sessions = Node(
-        SelectFiles({'func': func_file}, base_directory=data_root), name="selectfiles_sessions"
+        SelectFiles({'func': func_file}, base_directory=args.fmri_bids_dir), name="selectfiles_sessions"
     )
 
     # Working directory
-    workflow_dir = FMRI_PREPROCESSED_DATA_DIR
-    os.makedirs(workflow_dir, exist_ok=True)
+    os.makedirs(args.out_dir, exist_ok=True)
 
     # Datasink - creates an extra output folder for storing the desired files
-    datasink_node = Node(DataSink(base_directory=workflow_dir, container='datasink'), name="datasink")
+    datasink_node = Node(DataSink(base_directory=args.out_dir, container='datasink'), name="datasink")
 
     # Remove nipype's prefix for the files and folders in the datasink
     substitutions = [('_subject_id_', ''), ('_session_id_', '')]
@@ -143,8 +140,7 @@ def run(args):
     #################################################
     # create the workflow
     preproc = Workflow(name='preprocess_workflow')
-    preproc.base_dir = workflow_dir
-    # preproc.config['execution'] = {} # you can add configurations here
+    preproc.base_dir = args.out_dir
 
     # connect info source to file selectors
     preproc.connect([(infosrc_subjects, selectfiles_anat, [('subject_id', 'subject_id')])])
@@ -153,7 +149,6 @@ def run(args):
     preproc.connect([(infosrc_subjects, selectfiles_sessions, [('subject_id', 'subject_id')])])
 
     # connect file selectors to gunzip
-    # preproc.connect([(selectfiles_anat, gunzip_anat_node, [('anat', 'in_file')])])
     preproc.connect([(selectfiles_sessions, gunzip_func_node, [('func', 'in_file')])])
 
     # connect gunzip to STC
@@ -166,12 +161,9 @@ def run(args):
     preproc.connect([(realign_node, coregister_node, [('mean_image', 'source')])])
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
-    # preproc.connect([(gunzip_anat_node, coregister_node, [('out_file', 'target')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
-    # preproc.connect([(coregister_node, datasink_node, [('coregistered_files',  'coregister.@files')])])
-    # preproc.connect([(coregister_node, datasink_node, [('coregistered_source', 'coregister.@src')])])
 
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
@@ -183,7 +175,13 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--fmri-bids-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--fmri-anat-dir", type=str, default=FMRI_ANAT_DATA_DIR)
+
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+
+    parser.add_argument("--out-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+
 
     return parser.parse_args()
 

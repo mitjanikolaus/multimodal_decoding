@@ -24,6 +24,7 @@ RESULTS_FILE = "results.p"
 
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
 FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
+FMRI_ANAT_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
 FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni305")
