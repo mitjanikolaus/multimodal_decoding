@@ -152,7 +152,8 @@ def run(args):
                                 alphas=np.array(args.l2_regularization_alphas),
                                 n_targets_batch=args.n_targets_batch,
                                 n_alphas_batch=args.n_alphas_batch,
-                                n_targets_batch_refit=args.n_targets_batch_refit
+                                n_targets_batch_refit=args.n_targets_batch_refit,
+                                local_alpha=False,
                             )
                         )
 
