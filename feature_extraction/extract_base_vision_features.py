@@ -6,9 +6,9 @@ from PIL import Image
 import pickle
 from tqdm import tqdm
 
+from data import IMAGERY_SCENES, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import SUBJECTS, IMAGERY_SCENES, STIMULI_IDS_PATH, FMRI_BETAS_DIR, VISION_MEAN_FEAT_KEY, \
-    VISION_CLS_FEAT_KEY
+from utils import SUBJECTS, STIMULI_IDS_PATH, FMRI_BETAS_DIR
 
 BATCH_SIZE = 128
 

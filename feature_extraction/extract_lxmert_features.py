@@ -9,7 +9,7 @@ import numpy as np
 import csv
 import sys
 
-from utils import FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
+from data import FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"

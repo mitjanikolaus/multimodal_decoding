@@ -20,7 +20,8 @@ from tqdm import tqdm
 from transformers import BertTokenizer, VisualBertModel
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor, CoCoDataset
-from utils import STIM_INFO_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY, DATA_DIR
+from utils import STIM_INFO_PATH, COCO_IMAGES_DIR, STIMULI_IDS_PATH, DATA_DIR
+from data import FUSED_MEAN_FEAT_KEY, FUSED_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 

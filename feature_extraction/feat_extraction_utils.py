@@ -6,7 +6,8 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from utils import IMAGES_IMAGERY_CONDITION, COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, NN_FEATURES_DIR, \
+from data import IMAGES_IMAGERY_CONDITION
+from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, LATENT_FEATURES_DIR, \
     model_features_file_path
 
 
@@ -39,8 +40,7 @@ class CoCoDataset(Dataset):
         id = self.stimuli_ids[index]
         if self.mode == 'image':
             img_path = os.path.join(self.root, self.img_paths[id])
-            img = Image.open(img_path).convert('RGB')
-            return img, id, img_path
+            return id, img_path
 
         elif self.mode == 'caption':
             cap = self.captions[id]
@@ -56,15 +56,24 @@ class CoCoDataset(Dataset):
         img = Image.open(img_path).convert('RGB')
         return img
 
+    def get_stimuli_by_coco_id(self, coco_id):
+        img_path = os.path.join(self.root, self.img_paths[coco_id])
+        img = Image.open(img_path).convert('RGB')
+
+        cap = self.captions[coco_id]
+
+        return img, cap
+
 
 class FeatureExtractor:
-    def __init__(self, model, prepocessor=None, model_name=None, batch_size=10, device="cpu"):
+    def __init__(self, model, prepocessor=None, model_name=None, batch_size=10, device="cpu", move_model=True):
         super().__init__()
         print(f"Feature extraction for {model_name} on {device}")
 
         self.device = device
-
-        self.model = model.to(device)
+        if move_model:
+            model = model.to(device)
+        self.model = model
         self.model.eval()
 
         self.preprocessor = prepocessor
@@ -74,7 +83,7 @@ class FeatureExtractor:
         self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'both')
         self.dloader = DataLoader(self.ds, shuffle=False, batch_size=batch_size)
 
-        os.makedirs(NN_FEATURES_DIR, exist_ok=True)
+        os.makedirs(LATENT_FEATURES_DIR, exist_ok=True)
 
     def extract_features(self):
         all_feats = dict()
@@ -85,7 +94,7 @@ class FeatureExtractor:
 
             feats_batch = self.extract_features_from_batch(ids, captions, img_paths)
             for key, feats in feats_batch.items():
-                feats_numpy = feats.cpu().numpy()
+                feats_numpy = feats.cpu().float().numpy()
                 for id, feat in zip(ids, feats_numpy):
                     all_feats[id][key] = feat
 

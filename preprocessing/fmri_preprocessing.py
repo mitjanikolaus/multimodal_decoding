@@ -1,11 +1,3 @@
-##########################################################
-# PREPROCESSING fMRI IMAGES with nipype
-# Note: Matlab and SPM are required for this script
-# This script performs the following steps:
-#   1. Slice Time Correction (STC)
-#   2. Realignment (to the first image of each run)
-#   3. Coregistration (to T1w anatomical image)
-##########################################################
 import argparse
 import os
 import numpy as np
@@ -68,19 +60,18 @@ def run(args):
 
     # fMRI setting
     TR = 2
-    voxel_size = (3, 3, 3)
     number_of_slices = 46
     ref_slice_index = 22
     multiband_factor = 2
     interval = TR / (number_of_slices / multiband_factor)
 
     slice2time = [0] * number_of_slices
-    time = 0
+    time = interval * 1000
     for f, temp in enumerate([[0, 23], [1, 24]]):
         for i in range(12 - f):
-            slice2time[temp[0] + i * 2] = time
-            slice2time[temp[1] + i * 2] = time
-            time += (interval * 1000)
+            slice2time[temp[0] + i * 2] = min(time, TR*1000)
+            slice2time[temp[1] + i * 2] = min(time, TR*1000)
+            time += interval * 1000
 
     for idx, t in enumerate(slice2time):
         print(f"{idx:02d} {t:10.4f}")

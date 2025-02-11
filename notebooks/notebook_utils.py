@@ -1,22 +1,44 @@
-import os
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 import seaborn as sns
-from utils import SUBJECTS
-from analyses.ridge_regression_decoding import ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, get_default_features, get_default_vision_features, get_default_lang_features, calc_all_pairwise_accuracy_scores, MODE_AGNOSTIC, MOD_SPECIFIC_IMAGES, MOD_SPECIFIC_CAPTIONS, DECODER_OUT_DIR
+
+from data import DEFAULT_FEATURES, DEFAULT_VISION_FEATURES, DEFAULT_LANG_FEATURES, TRAINING_MODES, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
+from eval import ACC_MODALITY_AGNOSTIC, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, \
+    calc_all_pairwise_accuracy_scores
+from utils import SUBJECTS, RIDGE_DECODER_OUT_DIR
+from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
+
 from tqdm import tqdm
 from glob import glob
 import pickle
 
-
-HP_KEYS = ["alpha", "model", "subject", "features", "test_features", "vision_features", "lang_features", "training_mode", "mask",
+HP_KEYS = ["alpha", "model", "subject", "features", "test_features", "vision_features", "lang_features",
+           "training_mode", "mask",
            "num_voxels", "surface", "resolution"]
 METRIC_NAMES = {"acc_cosine": "pairwise_acc", "acc_cosine_captions": "pairwise_acc_captions",
                 "acc_cosine_images": "pairwise_acc_images"}
 
 ACC_MEAN = "pairwise_acc_mean"
 ACC_CROSS_MEAN = "pairwise_acc_cross_mean"
+FEATS_MULTIMODAL = ["fused_mean", "fused_cls", "avg", "matched"]
+DEFAULT_FEAT_OPTIONS = ["vision", "lang"] + FEATS_MULTIMODAL
+
+
+def calc_model_feat_order(data, feat_options=DEFAULT_FEAT_OPTIONS):
+    all_model_feats = data.model_feat.unique()
+    all_models = data.model.unique()
+    for model in all_models:
+        if model not in MODELS:
+            raise RuntimeError(f"Model missing in order: {model}")
+    model_feat_order = []
+    for model in MODELS:
+        for feats in feat_options:
+            model_feat = f"{model}_{feats}"
+            if model_feat in all_model_feats:
+                model_feat_order.append(model_feat)
+
+    return model_feat_order
+    
 
 def plot_metric(data, kind="bar", x_variable="model_feat", order=None, hue_variable="model_feat", hue_order=None,
                 metric="pairwise_acc_mean", ylim=(0.5, 1), plot_legend=True, palette=None,
@@ -94,7 +116,8 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     for i in range(len(g.axes[-1])):
         last_axis = g.axes[-1][i]
         if shorten_label_texts:
-            last_axis.set_xticklabels([get_short_label_text(label, cut_labels) for label in last_axis.get_xticklabels()])
+            last_axis.set_xticklabels(
+                [get_short_label_text(label, cut_labels) for label in last_axis.get_xticklabels()])
         last_axis.tick_params(axis='x', rotation=rotation)
 
     g.set(ylim=ylim, ylabel="pairwise_acc_mean", xlabel='')
@@ -109,18 +132,20 @@ FEAT_PALETTE = sns.color_palette('Set2')
 PALETTE_BLACK_ONLY = [(0, 0, 0)] * 10
 
 
-def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pairwise_acc_captions", "pairwise_acc_images"],
+def create_result_graph(data, x_variable="model_feat", order=None,
+                        metrics=["pairwise_acc_captions", "pairwise_acc_images"],
                         hue_variable="features", hue_order=FEAT_ORDER, ylim=None,
                         legend_title="Legend", palette=FEAT_PALETTE, dodge=False, noise_ceilings=None,
                         plot_modality_specific=True,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
                         verify_num_datapoints=True, plot_legend=True, shorten_label_texts=True):
-    data_training_mode_full = data[data.training_mode == "modality-agnostic"]
-    data_training_mode_captions = data[data.training_mode == "captions"]
-    data_training_mode_images = data[data.training_mode == "images"]
+    
+    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
+    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
+    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
-    for mode in ["modality-agnostic", "captions", "images"]:
+    for mode in TRAINING_MODES:
         data_mode = data[data.training_mode == mode]
         for x_variable_value in order:
             length = len(data_mode[(data_mode[x_variable] == x_variable_value) & (data_mode.metric == metrics[0])])
@@ -128,7 +153,7 @@ def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pai
             if hue_variable != "features":
                 expected_num_datapoints *= len(data[hue_variable].unique())
             if (length > 0) and (length != expected_num_datapoints):
-                message = f"unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) ({x_variable}: {x_variable_value} {mode}"
+                message = f"{mode} unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) ({x_variable}: {x_variable_value}) "
                 if verify_num_datapoints:
                     raise RuntimeError(message)
                 else:
@@ -148,16 +173,15 @@ def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pai
 
         for m, metric in enumerate(metrics):
             g1, _ = plot_metric(data_training_mode_captions, kind="point", order=order, metric=metrics[m],
-                        x_variable="model_feat", dodge=dodge,
-                        hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
-                        axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
+                                x_variable="model_feat", dodge=dodge,
+                                hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
+                                axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
             g2, _ = plot_metric(data_training_mode_images, kind="point", order=order, metric=metrics[m],
-                               x_variable="model_feat", dodge=dodge,
-                               hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
-                               axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
+                                x_variable="model_feat", dodge=dodge,
+                                hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
+                                axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
             if m == 0:
                 first_metric_graph_mod_specific_1 = g1
-
 
         handles, labels = first_metric_graph_mod_specific_1.get_legend_handles_labels()
 
@@ -169,8 +193,10 @@ def create_result_graph(data, x_variable="model_feat", order=None, metrics=["pai
                                  bbox_to_anchor=legend_2_bbox)
 
     for m, metric in enumerate(metrics):
-        catplot_g.axes[m, 0].set_title(metrics[m].replace("pairwise_acc_mean","").replace("pairwise_acc_", "").replace("_", "-"), fontsize=35,
-                                       y=row_title_height)
+        catplot_g.axes[m, 0].set_title(
+            metrics[m].replace("pairwise_acc_mean", "").replace("pairwise_acc_", "").replace("_", "-"),
+            fontsize=35,
+            y=row_title_height)
         catplot_g.axes[m, 0].set_ylabel('pairwise accuracy')
 
     plt.subplots_adjust(hspace=0.15)
@@ -182,35 +208,43 @@ def add_avg_subject(df):
     df_mean["subject"] = "average"
     return pd.concat((df.copy(), df_mean))
 
-METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
+
+METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS,
+                ACC_CROSS_CAPTIONS_TO_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
 METRICS_ERROR_ANALYSIS = ['predictions', 'latents', 'stimulus_ids', 'stimulus_types']
-METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, 'imagery_predictions', 'imagery_latents']
+METRICS_IMAGERY = METRICS_ERROR_ANALYSIS + [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, 'imagery_predictions',
+                                            'imagery_latents']
 
 
-def update_acc_scores(results, metric="cosine", normalize_predictions=True, normalize_targets=False, norm_imagery_preds_with_test_preds=False):
+def update_acc_scores(results, metric="cosine", standardize_predictions=False, standardize_targets=False,
+                      norm_imagery_preds_with_test_preds=False):
     results.update(
         calc_all_pairwise_accuracy_scores(
             results["latents"], results["predictions"], results["stimulus_types"],
             imagery_latents=results["imagery_latents"] if "imagery_latents" in results else None,
             imagery_predictions=results["imagery_predictions"] if "imagery_predictions" in results else None,
-            metric=metric, normalize_predictions=normalize_predictions, normalize_targets=normalize_targets,
-            norm_imagery_preds_with_test_preds=True
+            metric=metric, standardize_predictions=standardize_predictions, standardize_latents=standardize_targets,
+            norm_imagery_preds_with_test_preds=norm_imagery_preds_with_test_preds
         )
     )
     return results
 
-def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine", normalize_predictions=True, normalize_targets=False,
-                     norm_imagery_preds_with_test_preds=False):
+
+def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, pairwise_acc_metric="cosine",
+                      standardize_predictions=False, standardize_targets=False,
+                      norm_imagery_preds_with_test_preds=False):
     data = []
 
-    result_files = sorted(glob(f"{DECODER_OUT_DIR}/*/*/*/results.p"))
+    result_files = sorted(glob(f"{RIDGE_DECODER_OUT_DIR}/*/*/*/results.p"))
     for result_file_path in tqdm(result_files):
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
             if recompute_acc_scores:
-                results = update_acc_scores(results, metric=pairwise_acc_metric, normalize_predictions=normalize_predictions, normalize_targets=normalize_targets,
-                                           norm_imagery_preds_with_test_preds=norm_imagery_preds_with_test_preds)
-            
+                results = update_acc_scores(results, metric=pairwise_acc_metric,
+                                            standardize_predictions=standardize_predictions,
+                                            standardize_targets=standardize_targets,
+                                            norm_imagery_preds_with_test_preds=norm_imagery_preds_with_test_preds)
+
             for metric in metrics:
                 if metric in results.keys():
                     data_item = {k: value for k, value in results.items() if k in HP_KEYS}
@@ -232,35 +266,32 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     if "test_features" in df.columns:
         df = df[(df.test_features == df.features) | df.test_features.isna()].copy()
 
-    df["training_mode"] = df.training_mode.replace(
-        {MODE_AGNOSTIC: "modality-agnostic", MOD_SPECIFIC_CAPTIONS: "captions", MOD_SPECIFIC_IMAGES: "images"})
-
     if "surface" in df.columns:
         df["surface"] = df.surface.fillna(False)
     else:
         df["surface"] = False
 
-    df["vision_features"] = df.vision_features.replace(
-        {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
+    # df["vision_features"] = df.vision_features.replace(
+    #     {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
 
-    # imagebind only supports extraction of cls features
-    df.loc[df.model == "imagebind", "lang_features"] = "lang_features_cls"
+    # # imagebind only supports extraction of cls features
+    # df.loc[df.model == "imagebind", "lang_features"] = "lang_features_cls"
 
-    # we currently always compute mean features from language models 
-    df.loc[df.model.isin(
-        ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
-         "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "lang_features"] = "lang_features_mean"
+    # # we currently always compute mean features from language models 
+    # df.loc[df.model.isin(
+    #     ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
+    #      "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "lang_features"] = "lang_features_mean"
 
-    # update unimodal feat values for fused feats of multimodal models:
-    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n_a"
-    df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n_a"
+    # # update unimodal feat values for fused feats of multimodal models:
+    # df.loc[df.features.isin(["fused_mean", "fused_cls"]), "lang_features"] = "n_a"
+    # df.loc[df.features.isin(["fused_mean", "fused_cls"]), "vision_features"] = "n_a"
 
-    # default values for unimodal models:
-    df.loc[df.model.isin(
-        ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
-         "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n_a"
-    df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large",
-                          "dino-giant"]), "lang_features"] = "n_a"
+    # # default values for unimodal models:
+    # df.loc[df.model.isin(
+    #     ["bert-base-uncased", "bert-large-uncased", "llama2-7b", "llama2-13b", "mistral-7b", "mixtral-8x7b",
+    #      "gpt2-small", "gpt2-medium", "gpt2-large", "gpt2-xl"]), "vision_features"] = "n_a"
+    # df.loc[df.model.isin(["vit-b-16", "vit-l-16", "resnet-18", "resnet-50", "resnet-152", "dino-base", "dino-large",
+    #                       "dino-giant"]), "lang_features"] = "n_a"
 
     # df["lang_features"] = df["lang_features"].fillna("unk")
 
@@ -272,12 +303,16 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     return df
 
 
-def get_data_default_feats(data, logging=False):
+def get_data_default_feats(data):
     data_default_feats = data.copy()
     for model in data.model.unique():
-        default_feats = get_default_features(model, logging=logging)
-        default_vision_feats = get_default_vision_features(model, logging=logging)
-        default_lang_feats = get_default_lang_features(model, logging=logging)
-        data_default_feats = data_default_feats[((data_default_feats.model == model) & (data_default_feats.features == default_feats) & (data_default_feats.vision_features == default_vision_feats) & (data_default_feats.lang_features == default_lang_feats)) | (data_default_feats.model != model)]
-        
+        default_feats = DEFAULT_FEATURES[model]
+        default_vision_feats = DEFAULT_VISION_FEATURES[model]
+        default_lang_feats = DEFAULT_LANG_FEATURES[model]
+        data_default_feats = data_default_feats[
+            ((data_default_feats.model == model) & (data_default_feats.features == default_feats) & (
+                    data_default_feats.vision_features == default_vision_feats) & (
+                     data_default_feats.lang_features == default_lang_feats)) | (data_default_feats.model != model)
+            ]
+
     return data_default_feats

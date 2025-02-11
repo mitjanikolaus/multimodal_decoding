@@ -5,8 +5,9 @@ import pickle
 import numpy as np
 
 from feature_extraction.feat_extraction_utils import CoCoDataset
-from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, LANG_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY, \
-    VISION_MEAN_FEAT_KEY
+from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH
+from data import LANG_CLS_FEAT_KEY, VISION_MEAN_FEAT_KEY
+
 
 if __name__ == "__main__":
     stimuli_ids = pickle.load(open(os.path.expanduser("~/data/multimodal_decoding/stimuli_ids.p"), "rb"))

@@ -6,7 +6,7 @@ from imagebind.models import imagebind_model
 from imagebind.models.imagebind_model import ModalityType
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import VISION_CLS_FEAT_KEY, LANG_CLS_FEAT_KEY
+from data import VISION_CLS_FEAT_KEY, LANG_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
@@ -33,6 +33,10 @@ class ImagebindFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
+    model = imagebind_model.imagebind_huge(pretrained=False)
+    extractor = ImagebindFeatureExtractor(model, None, "random-imagebind", BATCH_SIZE, device)
+    extractor.extract_features()
+
     model = imagebind_model.imagebind_huge(pretrained=True)
     extractor = ImagebindFeatureExtractor(model, None, "imagebind", BATCH_SIZE, device)
     extractor.extract_features()
