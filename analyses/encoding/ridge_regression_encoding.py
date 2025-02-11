@@ -51,13 +51,11 @@ def get_run_str(feats_config, resolution, hemi):
 
 
 def get_results_file_path(
-        subject, training_mode, feats_config, resolution, hemi, corr_threshold=None, add_gabor_feats=False
+        subject, training_mode, feats_config, resolution, hemi, corr_threshold=None
 ):
     run_str = get_run_str(feats_config, resolution, hemi=hemi)
     if corr_threshold is not None:
         run_str += f"_corr_thresh_{corr_threshold}"
-    if add_gabor_feats:
-        run_str += f"_gabor"
     results_file_path = os.path.join(ENCODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE)
     return results_file_path
 
@@ -114,7 +112,7 @@ def run(args):
                     print(f"test fMRI betas shape: {test_fmri_betas.shape}")
 
                     results_file_path = get_results_file_path(
-                        subject, training_mode, feats_config, args.resolution, hemi, add_gabor_feats=args.add_gabor_feats
+                        subject, training_mode, feats_config, args.resolution, hemi,
                     )
                     if os.path.isfile(results_file_path) and not args.overwrite:
                         print(f"Skipping encoder training as results are already present at"
@@ -129,57 +127,21 @@ def run(args):
                     # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
                     sklearn.set_config(assume_finite=True)
 
-                    if args.add_gabor_feats:
-                        feats_config = LatentFeatsConfig("gabor")
-                        train_latents_gabor = get_latent_features(feats_config, subject, SPLIT_TRAIN,
-                                                                  mode=training_mode)
-                        test_latents_gabor = get_latent_features(
-                            feats_config, subject, SPLIT_TEST
+                    clf = RidgeCV(
+                        alphas=args.l2_regularization_alphas,
+                        solver_params=dict(
+                            n_targets_batch=args.n_targets_batch,
+                            n_alphas_batch=args.n_alphas_batch,
+                            n_targets_batch_refit=args.n_targets_batch_refit,
+                            local_alpha=False,
                         )
-                        train_latents_gabor, test_latents_gabor = standardize_latents(
-                            train_latents_gabor, test_latents_gabor
-                        )
-                        train_latents_gabor = train_latents_gabor.astype(np.float32)
-                        test_latents_gabor = test_latents_gabor.astype(np.float32)
+                    )
 
-                        groups = np.concatenate(
-                            (np.repeat(0, len(train_latents[0])), np.repeat(1, len(train_latents_gabor[0])))
-                        )
-                        clf = GroupRidgeCV(
-                            groups=groups,
-                            solver_params=dict(
-                                n_iter=5,
-                                alphas=np.array(args.l2_regularization_alphas),
-                                n_targets_batch=args.n_targets_batch,
-                                n_alphas_batch=args.n_alphas_batch,
-                                n_targets_batch_refit=args.n_targets_batch_refit,
-                                local_alpha=False,
-                            )
-                        )
+                    clf.fit(train_latents, train_fmri_betas)
 
-                        clf.fit(np.hstack((train_latents, train_latents_gabor)), train_fmri_betas)
+                    best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
 
-                        best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
-
-                        test_latents_gabor = np.zeros_like(test_latents_gabor)
-                        test_predicted_betas = clf.predict(np.hstack((test_latents, test_latents_gabor)))
-
-                    else:
-                        clf = RidgeCV(
-                            alphas=args.l2_regularization_alphas,
-                            solver_params=dict(
-                                n_targets_batch=args.n_targets_batch,
-                                n_alphas_batch=args.n_alphas_batch,
-                                n_targets_batch_refit=args.n_targets_batch_refit,
-                                local_alpha=False,
-                            )
-                        )
-
-                        clf.fit(train_latents, train_fmri_betas)
-
-                        best_alphas = np.round(backend.to_numpy(clf.best_alphas_))
-
-                        test_predicted_betas = clf.predict(test_latents)
+                    test_predicted_betas = clf.predict(test_latents)
 
                     test_fmri_betas = backend.to_numpy(test_fmri_betas)
                     test_predicted_betas = backend.to_numpy(test_predicted_betas)
@@ -276,8 +238,6 @@ def get_args():
 
     parser.add_argument("--create-null-distr", default=False, action="store_true")
     parser.add_argument("--n-permutations-per-subject", type=int, default=100)
-
-    parser.add_argument("--add-gabor-feats", default=False, action="store_true")
 
     return parser.parse_args()
 
