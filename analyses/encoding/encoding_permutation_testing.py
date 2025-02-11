@@ -344,7 +344,10 @@ def create_null_distribution(args):
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
 
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
-            indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
+            iterator_func = trange if proc_id == 0 else range
+            indices = iterator_func(
+                proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level)
+            )
 
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
                 values = dict()
