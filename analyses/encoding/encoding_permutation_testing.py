@@ -59,7 +59,8 @@ def load_per_subject_scores(args, return_nan_locations=False):
                 subject, MODALITY_SPECIFIC_IMAGES,
                 feats_config_mod_specific_images,
                 args.resolution,
-                hemi
+                hemi,
+                add_gabor_feats=args.gabor,
             )
 
             feats_config_mod_specific_captions = LatentFeatsConfig(
@@ -73,7 +74,8 @@ def load_per_subject_scores(args, return_nan_locations=False):
                 subject, MODALITY_SPECIFIC_CAPTIONS,
                 feats_config_mod_specific_captions,
                 args.resolution,
-                hemi
+                hemi,
+                add_gabor_feats=args.gabor,
             )
 
             scores_agnostic = pickle.load(open(results_agnostic_file, 'rb'))
@@ -454,6 +456,8 @@ def get_args():
     parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
+
+    parser.add_argument("--gabor", default=False, action="store_true")
 
     return parser.parse_args()
 
