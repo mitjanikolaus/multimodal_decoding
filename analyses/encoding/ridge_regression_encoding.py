@@ -114,7 +114,7 @@ def run(args):
                     print(f"test fMRI betas shape: {test_fmri_betas.shape}")
 
                     results_file_path = get_results_file_path(
-                        subject, training_mode, feats_config, args.resolution, hemi
+                        subject, training_mode, feats_config, args.resolution, hemi, add_gabor_feats=args.add_gabor_feats
                     )
                     if os.path.isfile(results_file_path) and not args.overwrite:
                         print(f"Skipping encoder training as results are already present at"
@@ -148,7 +148,7 @@ def run(args):
                         clf = GroupRidgeCV(
                             groups=groups,
                             solver_params=dict(
-                                n_iter=10,
+                                n_iter=5,
                                 alphas=np.array(args.l2_regularization_alphas),
                                 n_targets_batch=args.n_targets_batch,
                                 n_alphas_batch=args.n_alphas_batch,
