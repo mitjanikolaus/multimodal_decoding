@@ -1,12 +1,15 @@
-function []=run_spm_glm_stage_1(subject)
+function []=run_spm_glm_stage_1(subject, betas_dir)
     addpath('~/apps/spm12');
     spm('Defaults', 'fMRI');
     setenv('SPM_HTML_BROWSER','0');
     spm_jobman('initcfg');
     spm_get_defaults('cmdline',true);
 
-    home = getenv('HOME');
-    data_dir = [home,'/data/multimodal_decoding/fmri/betas/', subject, '/unstructured'];
+    if nargin < 2
+        home = getenv('HOME');
+        betas_dir =  [home,'/data/multimodal_decoding/fmri/betas/']
+    end
+    data_dir = [betas_dir, subject, '/unstructured'];
     cd(data_dir)
 
     %design

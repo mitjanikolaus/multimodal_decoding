@@ -2,32 +2,16 @@ import os
 from collections import Counter
 from glob import glob
 
-import numpy as np
 import pandas as pd
 
-
-
-
-DATA_DIR_EXP2 = "/backup2/mitja/SEMREPS_LOCALIZER/SEMREPS_LOCALIZER_BIDS/"
-SUBJECTS_EXP2 = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
-
-TRIAL_TYPE_MAPPING = {
-    -1: "whitescreen imagery background fixation", #??
-    0: "fixation",
-    4: "image_attended",
-    5: "caption_attended",
-    10: "imagery",
-    11: "imagery_instruction",
-    40: "image_unattended",
-    50: "caption_unattended"
-}
-
+from preprocessing.make_spm_design_job_mat_attention_mod import TRIAL_TYPE_MAPPING
+from utils import ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR
 
 if __name__ == "__main__":
     all_trials = []
-    for subject in SUBJECTS_EXP2:
+    for subject in ATTENTION_MOD_SUBJECTS:
         print(subject)
-        path = os.path.join(DATA_DIR_EXP2, subject)
+        path = os.path.join(ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, subject)
         print(f"Scanning for sessions in {path}")
         session_dirs = glob(os.path.join(path, 'ses-*'))
         rep_counter = Counter()
@@ -38,7 +22,8 @@ if __name__ == "__main__":
                 events = pd.read_csv(event_file, delimiter='\t')
                 # print(events.trial_type.unique())
                 trial_types = events.trial_type.apply(lambda x: TRIAL_TYPE_MAPPING[x])
-                trials = [e + "-" + t for e, t in zip(events.condition_name.astype(str), trial_types) if t in ['image_attended', 'caption_attended', 'image_unattended', 'caption_unattended', 'imagery']]
+                conds = ['image_attended', 'caption_attended', 'image_unattended', 'caption_unattended', 'imagery']
+                trials = [e + "-" + t for e, t in zip(events.condition_name.astype(str), trial_types) if t in conds]
                 rep_counter.update(trials)
         entry = {'subject': subject}
 

@@ -6,16 +6,27 @@ from numpy.core.records import fromarrays
 import os
 import nibabel as nib
 from glob import glob
-from nipype.interfaces.base import Bunch
-import pandas as pd
 
 from data import IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, \
-    FMRI_BETAS_DIR
+from preprocessing.make_spm_design_job_mat import define_multi_regressors, load_event_files, get_sessions
+from utils import ATTENTION_MOD_FMRI_BETAS_DIR, ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, \
+    ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR
+
+TRIAL_TYPE_MAPPING = {
+    -1: "fixation_whitescreen",
+    0: "fixation",
+    4: "image_attended",
+    5: "caption_attended",
+    10: "imagery",
+    11: "imagery_instruction",
+    40: "image_unattended",
+    50: "caption_unattended"
+}
 
 
 def get_condition_names(trial):
+    # TODO
     conditions = []
     if trial['stim_name'] == 'Fix':
         if trial['trial_type'] == -1:
@@ -49,121 +60,6 @@ def get_condition_names(trial):
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
     return conditions
-
-
-def preprocess_event_files(event_files):
-    r"""
-    loads all event tsv files into a single pandas dataframe.
-    - fixes onset times
-    - adds run regressors (if stage==1)
-    """
-    data = []
-    onset_shift = 0
-
-    for r_idx, event_file in enumerate(event_files):
-        df = pd.read_csv(event_file, sep='\t')
-        df['onset'] += onset_shift
-        df['glm_conditions'] = df.apply(get_condition_names, axis=1)
-
-        onset_shift = df['onset'].iloc[-1] + df['duration'].iloc[-1]  # new onset_shift for the next run
-
-        data.append(df)
-
-    return pd.concat(data, ignore_index=True)
-
-
-def get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample):
-    if sessions_subsample:
-        sessions = [f'ses-{ses_idx}' for ses_idx in sessions_subsample]
-        session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
-    else:
-        print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-        session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
-        sessions = [path.split(os.sep)[-1] for path in session_dirs]
-    print(f"Sessions: {sessions}")
-    return sessions, session_dirs
-
-
-def load_event_files(tsv_files, log_file=None):
-    events_df = preprocess_event_files(tsv_files)
-    condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
-    if 'null' in condition_names:
-        condition_names.remove('null')
-
-    print("Number of conditions: ", len(condition_names))
-    print("Number of train image conditions:", len([c for c in condition_names if "train_image" in c]))
-    print("Number of train caption conditions:", len([c for c in condition_names if "train_caption" in c]))
-
-    print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
-    print("Number of test conditions:", len([c for c in condition_names if "test" in c]))
-
-    if log_file is not None:
-        events_df.to_csv(log_file, sep="\t")
-
-    ###############################
-    # Design-Matrix-Friendly format
-    ###############################
-    onsets = {cond: [] for cond in condition_names}
-    durs = {cond: [] for cond in condition_names}
-    orth = {cond: 0.0 for cond in condition_names}
-
-    events_df = events_df.reset_index()
-    for index, trial in events_df.iterrows():
-        conditions = trial['glm_conditions']
-        for condition in conditions:
-            if condition != 'null':
-                onsets[condition].append(trial['onset'])
-                durs[condition].append(trial['duration'])
-
-    subject_info = Bunch(
-        conditions=np.array(condition_names, dtype=object),
-        onsets=np.array([np.array(onsets[k])[:, np.newaxis] for k in condition_names], dtype=object),
-        durations=np.array([np.array(durs[k])[:, np.newaxis] for k in condition_names], dtype=object),
-        orthogonalizations=np.array([orth[k] for k in condition_names], dtype=object),
-        tmod=np.zeros((len(condition_names),), dtype=object),
-        pmod=np.zeros((len(condition_names),), dtype=object),
-        regressor_names=None,
-        regressors=None)
-
-    return subject_info
-
-
-N_REALIGNMENT_AXES = 6
-REALIGNMENT_AXES_IDX = range(1, N_REALIGNMENT_AXES + 1)
-
-
-def define_multi_regressors(realign_files):
-    n_runs = len(realign_files)
-    reg_names = [f'UR{i}' for i in range(1, n_runs)]  # run regressors (1 less than total number of runs)
-    reg_names += [f'Realign{i}' for i in REALIGNMENT_AXES_IDX]
-
-    run_arrays = []
-    realign_arrays = [[] for _ in range(N_REALIGNMENT_AXES)]
-    total_size = 0
-    for ridx in range(n_runs):
-        realign = np.loadtxt(realign_files[ridx])
-        total_size += realign.shape[0]
-        for aidx in range(N_REALIGNMENT_AXES):
-            realign_arrays[aidx].append(realign[:, aidx])
-
-    run_start = 0
-    for ridx in range(n_runs - 1):
-        arr = np.zeros((total_size, 1), dtype=np.double)
-        arr[run_start:run_start + realign_arrays[0][ridx].shape[0], 0] = 1.0
-        run_start += realign_arrays[0][ridx].shape[0]
-        run_arrays.append(arr)
-
-    for aidx in range(N_REALIGNMENT_AXES):
-        realign_arrays[aidx] = np.concatenate(realign_arrays[aidx])[:, np.newaxis]
-
-    reg_arrays = np.concatenate((run_arrays, realign_arrays))
-
-    # fill an empty np array of type object, otherwise the size check for the rec array doesn't pass
-    x = np.empty(len(reg_arrays), dtype=object)
-    for i in range(len(reg_arrays)):
-        x[i] = reg_arrays[i]
-
-    return fromarrays([reg_names, x], names=['name', 'val'])
 
 
 def run(args):
@@ -300,14 +196,14 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=ATTENTION_MOD_SUBJECTS)
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
-    parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
-    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
-    parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+    parser.add_argument("--raw-data-dir", type=str, default=ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--preprocessed-data-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--mni-data-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR)
 
-    parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
+    parser.add_argument("--output-dir", type=str, default=ATTENTION_MOD_FMRI_BETAS_DIR)
 
     return parser.parse_args()
 

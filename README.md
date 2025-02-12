@@ -147,3 +147,12 @@ Precomputed bottom-up features can be downloaded from [this link](https://storag
 (Source: https://github.com/peteanderson80/bottom-up-attention).
 
 The downloaded features need to be extracted to `~/data/coco/bottom_up_feats/`.
+
+# fMRI preprocessing attention modulation condition
+
+```
+python preprocessing/fmri_preprocessing.py --subjects sub-01 --fmri-bids-dir ~/data/multimodal_decoding/attention_modulation/fmri/raw/ --out-dir ~/data/multimodal_decoding/attention_modulation/fmri/preprocessed/
+python preprocessing/transform_to_mni.py --subjects sub-01 --preprocessed-data-dir ~/data/multimodal_decoding/attention_modulation/fmri/preprocessed/ --output-dir ~/data/multimodal_decoding/attention_modulation/fmri/preprocessed/mni305/
+python preprocessing/make_spm_design_job_mat_attention_mod.py --subjects sub-01
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01 ~/data/multimodal_decoding/attention_modulation/fmri/betas/;exit;"  -logfile matlab_output.txt && cd -
+```

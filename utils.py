@@ -53,6 +53,16 @@ METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_imgs_agno_imgs_specific'
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
 
+ATTENTION_MOD_DATA_DIR = os.path.join(DATA_DIR, "attention_modulation")
+ATTENTION_MOD_FMRI_DATA_DIR = os.path.join(ATTENTION_MOD_DATA_DIR, "fmri")
+ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "raw")
+
+ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "preprocessed")
+ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, "mni305")
+ATTENTION_MOD_FMRI_BETAS_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas")
+
+ATTENTION_MOD_SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
+
 
 def nipype_subject_id(subject):
     return f'_subject_id_{subject}'
