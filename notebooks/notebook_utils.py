@@ -24,14 +24,14 @@ FEATS_MULTIMODAL = ["fused_mean", "fused_cls", "avg", "matched"]
 DEFAULT_FEAT_OPTIONS = ["vision", "lang"] + FEATS_MULTIMODAL
 
 
-def calc_model_feat_order(data, feat_options=DEFAULT_FEAT_OPTIONS):
+def calc_model_feat_order(data, ref_models, feat_options=DEFAULT_FEAT_OPTIONS):
     all_model_feats = data.model_feat.unique()
     all_models = data.model.unique()
     for model in all_models:
-        if model not in MODELS:
+        if model not in ref_models:
             raise RuntimeError(f"Model missing in order: {model}")
     model_feat_order = []
-    for model in MODELS:
+    for model in ref_models:
         for feats in feat_options:
             model_feat = f"{model}_{feats}"
             if model_feat in all_model_feats:
