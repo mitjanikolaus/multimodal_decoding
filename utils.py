@@ -38,7 +38,6 @@ FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 RIDGE_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
-PYTORCH_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding_pytorch/")
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
