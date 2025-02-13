@@ -101,7 +101,7 @@ def run(args):
                         model, args.features, args.test_features, args.vision_features, args.lang_features
                     )
 
-                    print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
+                    print(f"TRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                           f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
                           f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
                     if mask is not None:
