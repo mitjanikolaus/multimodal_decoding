@@ -10,7 +10,7 @@ import nibabel as nib
 from tqdm import trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, STIM_INFO_PATH, FMRI_STIM_INFO_DIR
+from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
