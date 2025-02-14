@@ -247,7 +247,7 @@ def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     t_vals_cache = {}
     for hemi in HEMIS:
-        for metric in T_VAL_METRICS:
+        for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
@@ -438,8 +438,8 @@ def calc_t_values_null_distr(args, out_path):
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in T_VAL_METRICS:
-                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES].size)
+                for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
+                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
             iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
@@ -477,10 +477,10 @@ def calc_t_values_null_distr(args, out_path):
     permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES].shape[0]
+    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
     enough_data = {
         hemi: np.argwhere(
-            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES] for subj in args.subjects])).sum(
+            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
                 axis=0) > 2)[:, 0]
         for hemi in HEMIS
     }  # at least 3 datapoints
