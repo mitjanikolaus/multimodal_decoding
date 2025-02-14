@@ -89,7 +89,7 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
 
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
-                                      imagery_predictions=None, metric="cosine", standardize_predictions=False,
+                                      imagery_predictions=None, metric="cosine", standardize_predictions=True,
                                       standardize_latents=False, norm_imagery_preds_with_test_preds=False,
                                       comp_cross_decoding_scores=True):
     results = dict()
@@ -123,7 +123,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
     return results
 
 
-def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, latents, metric="cosine",
+def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, additional_latents, metric="cosine",
                                           standardize_predictions=False, standardize_latents=False, test_set_preds=None):
     results = dict()
 
@@ -138,7 +138,7 @@ def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, 
         imagery_latents, imagery_predictions, metric, standardize_predictions, standardize_latents
     )
 
-    target_latents = np.concatenate((imagery_latents, latents))
+    target_latents = np.concatenate((imagery_latents, additional_latents))
     results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(
         target_latents, imagery_predictions, metric, standardize_predictions, standardize_latents
     )
