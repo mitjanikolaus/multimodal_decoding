@@ -640,7 +640,7 @@ def add_searchlight_permutation_args(parser):
     parser.add_argument("--tfce-dh", type=float, default=0.1)
     parser.add_argument("--tfce-clip", type=float, default=100)
 
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
+    parser.add_argument("--metric", type=str, default=METRIC_CROSS_DECODING)
 
     return parser
 
