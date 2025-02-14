@@ -30,7 +30,8 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES_MOD_SPECIFIC_IM
     ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, \
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, DEFAULT_MODEL
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
+    DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 10
 
@@ -439,11 +440,15 @@ def calc_t_values_null_distr(args, out_path):
             for hemi in HEMIS:
                 dsets[hemi] = dict()
                 for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
-                    tvals_shape = (len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
+                    tvals_shape = (
+                    len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
-            iterator = tqdm(enumerate(permutations), total=len(permutations)) if proc_id == 0 else enumerate(
-                permutations)
+            if proc_id == 0:
+                iterator = tqdm(enumerate(permutations), total=len(permutations), desc="calculating null distr t-vals")
+            else:
+                iterator = enumerate(permutations)
+
             t_vals_cache = {}
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
@@ -480,7 +485,8 @@ def calc_t_values_null_distr(args, out_path):
     n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
     enough_data = {
         hemi: np.argwhere(
-            (~np.isnan([per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
+            (~np.isnan(
+                [per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
                 axis=0) > 2)[:, 0]
         for hemi in HEMIS
     }  # at least 3 datapoints
@@ -490,9 +496,10 @@ def calc_t_values_null_distr(args, out_path):
     n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
-    print("filtering scores for enough data and splitting up for jobs")
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
-    for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr)):
+    desc = "filtering scores for enough data and splitting up for jobs"
+    for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr),
+                           desc=desc):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
@@ -517,7 +524,6 @@ def calc_t_values_null_distr(args, out_path):
         for id in range(args.n_jobs)
     )
 
-    print("assembling results")
     tmp_files = dict()
     for job_id in range(args.n_jobs):
         tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
@@ -527,7 +533,7 @@ def calc_t_values_null_distr(args, out_path):
             tvals_shape = (args.n_permutations_group_level, n_vertices)
             all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
 
-        for i in tqdm(range(args.n_permutations_group_level)):
+        for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
             for hemi_metric in tmp_files[0].keys():
                 hemi = hemi_metric.split('__')[0]
                 data_tvals = np.repeat(np.nan, n_vertices)
