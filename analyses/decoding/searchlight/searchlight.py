@@ -22,8 +22,7 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     ACC_IMAGERY_WHOLE_TEST, standardize_latents
 from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, \
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, \
-    SPLIT_IMAGERY, \
-    TRAINING_MODES
+    SPLIT_IMAGERY, TRAINING_MODES
 from eval import ACC_CAPTIONS, ACC_IMAGES, calc_imagery_pairwise_accuracy_scores
 
 from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
@@ -66,13 +65,12 @@ def train_and_test(
             shuffled_indices_imagery = DERANGEMENTS_THREE_DIMS[np.random.choice(len(DERANGEMENTS_THREE_DIMS))]
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
 
-            scores = calc_all_pairwise_accuracy_scores(y_test_shuffled, y_pred_test, TEST_STIM_TYPES,
-                                                       y_imagery_shuffled, y_pred_imagery,
-                                                       standardize_predictions=True,
-                                                       comp_cross_decoding_scores=False)
+            scores = calc_all_pairwise_accuracy_scores(
+                y_test_shuffled, y_pred_test, TEST_STIM_TYPES, y_imagery_shuffled, y_pred_imagery,
+                standardize_predictions=True, comp_cross_decoding_scores=False
+            )
             imagery_no_std = calc_imagery_pairwise_accuracy_scores(
-                y_imagery_shuffled, y_pred_imagery, y_test_shuffled,
-                standardize_predictions=False,
+                y_imagery_shuffled, y_pred_imagery, y_test_shuffled, standardize_predictions=False,
             )
             imagery_no_std = {key + "_no_std": value for key, value in imagery_no_std.items()}
             scores.update(imagery_no_std)
@@ -80,11 +78,11 @@ def train_and_test(
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
-    scores = calc_all_pairwise_accuracy_scores(y_test, y_pred_test, TEST_STIM_TYPES, y_imagery, y_pred_imagery,
-                                               standardize_predictions=True)
+    scores = calc_all_pairwise_accuracy_scores(
+        y_test, y_pred_test, TEST_STIM_TYPES, y_imagery, y_pred_imagery, standardize_predictions=True
+    )
     imagery_no_std = calc_imagery_pairwise_accuracy_scores(
-        y_imagery, y_pred_imagery, y_test,
-        standardize_predictions=False,
+        y_imagery, y_pred_imagery, y_test, standardize_predictions=False,
     )
     imagery_no_std = {key + "_no_std": value for key, value in imagery_no_std.items()}
     scores.update(imagery_no_std)
