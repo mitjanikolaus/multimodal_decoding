@@ -1,81 +1,104 @@
 import argparse
 
+import pandas as pd
 from scipy.io import savemat
-import numpy as np
-from numpy.core.records import fromarrays
 import os
-import nibabel as nib
-from glob import glob
 
-from data import IDS_IMAGES_TEST
+from data import IMAGERY
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from preprocessing.make_spm_design_job_mat import define_multi_regressors, load_event_files, get_sessions
+from preprocessing.make_spm_design_job_mat import define_fmri_betas_jobs
 from utils import ATTENTION_MOD_FMRI_BETAS_DIR, ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, \
     ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR
 
-TRIAL_TYPE_MAPPING = {
-    -1: "fixation_whitescreen",
-    0: "fixation",
-    4: "image_attended",
-    5: "caption_attended",
-    10: "imagery",
-    11: "imagery_instruction",
-    40: "image_unattended",
-    50: "caption_unattended"
+FIXATION = "fixation"
+FIXATION_WHITESCREEN = "fixation_whitescreen"
+TEST_IMAGE_ATTENDED = "test_image_attended"
+TEST_CAPTION_ATTENDED = "test_caption_attended"
+IMAGERY_INSTRUCTION = "imagery_instruction"
+TEST_IMAGE_UNATTENDED = "test_image_unattended"
+TEST_CAPTION_UNATTENDED = "test_caption_unattended"
+
+ATTEND_BOTH = "attend_both"
+ATTEND_IMAGES = "attend_images"
+ATTEND_CAPTIONS = "attend_captions"
+
+ID_TO_TRIAL_TYPE = {
+    -1: FIXATION_WHITESCREEN,
+    0: FIXATION,
+    10: IMAGERY,
+    11: IMAGERY_INSTRUCTION,
+    4: TEST_IMAGE_ATTENDED,
+    5: TEST_CAPTION_ATTENDED,
+    40: TEST_IMAGE_UNATTENDED,
+    50: TEST_CAPTION_UNATTENDED
+}
+
+TRIAL_TYPE_TO_ID = {
+    trial_type: id for id, trial_type in ID_TO_TRIAL_TYPE.items()
 }
 
 
-def get_condition_names(trial):
-    # TODO
+def get_attention_mod_condition_names(trial):
     conditions = []
-    if trial['stim_name'] == 'Fix':
-        if trial['trial_type'] == -1:
-            conditions.append('blank')
-        elif trial['trial_type'] == 0:
-            conditions.append('fixation')
-    elif trial['stim_name'] == 'ImgInst':
-        conditions.append('imginst')
-    elif trial['stim_name'] == 'Img' and trial['imagert'] == 1:
-        conditions.append(f"imagery_{trial['imagery_scene']}")
+    trial_type = ID_TO_TRIAL_TYPE[trial['trial_type']]
+    if trial_type in [FIXATION, FIXATION_WHITESCREEN]:
+        assert trial['stim_name'] == 'Fix'
+        conditions.append(trial_type)
+
+    elif trial_type == IMAGERY_INSTRUCTION:
+        assert trial['stim_name'] == 'ImgInstr'
+        conditions.append(trial_type)
+
+    elif trial_type == IMAGERY:
+        stim_id = trial['condition_name']
+        conditions.append(f"{trial_type}_{stim_id}")
+
+    elif (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
+        if trial['one_back'] != 0:
+            conditions.append('one_back')
+        if trial['subj_resp'] != 0:
+            conditions.append('subj_resp')
     else:
-        if (trial['one_back'] != 0) or (trial['subj_resp'] != 0):
-            if trial['one_back'] != 0:
-                conditions.append('one_back')
-            if trial['subj_resp'] != 0:
-                conditions.append('subj_resp')
-        else:
-            if trial['condition_name'] != 0:
-                stim_id = trial['condition_name']
-                if trial['trial_type'] == 1:
-                    if int(stim_id) in IDS_IMAGES_TEST:
-                        conditions.append(f"test_image_{stim_id}")
-                    else:
-                        conditions.append(f"train_image_{stim_id}")
-                elif trial['trial_type'] == 2:
-                    if int(stim_id) in IDS_IMAGES_TEST:
-                        conditions.append(f"test_caption_{stim_id}")
-                    else:
-                        conditions.append(f"train_caption_{stim_id}")
+        assert trial['condition_name'] != 0
+        stim_id = trial['condition_name']
+        assert trial_type in [TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED,
+                              TEST_CAPTION_UNATTENDED]
+
+        conditions.append(f"{trial_type}_{stim_id}")
 
     if len(conditions) == 0:
         print(f'Unknown condition for trial: {trial}')
+    if (len(conditions) > 1) and not (conditions == ["one_back", "subj_resp"]):
+        print(f'Multiple conditions for trial: {trial}: {conditions}')
     return conditions
 
 
-def run(args):
-    sessions_subsample = args.sessions
-    # subsample_sessions = ['01', '02', '03', '05', '06', '07', '09', '11']         # None to use all sessions
+def preprocess_attention_mod_event_files(event_files):
+    data = []
+    onset_shift = 0
 
+    for r_idx, event_file in enumerate(event_files):
+        df = pd.read_csv(event_file, sep='\t')
+        df['onset'] += onset_shift
+        trial_types = df.trial_type.unique()
+        if (TRIAL_TYPE_TO_ID[TEST_IMAGE_ATTENDED] in trial_types) and (TRIAL_TYPE_TO_ID[TEST_CAPTION_ATTENDED] in trial_types):
+            raise RuntimeError(f"block with attention to both modalities: {trial_types}")
+
+        df['glm_conditions'] = df.apply(get_attention_mod_condition_names, axis=1)
+
+        onset_shift = df['onset'].iloc[-1] + df['duration'].iloc[-1]  # new onset_shift for the next run
+
+        data.append(df)
+
+    return pd.concat(data, ignore_index=True)
+
+
+def run(args):
     for subject in args.subjects:
         print(subject)
-        preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
-        realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
-        raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
-
-        output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
 
         #####################
-        # 1- fmri parameters:
+        # fmri parameters:
         #####################
 
         # timings
@@ -105,91 +128,26 @@ def run(args):
         # serial correlation (don't change)
         CVI = 'AR(1)'
 
-        #########################
-        # Generating job MAT file
-        #########################
-        def get_base_fmri_spec():
-            fmri_spec = dict()
+        task_name = "coco_singletask_imagery"
 
-            fmri_spec['timing'] = dict()
-            fmri_spec['timing']['units'] = units
-            fmri_spec['timing']['RT'] = RT
-            fmri_spec['timing']['fmri_t'] = fmri_t
-            fmri_spec['timing']['fmri_t0'] = fmri_t0
-
-            # fmri_spec['fact'] = {'name':None, 'levels':None}
-
-            fmri_spec['bases'] = dict()
-            fmri_spec['bases']['hrf'] = dict()
-            fmri_spec['bases']['hrf']['derivs'] = np.array(derivs, dtype=np.double)
-
-            fmri_spec['volt'] = VOLT
-            fmri_spec['global'] = GLOBAL
-
-            fmri_spec['mthresh'] = mthresh if len(mask) == 0 else -1 * np.inf
-            fmri_spec['mask'] = np.array([mask], dtype=object)
-            fmri_spec['cvi'] = CVI
-
-            fmri_spec['sess'] = dict()
-            fmri_spec['sess']['hpf'] = 128.0
-            return fmri_spec
-
-        fmri_spec = get_base_fmri_spec()
-
+        output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
         os.makedirs(output_dir, exist_ok=True)
-        fmri_spec['dir'] = np.array([output_dir], dtype=object)
 
-        scans = []
-        event_files = []
-        realign_files = []
-        sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
-        for session, session_dir in zip(sessions, session_dirs):
-            print(f"Scanning for runs in {session_dir}")
-            n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
-            runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
-            print(f"Runs: {runs}")
-            for run in runs:
-                event_file = os.path.join(
-                    raw_fmri_subj_data_dir, session, "func",
-                    f"{subject}_{session}_task-coco_{run}_events.tsv"
-                )
-                event_files.append(event_file)
-                realign_file = os.path.join(
-                    realignment_data_dir, subject, session,
-                    f'rp_a{subject}_{session}_task-coco_{run}_bold.txt'
-                )
-                realign_files.append(realign_file)
-                run_file = os.path.join(
-                    session_dir,
-                    f'rara{subject}_{session}_task-coco_{run}_bold.nii'
-                )
-                run_nii = nib.load(run_file)
-                run_size = run_nii.shape[-1]
-                for s in range(1, run_size + 1):
-                    scans.append(f"{run_file},{s}")
-
-        fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
-
-        # multi regressors
-        fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
-
-        # conditions
-        conditions = load_event_files(
-            event_files,
-            log_file=os.path.join(output_dir, 'dmlog_stage_1.tsv'))
-
-        fmri_spec['sess']['cond'] = fromarrays(
-            [conditions.conditions, conditions.onsets, conditions.durations, conditions.tmod, conditions.pmod,
-             conditions.orthogonalizations], names=['name', 'onset', 'duration', 'tmod', 'pmod', 'orth']
+        jobs, conditions = define_fmri_betas_jobs(
+            units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh, mask, CVI, output_dir, subject, task_name, args,
+            condition_proc_func=preprocess_attention_mod_event_files
         )
+        print("Number of conditions: ", len(conditions))
 
-        fmri_spec['fact'] = fromarrays([[], []], names=['name', 'levels'])
+        for cond in ID_TO_TRIAL_TYPE.values():
+            print(f"Number of {cond} conditions: {len([c for c in conditions if cond in c])}")
 
-        jobs = dict()
-        jobs['jobs'] = [dict()]
-        jobs['jobs'][0]['spm'] = dict()
-        jobs['jobs'][0]['spm']['stats'] = dict()
-        jobs['jobs'][0]['spm']['stats']['fmri_spec'] = fmri_spec
+        print("")
+        unique_conds = set(conditions)
+        for cond in ID_TO_TRIAL_TYPE.values():
+            if cond not in ["fixation", "fixation_whitescreen", "imagery_instruction"]:
+                print(f"Number of unique {cond} conditions: {len([c for c in unique_conds if cond in c])}")
+
         savemat(os.path.join(output_dir, 'spm_job.mat'), jobs)
 
 

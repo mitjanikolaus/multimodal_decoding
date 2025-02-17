@@ -4,7 +4,9 @@ from glob import glob
 
 import pandas as pd
 
-from preprocessing.make_spm_design_job_mat_attention_mod import TRIAL_TYPE_MAPPING
+from data import IMAGERY
+from preprocessing.make_spm_design_job_mat_attention_mod import ID_TO_TRIAL_TYPE, TEST_IMAGE_ATTENDED, \
+    TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED
 from utils import ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR
 
 if __name__ == "__main__":
@@ -20,9 +22,8 @@ if __name__ == "__main__":
             event_files = glob(os.path.join(func_scans_dir, '*.tsv'))
             for event_file in event_files:
                 events = pd.read_csv(event_file, delimiter='\t')
-                # print(events.trial_type.unique())
-                trial_types = events.trial_type.apply(lambda x: TRIAL_TYPE_MAPPING[x])
-                conds = ['image_attended', 'caption_attended', 'image_unattended', 'caption_unattended', 'imagery']
+                trial_types = events.trial_type.apply(lambda x: ID_TO_TRIAL_TYPE[x])
+                conds = [TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED, IMAGERY]
                 trials = [e + "-" + t for e, t in zip(events.condition_name.astype(str), trial_types) if t in conds]
                 rep_counter.update(trials)
         entry = {'subject': subject}
@@ -34,6 +35,6 @@ if __name__ == "__main__":
         all_trials.append(entry)
 
     df = pd.DataFrame.from_records(all_trials, index='subject')
-    df = df[['image_attended', 'caption_attended', 'image_unattended', 'caption_unattended', 'imagery']]
+    df = df[[TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED, IMAGERY]]
     print(df)
     print(df.to_latex())
