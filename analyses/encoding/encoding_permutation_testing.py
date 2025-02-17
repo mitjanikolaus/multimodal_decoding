@@ -434,12 +434,12 @@ def get_args():
                         choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
-    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
+    parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
-    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
+    parser.add_argument("--mod-specific-captions-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
