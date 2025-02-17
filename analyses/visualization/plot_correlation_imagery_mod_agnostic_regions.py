@@ -7,10 +7,9 @@ from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
-    load_per_subject_scores
-from data import VISION_FEATS_ONLY, LANG_FEATS_ONLY, SELECT_DEFAULT
+    load_per_subject_scores, add_searchlight_permutation_args
 from eval import ACC_IMAGERY_WHOLE_TEST
-from utils import DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, DEFAULT_MODEL, HEMIS, SUBJECTS, RESULTS_DIR
+from utils import HEMIS,RESULTS_DIR
 
 
 def run(args):
@@ -37,30 +36,7 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
-
-    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default=SELECT_DEFAULT)
-    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT)
-
-    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
-    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
-
-    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
-    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
-
-    parser.add_argument("--mode", type=str, default='n_neighbors_750')
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
-
-    parser.add_argument("--tfce-h", type=float, default=2.0)
-    parser.add_argument("--tfce-e", type=float, default=1.0)
-    parser.add_argument("--tfce-dh", type=float, default=0.1)
-    parser.add_argument("--tfce-clip", type=float, default=100)
-
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
+    parser = add_searchlight_permutation_args(parser)
 
     return parser.parse_args()
 
