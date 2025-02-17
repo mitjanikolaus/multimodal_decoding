@@ -621,12 +621,12 @@ def add_searchlight_permutation_args(parser):
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
-    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
+    parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-images-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
-    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
+    parser.add_argument("--mod-specific-captions-features", type=str, default=SELECT_DEFAULT)
+    parser.add_argument("--mod-specific-captions-test-features", type=str, default=SELECT_DEFAULT)
 
     parser.add_argument("--l2-regularization-alpha", type=float, default=1)
 
