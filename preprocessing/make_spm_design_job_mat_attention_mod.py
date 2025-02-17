@@ -81,7 +81,8 @@ def preprocess_attention_mod_event_files(event_files):
         df = pd.read_csv(event_file, sep='\t')
         df['onset'] += onset_shift
         trial_types = df.trial_type.unique()
-        if (TRIAL_TYPE_TO_ID[TEST_IMAGE_ATTENDED] in trial_types) and (TRIAL_TYPE_TO_ID[TEST_CAPTION_ATTENDED] in trial_types):
+        if (TRIAL_TYPE_TO_ID[TEST_IMAGE_ATTENDED] in trial_types) and (
+                TRIAL_TYPE_TO_ID[TEST_CAPTION_ATTENDED] in trial_types):
             raise RuntimeError(f"block with attention to both modalities: {trial_types}")
 
         df['glm_conditions'] = df.apply(get_attention_mod_condition_names, axis=1)
@@ -139,14 +140,19 @@ def run(args):
         )
         print("Number of conditions: ", len(conditions))
 
-        for cond in ID_TO_TRIAL_TYPE.values():
+        for cond in [TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED,
+                     IMAGERY_INSTRUCTION]:
             print(f"Number of {cond} conditions: {len([c for c in conditions if cond in c])}")
+
+        print(
+            f"Number of imagery conditions: {len([c for c in conditions if (IMAGERY in c) and not (IMAGERY_INSTRUCTION in c)])}")
 
         print("")
         unique_conds = set(conditions)
-        for cond in ID_TO_TRIAL_TYPE.values():
-            if cond not in ["fixation", "fixation_whitescreen", "imagery_instruction"]:
-                print(f"Number of unique {cond} conditions: {len([c for c in unique_conds if cond in c])}")
+        for cond in [TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED]:
+            print(f"Number of unique {cond} conditions: {len([c for c in unique_conds if cond in c])}")
+        print(
+            f"Number of unique imagery conditions: {len([c for c in unique_conds if (IMAGERY in c) and not (IMAGERY_INSTRUCTION in c)])}")
 
         savemat(os.path.join(output_dir, 'spm_job.mat'), jobs)
 
