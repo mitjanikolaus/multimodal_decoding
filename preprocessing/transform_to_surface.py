@@ -107,10 +107,10 @@ def to_surface(subject, split, args):
 def run(args):
     for subject in args.subjects:
         print("\n", subject)
-        # to_surface(subject, SPLIT_TRAIN, args)
+        to_surface(subject, SPLIT_TRAIN, args)
         to_surface(subject, SPLIT_TEST_IMAGES, args)
         to_surface(subject, SPLIT_TEST_CAPTIONS, args)
-        # to_surface(subject, SPLIT_IMAGERY, args)
+        to_surface(subject, SPLIT_IMAGERY, args)
 
 
 def get_args():
