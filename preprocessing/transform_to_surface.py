@@ -10,7 +10,8 @@ import pickle
 from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES, \
     SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST, TEST_STIM_TYPES, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, SPLIT_IMAGERY_WEAK, \
     IDS_IMAGES_IMAGERY_WEAK, IDS_IMAGES_TEST_ATTENTION_MOD, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, \
-    SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, IMAGE, CAPTION
+    SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, IMAGE, CAPTION, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, \
+    IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR, FMRI_STIM_INFO_DIR, HEMIS
 
@@ -20,11 +21,13 @@ def to_surface(subject, split, args):
     gray_matter_mask = get_graymatter_mask_path(subject)
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    if split == SPLIT_TEST:
-        assert np.all(stim_types[INDICES_TEST_STIM_IMAGE] == IMAGE)
-        assert np.all(stim_types[INDICES_TEST_STIM_CAPTION] == CAPTION)
-        assert np.all(stim_ids == TEST_STIM_IDS)
-        assert np.all(stim_types == TEST_STIM_TYPES)
+    if split == SPLIT_TEST_IMAGES:
+        assert np.all(stim_types == IMAGE)
+        assert np.all(stim_ids == IDS_IMAGES_TEST)
+
+    if split == SPLIT_TEST_CAPTIONS:
+        assert np.all(stim_types == CAPTION)
+        assert np.all(stim_ids == IDS_IMAGES_TEST)
 
     elif split == SPLIT_IMAGERY:
         assert np.all(stim_ids == IMAGERY_STIMS_IDS[subject])
@@ -104,9 +107,10 @@ def to_surface(subject, split, args):
 def run(args):
     for subject in args.subjects:
         print("\n", subject)
-        to_surface(subject, SPLIT_TRAIN, args)
-        to_surface(subject, SPLIT_TEST, args)
-        to_surface(subject, SPLIT_IMAGERY, args)
+        # to_surface(subject, SPLIT_TRAIN, args)
+        to_surface(subject, SPLIT_TEST_IMAGES, args)
+        to_surface(subject, SPLIT_TEST_CAPTIONS, args)
+        # to_surface(subject, SPLIT_IMAGERY, args)
 
 
 def get_args():

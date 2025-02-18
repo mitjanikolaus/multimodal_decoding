@@ -37,7 +37,7 @@ FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
-RIDGE_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
+RIDGE_DECODER_OUT_DIR = os.path.join(DATA_DIR, "whole_brain_decoding")
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']
@@ -63,6 +63,8 @@ ATTENTION_MOD_FMRI_BETAS_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas"
 ATTENTION_MOD_FMRI_BETAS_SURFACE_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas_surface_level")
 
 ATTENTION_MOD_SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
+
+RIDGE_DECODER_ATTN_MOD_OUT_DIR = os.path.join(ATTENTION_MOD_DATA_DIR, "whole_brain_decoding")
 
 
 def nipype_subject_id(subject):

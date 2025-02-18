@@ -21,13 +21,16 @@ SPLIT_TRAIN = "train"
 SPLIT_TEST = "test"
 SPLIT_IMAGERY = "imagery"
 
+SPLIT_TEST_IMAGES = "test_image"
+SPLIT_TEST_CAPTIONS = "test_caption"
+
 SPLIT_TEST_IMAGE_ATTENDED = "test_image_attended"
 SPLIT_TEST_CAPTION_ATTENDED = "test_caption_attended"
 SPLIT_TEST_IMAGE_UNATTENDED = "test_image_unattended"
 SPLIT_TEST_CAPTION_UNATTENDED = "test_caption_unattended"
 SPLIT_IMAGERY_WEAK = "imagery_weak"
 
-TEST_SPLITS = [SPLIT_TEST, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK, SPLIT_TEST_IMAGE_ATTENDED,
+TEST_SPLITS = [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK, SPLIT_TEST_IMAGE_ATTENDED,
               SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]
 ALL_SPLITS = [SPLIT_TRAIN] + TEST_SPLITS
 
@@ -517,6 +520,12 @@ def get_stim_info(subject, split):
         stim_ids, stim_types = TEST_STIM_IDS, TEST_STIM_TYPES
     elif split == SPLIT_IMAGERY:
         stim_ids, stim_types = IMAGERY_STIMS_IDS[subject], IMAGERY_STIMS_TYPES[subject]
+    elif split == SPLIT_IMAGERY_WEAK:
+        stim_ids, stim_types = IDS_IMAGES_IMAGERY_WEAK, [IMAGERY for _ in IDS_IMAGES_IMAGERY_WEAK]
+    elif split in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED]:
+        stim_ids, stim_types = IDS_IMAGES_TEST_ATTENTION_MOD, [IMAGE for _ in IDS_IMAGES_TEST_ATTENTION_MOD]
+    elif split in [SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
+        stim_ids, stim_types = IDS_IMAGES_TEST_ATTENTION_MOD, [CAPTION for _ in IDS_IMAGES_TEST_ATTENTION_MOD]
     else:
         raise RuntimeError(f"Unknown split name: {split}")
 
