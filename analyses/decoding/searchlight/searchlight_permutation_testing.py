@@ -248,7 +248,7 @@ def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     t_vals_cache = {}
     for hemi in HEMIS:
-        for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
+        for metric in T_VAL_METRICS:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
