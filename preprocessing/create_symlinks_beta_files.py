@@ -38,23 +38,24 @@ def create_symlinks_for_beta_files(betas_dir, splits):
         if split_name.endswith('_'):
             split_name = split_name[:-1]
 
-        if split_name in ['blank', 'fixation', 'fixation_whitescreen']:
-            slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{split_name}.nii")
-        else:
-            stim_id = int(beta_name.split(split_name)[1].replace("_", ""))
-            slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
+        if split_name in splits:
+            if split_name in ['blank', 'fixation', 'fixation_whitescreen']:
+                slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{split_name}.nii")
+            else:
+                stim_id = int(beta_name.split(split_name)[1].replace("_", ""))
+                slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
 
-        if slink_name in all_slink_names:
-            raise Exception(f'slink already defined: {slink_name}')
-        all_slink_names.add(slink_name)
-        beta_relative_path = beta_path.replace(betas_dir, '')
-        if not beta_relative_path.startswith(os.sep):
-            beta_relative_path = os.sep + beta_relative_path
-        beta_relative_path = f"..{beta_relative_path}"
-        if beta_relative_path in all_beta_relative_paths:
-            raise Exception(f'link target already processed: {beta_relative_path}')
-        all_beta_relative_paths.add(beta_relative_path)
-        os.symlink(beta_relative_path, slink_name)
+            if slink_name in all_slink_names:
+                raise Exception(f'slink already defined: {slink_name}')
+            all_slink_names.add(slink_name)
+            beta_relative_path = beta_path.replace(betas_dir, '')
+            if not beta_relative_path.startswith(os.sep):
+                beta_relative_path = os.sep + beta_relative_path
+            beta_relative_path = f"..{beta_relative_path}"
+            if beta_relative_path in all_beta_relative_paths:
+                raise Exception(f'link target already processed: {beta_relative_path}')
+            all_beta_relative_paths.add(beta_relative_path)
+            os.symlink(beta_relative_path, slink_name)
 
     print(f"Created symbolic links for {len(all_slink_names)} beta files")
 
