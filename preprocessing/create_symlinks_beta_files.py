@@ -35,8 +35,8 @@ def create_symlinks_for_beta_files(betas_dir, splits):
 
         for split_name in splits:
             if split_name in beta_name:
-                if split_name == 'blank':
-                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
+                if split_name in ['blank', 'fixation', 'fixation_whitescreen']:
+                    slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{split_name}.nii")
                 else:
                     stim_id = int(beta_name.split(split_name)[1].replace(SUFFIX, "").replace("_", ""))
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
