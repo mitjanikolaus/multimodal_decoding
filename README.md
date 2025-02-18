@@ -155,4 +155,7 @@ python preprocessing/fmri_preprocessing.py --subjects sub-01 --fmri-bids-dir ~/d
 python preprocessing/transform_to_mni.py --subjects sub-01 --preprocessed-data-dir ~/data/multimodal_decoding/attention_modulation/fmri/preprocessed/ --output-dir ~/data/multimodal_decoding/attention_modulation/fmri/preprocessed/mni305/
 python preprocessing/make_spm_design_job_mat_attention_mod.py --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01 /home/$USER/data/multimodal_decoding/attention_modulation/fmri/betas/;exit;"  -logfile matlab_output.txt && cd -
+
+python preprocessing/create_symlinks_beta_files_attention_mod.py --subjects sub-01
+python preprocessing/transform_to_surface_attention_mod.py --subjects sub-01
 ```

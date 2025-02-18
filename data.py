@@ -27,6 +27,10 @@ SPLIT_TEST_IMAGE_UNATTENDED = "test_image_unattended"
 SPLIT_TEST_CAPTION_UNATTENDED = "test_caption_unattended"
 SPLIT_IMAGERY_WEAK = "imagery_weak"
 
+TEST_SPLITS = [SPLIT_TEST, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK, SPLIT_TEST_IMAGE_ATTENDED,
+              SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]
+ALL_SPLITS = [SPLIT_TRAIN] + TEST_SPLITS
+
 IMAGE = "image"
 CAPTION = "caption"
 IMAGERY = "imagery"
@@ -634,35 +638,22 @@ def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     return fmri_betas, stim_ids, stim_types
 
 
-def standardize_latents(train_latents, test_latents, imagery_latents=None):
-    scaler = StandardScaler().fit(train_latents)
-    train_latents = scaler.transform(train_latents)
-    test_latents = scaler.transform(test_latents)
+def standardize_latents(latents):
+    scaler = StandardScaler().fit(latents[SPLIT_TRAIN])
+    latents = {split: scaler.transform(lat).astype(np.float32) for split, lat in latents.items()}
 
-    if imagery_latents is not None:
-        imagery_latents = scaler.transform(imagery_latents)
-        return train_latents, test_latents, imagery_latents
-
-    return train_latents, test_latents
+    return latents
 
 
-def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None):
-    nan_locations = np.isnan(train_fmri_betas[0])
-    train_fmri_betas = train_fmri_betas[:, ~nan_locations]
-    test_fmri_betas = test_fmri_betas[:, ~nan_locations]
-    if imagery_fmri_betas is not None:
-        imagery_fmri_betas = imagery_fmri_betas[:, ~nan_locations]
+def standardize_fmri_betas(fmri_betas):
+    nan_locations = np.isnan(fmri_betas[SPLIT_TRAIN][0])
+    fmri_betas = {split: betas[:, ~nan_locations] for split, betas in fmri_betas.items()}
 
-    scaler = StandardScaler().fit(train_fmri_betas)
+    scaler = StandardScaler().fit(fmri_betas[SPLIT_TRAIN])
 
-    train_fmri_betas = scaler.transform(train_fmri_betas)
-    test_fmri_betas = scaler.transform(test_fmri_betas)
+    fmri_betas = {split: scaler.transform(betas).astype(np.float32) for split, betas in fmri_betas.items()}
 
-    if imagery_fmri_betas is not None:
-        imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
-        return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
-
-    return train_fmri_betas, test_fmri_betas
+    return fmri_betas
 
 
 def create_null_distr_shuffled_indices(n_permutations_per_subject):
@@ -689,15 +680,15 @@ def create_shuffled_indices(seed):
     return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
 
 
-def apply_mask(mask_path, betas_list, args):
+def apply_mask(mask_path, fmri_betas, args):
     if mask_path is not None:
         if not args.surface:
             raise NotImplementedError("The --surface option needs to be specified when using masks")
         mask = pickle.load(open(mask_path, 'rb'))
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
-        betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
+        fmri_betas = {split: betas[:, mask_flat == 1].copy() for split, betas in fmri_betas.items()}
 
-    return betas_list
+    return fmri_betas
 
 
 def load_graymatter_mask(subject):

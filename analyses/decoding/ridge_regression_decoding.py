@@ -10,12 +10,14 @@ import torch
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, get_fmri_data
+    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, get_fmri_data, \
+    SPLIT_TEST_IMAGE_ATTENDED, ALL_SPLITS, TEST_SPLITS
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
+from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
+    ATTENTION_MOD_FMRI_BETAS_DIR
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -53,6 +55,32 @@ def tensor_pairwise_accuracy(
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
 
+def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, att_mod_betas_dir=None, surface=False,
+                             resolution=DEFAULT_RESOLUTION):
+    fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
+    for split in splits:
+        mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
+        betas_dir = betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY] else att_mod_betas_dir
+        fmri_betas[split], stim_ids[split], stim_types[split] = get_fmri_data(
+            betas_dir,
+            subject,
+            split,
+            mode,
+            surface=surface,
+            resolution=resolution,
+        )
+
+    return fmri_betas, stim_ids, stim_types
+
+
+def get_latents_for_splits(subject, feats_config, splits, training_mode):
+    latents = dict()
+    for split in splits:
+        mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
+        latents[split] = get_latent_features(feats_config, subject, split, mode)
+    return latents
+
+
 def run(args):
     if torch.cuda.is_available() and not args.force_cpu:
         print("Setting backend to cuda")
@@ -62,39 +90,17 @@ def run(args):
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
-            train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
-                args.betas_dir,
-                subject,
-                SPLIT_TRAIN,
-                training_mode,
-                surface=args.surface,
-                resolution=args.resolution,
-            )
-            test_fmri_betas_full, test_stim_ids, test_stim_types = get_fmri_data(
-                args.betas_dir,
-                subject,
-                SPLIT_TEST,
-                surface=args.surface,
-                resolution=args.resolution,
-            )
-            imagery_fmri_betas_full, imagery_stim_ids, imagery_stim_types = get_fmri_data(
-                args.betas_dir,
-                subject,
-                SPLIT_IMAGERY,
-                surface=args.surface,
-                resolution=args.resolution,
+            fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
+                subject, ALL_SPLITS, training_mode, args.betas_dir, args.att_mod_betas_dir, args.surface,
+                args.resolution
             )
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = apply_mask(
-                    mask, [train_fmri_betas_full, test_fmri_betas_full, imagery_fmri_betas_full], args
-                )
-                train_fmri_betas, test_fmri_betas, imagery_fmri_betas = standardize_fmri_betas(
-                    train_fmri_betas, test_fmri_betas, imagery_fmri_betas,
-                )
-                print(f"\n\ntrain fMRI betas shape: {train_fmri_betas.shape}")
-                print(f"test fMRI betas shape: {test_fmri_betas.shape}")
-                print(f"imagery fMRI betas shape: {imagery_fmri_betas.shape}")
+                fmri_betas = apply_mask(mask, fmri_betas_full, args)
+                fmri_betas = standardize_fmri_betas(fmri_betas)
+                print('\n\n')
+                for split in fmri_betas.keys():
+                    print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
 
                 for model in args.models:
                     feats_config = LatentFeatsConfig(
@@ -115,15 +121,9 @@ def run(args):
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
                         continue
 
-                    train_latents = get_latent_features(
-                        feats_config, subject, SPLIT_TRAIN, training_mode
-                    )
-                    test_latents = get_latent_features(feats_config, subject, SPLIT_TEST)
-                    imagery_latents = get_latent_features(feats_config, subject, SPLIT_IMAGERY)
-                    train_latents, test_latents, imagery_latents = standardize_latents(
-                        train_latents, test_latents, imagery_latents
-                    )
-                    print(f"train latents shape: {train_latents.shape}")
+                    latents = get_latents_for_splits(subject, feats_config, training_mode, ALL_SPLITS)
+                    latents = standardize_latents(latents)
+                    print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
 
                     # skip input data checking to limit memory use
                     # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
@@ -141,24 +141,19 @@ def run(args):
                         )
                     )
 
-                    train_latents = train_latents.astype(np.float32)
-                    train_fmri_betas = train_fmri_betas.astype(np.float32)
-
                     start = time.time()
-                    clf.fit(train_fmri_betas, train_latents)
+                    clf.fit(fmri_betas[SPLIT_TRAIN], latents[SPLIT_TRAIN])
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
                     best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
 
-                    test_fmri_betas = test_fmri_betas.astype(np.float32)
-                    test_predicted_latents = clf.predict(test_fmri_betas)
+                    predicted_latents = {split: clf.predict(fmri_betas[split]) for split in TEST_SPLITS}
 
-                    imagery_fmri_betas = imagery_fmri_betas.astype(np.float32)
-                    imagery_predicted_latents = clf.predict(imagery_fmri_betas)
+                    predicted_latents = {split: backend.to_numpy(lats) for split, lats in predicted_latents.items()}
 
-                    imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
-                    test_predicted_latents = backend.to_numpy(test_predicted_latents)
+                    # imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
+                    # test_predicted_latents = backend.to_numpy(test_predicted_latents)
 
                     results = {
                         "alpha": best_alpha,
@@ -170,20 +165,19 @@ def run(args):
                         "lang_features": feats_config.lang_features,
                         "training_mode": training_mode,
                         "mask": mask,
-                        "num_voxels": test_fmri_betas.shape[1],
-                        "stimulus_ids": test_stim_ids,
-                        "stimulus_types": test_stim_types,
-                        "imagery_stimulus_ids": imagery_stim_ids,
-                        "predictions": test_predicted_latents,
-                        "imagery_predictions": imagery_predicted_latents,
-                        "latents": test_latents,
-                        "imagery_latents": imagery_latents,
+                        "num_voxels": fmri_betas[SPLIT_TEST].shape[1],
+                        "stimulus_ids": stim_ids[SPLIT_TEST],
+                        "stimulus_types": stim_types[SPLIT_TEST],
+                        "imagery_stimulus_ids": stim_ids[SPLIT_IMAGERY],
+                        "predictions": predicted_latents[SPLIT_TEST],
+                        "imagery_predictions": predicted_latents[SPLIT_IMAGERY],
+                        "latents": latents[SPLIT_TEST],
+                        "imagery_latents": latents[SPLIT_IMAGERY],
                         "surface": args.surface,
                         "resolution": args.resolution,
                     }
                     scores = calc_all_pairwise_accuracy_scores(
-                        test_latents, test_predicted_latents, test_stim_types,
-                        imagery_latents, imagery_predicted_latents, standardize_predictions=True
+                        latents, predicted_latents, stim_types, standardize_predictions=True
                     )
                     results.update(scores)
                     print(
@@ -195,8 +189,7 @@ def run(args):
                     )
 
                     results_no_standardization = calc_all_pairwise_accuracy_scores(
-                        test_latents, test_predicted_latents, test_stim_types,
-                        imagery_latents, imagery_predicted_latents, standardize_predictions=False
+                        latents, predicted_latents, stim_types, standardize_predictions=False
                     )
                     print(
                         f"Without standardization of predictions:\n"
@@ -214,6 +207,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
+    parser.add_argument("--attn-mod-betas-dir", type=str, default=ATTENTION_MOD_FMRI_BETAS_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)

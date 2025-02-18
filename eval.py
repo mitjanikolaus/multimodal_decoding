@@ -3,7 +3,7 @@ from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
 
-from data import CAPTION, IMAGE
+from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -88,14 +88,14 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
-def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, imagery_latents=None,
-                                      imagery_predictions=None, metric="cosine", standardize_predictions=True,
-                                      standardize_latents=False, norm_imagery_preds_with_test_preds=False,
+def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine",
+                                      standardize_predictions=True,
+                                      standardize_latents=False,
                                       comp_cross_decoding_scores=True):
     results = dict()
     for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
-        preds_mod = predictions[stim_types == modality]
-        latents_mod = latents[stim_types == modality]
+        preds_mod = predictions[SPLIT_TEST][stim_types == modality]
+        latents_mod = latents[SPLIT_TEST][stim_types == modality]
 
         results[acc_metric_name] = pairwise_accuracy(
             latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
@@ -105,18 +105,18 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
         for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
                                                            [ACC_CROSS_CAPTIONS_TO_IMAGES,
                                                             ACC_CROSS_IMAGES_TO_CAPTIONS]):
-            preds_mod = predictions[stim_types == mod_preds]
-            latents_mod = latents[stim_types == mod_latents]
+            preds_mod = predictions[SPLIT_TEST][stim_types == mod_preds]
+            latents_mod = latents[SPLIT_TEST][stim_types == mod_latents]
 
             results[acc_metric_name] = pairwise_accuracy(
                 latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
             )
 
-    if imagery_latents is not None:
+    if latents[SPLIT_IMAGERY] is not None:
         imagery_scores = calc_imagery_pairwise_accuracy_scores(
-            imagery_latents, imagery_predictions, latents, metric,
+            latents[[SPLIT_IMAGERY]], predictions[SPLIT_IMAGERY], latents[SPLIT_TEST], metric,
             standardize_predictions, standardize_latents,
-            test_set_preds=predictions if norm_imagery_preds_with_test_preds else None
+            test_set_preds=None
         )
         results.update(imagery_scores)
 
@@ -124,7 +124,8 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, ima
 
 
 def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, additional_latents, metric="cosine",
-                                          standardize_predictions=False, standardize_latents=False, test_set_preds=None):
+                                          standardize_predictions=False, standardize_latents=False,
+                                          test_set_preds=None):
     results = dict()
 
     if test_set_preds is not None:
