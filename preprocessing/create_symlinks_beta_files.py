@@ -20,7 +20,7 @@ def get_subdir(split_name, beta_dir):
     return subdir
 
 
-def create_symlinks_for_beta_files(betas_dir):
+def create_symlinks_for_beta_files(betas_dir, splits):
     r"""
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
@@ -33,7 +33,7 @@ def create_symlinks_for_beta_files(betas_dir):
         beta_file = nib.load(beta_path)
         beta_name = beta_file.header['descrip'].item().decode()
 
-        for split_name in SPLITS:
+        for split_name in splits:
             if split_name in beta_name:
                 if split_name == 'blank':
                     slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_blank.nii")
@@ -68,4 +68,4 @@ if __name__ == "__main__":
     args = get_args()
     for subject in args.subjects:
         print(subject)
-        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject))
+        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject), SPLITS)

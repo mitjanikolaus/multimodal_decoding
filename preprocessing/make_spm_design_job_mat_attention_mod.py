@@ -18,10 +18,6 @@ IMAGERY_INSTRUCTION = "imagery_instruction"
 TEST_IMAGE_UNATTENDED = "test_image_unattended"
 TEST_CAPTION_UNATTENDED = "test_caption_unattended"
 
-ATTEND_BOTH = "attend_both"
-ATTEND_IMAGES = "attend_images"
-ATTEND_CAPTIONS = "attend_captions"
-
 ID_TO_TRIAL_TYPE = {
     -1: FIXATION_WHITESCREEN,
     0: FIXATION,
