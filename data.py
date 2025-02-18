@@ -10,7 +10,7 @@ import nibabel as nib
 from tqdm import trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR
+from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR, FMRI_BETAS_DIR
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
@@ -189,6 +189,132 @@ TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] 
 
 TEST_BATCH_SIZE = len(TEST_STIM_IDS)
 
+IDS_IMAGES_TEST_ATTENTION_MOD = [
+    201601,
+    221313,
+    385795,
+    63881,
+    467854,
+    367120,
+    499733,
+    3862,
+    292888,
+    310552,
+    79642,
+    38938,
+    70426,
+    275995,
+    318108,
+    450719,
+    546074,
+    138529,
+    457249,
+    122403,
+    186788,
+    180389,
+    279331,
+    414373,
+    163240,
+    512289,
+    183210,
+    165419,
+    475693,
+    25902,
+    388398,
+    6450,
+    505655,
+    43966,
+    534975,
+    423618,
+    573980,
+    186308,
+    548167,
+    133449,
+    287434,
+    315083,
+    53580,
+    567627,
+    47566,
+    195406,
+    466514,
+    323797,
+    363483,
+    555739,
+    536798,
+    192095,
+    255714,
+    271844,
+    57703,
+    560282,
+    146411,
+    353260,
+    380011,
+    220654,
+    454636,
+    238193,
+    165874,
+    252018,
+    55413,
+    211189,
+    278135,
+    159225,
+    16764,
+    176509,
+]
+
+IDS_IMAGES_IMAGERY_ATTENTION_MOD = [
+    215939,
+    238598,
+    51079,
+    263047,
+    292622,
+    323599,
+    112022,
+    11288,
+    120858,
+    141468,
+    15645,
+    325277,
+    567838,
+    22563,
+    273443,
+    26538,
+    273840,
+    420400,
+    517685,
+    271417,
+    229947,
+    429761,
+    332866,
+    51525,
+    9800,
+    287049,
+    143054,
+    284623,
+    29776,
+    311377,
+    129362,
+    338384,
+    421457,
+    271195,
+    126305,
+    127078,
+    495850,
+    198508,
+    88045,
+    63214,
+    416749,
+    382320,
+    286708,
+    68597,
+    283254,
+    561013,
+    516344,
+    563194,
+    464382,
+    179199,
+]
+
 AVG_FEATS = 'avg'
 LANG_FEATS_ONLY = 'lang'
 VISION_FEATS_ONLY = 'vision'
@@ -356,7 +482,8 @@ def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
         stim_id = stim_id_from_beta_file_name(os.path.basename(path))
         if IMAGERY in split_name:
             stim_types.append(IMAGERY)
-            stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
+            if betas_dir == FMRI_BETAS_DIR:
+                stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
         elif IMAGE in split_name:
             stim_types.append(IMAGE)
         elif CAPTION in split_name:

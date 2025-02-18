@@ -1,16 +1,23 @@
 import os
+import re
+
 import torch
 from transformers import AutoFeatureExtractor, ResNetModel, ViTImageProcessor, ViTModel
 from glob import glob
 from PIL import Image
 import pickle
 from tqdm import tqdm
+import nibabel as nib
 
-from data import IMAGERY_SCENES, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
+from data import IMAGERY_SCENES, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, IDS_IMAGES_TEST, IMAGERY_STIMS_IDS, \
+    get_fmri_data_paths, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, IMAGERY, IDS_IMAGES_IMAGERY_ATTENTION_MOD, \
+    IDS_IMAGES_TEST_ATTENTION_MOD
 from feature_extraction.feat_extraction_utils import FeatureExtractor
-from utils import SUBJECTS, STIMULI_IDS_PATH, FMRI_BETAS_DIR
+from utils import SUBJECTS, STIMULI_IDS_PATH, FMRI_BETAS_DIR, ATTENTION_MOD_FMRI_BETAS_DIR, ATTENTION_MOD_SUBJECTS
 
 BATCH_SIZE = 128
+SUFFIX = "*bf(1)"
+
 
 if torch.cuda.is_available():
     device = "cuda"
@@ -24,23 +31,15 @@ def load_and_save_relevant_coco_ids():
     if not os.path.isfile(STIMULI_IDS_PATH):
         print("Extracting stimulus ids (coco ids)")
         all_ids = []
-        for mode in ["train", "test", "imagery"]:
-            for subject in SUBJECTS:
-                fmri_root_dir = os.path.join(FMRI_BETAS_DIR, subject)
-                imagery_scenes = IMAGERY_SCENES[subject]
+        for subject in SUBJECTS:
+            _, test_stim_ids, _ = get_fmri_data_paths(FMRI_BETAS_DIR, subject, SPLIT_TRAIN)
+            all_ids.extend(test_stim_ids)
+            all_ids.extend(IMAGERY_STIMS_IDS[subject])
 
-                fmri_betas_addresses = sorted(glob(os.path.join(fmri_root_dir, f'betas_{mode}*', '*.nii')))
+        all_ids.extend(IDS_IMAGES_TEST)
 
-                for addr in tqdm(fmri_betas_addresses):
-                    file_name = os.path.basename(addr)
-                    if 'I' in file_name:  # Image
-                        stim_id = int(file_name[file_name.find('I') + 1:-4])
-                    elif 'C' in file_name:  # Caption
-                        stim_id = int(file_name[file_name.find('C') + 1:-4])
-                    else:  # imagery
-                        id = int(file_name[file_name.find('.nii') - 1:-4])
-                        stim_id = imagery_scenes[id - 1][1]
-                    all_ids.append(stim_id)
+        all_ids.extend(IDS_IMAGES_TEST_ATTENTION_MOD)
+        all_ids.extend(IDS_IMAGES_IMAGERY_ATTENTION_MOD)
 
         all_ids = sorted(list(set(all_ids)))
         pickle.dump(all_ids, open(STIMULI_IDS_PATH, "wb"))
@@ -89,46 +88,46 @@ class ResNetFeatureExtractor(FeatureExtractor):
 if __name__ == "__main__":
     load_and_save_relevant_coco_ids()
 
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-18", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'microsoft/resnet-50'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-50", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'microsoft/resnet-152'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-152", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'microsoft/resnet-152'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel(ResNetModel.from_pretrained(model_name).config)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'google/vit-base-patch16-384'
-    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    model = ViTModel.from_pretrained(model_name)
-    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-b-16", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'google/vit-large-patch16-384'
-    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    model = ViTModel.from_pretrained(model_name)
-    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-l-16", BATCH_SIZE, device)
-    extractor.extract_features()
-
-    model_name = 'google/vit-huge-patch14-224-in21k'
-    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    model = ViTModel.from_pretrained(model_name)
-    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-h-14", BATCH_SIZE, device)
-    extractor.extract_features()
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-18", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-50'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-50", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-152'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-152", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-152'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel(ResNetModel.from_pretrained(model_name).config)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'google/vit-base-patch16-384'
+    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    # model = ViTModel.from_pretrained(model_name)
+    # extractor = ViTFeatureExtractor(model, feature_extractor, "vit-b-16", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'google/vit-large-patch16-384'
+    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    # model = ViTModel.from_pretrained(model_name)
+    # extractor = ViTFeatureExtractor(model, feature_extractor, "vit-l-16", BATCH_SIZE, device)
+    # extractor.extract_features()
+    #
+    # model_name = 'google/vit-huge-patch14-224-in21k'
+    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    # model = ViTModel.from_pretrained(model_name)
+    # extractor = ViTFeatureExtractor(model, feature_extractor, "vit-h-14", BATCH_SIZE, device)
+    # extractor.extract_features()
 
 
