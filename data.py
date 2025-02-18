@@ -21,6 +21,8 @@ SPLIT_TRAIN = "train"
 SPLIT_TEST = "test"
 SPLIT_IMAGERY = "imagery"
 
+SPLIT_IMAGERY_WEAK = "imagery_weak"
+
 IMAGE = "image"
 CAPTION = "caption"
 IMAGERY = "imagery"

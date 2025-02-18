@@ -7,7 +7,8 @@ import os
 
 from tqdm import tqdm
 
-from utils import SUBJECTS, FMRI_BETAS_DIR
+from data import IMAGERY, SPLIT_IMAGERY_WEAK
+from utils import SUBJECTS, FMRI_BETAS_DIR, ATTENTION_MOD_FMRI_BETAS_DIR
 
 SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank']
 
@@ -43,6 +44,8 @@ def create_symlinks_for_beta_files(betas_dir, splits):
                 slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{split_name}.nii")
             else:
                 stim_id = int(beta_name.split(split_name)[1].replace("_", ""))
+                if (split_name == IMAGERY) and (betas_dir == ATTENTION_MOD_FMRI_BETAS_DIR):
+                    split_name = SPLIT_IMAGERY_WEAK
                 slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
 
             if slink_name in all_slink_names:
