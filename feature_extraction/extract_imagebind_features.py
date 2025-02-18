@@ -10,7 +10,7 @@ from data import VISION_CLS_FEAT_KEY, LANG_CLS_FEAT_KEY
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 BATCH_SIZE = 10
 
@@ -33,10 +33,10 @@ class ImagebindFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model = imagebind_model.imagebind_huge(pretrained=False)
-    extractor = ImagebindFeatureExtractor(model, None, "random-imagebind", BATCH_SIZE, device)
-    extractor.extract_features()
-
     model = imagebind_model.imagebind_huge(pretrained=True)
     extractor = ImagebindFeatureExtractor(model, None, "imagebind", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model = imagebind_model.imagebind_huge(pretrained=False)
+    extractor = ImagebindFeatureExtractor(model, None, "random-imagebind", BATCH_SIZE, device)
     extractor.extract_features()
