@@ -1,7 +1,5 @@
 import argparse
 
-import os
-
 from data import IMAGERY
 from preprocessing.create_symlinks_beta_files import create_symlinks_for_beta_files
 from preprocessing.make_spm_design_job_mat_attention_mod import TEST_IMAGE_UNATTENDED, TEST_CAPTION_ATTENDED, \
@@ -24,4 +22,4 @@ if __name__ == "__main__":
     args = get_args()
     for subject in args.subjects:
         print(subject)
-        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject), SPLITS)
+        create_symlinks_for_beta_files(args.betas_dir, subject, SPLITS)

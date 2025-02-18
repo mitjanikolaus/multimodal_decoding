@@ -15,19 +15,19 @@ SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery
 SUFFIX = "*bf(1)"
 
 
-def get_subdir(split_name, beta_dir):
-    subdir = os.path.join(beta_dir, f"betas_{split_name}")
+def get_subdir(split_name, beta_dir, subject):
+    subdir = os.path.join(beta_dir, subject, f"betas_{split_name}")
     if not os.path.isdir(subdir):
         os.makedirs(subdir)
     return subdir
 
 
-def create_symlinks_for_beta_files(betas_dir, splits):
+def create_symlinks_for_beta_files(betas_dir, subject, splits):
     r"""
     this function makes several subdirectories and creates symbolic links
     to the corresponding beta files. it also renames the links with the coco sample id.
     """
-    beta_file_addresses = sorted(glob(os.path.join(betas_dir, 'unstructured', 'beta_*.nii'), recursive=True))
+    beta_file_addresses = sorted(glob(os.path.join(betas_dir, subject, 'unstructured', 'beta_*.nii'), recursive=True))
 
     all_slink_names = set()
     all_beta_relative_paths = set()
@@ -41,17 +41,17 @@ def create_symlinks_for_beta_files(betas_dir, splits):
 
         if split_name in splits:
             if split_name in ['blank', 'fixation', 'fixation_whitescreen']:
-                slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{split_name}.nii")
+                slink_name = os.path.join(get_subdir(split_name, betas_dir, subject), f"beta_{split_name}.nii")
             else:
                 stim_id = int(beta_name.split(split_name)[1].replace("_", ""))
                 if (split_name == IMAGERY) and (betas_dir == ATTENTION_MOD_FMRI_BETAS_DIR):
                     split_name = SPLIT_IMAGERY_WEAK
-                slink_name = os.path.join(get_subdir(split_name, betas_dir), f"beta_{stim_id:06d}.nii")
+                slink_name = os.path.join(get_subdir(split_name, betas_dir, subject), f"beta_{stim_id:06d}.nii")
 
             if slink_name in all_slink_names:
                 raise Exception(f'slink already defined: {slink_name}')
             all_slink_names.add(slink_name)
-            beta_relative_path = beta_path.replace(betas_dir, '')
+            beta_relative_path = beta_path.replace(os.path.join(betas_dir, subject), '')
             if not beta_relative_path.startswith(os.sep):
                 beta_relative_path = os.sep + beta_relative_path
             beta_relative_path = f"..{beta_relative_path}"
@@ -75,4 +75,4 @@ if __name__ == "__main__":
     args = get_args()
     for subject in args.subjects:
         print(subject)
-        create_symlinks_for_beta_files(os.path.join(args.betas_dir, subject), SPLITS)
+        create_symlinks_for_beta_files(args.betas_dir, subject, SPLITS)
