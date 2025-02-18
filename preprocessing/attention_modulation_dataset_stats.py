@@ -5,8 +5,8 @@ from glob import glob
 import pandas as pd
 
 from data import IMAGERY
-from preprocessing.make_spm_design_job_mat_attention_mod import ID_TO_TRIAL_TYPE, TEST_IMAGE_ATTENDED, \
-    TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED
+from preprocessing.make_spm_design_job_mat_attention_mod import ID_TO_TRIAL_TYPE, SPLIT_TEST_IMAGE_ATTENDED, \
+    SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED
 from utils import ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR
 
 if __name__ == "__main__":
@@ -23,7 +23,7 @@ if __name__ == "__main__":
             for event_file in event_files:
                 events = pd.read_csv(event_file, delimiter='\t')
                 trial_types = events.trial_type.apply(lambda x: ID_TO_TRIAL_TYPE[x])
-                conds = [TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED, IMAGERY]
+                conds = [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, IMAGERY]
                 trials = [e + "-" + t for e, t in zip(events.condition_name.astype(str), trial_types) if t in conds]
                 rep_counter.update(trials)
         entry = {'subject': subject}
@@ -35,6 +35,6 @@ if __name__ == "__main__":
         all_trials.append(entry)
 
     df = pd.DataFrame.from_records(all_trials, index='subject')
-    df = df[[TEST_IMAGE_ATTENDED, TEST_CAPTION_ATTENDED, TEST_IMAGE_UNATTENDED, TEST_CAPTION_UNATTENDED, IMAGERY]]
+    df = df[[SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, IMAGERY]]
     print(df)
     print(df.to_latex())
