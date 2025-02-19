@@ -74,7 +74,7 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors):
+def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors, threshold):
     t_values_path = os.path.join(results_dir, "t_values.p")
     t_values = pickle.load(open(t_values_path, "rb"))
 
@@ -84,7 +84,7 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     edge_lengths = get_edge_lengths_dicts_based_on_edges(resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
 
-    results_maps_path = os.path.join(results_dir, "results_maps")
+    results_maps_path = os.path.join(results_dir, f"results_maps_threshold_{threshold}")
     masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{hparam_suffix}")
     os.makedirs(masks_path, exist_ok=True)
 
@@ -192,7 +192,9 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
         path_out = os.path.join(results_maps_path, f"tfce_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(tfce_values[hemi][metric], path_out)
 
+    threshold = p_value_threshold
     if tfce_value_threshold is not None:
+        threshold = tfce_value_threshold
         print(f"using tfce value threshold {tfce_value_threshold}")
         masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
         for hemi in HEMIS:
@@ -209,7 +211,7 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
             masks[hemi][np.isnan(p_values[hemi])] = 0
             masks[hemi] = masks[hemi].astype(np.uint8)
 
-    create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors)
+    create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors, threshold)
 
 
 def get_edge_lengths_dicts_based_on_edges(resolution):
