@@ -28,7 +28,11 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES_MOD_SPECIFIC_IM
     ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_AGNOSTIC, \
     ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, \
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, \
-    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC
+    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_MOD_SPECIFIC_IMAGES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
     DEFAULT_MODEL
@@ -64,22 +68,30 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
     metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
     metric_names = [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
                     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
-    if additional_imagery_scores:
-        metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-        metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
+    # if additional_imagery_scores:
+    #     metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+    #     metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
     for metric_agnostic_name, metric in zip(metric_names, metrics):
         scores[metric_agnostic_name] = np.repeat(np.nan, nan_locations.shape)
         scores[metric_agnostic_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
-        for metric_specific_name, metric in zip([ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                                                [ACC_CAPTIONS, ACC_IMAGES]):
+        metric_names = [ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
+        metrics = [ACC_CAPTIONS, ACC_IMAGES]
+        if additional_imagery_scores:
+            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
+        for metric_specific_name, metric in zip(metric_names, metrics):
             scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
             scores[metric_specific_name][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_captions])
 
-        for metric_specific_name, metric in zip([ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                                                [ACC_IMAGES, ACC_CAPTIONS]):
+        metric_names = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
+        metrics = [ACC_IMAGES, ACC_CAPTIONS]
+        if additional_imagery_scores:
+            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
+        for metric_specific_name, metric in zip(metric_names, metrics):
             scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
             scores[metric_specific_name][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
