@@ -516,8 +516,10 @@ def get_stim_info(subject, split):
     if split == SPLIT_TRAIN:
         stim_ids = pickle.load(open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_ids_{split}.p"), 'rb'))
         stim_types = pickle.load(open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_types_{split}.p"), 'rb'))
-    elif split == SPLIT_TEST:
-        stim_ids, stim_types = TEST_STIM_IDS, TEST_STIM_TYPES
+    elif split == SPLIT_TEST_IMAGES:
+        stim_ids, stim_types = IDS_IMAGES_TEST, [IMAGE for _ in TEST_STIM_IDS]
+    elif split == SPLIT_TEST_CAPTIONS:
+        stim_ids, stim_types = IDS_IMAGES_TEST, [CAPTION for _ in TEST_STIM_IDS]
     elif split == SPLIT_IMAGERY:
         stim_ids, stim_types = IMAGERY_STIMS_IDS[subject], IMAGERY_STIMS_TYPES[subject]
     elif split == SPLIT_IMAGERY_WEAK:

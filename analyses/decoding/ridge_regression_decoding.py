@@ -10,14 +10,14 @@ import torch
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, get_fmri_data, \
-    SPLIT_TEST_IMAGE_ATTENDED, ALL_SPLITS, TEST_SPLITS
+    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_IMAGERY, get_fmri_data, \
+    ALL_SPLITS, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
-from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
-    ATTENTION_MOD_FMRI_BETAS_DIR
+from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
+    ATTENTION_MOD_FMRI_BETAS_DIR, RIDGE_DECODER_ATTN_MOD_OUT_DIR
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -55,12 +55,12 @@ def tensor_pairwise_accuracy(
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
 
-def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, att_mod_betas_dir=None, surface=False,
+def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, attn_mod_betas_dir=None, surface=False,
                              resolution=DEFAULT_RESOLUTION):
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
     for split in splits:
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
-        betas_dir = betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY] else att_mod_betas_dir
+        betas_dir = betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY] else attn_mod_betas_dir
         fmri_betas[split], stim_ids[split], stim_types[split] = get_fmri_data(
             betas_dir,
             subject,
@@ -91,7 +91,7 @@ def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
             fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
-                subject, ALL_SPLITS, training_mode, args.betas_dir, args.att_mod_betas_dir, args.surface,
+                subject, ALL_SPLITS, training_mode, args.betas_dir, args.attn_mod_betas_dir, args.surface,
                 args.resolution
             )
             for mask in args.masks:
@@ -115,13 +115,13 @@ def run(args):
 
                     run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution)
                     results_file_path = os.path.join(
-                        RIDGE_DECODER_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
+                        RIDGE_DECODER_ATTN_MOD_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
                     if os.path.isfile(results_file_path) and not args.overwrite:
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
                         continue
 
-                    latents = get_latents_for_splits(subject, feats_config, training_mode, ALL_SPLITS)
+                    latents = get_latents_for_splits(subject, feats_config, ALL_SPLITS, training_mode)
                     latents = standardize_latents(latents)
                     print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
 
@@ -152,9 +152,6 @@ def run(args):
 
                     predicted_latents = {split: backend.to_numpy(lats) for split, lats in predicted_latents.items()}
 
-                    # imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
-                    # test_predicted_latents = backend.to_numpy(test_predicted_latents)
-
                     results = {
                         "alpha": best_alpha,
                         "model": model,
@@ -165,14 +162,8 @@ def run(args):
                         "lang_features": feats_config.lang_features,
                         "training_mode": training_mode,
                         "mask": mask,
-                        "num_voxels": fmri_betas[SPLIT_TEST].shape[1],
-                        "stimulus_ids": stim_ids[SPLIT_TEST],
-                        "stimulus_types": stim_types[SPLIT_TEST],
-                        "imagery_stimulus_ids": stim_ids[SPLIT_IMAGERY],
-                        "predictions": predicted_latents[SPLIT_TEST],
-                        "imagery_predictions": predicted_latents[SPLIT_IMAGERY],
-                        "latents": latents[SPLIT_TEST],
-                        "imagery_latents": latents[SPLIT_IMAGERY],
+                        "num_voxels": fmri_betas[SPLIT_TRAIN].shape[1],
+                        "predictions": predicted_latents,
                         "surface": args.surface,
                         "resolution": args.resolution,
                     }
@@ -181,26 +172,24 @@ def run(args):
                     )
                     results.update(scores)
                     print(
-                        f"Best alphas: {best_alpha}\n"
-                        f"Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                        f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
-                        f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
-                        f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
+                        f"Best alphas: {best_alpha}"
                     )
 
-                    results_no_standardization = calc_all_pairwise_accuracy_scores(
-                        latents, predicted_latents, stim_types, standardize_predictions=False
-                    )
-                    print(
-                        f"Without standardization of predictions:\n"
-                        f"Pairwise acc (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
-                        f" | Pairwise acc (images): {results_no_standardization[ACC_IMAGES]:.2f}"
-                        f" | Pairwise acc (imagery): {results_no_standardization[ACC_IMAGERY]:.2f}"
-                        f" | Pairwise acc (imagery whole test set): "
-                        f"{results_no_standardization[ACC_IMAGERY_WHOLE_TEST]:.2f}"
-                    )
+                    # results_no_standardization = calc_all_pairwise_accuracy_scores(
+                    #     latents, predicted_latents, stim_types, standardize_predictions=False
+                    # )
+                    # print(
+                    #     f"Without standardization of predictions:\n"
+                    #     f"Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
+                    #     f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
+                    #     f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
+                    #     f" | Pairwise acc (imagery whole test set): "
+                    #     f"{results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
+                    # )
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
                     pickle.dump(results, open(results_file_path, 'wb'))
+
+                    print(scores)
 
 
 def get_args():
@@ -244,6 +233,4 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(RIDGE_DECODER_OUT_DIR, exist_ok=True)
-
     run(args)

@@ -3,7 +3,7 @@ from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
 
-from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY
+from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_IMAGERY_WEAK
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -88,37 +88,59 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
+STANDARDIZED_PREDS = "standardized_predictions"
+RAW_PREDS = "raw_predictions"
+
+ALL_CANDIDATE_LATENTS = "all_candidates_latents"
+LIMITED_CANDIDATE_LATENTS = "limited_candidates_latents"
+
 def calc_all_pairwise_accuracy_scores(latents, predictions, stim_types=None, metric="cosine",
-                                      standardize_predictions=True,
                                       standardize_latents=False,
                                       comp_cross_decoding_scores=True):
-    results = dict()
-    for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
-        preds_mod = predictions[SPLIT_TEST][stim_types == modality]
-        latents_mod = latents[SPLIT_TEST][stim_types == modality]
+    results = {STANDARDIZED_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}, RAW_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}}
 
-        results[acc_metric_name] = pairwise_accuracy(
-            latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
-        )
+    all_candidate_latents = np.concatenate((latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY_WEAK]))
 
-    if comp_cross_decoding_scores:
-        for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
-                                                           [ACC_CROSS_CAPTIONS_TO_IMAGES,
-                                                            ACC_CROSS_IMAGES_TO_CAPTIONS]):
-            preds_mod = predictions[SPLIT_TEST][stim_types == mod_preds]
-            latents_mod = latents[SPLIT_TEST][stim_types == mod_latents]
-
-            results[acc_metric_name] = pairwise_accuracy(
-                latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
+    for split in TEST_SPLITS:
+        for candidate_latents, latents_mode in zip([latents[split], all_candidate_latents], [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
+            results[RAW_PREDS][latents_mode][split] = pairwise_accuracy(
+                candidate_latents, predictions[split], metric, standardize_predictions=False,
+                standardize_latents=standardize_latents
+            )
+            results[STANDARDIZED_PREDS][latents_mode][split] = pairwise_accuracy(
+                candidate_latents, predictions[split], metric, standardize_predictions=True,
+                standardize_latents=standardize_latents
             )
 
-    if latents[SPLIT_IMAGERY] is not None:
-        imagery_scores = calc_imagery_pairwise_accuracy_scores(
-            latents[[SPLIT_IMAGERY]], predictions[SPLIT_IMAGERY], latents[SPLIT_TEST], metric,
-            standardize_predictions, standardize_latents,
-            test_set_preds=None
-        )
-        results.update(imagery_scores)
+    #TODO imagery preds normalization with weak imagery preds
+
+    # for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
+    #     preds_mod = predictions[SPLIT_TEST][stim_types == modality]
+    #     latents_mod = latents[SPLIT_TEST][stim_types == modality]
+    #
+    #     results[acc_metric_name] = pairwise_accuracy(
+    #         latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
+    #     )
+    #
+    # if comp_cross_decoding_scores:
+    #     # TODO
+    #     for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+    #                                                        [ACC_CROSS_CAPTIONS_TO_IMAGES,
+    #                                                         ACC_CROSS_IMAGES_TO_CAPTIONS]):
+    #         preds_mod = predictions[SPLIT_TEST][stim_types == mod_preds]
+    #         latents_mod = latents[SPLIT_TEST][stim_types == mod_latents]
+    #
+    #         results[acc_metric_name] = pairwise_accuracy(
+    #             latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
+    #         )
+    #
+    # if latents[SPLIT_IMAGERY] is not None:
+    #     imagery_scores = calc_imagery_pairwise_accuracy_scores(
+    #         latents[[SPLIT_IMAGERY]], predictions[SPLIT_IMAGERY], latents[SPLIT_TEST], metric,
+    #         standardize_predictions, standardize_latents,
+    #         test_set_preds=None
+    #     )
+    #     results.update(imagery_scores)
 
     return results
 
