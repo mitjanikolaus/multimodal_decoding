@@ -10,11 +10,15 @@ from scipy.stats import pearsonr
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir, add_searchlight_permutation_args, T_VAL_METRICS
 from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
-    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
+    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, \
+    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
 
+
+METRICS = T_VAL_METRICS + [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
     all_scores = []
@@ -74,7 +78,7 @@ def create_gifti_results_maps(args):
         plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
     subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
-    for metric in T_VAL_METRICS:
+    for metric in METRICS:
         for hemi in HEMIS:
             for subj in args.subjects:
                 if metric in subject_scores[subj][hemi]:

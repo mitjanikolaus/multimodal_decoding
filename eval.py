@@ -17,6 +17,9 @@ ACC_CAPTIONS_MOD_AGNOSTIC = "pairwise_acc_captions_mod_agnostic"
 ACC_IMAGERY_MOD_AGNOSTIC = "pairwise_acc_imagery_mod_agnostic"
 ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC = "pairwise_acc_imagery_whole_test_set_mod_agnostic"
 
+ACC_IMAGERY_NO_STD_MOD_AGNOSTIC = "pairwise_acc_imagery_no_std_mod_agnostic"
+ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC = "pairwise_acc_imagery_whole_test_set_no_std_mod_agnostic"
+
 ACC_IMAGES_MOD_SPECIFIC_IMAGES = "pairwise_acc_images_mod_specific_images"
 ACC_CAPTIONS_MOD_SPECIFIC_IMAGES = "pairwise_acc_captions_mod_specific_images"
 
