@@ -283,8 +283,8 @@ def create_composite_image(args):
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
-    metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS,
-               ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
+    metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
+               ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
     for metric in metrics:
         images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
         cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
@@ -296,10 +296,10 @@ def create_composite_image(args):
         acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
         acc_scores_imgs.append(acc_scores_img)
 
-    acc_scores_imgs_image_decoding = append_images(acc_scores_imgs[:2], horizontally=False, padding=300)
-    acc_scores_imgs_caption_decoding = append_images(acc_scores_imgs[2:], horizontally=False, padding=300)
+    acc_scores_imgs_column_1 = append_images(acc_scores_imgs[:2], horizontally=False, padding=300)
+    acc_scores_imgs_column_2 = append_images(acc_scores_imgs[2:], horizontally=False, padding=300)
 
-    acc_imgs = append_images([acc_scores_imgs_image_decoding, acc_scores_imgs_caption_decoding], padding=400)
+    acc_imgs = append_images([acc_scores_imgs_column_1, acc_scores_imgs_column_2], padding=400)
 
     full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=400)
 
