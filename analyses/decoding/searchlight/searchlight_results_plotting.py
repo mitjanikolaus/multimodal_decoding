@@ -1,6 +1,7 @@
 import argparse
 import warnings
 
+import h5py
 import numpy as np
 from PIL import Image
 from nilearn import datasets, plotting
@@ -11,7 +12,7 @@ import pickle
 from tqdm import tqdm
 
 from analyses.cluster_analysis import calc_significance_cutoff
-from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR
+from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
@@ -270,7 +271,7 @@ def plot_p_values(results_path, args):
 
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
 
     tfce_values_img_dir = str(os.path.join(results_path, "tmp", "tfce-values"))
     tfce_val_img = Image.open(os.path.join(tfce_values_img_dir, f"{args.metric}_medial_left.png"))
@@ -307,7 +308,7 @@ def create_composite_image(args):
 
 
 def run(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
     os.makedirs(results_path, exist_ok=True)
 
     plot_p_values(results_path, args)
@@ -331,24 +332,22 @@ def run(args):
 
         print("plotting test stats for null distribution examples")
         t_values_null_distribution_path = os.path.join(
-            SEARCHLIGHT_OUT_DIR, "train", args.model, args.features,
-            args.resolution,
-            args.mode, f"t_values_null_distribution.p"
+            permutation_results_dir(args), f"t_values_null_distribution.hdf5"
         )
-        null_distribution_t_values = pickle.load(open(t_values_null_distribution_path, 'rb'))
-        t_values_smooth_null_distribution = None
-        null_distribution_tfce_values_file = os.path.join(
-            permutation_results_dir(args),
-            f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-        )
-        null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+        with h5py.File(t_values_null_distribution_path, 'r') as null_distribution_t_values:
+            t_values_smooth_null_distribution = None
+            null_distribution_tfce_values_file = os.path.join(
+                permutation_results_dir(args),
+                f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+            )
+            null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
 
-        for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
-            test_statistics = {"t-values": null_distribution_t_values[i]}
-            if t_values_smooth_null_distribution is not None:
-                test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
-            test_statistics["tfce-values"] = null_distribution_test_statistic[i]
-            plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
+            for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
+                test_statistics = {"t-values": null_distribution_t_values[i]}
+                if t_values_smooth_null_distribution is not None:
+                    test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
+                test_statistics["tfce-values"] = null_distribution_test_statistic[i]
+                plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
 
     if args.per_subject_plots:
         metrics = [ACC_CAPTIONS, ACC_IMAGES, METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC,
