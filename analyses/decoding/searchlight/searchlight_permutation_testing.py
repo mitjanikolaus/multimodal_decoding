@@ -314,6 +314,7 @@ def calc_test_statistics(args):
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ",
               sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
+        print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-10:])
         print("calculating p values..")
         for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
             test_stat = tfce_values[hemi][args.metric][vertex]
@@ -441,7 +442,7 @@ def calc_t_values_null_distr(args, out_path):
                 dsets[hemi] = dict()
                 for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
                     tvals_shape = (
-                    len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
+                        len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
             if proc_id == 0:
