@@ -166,7 +166,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
     return significance_cutoff, max_test_statistic_distr
 
 
-def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resolution, radius=None, n_neighbors=None):
+def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, hparam_suffix, resolution, radius=None, n_neighbors=None):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
 
@@ -192,13 +192,23 @@ def create_masks(results_dir, metric, p_value_threshold, hparam_suffix, resoluti
         path_out = os.path.join(results_maps_path, f"tfce_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(tfce_values[hemi][metric], path_out)
 
-    # p value masks
-    masks = copy.deepcopy(p_values)
-    for hemi in HEMIS:
-        masks[hemi][p_values[hemi] < p_value_threshold] = 1
-        masks[hemi][p_values[hemi] >= p_value_threshold] = 0
-        masks[hemi][np.isnan(p_values[hemi])] = 0
-        masks[hemi] = masks[hemi].astype(np.uint8)
+    if tfce_value_threshold is not None:
+        print(f"using tfce value threshold {tfce_value_threshold}")
+        # p value masks
+        masks = copy.deepcopy(tfce_values)
+        for hemi in HEMIS:
+            masks[hemi][tfce_values[hemi] < tfce_value_threshold] = 1
+            masks[hemi][tfce_values[hemi] >= tfce_value_threshold] = 0
+            masks[hemi][np.isnan(tfce_values[hemi])] = 0
+            masks[hemi] = masks[hemi].astype(np.uint8)
+    else:
+        # p value masks
+        masks = copy.deepcopy(p_values)
+        for hemi in HEMIS:
+            masks[hemi][p_values[hemi] < p_value_threshold] = 1
+            masks[hemi][p_values[hemi] >= p_value_threshold] = 0
+            masks[hemi][np.isnan(p_values[hemi])] = 0
+            masks[hemi] = masks[hemi].astype(np.uint8)
 
     create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors)
 

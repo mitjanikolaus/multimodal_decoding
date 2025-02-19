@@ -672,6 +672,7 @@ def get_args():
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
+    parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()
 
@@ -681,7 +682,7 @@ if __name__ == "__main__":
     args = get_args()
 
     print(f"\n\nPermutation Testing for {args.metric}\n")
-    create_null_distribution(args)
-    calc_test_statistics(args)
-    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
+    # create_null_distribution(args)
+    # calc_test_statistics(args)
+    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, args.tfce_value_threshold, get_hparam_suffix(args),
                  args.resolution, args.radius, args.n_neighbors)
