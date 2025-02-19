@@ -186,7 +186,7 @@ def plot(args):
                     levels=regions_indices,
                     hemi=hemi,
                     figure=fig,
-                    colors=['w'] * len(regions_indices),
+                    colors=['black'] * len(regions_indices),
                 )
 
                 title = f"{view}_{hemi}"
