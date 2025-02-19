@@ -13,11 +13,10 @@ from tqdm import tqdm
 
 from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
-from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, load_per_subject_scores, CHANCE_VALUES, \
+from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
-from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
+from eval import ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
 
@@ -275,7 +274,7 @@ def create_composite_image(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
 
     tfce_values_img_dir = str(os.path.join(results_path, "tmp", "tfce-values"))
-    tfce_val_img = Image.open(os.path.join(tfce_values_img_dir, f"{args.metric}_medial_left.png"))
+    tfce_val_img = Image.open(os.path.join(tfce_values_img_dir, f"{args.metric}_lateral_left.png"))
     # offset_size = (int(p_val_img.size[0]/10), p_val_img.size[1])
     # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
     cbar = Image.open(os.path.join(tfce_values_img_dir, f"colorbar_{args.metric}.png"))
@@ -287,7 +286,7 @@ def create_composite_image(args):
     metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
                ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
     for metric in metrics:
-        images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_medial_left.png"))
+        images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
         cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
         if metric in [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]:
             acc_scores_img = append_images([cbar, images], padding=50)
