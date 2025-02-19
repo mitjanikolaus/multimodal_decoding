@@ -39,7 +39,14 @@ def plot(args):
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
         args.metric = result_metric
-        significance_cutoff, _ = calc_significance_cutoff(args, args.p_value_threshold) # (603, None)
+        # null_distribution_tfce_values_file = os.path.join(
+        #     permutation_results_dir(args),
+        #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+        # )
+        # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+        # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+        #                                                   args.p_value_threshold)
+        significance_cutoff = 251
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
