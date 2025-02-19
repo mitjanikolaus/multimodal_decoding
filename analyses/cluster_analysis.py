@@ -103,7 +103,7 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
         for i, cluster in enumerate(clusters[:10]):
             cluster = list(cluster)
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
-            vertex_max_t_value = cluster[np.argmax(t_values[hemi][metric][cluster])]
+            vertex_max_t_value = cluster[np.nanargmax(t_values[hemi][metric][cluster])]
             max_t_value = t_values[hemi][metric][vertex_max_t_value]
             print(f"Max t-value: {max_t_value:.2f}", end=" | ")
             coords = mesh.coordinates[vertex_max_t_value]
