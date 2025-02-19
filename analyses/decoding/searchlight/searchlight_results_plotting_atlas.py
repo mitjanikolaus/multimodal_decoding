@@ -179,15 +179,15 @@ def plot(args):
                     vmin=cbar_min,
                     cmap=CMAP_POS_ONLY,
                 )
-                plot_surf_contours_custom(
-                    surf_mesh=fsaverage[f"infl_{hemi}"],
-                    bg_map=fsaverage[f"sulc_{hemi}"],
-                    roi_map=atlas_labels_current_view,
-                    levels=regions_indices,
-                    hemi=hemi,
-                    figure=fig,
-                    colors=['black'] * len(regions_indices),
-                )
+                # plot_surf_contours_custom(
+                #     surf_mesh=fsaverage[f"infl_{hemi}"],
+                #     bg_map=fsaverage[f"sulc_{hemi}"],
+                #     roi_map=atlas_labels_current_view,
+                #     levels=regions_indices,
+                #     hemi=hemi,
+                #     figure=fig,
+                #     colors=['black'] * len(regions_indices),
+                # )
 
                 title = f"{view}_{hemi}"
                 path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
