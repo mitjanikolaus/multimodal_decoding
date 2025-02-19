@@ -72,6 +72,7 @@ def create_gifti_results_maps(args):
     subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
         args,
         return_nan_locations_and_n_neighbors=True,
+        additional_imagery_scores=True
     )
     if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
         create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)

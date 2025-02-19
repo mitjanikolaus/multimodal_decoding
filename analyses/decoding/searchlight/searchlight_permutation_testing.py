@@ -57,13 +57,17 @@ T_VAL_METRICS = [
 ]
 
 
-def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
+def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations,
+                   additional_imagery_scores=False):
     scores = dict()
 
-    for metric_agnostic_name, metric in zip([
-        ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-        ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC], [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY+"_no_std", ACC_IMAGERY_WHOLE_TEST+"_no_std"]
-    ):
+    metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
+    metric_names = [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
+                    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
+    if additional_imagery_scores:
+        metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+        metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
+    for metric_agnostic_name, metric in zip(metric_names, metrics):
         scores[metric_agnostic_name] = np.repeat(np.nan, nan_locations.shape)
         scores[metric_agnostic_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
@@ -90,7 +94,8 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
     return scores
 
 
-def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, hemis=HEMIS):
+def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, hemis=HEMIS,
+                            additional_imagery_scores=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -153,7 +158,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 print(f"Missing modality-specific results: {results_mod_specific_captions_file}")
                 scores_captions = None
 
-            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
+            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations,
+                                    additional_imagery_scores)
 
             # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
             # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
