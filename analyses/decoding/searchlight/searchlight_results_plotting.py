@@ -12,13 +12,13 @@ import pickle
 from tqdm import tqdm
 
 from analyses.cluster_analysis import calc_significance_cutoff
-from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_OUT_DIR, searchlight_mode_from_args
+from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, load_per_subject_scores, CHANCE_VALUES, \
-    load_null_distr_per_subject_scores, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, permutation_results_dir, \
+    load_null_distr_per_subject_scores, permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
 from eval import ACC_CAPTIONS, ACC_IMAGES
-from utils import RESULTS_DIR, SUBJECTS, HEMIS, DEFAULT_RESOLUTION, save_plot_and_crop_img, append_images, DEFAULT_MODEL
+from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 COLORBAR_MAX = 0.8

@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from PIL.Image import Image
+from PIL import Image
 from matplotlib import pyplot as plt
 
 from nibabel import GiftiImage
