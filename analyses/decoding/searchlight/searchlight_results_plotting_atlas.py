@@ -10,6 +10,7 @@ import os
 import pickle
 
 from analyses.cluster_analysis import calc_significance_cutoff
+from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
@@ -31,7 +32,9 @@ def plot(args):
     plt.style.use("dark_background")
 
     for result_metric in METRICS:
-        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
+                                        searchlight_mode_from_args(args)))
+
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
@@ -198,7 +201,9 @@ def plot(args):
 
 def create_composite_image(args):
     for result_metric in METRICS:
-        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, args.mode))
+        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
+                                        searchlight_mode_from_args(args)))
+
         results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
         images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
