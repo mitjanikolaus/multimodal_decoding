@@ -84,7 +84,7 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     edge_lengths = get_edge_lengths_dicts_based_on_edges(resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
 
-    results_maps_path = os.path.join(results_dir, f"results_maps_threshold_{threshold}")
+    results_maps_path = os.path.join(results_dir, f"results_maps")
     masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{hparam_suffix}")
     os.makedirs(masks_path, exist_ok=True)
 
@@ -118,7 +118,7 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
 
             cluster_map = np.repeat(np.nan, p_values[hemi].shape)
             cluster_map[list(cluster)] = values[hemi][cluster]
-            fname = f"{metric}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+            fname = f"{metric}_{FS_HEMI_NAMES[hemi]}_threshold_{threshold}_cluster_{i}.gii"
             path_out = os.path.join(results_maps_path, f"clusters", fname)
             os.makedirs(os.path.dirname(path_out), exist_ok=True)
             export_to_gifti(cluster_map, path_out)
@@ -132,7 +132,7 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
             if adj is not None:
                 cluster_map_extended = np.repeat(np.nan, p_values[hemi].shape)
                 cluster_map_extended[np.unique([adj[cluster_idx] for cluster_idx in cluster])] = 1
-                fname = f"{metric}_{FS_HEMI_NAMES[hemi]}_cluster_{i}.gii"
+                fname = f"{metric}_{FS_HEMI_NAMES[hemi]}_threshold_{threshold}_cluster_{i}.gii"
                 path_out = os.path.join(results_maps_path, f"clusters_extended", fname)
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 export_to_gifti(cluster_map_extended, path_out)
