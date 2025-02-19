@@ -17,19 +17,19 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC
 from analyses.decoding.searchlight.searchlight_results_plotting import DEFAULT_VIEWS, save_plot_and_crop_img, \
     append_images
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
-from eval import ACC_IMAGERY, ACC_IMAGERY_MOD_AGNOSTIC
+from eval import ACC_IMAGERY_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_CROSS_DECODING
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-CMAP_POS_ONLY = "hot"
+CMAP_POS_ONLY = "autumn" #"hot"
 
 METRICS = [METRIC_CROSS_DECODING] #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC #ACC_IMAGERY_MOD_AGNOSTIC
 
 def plot(args):
-    plt.style.use("dark_background")
+    # plt.style.use("dark_background")
 
     for result_metric in METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
@@ -242,7 +242,7 @@ def create_composite_image(args):
         p_val_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=False)
 
         path = os.path.join(results_path, f"searchlight_results_{result_metric}.png")
-        p_val_image.save(path, transparent=True, facecolor="black")
+        p_val_image.save(path, transparent=True)#, facecolor="black")
 
 
 def get_args():
