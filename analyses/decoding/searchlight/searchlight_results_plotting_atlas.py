@@ -47,6 +47,7 @@ def plot(args):
         # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
         #                                                   args.p_value_threshold)
         significance_cutoff = 251
+        significance_cutoff = np.log10(significance_cutoff)
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
