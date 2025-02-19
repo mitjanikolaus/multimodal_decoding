@@ -102,7 +102,9 @@ def plot(args):
         result_values = pickle.load(open(tfce_values_path, "rb"))
         for hemi in HEMIS:
             # result_values[hemi] = result_values[hemi][args.metric]
-            result_values[hemi] = np.log10(result_values[hemi][args.metric])
+            result_values[hemi][result_values[hemi][args.metric]>1] = np.log10(result_values[hemi][args.metric][result_values[hemi][args.metric]>1])
+            result_values[hemi][result_values[hemi][args.metric]<=1] = 0
+
         # elif result_metric == 'imagery':
         #     result_values = {}
         #     subject_scores = load_per_subject_scores(args)
