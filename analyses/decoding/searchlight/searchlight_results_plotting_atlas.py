@@ -98,7 +98,8 @@ def plot(args):
         tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
         result_values = pickle.load(open(tfce_values_path, "rb"))
         for hemi in HEMIS:
-            result_values[hemi] = result_values[hemi][args.metric]
+            # result_values[hemi] = result_values[hemi][args.metric]
+            result_values[hemi] = np.log10(result_values[hemi][args.metric])
         # elif result_metric == 'imagery':
         #     result_values = {}
         #     subject_scores = load_per_subject_scores(args)
