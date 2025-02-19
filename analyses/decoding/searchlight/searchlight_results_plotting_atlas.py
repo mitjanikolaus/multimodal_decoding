@@ -24,7 +24,9 @@ HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-CMAP_POS_ONLY = "autumn" #"hot"
+# CMAP_POS_ONLY = "autumn"
+CMAP_POS_ONLY = "hot"
+
 
 METRICS = [METRIC_CROSS_DECODING] #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC #ACC_IMAGERY_MOD_AGNOSTIC
 
