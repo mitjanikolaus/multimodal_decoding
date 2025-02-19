@@ -99,11 +99,12 @@ def plot(args):
         # save_legend(all_colors, tfce_values_atlas_results_dir)
 
         tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-        result_values = pickle.load(open(tfce_values_path, "rb"))
+        orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+        result_values = dict()
         for hemi in HEMIS:
             # result_values[hemi] = result_values[hemi][args.metric]
-            result_values[hemi][result_values[hemi][args.metric]>1] = np.log10(result_values[hemi][args.metric][result_values[hemi][args.metric]>1])
-            result_values[hemi][result_values[hemi][args.metric]<=1] = 0
+            result_values[hemi] = np.zeros_like(orig_result_values[hemi][args.metric])
+            result_values[hemi][orig_result_values[hemi][args.metric]>1] = np.log10(orig_result_values[hemi][args.metric][orig_result_values[hemi][args.metric]>1])
 
         # elif result_metric == 'imagery':
         #     result_values = {}
