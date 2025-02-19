@@ -48,7 +48,7 @@ def plot(args):
         # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
         # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
         #                                                   args.p_value_threshold)
-        significance_cutoff = 251
+        significance_cutoff = 380
         significance_cutoff = np.log10(significance_cutoff)
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
