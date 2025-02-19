@@ -116,7 +116,7 @@ def plot(args):
         #     raise RuntimeError(f"Unknown metric: {result_metric}")
 
         cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        cbar_min = 1
+        cbar_min = 0
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
