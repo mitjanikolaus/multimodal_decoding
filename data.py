@@ -658,6 +658,7 @@ def standardize_latents(latents):
 
 def standardize_fmri_betas(fmri_betas):
     nan_locations = np.isnan(fmri_betas[SPLIT_TRAIN][0])
+    print(f"Ignoring data from {np.sum(nan_locations)} nan locations.")
     fmri_betas = {split: betas[:, ~nan_locations] for split, betas in fmri_betas.items()}
 
     scaler = StandardScaler().fit(fmri_betas[SPLIT_TRAIN])
