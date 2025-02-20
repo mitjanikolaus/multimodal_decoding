@@ -117,6 +117,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
 
     scaler = StandardScaler().fit(predictions[SPLIT_IMAGERY_WEAK])
     imagery_preds_restandardized = scaler.transform(predictions[SPLIT_IMAGERY])
+    results["standardized_with_weak_imagery"] = {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}
     for candidate_latents, latents_mode in zip([latents[SPLIT_IMAGERY], all_candidate_latents],
                                                [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
         results["standardized_with_weak_imagery"][latents_mode][SPLIT_IMAGERY] = pairwise_accuracy(
