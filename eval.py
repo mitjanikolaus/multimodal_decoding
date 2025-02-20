@@ -91,8 +91,8 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
-ALL_CANDIDATE_LATENTS = "all_candidates_latents"
-LIMITED_CANDIDATE_LATENTS = "limited_candidates_latents"
+ALL_CANDIDATE_LATENTS = "all_candidate_latents"
+LIMITED_CANDIDATE_LATENTS = "limited_candidate_latents"
 
 def get_candidate_latents(split, latents):
     if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS]:
