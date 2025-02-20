@@ -202,78 +202,6 @@ TEST_STIM_TYPES = np.array([CAPTION] * len(INDICES_TEST_STIM_CAPTION) + [IMAGE] 
 
 TEST_BATCH_SIZE = len(TEST_STIM_IDS)
 
-IDS_IMAGES_TEST_ATTENTION_MOD = [
-    3862,
-    6450,
-    16764,
-    25902,
-    38938,
-    43966,
-    47566,
-    53580,
-    55413,
-    57703,
-    63881,
-    70426,
-    79642,
-    122403,
-    133449,
-    138529,
-    146411,
-    159225,
-    163240,
-    165419,
-    165874,
-    176509,
-    180389,
-    183210,
-    186308,
-    186788,
-    192095,
-    195406,
-    201601,
-    211189,
-    220654,
-    221313,
-    238193,
-    252018,
-    255714,
-    271844,
-    275995,
-    278135,
-    279331,
-    287434,
-    292888,
-    310552,
-    315083,
-    318108,
-    323797,
-    353260,
-    363483,
-    367120,
-    380011,
-    385795,
-    388398,
-    414373,
-    423618,
-    450719,
-    454636,
-    457249,
-    466514,
-    467854,
-    475693,
-    499733,
-    505655,
-    512289,
-    534975,
-    536798,
-    546074,
-    548167,
-    555739,
-    560282,
-    567627,
-    573980,
-]
 
 IDS_IMAGES_IMAGERY_WEAK = [
     9800,
@@ -525,9 +453,9 @@ def get_stim_info(subject, split):
     elif split == SPLIT_IMAGERY_WEAK:
         stim_ids, stim_types = IDS_IMAGES_IMAGERY_WEAK, [IMAGERY for _ in IDS_IMAGES_IMAGERY_WEAK]
     elif split in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED]:
-        stim_ids, stim_types = IDS_IMAGES_TEST_ATTENTION_MOD, [IMAGE for _ in IDS_IMAGES_TEST_ATTENTION_MOD]
+        stim_ids, stim_types = IDS_IMAGES_TEST, [IMAGE for _ in IDS_IMAGES_TEST]
     elif split in [SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
-        stim_ids, stim_types = IDS_IMAGES_TEST_ATTENTION_MOD, [CAPTION for _ in IDS_IMAGES_TEST_ATTENTION_MOD]
+        stim_ids, stim_types = IDS_IMAGES_TEST, [CAPTION for _ in IDS_IMAGES_TEST]
     else:
         raise RuntimeError(f"Unknown split name: {split}")
 

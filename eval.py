@@ -94,36 +94,28 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
 ALL_CANDIDATE_LATENTS = "all_candidate_latents"
 LIMITED_CANDIDATE_LATENTS = "limited_candidate_latents"
 
+
 def get_candidate_latents(split, latents):
-    if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS]:
+    if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED,
+                 SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
         all_candidate_latents = np.concatenate(
-            (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGE_ATTENDED],
-             latents[SPLIT_IMAGERY_WEAK])
-        )
-    elif split in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
-        all_candidate_latents = np.concatenate(
-            (latents[SPLIT_TEST_IMAGE_ATTENDED], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES],
-             latents[SPLIT_IMAGERY_WEAK])
+            (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_IMAGERY_WEAK])
         )
     elif split in [SPLIT_IMAGERY]:
         all_candidate_latents = np.concatenate(
-            (latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_TEST_IMAGE_ATTENDED],
-             latents[SPLIT_IMAGERY_WEAK])
+            (latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY_WEAK])
         )
     elif split in [SPLIT_IMAGERY_WEAK]:
         all_candidate_latents = np.concatenate(
-            (latents[SPLIT_IMAGERY_WEAK], latents[SPLIT_TEST_IMAGES], latents[SPLIT_TEST_IMAGE_ATTENDED],
-             latents[SPLIT_IMAGERY])
+            (latents[SPLIT_IMAGERY_WEAK], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY])
         )
     else:
-        raise RuntimeError("Unknow split: ", split)
+        raise RuntimeError("Unknown split: ", split)
     return all_candidate_latents
+
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", standardize_latents=False,
                                       comp_cross_decoding_scores=True):
-    # results = {STANDARDIZED_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()},
-    #            RAW_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}}
-
     results = []
 
     for split in TEST_SPLITS:

@@ -10,8 +10,7 @@ from tqdm import tqdm
 import nibabel as nib
 
 from data import IMAGERY_SCENES, VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, IDS_IMAGES_TEST, IMAGERY_STIMS_IDS, \
-    get_fmri_data_paths, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, IMAGERY, IDS_IMAGES_IMAGERY_WEAK, \
-    IDS_IMAGES_TEST_ATTENTION_MOD
+    get_fmri_data_paths, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, IMAGERY, IDS_IMAGES_IMAGERY_WEAK
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 from utils import SUBJECTS, STIMULI_IDS_PATH, FMRI_BETAS_DIR, ATTENTION_MOD_FMRI_BETAS_DIR, ATTENTION_MOD_SUBJECTS
 
@@ -37,9 +36,6 @@ def load_and_save_relevant_coco_ids():
             all_ids.extend(IMAGERY_STIMS_IDS[subject])
 
         all_ids.extend(IDS_IMAGES_TEST)
-
-        all_ids.extend(IDS_IMAGES_TEST_ATTENTION_MOD)
-        all_ids.extend(IDS_IMAGES_IMAGERY_WEAK)
 
         all_ids = sorted(list(set(all_ids)))
         pickle.dump(all_ids, open(STIMULI_IDS_PATH, "wb"))
