@@ -14,17 +14,15 @@ from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
-from analyses.decoding.searchlight.searchlight_results_plotting import DEFAULT_VIEWS, save_plot_and_crop_img, \
-    append_images
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
-from eval import ACC_IMAGERY_MOD_AGNOSTIC
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_CROSS_DECODING
+from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_CROSS_DECODING, save_plot_and_crop_img, \
+    append_images
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-# CMAP_POS_ONLY = "autumn"
 CMAP_POS_ONLY = "hot"
 
 
@@ -48,8 +46,7 @@ def plot(args):
         # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
         # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
         #                                                   args.p_value_threshold)
-        significance_cutoff = 380
-        significance_cutoff = np.log10(significance_cutoff)
+        significance_cutoff = 707.24
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
@@ -102,9 +99,7 @@ def plot(args):
         orig_result_values = pickle.load(open(tfce_values_path, "rb"))
         result_values = dict()
         for hemi in HEMIS:
-            # result_values[hemi] = result_values[hemi][args.metric]
-            result_values[hemi] = np.zeros_like(orig_result_values[hemi][args.metric])
-            result_values[hemi][orig_result_values[hemi][args.metric]>1] = np.log10(orig_result_values[hemi][args.metric][orig_result_values[hemi][args.metric]>1])
+            result_values[hemi] = orig_result_values[hemi][args.metric]
 
         # elif result_metric == 'imagery':
         #     result_values = {}
@@ -116,7 +111,7 @@ def plot(args):
         #     raise RuntimeError(f"Unknown metric: {result_metric}")
 
         cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        cbar_min = 4    #0
+        cbar_min = 0    #0
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
@@ -179,15 +174,15 @@ def plot(args):
                     vmin=cbar_min,
                     cmap=CMAP_POS_ONLY,
                 )
-                # plot_surf_contours_custom(
-                #     surf_mesh=fsaverage[f"infl_{hemi}"],
-                #     bg_map=fsaverage[f"sulc_{hemi}"],
-                #     roi_map=atlas_labels_current_view,
-                #     levels=regions_indices,
-                #     hemi=hemi,
-                #     figure=fig,
-                #     colors=['black'] * len(regions_indices),
-                # )
+                plot_surf_contours_custom(
+                    surf_mesh=fsaverage[f"infl_{hemi}"],
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    roi_map=atlas_labels_current_view,
+                    levels=regions_indices,
+                    hemi=hemi,
+                    figure=fig,
+                    colors=['skyblue'] * len(regions_indices),
+                )
 
                 title = f"{view}_{hemi}"
                 path = os.path.join(atlas_tmp_results_dir, f"{title}.png")

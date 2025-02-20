@@ -101,7 +101,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
     # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
     #                                                   args.p_value_threshold)
-    significance_cutoff = 380
+    significance_cutoff = 707.24
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -288,12 +288,7 @@ def create_composite_image(args):
     metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
                ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
     for metric in metrics:
-        images = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
-        cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
-        if metric in metrics[:2]:
-            acc_scores_img = append_images([cbar, images], padding=50)
-        else:
-            acc_scores_img = append_images([images, cbar], padding=50)
+        acc_scores_img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
 
         acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
         acc_scores_imgs.append(acc_scores_img)
@@ -303,7 +298,7 @@ def create_composite_image(args):
 
     acc_imgs = append_images([acc_scores_imgs_column_1, acc_scores_imgs_column_2], padding=400)
 
-    full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=200)
+    full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=300)
 
     path = os.path.join(results_path, "searchlight_methods.png")
     full_img.save(path, transparent=True)
@@ -312,18 +307,18 @@ def create_composite_image(args):
 
 def run(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
-    # os.makedirs(results_path, exist_ok=True)
-    #
-    # plot_p_values(results_path, args)
-    #
-    # per_subject_scores = load_per_subject_scores(args)
-    # plot_acc_scores(per_subject_scores, args, results_path)
-    #
-    # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    # test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    # test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    # plot_test_statistics(test_statistics, args, results_path)
+    os.makedirs(results_path, exist_ok=True)
+
+    plot_p_values(results_path, args)
+
+    per_subject_scores = load_per_subject_scores(args)
+    plot_acc_scores(per_subject_scores, args, results_path)
+
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    plot_test_statistics(test_statistics, args, results_path)
 
     create_composite_image(args)
 
