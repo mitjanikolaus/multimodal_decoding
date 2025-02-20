@@ -109,7 +109,7 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     lgd = None
     if plot_legend:
         # lgd = g.fig.legend(loc='upper left', title="", bbox_to_anchor=(1, 0.9), ncol=2)
-        lgd = g.fig.legend(ncol=2, title=legend_title, loc="upper left",
+        lgd = g.fig.legend(ncol=3, title=legend_title, loc="upper left",
                            bbox_to_anchor=legend_bbox)  # , bbox_to_anchor=(0.02, 0.95), ncol=9)
         bbox_extra_artists = (lgd,)
 
@@ -255,12 +255,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
             data_item_acc_mean["metric"] = ACC_MEAN
             data_item_acc_mean["value"] = (results[ACC_CAPTIONS] + results[ACC_IMAGES]) / 2
             data.append(data_item_acc_mean)
-
-            # data_item_acc_cross_mean = {k: value for k, value in results.items() if k in HP_KEYS}
-            # data_item_acc_cross_mean["metric"] = ACC_CROSS_MEAN
-            # data_item_acc_cross_mean["value"] = (results[ACC_CROSS_IMAGES_TO_CAPTIONS] + results[ACC_CROSS_CAPTIONS_TO_IMAGES]) / 2
-            # data.append(data_item_acc_cross_mean)
-
+  
     df = pd.DataFrame.from_records(data)
 
     if "test_features" in df.columns:
@@ -270,6 +265,8 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
         df["surface"] = df.surface.fillna(False)
     else:
         df["surface"] = False
+
+        
 
     # df["vision_features"] = df.vision_features.replace(
     #     {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
