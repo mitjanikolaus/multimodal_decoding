@@ -5,7 +5,8 @@ from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
 
 from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_IMAGERY_WEAK, \
-    SPLIT_TEST_IMAGE_ATTENDED
+    SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTIONS, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, \
+    SPLIT_TEST_CAPTION_UNATTENDED
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -93,6 +94,30 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
 ALL_CANDIDATE_LATENTS = "all_candidates_latents"
 LIMITED_CANDIDATE_LATENTS = "limited_candidates_latents"
 
+def get_candidate_latents(split, latents):
+    if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS]:
+        all_candidate_latents = np.concatenate(
+            (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGE_ATTENDED],
+             latents[SPLIT_IMAGERY_WEAK])
+        )
+    elif split in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
+        all_candidate_latents = np.concatenate(
+            (latents[SPLIT_TEST_IMAGE_ATTENDED], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES],
+             latents[SPLIT_IMAGERY_WEAK])
+        )
+    elif split in [SPLIT_IMAGERY]:
+        all_candidate_latents = np.concatenate(
+            (latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_TEST_IMAGE_ATTENDED],
+             latents[SPLIT_IMAGERY_WEAK])
+        )
+    elif split in [SPLIT_IMAGERY_WEAK]:
+        all_candidate_latents = np.concatenate(
+            (latents[SPLIT_IMAGERY_WEAK], latents[SPLIT_TEST_IMAGES], latents[SPLIT_TEST_IMAGE_ATTENDED],
+             latents[SPLIT_IMAGERY])
+        )
+    else:
+        raise RuntimeError("Unknow split: ", split)
+    return all_candidate_latents
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", standardize_latents=False,
                                       comp_cross_decoding_scores=True):
@@ -100,16 +125,16 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
     #            RAW_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}}
 
     results = []
-    all_candidate_latents = np.concatenate(
-        (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGE_ATTENDED],
-         latents[SPLIT_IMAGERY_WEAK])
-    )
 
     for split in TEST_SPLITS:
-        for candidate_latents, latents_mode in zip([latents[split], all_candidate_latents],
-                                                   [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
-            if split == SPLIT_IMAGERY:
-                candidate_latents = np.concatenate((latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY]))
+        for latents_mode in [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]:
+            # if split == SPLIT_IMAGERY:
+            #     candidate_latents = np.concatenate((latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY]))
+            if latents_mode == LIMITED_CANDIDATE_LATENTS:
+                candidate_latents = latents[split]
+            else:
+                candidate_latents = get_candidate_latents(split, latents)
+
             for standardize_predictions in [False, True]:
                 acc = pairwise_accuracy(
                     candidate_latents, predictions[split], metric, standardize_predictions=standardize_predictions,
@@ -120,8 +145,12 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
 
     scaler = StandardScaler().fit(np.concatenate((predictions[SPLIT_IMAGERY_WEAK], predictions[SPLIT_IMAGERY])))
     imagery_preds_restandardized = scaler.transform(predictions[SPLIT_IMAGERY])
-    for candidate_latents, latents_mode in zip([latents[SPLIT_IMAGERY], all_candidate_latents],
-                                               [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
+    for latents_mode in [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]:
+        if latents_mode == LIMITED_CANDIDATE_LATENTS:
+            candidate_latents = latents[SPLIT_IMAGERY]
+        else:
+            candidate_latents = get_candidate_latents(split, latents)
+
         acc = pairwise_accuracy(
             candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
             standardize_latents=standardize_latents
