@@ -113,16 +113,15 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
                 results.append({"metric": split, "value": acc, "standardized_predictions": standardize_predictions,
                                 "latents": latents_mode})
 
-    scaler = StandardScaler().fit(predictions[SPLIT_IMAGERY_WEAK])
+    scaler = StandardScaler().fit(np.concatenate((predictions[SPLIT_IMAGERY_WEAK], predictions[SPLIT_IMAGERY])))
     imagery_preds_restandardized = scaler.transform(predictions[SPLIT_IMAGERY])
-    # results["standardized_with_weak_imagery"] = {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}
     for candidate_latents, latents_mode in zip([latents[SPLIT_IMAGERY], all_candidate_latents],
                                                [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
         acc = pairwise_accuracy(
             candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
             standardize_latents=standardize_latents
         )
-        results.append({"metric": SPLIT_IMAGERY, "value": acc, "standardized_predictions": "weak_imagery",
+        results.append({"metric": SPLIT_IMAGERY, "value": acc, "standardized_predictions": "all_imagery",
                         "latents": latents_mode})
 
     # for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
