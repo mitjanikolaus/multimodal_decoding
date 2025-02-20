@@ -4,7 +4,8 @@ from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
 
-from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_IMAGERY_WEAK
+from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_IMAGERY_WEAK, \
+    SPLIT_TEST_IMAGE_ATTENDED
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -100,14 +101,18 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
 
     results = []
     all_candidate_latents = np.concatenate(
-        (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY_WEAK]))
+        (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGE_ATTENDED],
+         latents[SPLIT_IMAGERY_WEAK])
+    )
 
     for split in TEST_SPLITS:
         for candidate_latents, latents_mode in zip([latents[split], all_candidate_latents],
                                                    [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
+            if split == SPLIT_IMAGERY:
+                candidate_latents = np.concatenate((latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY]))
             for standardize_predictions in [False, True]:
                 acc = pairwise_accuracy(
-                    candidate_latents.copy(), predictions[split].copy(), metric, standardize_predictions=standardize_predictions,
+                    candidate_latents, predictions[split], metric, standardize_predictions=standardize_predictions,
                     standardize_latents=standardize_latents
                 )
                 results.append({"metric": split, "value": acc, "standardized_predictions": standardize_predictions,
@@ -118,7 +123,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
     for candidate_latents, latents_mode in zip([latents[SPLIT_IMAGERY], all_candidate_latents],
                                                [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
         acc = pairwise_accuracy(
-            candidate_latents.copy(), imagery_preds_restandardized.copy(), metric, standardize_predictions=False,
+            candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
             standardize_latents=standardize_latents
         )
         results.append({"metric": SPLIT_IMAGERY, "value": acc, "standardized_predictions": "all_imagery",
