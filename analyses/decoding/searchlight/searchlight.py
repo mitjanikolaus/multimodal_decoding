@@ -66,7 +66,7 @@ def train_and_test(
             y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
 
             scores = calc_all_pairwise_accuracy_scores(
-                y_test_shuffled, y_pred_test, TEST_STIM_TYPES, y_imagery_shuffled, y_pred_imagery,
+                y_test_shuffled, y_pred_test, y_imagery_shuffled, y_pred_imagery,
                 standardize_predictions=True, comp_cross_decoding_scores=False
             )
             imagery_no_std = calc_imagery_pairwise_accuracy_scores(
@@ -79,7 +79,7 @@ def train_and_test(
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
     scores = calc_all_pairwise_accuracy_scores(
-        y_test, y_pred_test, TEST_STIM_TYPES, y_imagery, y_pred_imagery, standardize_predictions=True
+        y_test, y_pred_test, y_imagery, y_pred_imagery, standardize_predictions=True
     )
     imagery_no_std = calc_imagery_pairwise_accuracy_scores(
         y_imagery, y_pred_imagery, y_test, standardize_predictions=False,
