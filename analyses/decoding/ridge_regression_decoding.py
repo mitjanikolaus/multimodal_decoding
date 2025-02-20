@@ -206,7 +206,7 @@ def run(args):
                     )
                     pickle.dump(predicted_latents, open(predictions_file_path, 'wb'))
 
-                    print(scores_df)
+                    print(scores_df.to_string(index=False))
 
 
 def get_args():
