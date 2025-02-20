@@ -7,6 +7,7 @@ import os
 import pickle
 
 import torch
+from tqdm import tqdm
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
@@ -58,7 +59,7 @@ def tensor_pairwise_accuracy(
 def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, attn_mod_betas_dir=None, surface=False,
                              resolution=DEFAULT_RESOLUTION):
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
-    for split in splits:
+    for split in tqdm(splits, desc="loading fmri data"):
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
         betas_dir = betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS,
                                            SPLIT_IMAGERY] else attn_mod_betas_dir
@@ -91,6 +92,7 @@ def run(args):
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
+            print('\n\n')
             fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
                 subject, ALL_SPLITS, training_mode, args.betas_dir, args.attn_mod_betas_dir, args.surface,
                 args.resolution
@@ -99,7 +101,6 @@ def run(args):
                 mask = None if mask in ["none", "None"] else mask
                 fmri_betas = apply_mask(mask, fmri_betas_full, args)
                 fmri_betas = standardize_fmri_betas(fmri_betas)
-                print('\n\n')
                 for split in fmri_betas.keys():
                     print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
 

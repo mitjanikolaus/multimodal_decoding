@@ -583,9 +583,7 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
 
 def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, resolution=DEFAULT_RESOLUTION,
                           hemi=HEMIS[0]):
-    print(f"loading {mode} {split} {hemi} hemi fmri surface data.. ", end="")
     fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
-    print("done.")
 
     stim_ids, stim_types = get_stim_info(subject, split)
 
