@@ -279,7 +279,7 @@ def create_composite_image(args):
     # offset_size = (int(p_val_img.size[0]/10), p_val_img.size[1])
     # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
     cbar = Image.open(os.path.join(tfce_values_img_dir, f"colorbar_{args.metric}.png"))
-    # cbar = cbar.resize((int(cbar.size[0] / 1.2), int(cbar.size[1] / 1.2)))
+    cbar = cbar.resize((int(cbar.size[0] / 1.2), int(cbar.size[1] / 1.2)))
     tfce_val_img = tfce_val_img.resize((int(tfce_val_img.size[0] * 1.1), int(tfce_val_img.size[1] * 1.1)))
     tfce_val_img = append_images([cbar, tfce_val_img], padding=150)  # image_whitespace
 
