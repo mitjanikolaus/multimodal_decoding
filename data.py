@@ -627,14 +627,15 @@ def apply_mask(mask, fmri_betas, args):
             mask = pickle.load(open(mask, 'rb'))
             mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         else:
-            roi_names = mask.split('_')
             masks_hemis = dict()
             for hemi in HEMIS:
+                roi_names = mask.split('_')
+                roi_names_hemi = [name.split('-')[1] for name in roi_names if name.split('-')[0] == hemi]
                 hemi_fs = FS_HEMI_NAMES[hemi]
                 atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.annot")
                 atlas_labels, _, names = nibabel.freesurfer.read_annot(atlas_path)
                 names = [name.decode() for name in names]
-                regions_indices = [names.index(roi) for roi in roi_names]
+                regions_indices = [names.index(roi) for roi in roi_names_hemi]
                 masks_hemis[hemi] = np.array([1 if l in regions_indices else 0 for l in atlas_labels])
             mask_flat = np.concatenate((masks_hemis[HEMIS[0]], masks_hemis[HEMIS[1]]))
 
