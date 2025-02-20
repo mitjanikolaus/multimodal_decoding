@@ -139,7 +139,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
         if latents_mode == LIMITED_CANDIDATE_LATENTS:
             candidate_latents = latents[SPLIT_IMAGERY]
         else:
-            candidate_latents = get_candidate_latents(split, latents)
+            candidate_latents = get_candidate_latents(SPLIT_IMAGERY, latents)
 
         acc = pairwise_accuracy(
             candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
