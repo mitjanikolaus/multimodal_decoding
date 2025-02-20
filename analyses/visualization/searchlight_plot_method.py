@@ -303,7 +303,7 @@ def create_composite_image(args):
 
     acc_imgs = append_images([acc_scores_imgs_column_1, acc_scores_imgs_column_2], padding=400)
 
-    full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=400)
+    full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=300)
 
     path = os.path.join(results_path, "searchlight_methods.png")
     full_img.save(path, transparent=True)
