@@ -312,18 +312,18 @@ def create_composite_image(args):
 
 def run(args):
     results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
-    os.makedirs(results_path, exist_ok=True)
-
-    plot_p_values(results_path, args)
-
-    per_subject_scores = load_per_subject_scores(args)
-    plot_acc_scores(per_subject_scores, args, results_path)
-
-    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    plot_test_statistics(test_statistics, args, results_path)
+    # os.makedirs(results_path, exist_ok=True)
+    #
+    # plot_p_values(results_path, args)
+    #
+    # per_subject_scores = load_per_subject_scores(args)
+    # plot_acc_scores(per_subject_scores, args, results_path)
+    #
+    # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    # test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    # test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    # plot_test_statistics(test_statistics, args, results_path)
 
     create_composite_image(args)
 
