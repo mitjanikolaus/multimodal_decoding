@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
@@ -88,42 +89,41 @@ def pairwise_accuracy(latents, predictions, metric="cosine", standardize_predict
     return dist_mat_to_pairwise_acc(dist_mat)
 
 
-STANDARDIZED_PREDS = "standardized_predictions"
-RAW_PREDS = "raw_predictions"
-
 ALL_CANDIDATE_LATENTS = "all_candidates_latents"
 LIMITED_CANDIDATE_LATENTS = "limited_candidates_latents"
 
 
 def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", standardize_latents=False,
                                       comp_cross_decoding_scores=True):
-    results = {STANDARDIZED_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()},
-               RAW_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}}
+    # results = {STANDARDIZED_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()},
+    #            RAW_PREDS: {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}}
 
+    results = []
     all_candidate_latents = np.concatenate(
         (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY_WEAK]))
 
     for split in TEST_SPLITS:
         for candidate_latents, latents_mode in zip([latents[split], all_candidate_latents],
                                                    [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
-            results[RAW_PREDS][latents_mode][split] = pairwise_accuracy(
-                candidate_latents, predictions[split], metric, standardize_predictions=False,
-                standardize_latents=standardize_latents
-            )
-            results[STANDARDIZED_PREDS][latents_mode][split] = pairwise_accuracy(
-                candidate_latents, predictions[split], metric, standardize_predictions=True,
-                standardize_latents=standardize_latents
-            )
+            for standardize_predictions in [False, True]:
+                acc = pairwise_accuracy(
+                    candidate_latents, predictions[split], metric, standardize_predictions=False,
+                    standardize_latents=standardize_latents
+                )
+                results.append({"metric": split, "value": acc, "standardized_predictions": standardize_predictions,
+                                "latents": latents_mode})
 
     scaler = StandardScaler().fit(predictions[SPLIT_IMAGERY_WEAK])
     imagery_preds_restandardized = scaler.transform(predictions[SPLIT_IMAGERY])
-    results["standardized_with_weak_imagery"] = {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}
+    # results["standardized_with_weak_imagery"] = {ALL_CANDIDATE_LATENTS: dict(), LIMITED_CANDIDATE_LATENTS: dict()}
     for candidate_latents, latents_mode in zip([latents[SPLIT_IMAGERY], all_candidate_latents],
                                                [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
-        results["standardized_with_weak_imagery"][latents_mode][SPLIT_IMAGERY] = pairwise_accuracy(
+        acc = pairwise_accuracy(
             candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
             standardize_latents=standardize_latents
         )
+        results.append({"metric": SPLIT_IMAGERY, "value": acc, "standardized_predictions": "weak_imagery",
+                        "latents": latents_mode})
 
     # for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
     #     preds_mod = predictions[SPLIT_TEST][stim_types == modality]
@@ -152,7 +152,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
     #         test_set_preds=None
     #     )
     #     results.update(imagery_scores)
-
+    results = pd.DataFrame(results)
     return results
 
 

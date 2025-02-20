@@ -20,7 +20,8 @@ LATENT_FEATURES_NORMALIZATIONS_DIR = os.path.join(LATENT_FEATURES_DIR, "normaliz
 STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.p")
 STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
 
-RESULTS_FILE = "results.p"
+RESULTS_FILE = "results.csv"
+PREDICTIONS_FILE = "predictions.p"
 
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
 FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")

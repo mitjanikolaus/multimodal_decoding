@@ -17,7 +17,7 @@ from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTI
 from himalaya.backend import set_backend
 from himalaya.kernel_ridge import KernelRidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
-    ATTENTION_MOD_FMRI_BETAS_DIR, RIDGE_DECODER_ATTN_MOD_OUT_DIR
+    ATTENTION_MOD_FMRI_BETAS_DIR, RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -153,23 +153,35 @@ def run(args):
 
                     predicted_latents = {split: backend.to_numpy(lats) for split, lats in predicted_latents.items()}
 
-                    results = {
-                        "alpha": best_alpha,
-                        "model": model,
-                        "subject": subject,
-                        "features": feats_config.features,
-                        "test_features": feats_config.test_features,
-                        "vision_features": feats_config.vision_features,
-                        "lang_features": feats_config.lang_features,
-                        "training_mode": training_mode,
-                        "mask": mask,
-                        "num_voxels": fmri_betas[SPLIT_TRAIN].shape[1],
-                        "predictions": predicted_latents,
-                        "surface": args.surface,
-                        "resolution": args.resolution,
-                    }
-                    scores = calc_all_pairwise_accuracy_scores(latents, predicted_latents)
-                    results.update(scores)
+                    # results = {
+                    #     "alpha": best_alpha,
+                    #     "model": model,
+                    #     "subject": subject,
+                    #     "features": feats_config.features,
+                    #     "test_features": feats_config.test_features,
+                    #     "vision_features": feats_config.vision_features,
+                    #     "lang_features": feats_config.lang_features,
+                    #     "training_mode": training_mode,
+                    #     "mask": mask,
+                    #     "num_voxels": fmri_betas[SPLIT_TRAIN].shape[1],
+                    #     # "predictions": predicted_latents,
+                    #     "surface": args.surface,
+                    #     "resolution": args.resolution,
+                    # }
+                    scores_df = calc_all_pairwise_accuracy_scores(latents, predicted_latents)
+                    scores_df["model"] = model
+                    scores_df["subject"] = subject
+                    scores_df["features"] = feats_config.features
+                    scores_df["test_features"] = feats_config.test_features
+                    scores_df["vision_features"] = feats_config.vision_features
+                    scores_df["lang_features"] = feats_config.lang_features
+                    scores_df["training_mode"] = training_mode
+                    scores_df["mask"] = mask
+                    scores_df["num_voxels"] = fmri_betas[SPLIT_TRAIN].shape[1]
+                    scores_df["surface"] = args.surface
+                    scores_df["resolution"] = args.resolution
+
+                    # results.update(scores)
                     print(
                         f"Best alphas: {best_alpha}"
                     )
@@ -186,9 +198,14 @@ def run(args):
                     #     f"{results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                     # )
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
-                    pickle.dump(results, open(results_file_path, 'wb'))
+                    scores_df.to_csv(results_file_path, index=False)
 
-                    print(scores)
+                    predictions_file_path = os.path.join(
+                        RIDGE_DECODER_ATTN_MOD_OUT_DIR, training_mode, subject, run_str, PREDICTIONS_FILE
+                    )
+                    pickle.dump(predicted_latents, open(predictions_file_path, 'wb'))
+
+                    print(scores_df)
 
 
 def get_args():
