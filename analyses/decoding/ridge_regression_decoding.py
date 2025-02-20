@@ -92,7 +92,6 @@ def run(args):
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
-            print('\n\n')
             fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
                 subject, ALL_SPLITS, training_mode, args.betas_dir, args.attn_mod_betas_dir, args.surface,
                 args.resolution
@@ -207,6 +206,7 @@ def run(args):
                     pickle.dump(predicted_latents, open(predictions_file_path, 'wb'))
 
                     print(scores_df.to_string(index=False))
+                    print('\n\n')
 
 
 def get_args():
