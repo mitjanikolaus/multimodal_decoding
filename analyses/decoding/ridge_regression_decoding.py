@@ -56,12 +56,12 @@ def tensor_pairwise_accuracy(
     return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
 
-def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, attn_mod_betas_dir=None, surface=False,
+def get_fmri_data_for_splits(subject, splits, training_mode, main_betas_dir, attn_mod_betas_dir=None, surface=False,
                              resolution=DEFAULT_RESOLUTION):
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
     for split in tqdm(splits, desc="loading fmri data"):
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
-        betas_dir = betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS,
+        betas_dir = main_betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS,
                                            SPLIT_IMAGERY] else attn_mod_betas_dir
         fmri_betas[split], stim_ids[split], stim_types[split] = get_fmri_data(
             betas_dir,
