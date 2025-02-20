@@ -107,7 +107,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
                                                    [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
             for standardize_predictions in [False, True]:
                 acc = pairwise_accuracy(
-                    candidate_latents, predictions[split], metric, standardize_predictions=False,
+                    candidate_latents, predictions[split], metric, standardize_predictions=standardize_predictions,
                     standardize_latents=standardize_latents
                 )
                 results.append({"metric": split, "value": acc, "standardized_predictions": standardize_predictions,
