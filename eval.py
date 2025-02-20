@@ -120,8 +120,6 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
 
     for split in TEST_SPLITS:
         for latents_mode in [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]:
-            # if split == SPLIT_IMAGERY:
-            #     candidate_latents = np.concatenate((latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY]))
             if latents_mode == LIMITED_CANDIDATE_LATENTS:
                 candidate_latents = latents[split]
             else:
