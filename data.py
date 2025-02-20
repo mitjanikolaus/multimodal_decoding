@@ -4,13 +4,15 @@ import pickle
 from dataclasses import dataclass
 from glob import glob
 
+import nibabel
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import nibabel as nib
 from tqdm import trange
 
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR, FMRI_BETAS_DIR
+from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR, FMRI_BETAS_DIR, \
+    FS_HEMI_NAMES, FREESURFER_HOME_DIR
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
@@ -617,12 +619,25 @@ def create_shuffled_indices(seed):
     return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
 
 
-def apply_mask(mask_path, fmri_betas, args):
-    if mask_path is not None:
+def apply_mask(mask, fmri_betas, args):
+    if mask is not None:
         if not args.surface:
             raise NotImplementedError("The --surface option needs to be specified when using masks")
-        mask = pickle.load(open(mask_path, 'rb'))
-        mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
+        if os.path.isfile(mask):
+            mask = pickle.load(open(mask, 'rb'))
+            mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
+        else:
+            roi_names = mask.split('_')
+            masks_hemis = dict()
+            for hemi in HEMIS:
+                hemi_fs = FS_HEMI_NAMES[hemi]
+                atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.annot")
+                atlas_labels, _, names = nibabel.freesurfer.read_annot(atlas_path)
+                names = [name.decode() for name in names]
+                regions_indices = [names.index(roi) for roi in roi_names]
+                masks_hemis[hemi] = np.array([1 if l in regions_indices else 0 for l in atlas_labels])
+            mask_flat = np.concatenate((masks_hemis[HEMIS[0]], masks_hemis[HEMIS[1]]))
+
         fmri_betas = {split: betas[:, mask_flat == 1].copy() for split, betas in fmri_betas.items()}
 
     return fmri_betas
