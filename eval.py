@@ -107,7 +107,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
                                                    [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
             for standardize_predictions in [False, True]:
                 acc = pairwise_accuracy(
-                    candidate_latents, predictions[split], metric, standardize_predictions=standardize_predictions,
+                    candidate_latents.copy(), predictions[split].copy(), metric, standardize_predictions=standardize_predictions,
                     standardize_latents=standardize_latents
                 )
                 results.append({"metric": split, "value": acc, "standardized_predictions": standardize_predictions,
@@ -118,7 +118,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
     for candidate_latents, latents_mode in zip([latents[SPLIT_IMAGERY], all_candidate_latents],
                                                [LIMITED_CANDIDATE_LATENTS, ALL_CANDIDATE_LATENTS]):
         acc = pairwise_accuracy(
-            candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
+            candidate_latents.copy(), imagery_preds_restandardized.copy(), metric, standardize_predictions=False,
             standardize_latents=standardize_latents
         )
         results.append({"metric": SPLIT_IMAGERY, "value": acc, "standardized_predictions": "all_imagery",
