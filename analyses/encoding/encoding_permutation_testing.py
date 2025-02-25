@@ -571,7 +571,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
-    parser.add_argument("--metric", type=str, default=METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC)
+    parser.add_argument("--metric", type=str, default=METRIC_CROSS_ENCODING)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
 
