@@ -4,6 +4,7 @@ from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
 
 from data import CAPTION, IMAGE
+from utils import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -45,8 +46,6 @@ ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 CORR_ALL = "corr"
 CORR_CAPTIONS = "corr_captions"
 CORR_IMAGES = "corr_images"
-CORR_CROSS_IMAGES_TO_CAPTIONS = "corr_cross_images_to_captions"
-CORR_CROSS_CAPTIONS_TO_IMAGES = "corr_cross_captions_to_images"
 
 CORR_CAPTIONS_MOD_AGNOSTIC = "corr_captions_mod_agnostic"
 CORR_IMAGES_MOD_AGNOSTIC = "corr_images_mod_agnostic"
@@ -55,9 +54,29 @@ CORR_IMAGES_MOD_SPECIFIC_CAPTIONS = "corr_images_mod_specific_captions"
 CORR_IMAGES_MOD_SPECIFIC_IMAGES = "corr_images_mod_specific_images"
 CORR_CAPTIONS_MOD_SPECIFIC_IMAGES = "corr_captions_mod_specific_images"
 
-METRIC_CROSS_ENCODING = "corr_cross_encoding"
+METRIC_CROSS_ENCODING = "cross_encoding"
 
 DISTANCE_METRIC_COSINE = "cosine"
+
+
+CHANCE_VALUES = {
+    ACC_CAPTIONS_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGES_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGERY_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGES_MOD_SPECIFIC_IMAGES: 0.5,
+    ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS: 0.5,
+    ACC_CAPTIONS_MOD_SPECIFIC_IMAGES: 0.5,
+    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS: 0.5,
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
+    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
+    CORR_CAPTIONS_MOD_AGNOSTIC: 0,
+    CORR_IMAGES_MOD_AGNOSTIC: 0,
+    CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS: 0,
+    CORR_IMAGES_MOD_SPECIFIC_CAPTIONS: 0,
+    CORR_IMAGES_MOD_SPECIFIC_IMAGES: 0,
+    CORR_CAPTIONS_MOD_SPECIFIC_IMAGES: 0,
+}
 
 
 def get_distance_matrix_csls(predictions, latents, knn=100, metric=DISTANCE_METRIC_COSINE):
