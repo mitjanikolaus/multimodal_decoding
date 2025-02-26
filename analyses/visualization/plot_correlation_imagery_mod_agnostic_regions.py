@@ -9,23 +9,24 @@ from scipy.stats import pearsonr
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     load_per_subject_scores, add_searchlight_permutation_args
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS
+    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGERY_MOD_AGNOSTIC
 from utils import HEMIS, RESULTS_DIR
 
 
 def run(args):
-    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
 
     subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
         args,
         return_nan_locations_and_n_neighbors=True,
     )
     imagery = np.concatenate(
-        [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
+        [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
          for hemi in HEMIS]
     )
     imagery_filtered = imagery[~np.isnan(imagery)]
 
+    # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     # tfce_values = pickle.load(open(tfce_values_path, 'rb'))
     # tfce = np.concatenate([tfce_values[hemi][args.metric] for hemi in HEMIS])
     # tfce_filtered = tfce[~np.isnan(imagery) & (tfce > 0)]
@@ -58,7 +59,7 @@ def run(args):
     cross_min = np.min((cross_images, cross_captions, within_images, within_captions), axis=0)
 
     plt.figure()
-    sns.regplot(x=cross_min, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 10})
+    sns.regplot(x=cross_min, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 1})
     # plt.scatter(cross_min, imagery_filtered, alpha=0.2)
     plt.xlabel('min cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
@@ -68,7 +69,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding.png'))
 
     plt.figure()
-    sns.regplot(x=cross_images, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 20})
+    sns.regplot(x=cross_images, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 1})
     plt.xlabel('image cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_images, imagery_filtered)
@@ -77,7 +78,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding_images.png'))
 
     plt.figure()
-    sns.regplot(x=cross_captions, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 30})
+    sns.regplot(x=cross_captions, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 1})
     plt.xlabel('caption cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_captions, imagery_filtered)
@@ -86,7 +87,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding_captions.png'))
 
     plt.figure()
-    sns.regplot(x=within_images, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 5})
+    sns.regplot(x=within_images, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 1})
     plt.xlabel('image decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(within_images, imagery_filtered)
