@@ -11,7 +11,7 @@ from analyses.encoding.encoding_permutation_testing import CORR_IMAGES_MOD_SPECI
 from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, get_results_file_path
 from data import SELECT_DEFAULT, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, LatentFeatsConfig, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, \
-    MODALITY_SPECIFIC_IMAGES
+    MODALITY_SPECIFIC_IMAGES, FEATURE_COMBINATION_CHOICES
 from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, DEFAULT_MODEL
 
@@ -148,7 +148,10 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default="avg_test_avg")
+    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
+    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
+                        choices=FEATURE_COMBINATION_CHOICES)
 
     parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--mod-specific-images-features", type=str, default=SELECT_DEFAULT)
