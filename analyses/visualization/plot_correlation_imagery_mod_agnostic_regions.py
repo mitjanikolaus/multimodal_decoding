@@ -1,7 +1,7 @@
 import argparse
 import os
 import pickle
-
+import seaborn as sns
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
@@ -58,7 +58,8 @@ def run(args):
     cross_min = np.min((cross_images, cross_captions, within_images, within_captions), axis=0)
 
     plt.figure()
-    plt.scatter(cross_min, imagery_filtered, alpha=0.2)
+    sns.regplot(x=cross_min, y=imagery_filtered)
+    # plt.scatter(cross_min, imagery_filtered, alpha=0.2)
     plt.xlabel('min cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_min, imagery_filtered)
