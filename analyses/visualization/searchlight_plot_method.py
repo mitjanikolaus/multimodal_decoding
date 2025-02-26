@@ -131,7 +131,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
                     colorbar=False,
                     threshold=threshold,
                     vmax=cbar_max[stat_name],
-                    vmin=0,
+                    vmin=significance_cutoff,
                     cmap=CMAP_POS_ONLY,
                 )
                 title = f"{args.metric}_{view}_{hemi}"
@@ -148,7 +148,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
             colorbar=True,
             threshold=threshold,
             vmax=cbar_max[stat_name],
-            vmin=0,
+            vmin=significance_cutoff,
             cmap=CMAP_POS_ONLY,
             figure=fig,
         )
