@@ -16,7 +16,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC
     get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS, COLORBAR_MAX
-from eval import ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
+from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_CROSS_DECODING, save_plot_and_crop_img, \
     append_images
 
@@ -25,9 +25,11 @@ HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
 CMAP_POS_ONLY = "hot"
+ACC_COLORBAR_MIN = 0.5
+ACC_COLORBAR_THRESHOLD = 0.6
 
+METRICS = [METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]  # METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
-METRICS = [METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
 def plot(args):
     # plt.style.use("dark_background")
@@ -85,14 +87,16 @@ def plot(args):
             result_values = {}
             subject_scores = load_per_subject_scores(args)
             for hemi in HEMIS:
-                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects], axis=0)
+                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
+                                             axis=0)
                 result_values[hemi] = score_hemi_avgd
         else:
             raise RuntimeError(f"Unknown metric: {result_metric}")
 
-        cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right']))) if result_metric == METRIC_CROSS_DECODING else COLORBAR_MAX
-        cbar_min = 0
-        threshold = significance_cutoff if result_metric == METRIC_CROSS_DECODING else 0.6
+        cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values[
+            'right']))) if result_metric == METRIC_CROSS_DECODING else COLORBAR_MAX
+        cbar_min = 0 if result_metric == METRIC_CROSS_DECODING else ACC_COLORBAR_MIN
+        threshold = significance_cutoff if result_metric == METRIC_CROSS_DECODING else ACC_COLORBAR_THRESHOLD
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
@@ -163,7 +167,8 @@ def plot(args):
             figure=fig,
             metric=result_metric,
         )
-        save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True, horizontal_cbar=True)
+        save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
+                               horizontal_cbar=True)
 
 
 def create_composite_image(args):
@@ -173,9 +178,11 @@ def create_composite_image(args):
 
         results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
-        images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["lateral"] for hemi
+        images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in
+                          ["lateral"] for hemi
                           in HEMIS]
-        images_medial = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"] for hemi
+        images_medial = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"]
+                         for hemi
                          in HEMIS]
         # images_posterior = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
         #                  in HEMIS]
@@ -203,7 +210,7 @@ def create_composite_image(args):
         p_val_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=False)
 
         path = os.path.join(results_path, f"searchlight_results_{result_metric}.png")
-        p_val_image.save(path, transparent=True)#, facecolor="black")
+        p_val_image.save(path, transparent=True)  # , facecolor="black")
 
 
 def get_args():
