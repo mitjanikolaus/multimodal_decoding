@@ -67,7 +67,7 @@ def run(args):
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding.png'
     plt.savefig(os.path.join(RESULTS_DIR, name))
-    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]}')
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
     plt.figure()
     sns.regplot(x=cross_images, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
@@ -78,7 +78,7 @@ def run(args):
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding_images.png'
     plt.savefig(os.path.join(RESULTS_DIR, name))
-    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]}')
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
     plt.figure()
     sns.regplot(x=cross_captions, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
@@ -89,7 +89,7 @@ def run(args):
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding_captions.png'
     plt.savefig(os.path.join(RESULTS_DIR, name))
-    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]}')
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
 
     plt.figure()
@@ -101,7 +101,7 @@ def run(args):
     plt.tight_layout()
     name = f'corr_imagery_within_decoding_images.png'
     plt.savefig(os.path.join(RESULTS_DIR, name))
-    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]}')
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
 
     plt.figure()
@@ -113,7 +113,7 @@ def run(args):
     plt.tight_layout()
     name = f'corr_imagery_within_decoding_captions.png'
     plt.savefig(os.path.join(RESULTS_DIR, name))
-    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]}')
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
 
 
