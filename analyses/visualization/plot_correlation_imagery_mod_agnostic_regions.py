@@ -24,10 +24,13 @@ def run(args):
     imagery = np.concatenate(
         [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST] for sub in args.subjects], axis=0) for hemi in
          HEMIS])
-    plt.scatter(tfce, imagery)
+    tfce_filtered = tfce[~np.isnan(imagery) & (tfce > 0)]
+    imagery_filtered = imagery[~np.isnan(imagery) & (tfce > 0)]
+    plt.scatter(tfce_filtered, imagery_filtered)
     plt.xlabel('tfce value for mod agnostic advantage')
     plt.ylabel('mean imagery decoding accuracy')
-    corr = pearsonr(tfce[~np.isnan(imagery)], imagery[~np.isnan(imagery)])
+
+    corr = pearsonr(tfce_filtered, imagery_filtered)
     plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
     plt.tight_layout()
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_mod_agnostic_regions.png'))
