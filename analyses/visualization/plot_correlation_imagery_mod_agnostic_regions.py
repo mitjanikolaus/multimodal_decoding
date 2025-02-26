@@ -50,6 +50,7 @@ def run(args):
     acc_cross_filtered = acc_cross[~np.isnan(imagery)]
     imagery_filtered = imagery[~np.isnan(imagery)]
 
+    plt.figure()
     plt.scatter(acc_cross_filtered, imagery_filtered)
     plt.xlabel('mean of min cross decoding accuracy')
     plt.ylabel('mean imagery decoding accuracy')
