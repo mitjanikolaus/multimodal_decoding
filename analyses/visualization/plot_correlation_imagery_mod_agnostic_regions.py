@@ -8,8 +8,8 @@ from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     load_per_subject_scores, add_searchlight_permutation_args
-from eval import ACC_IMAGERY_WHOLE_TEST
-from utils import HEMIS,RESULTS_DIR
+from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
+from utils import HEMIS, RESULTS_DIR
 
 
 def run(args):
@@ -22,8 +22,9 @@ def run(args):
 
     tfce = np.concatenate([tfce_values[hemi][args.metric] for hemi in HEMIS])
     imagery = np.concatenate(
-        [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST] for sub in args.subjects], axis=0) for hemi in
-         HEMIS])
+        [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
+         for hemi in HEMIS]
+    )
     tfce_filtered = tfce[~np.isnan(imagery) & (tfce > 0)]
     imagery_filtered = imagery[~np.isnan(imagery) & (tfce > 0)]
     plt.scatter(tfce_filtered, imagery_filtered)
