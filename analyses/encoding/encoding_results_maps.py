@@ -12,10 +12,10 @@ from analyses.encoding.ridge_regression_encoding import ENCODING_RESULTS_DIR, ge
 from data import SELECT_DEFAULT, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, LatentFeatsConfig, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, \
     MODALITY_SPECIFIC_IMAGES
-from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
+from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES
 from utils import SUBJECTS, HEMIS, export_to_gifti, FS_HEMI_NAMES, DEFAULT_RESOLUTION, DEFAULT_MODEL
 
-METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]
+METRICS = [CORR_ALL, CORR_CAPTIONS, CORR_IMAGES]
 
 
 def load_corr_scores(args, training_mode, feats_config):
@@ -98,12 +98,12 @@ def create_gifti_results_maps(args):
             print(f"{os.path.basename(path_out)} max: {np.nanmax(score_hemi_specific_vision):.2f}")
             export_to_gifti(score_hemi_specific_vision, path_out)
 
-            cross_lang_to_vision = subject_scores_mod_specific_captions[subj][hemi][CORR_CROSS_CAPTIONS_TO_IMAGES]
+            cross_lang_to_vision = subject_scores_mod_specific_captions[subj][hemi][CORR_IMAGES]
             path_out = os.path.join(results_dir, subj, f"cross_lang_to_vision_{FS_HEMI_NAMES[hemi]}.gii")
             print(f"{os.path.basename(path_out)} max: {np.nanmax(cross_lang_to_vision):.2f}")
             export_to_gifti(cross_lang_to_vision, path_out)
 
-            cross_vision_to_lang = subject_scores_mod_specific_images[subj][hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]
+            cross_vision_to_lang = subject_scores_mod_specific_images[subj][hemi][CORR_CAPTIONS]
             path_out = os.path.join(results_dir, subj, f"cross_vision_to_lang_{FS_HEMI_NAMES[hemi]}.gii")
             print(f"{os.path.basename(path_out)} max: {np.nanmax(cross_vision_to_lang):.2f}")
             export_to_gifti(cross_vision_to_lang, path_out)
@@ -131,8 +131,8 @@ def create_gifti_results_maps(args):
         path_out = os.path.join(results_dir, f"diff_mod_agnositic_mod_specific_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(diff_mod_agnositic_mod_specific, path_out)
 
-        cross_encoding = np.nanmin([averaged_scores_mod_specific_captions[hemi][CORR_CROSS_CAPTIONS_TO_IMAGES],
-                                    averaged_scores_mod_specific_images[hemi][CORR_CROSS_IMAGES_TO_CAPTIONS]], axis=0)
+        cross_encoding = np.nanmin([averaged_scores_mod_specific_captions[hemi][CORR_IMAGES],
+                                    averaged_scores_mod_specific_images[hemi][CORR_CAPTIONS]], axis=0)
         path_out = os.path.join(results_dir, f"cross_encoding_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(cross_encoding, path_out)
 
