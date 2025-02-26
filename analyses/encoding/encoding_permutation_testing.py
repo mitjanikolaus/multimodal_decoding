@@ -144,10 +144,13 @@ def calc_t_values(per_subject_scores):
 
 def calc_test_statistics(null_distr_tfce_values, args):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    per_subject_scores = load_per_subject_scores(args)
-    print(f"Calculating t-values")
-    t_values = calc_t_values(per_subject_scores)
-    pickle.dump(t_values, open(t_values_path, 'wb'))
+    if not os.path.isfile(t_values_path):
+        print(f"Calculating t-values")
+        per_subject_scores = load_per_subject_scores(args)
+        t_values = calc_t_values(per_subject_scores)
+        pickle.dump(t_values, open(t_values_path, 'wb'))
+    else:
+        t_values = pickle.load(open(t_values_path, 'rb'))
 
     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
     if not os.path.isfile(tfce_values_path):
