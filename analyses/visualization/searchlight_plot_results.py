@@ -67,7 +67,7 @@ def plot(args):
                 "ventral": ['inferiortemporal', 'fusiform'],
             },
             "right": {
-                "medial": ['precuneus', 'isthmuscingulate'],
+                "medial": [],
                 "lateral": [],
                 "ventral": [],
             }
