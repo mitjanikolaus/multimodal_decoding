@@ -58,7 +58,7 @@ def run(args):
     cross_min = np.min((cross_images, cross_captions, within_images, within_captions), axis=0)
 
     plt.figure()
-    sns.regplot(x=cross_min, y=imagery_filtered)
+    sns.regplot(x=cross_min, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 10})
     # plt.scatter(cross_min, imagery_filtered, alpha=0.2)
     plt.xlabel('min cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
@@ -68,7 +68,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding.png'))
 
     plt.figure()
-    plt.scatter(cross_images, imagery_filtered, alpha=0.2)
+    sns.regplot(x=cross_images, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 20})
     plt.xlabel('image cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_images, imagery_filtered)
@@ -77,7 +77,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding_images.png'))
 
     plt.figure()
-    plt.scatter(cross_captions, imagery_filtered, alpha=0.2)
+    sns.regplot(x=cross_captions, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 30})
     plt.xlabel('caption cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_captions, imagery_filtered)
@@ -86,7 +86,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding_captions.png'))
 
     plt.figure()
-    plt.scatter(within_images, imagery_filtered, alpha=0.2)
+    sns.regplot(x=within_images, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 5})
     plt.xlabel('image decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(within_images, imagery_filtered)
@@ -95,7 +95,7 @@ def run(args):
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_within_decoding_images.png'))
 
     plt.figure()
-    plt.scatter(within_captions, imagery_filtered, alpha=0.2)
+    sns.regplot(x=within_captions, y=imagery_filtered, scatter_kws={'alpha':0.1, 's': 1})
     plt.xlabel('caption decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(within_captions, imagery_filtered)
