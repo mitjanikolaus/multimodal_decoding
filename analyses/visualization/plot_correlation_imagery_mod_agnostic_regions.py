@@ -9,8 +9,7 @@ from scipy.stats import pearsonr
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     load_per_subject_scores, add_searchlight_permutation_args
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, \
-    ACC_IMAGERY_MOD_AGNOSTIC
+    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS
 from utils import HEMIS, RESULTS_DIR
 
 
@@ -21,7 +20,7 @@ def run(args):
         return_nan_locations_and_n_neighbors=True,
     )
     imagery = np.concatenate(
-        [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
+        [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
          for hemi in HEMIS]
     )
     imagery_filtered = imagery[~np.isnan(imagery)]
