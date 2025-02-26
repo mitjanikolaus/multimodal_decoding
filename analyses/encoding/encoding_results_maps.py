@@ -20,9 +20,7 @@ def create_gifti_results_maps(args):
     os.makedirs(results_dir, exist_ok=True)
 
     print("Creating gifti results maps")
-    subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
-        args,
-    )
+    subject_scores = load_per_subject_scores(args)
 
     subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
     for metric in METRICS:
