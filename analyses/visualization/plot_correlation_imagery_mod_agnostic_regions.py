@@ -57,7 +57,7 @@ def run(args):
     )[~np.isnan(imagery)]
     cross_min = np.min((cross_images, cross_captions, within_images, within_captions), axis=0)
 
-    scatter_kws = {'alpha':0.1, 's': 1, 'c': 'black'}
+    scatter_kws = {'alpha':0.1, 's': 1}
     plt.figure()
     sns.regplot(x=cross_min, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
     # plt.scatter(cross_min, imagery_filtered, alpha=0.2)
