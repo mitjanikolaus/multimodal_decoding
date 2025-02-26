@@ -545,8 +545,8 @@ def create_t_value_maps(results_dir):
             export_to_gifti(t_values[hemi][metric], path_out)
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
+
+def add_encoding_permutation_args(parser):
 
     parser.add_argument("--subjects", type=str, nargs="+", default=SUBJECTS)
 
@@ -571,10 +571,18 @@ def get_args():
     parser.add_argument("--tfce-dh", type=float, default=0.1)
     parser.add_argument("--tfce-clip", type=float, default=100)
 
+    parser.add_argument("--metric", type=str, default=METRIC_CROSS_ENCODING)
+
+    return parser
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser = add_encoding_permutation_args(parser)
+
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
-
-    parser.add_argument("--metric", type=str, default=METRIC_CROSS_ENCODING)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
     parser.add_argument("--tfce-value-threshold", type=float, default=None)
