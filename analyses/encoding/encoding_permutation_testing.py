@@ -574,6 +574,7 @@ def get_args():
     parser.add_argument("--metric", type=str, default=METRIC_CROSS_ENCODING)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
+    parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()
 
