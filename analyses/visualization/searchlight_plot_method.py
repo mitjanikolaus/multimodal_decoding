@@ -101,7 +101,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
     # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
     #                                                   args.p_value_threshold)
-    significance_cutoff = 707.24
+    significance_cutoff = 711.98
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
