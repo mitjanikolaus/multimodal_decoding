@@ -13,9 +13,10 @@ from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
     permutation_results_dir, \
-    get_hparam_suffix, add_searchlight_permutation_args
+    get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS
+from eval import ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_CROSS_DECODING, save_plot_and_crop_img, \
     append_images
 
@@ -26,7 +27,7 @@ HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 CMAP_POS_ONLY = "hot"
 
 
-METRICS = [METRIC_CROSS_DECODING] #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC #ACC_IMAGERY_MOD_AGNOSTIC
+METRICS = [METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] #METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
 def plot(args):
     # plt.style.use("dark_background")
@@ -73,45 +74,25 @@ def plot(args):
             }
         }
 
-        # unique_rois = set()
-        # for r in rois_for_view.values():
-        #     unique_rois.update(r)
+        if result_metric == METRIC_CROSS_DECODING:
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            result_values = dict()
+            for hemi in HEMIS:
+                result_values[hemi] = orig_result_values[hemi][args.metric]
 
-        # label_names_dict = destrieux_label_names()
-        # color_palette = [(183, 242, 34), (127, 176, 4),
-        #                  (174, 245, 176), (10, 250, 16), (4, 186, 8), (2, 110, 5), (1, 74, 3),
-        #                  (193, 247, 233), (5, 245, 183), (1, 140, 104),
-        #                  (145, 231, 242), (5, 220, 247), (0, 120, 135),
-        #                  (115, 137, 245), (7, 48, 245), (2, 29, 158),
-        #                  (174, 92, 237), (140, 7, 242), (76, 3, 133),
-        #                  (245, 105, 242), (250, 5, 245), (125, 2, 122),
-        #                  (242, 34, 152)]
-        # color_palette = [(x[0] / 255, x[1] / 255, x[2] / 255) for x in color_palette]
-        #
-        # assert len(unique_rois) <= len(color_palette), f"not enough colors for {len(unique_rois)} ROIS"
-        #
-        # all_colors = {label_names_dict[r]: c for r, c in
-        #               zip(unique_rois, color_palette)}
-        #
-        # save_legend(all_colors, tfce_values_atlas_results_dir)
-
-        tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-        orig_result_values = pickle.load(open(tfce_values_path, "rb"))
-        result_values = dict()
-        for hemi in HEMIS:
-            result_values[hemi] = orig_result_values[hemi][args.metric]
-
-        # elif result_metric == 'imagery':
-        #     result_values = {}
-        #     subject_scores = load_per_subject_scores(args)
-        #     for hemi in HEMIS:
-        #         score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][ACC_IMAGERY_WHOLE_TEST] for subj in args.subjects], axis=0)
-        #         result_values[hemi] = score_hemi_avgd
-        # else:
-        #     raise RuntimeError(f"Unknown metric: {result_metric}")
+        elif result_metric.startswith("pairwise_acc"):
+            result_values = {}
+            subject_scores = load_per_subject_scores(args)
+            for hemi in HEMIS:
+                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects], axis=0)
+                result_values[hemi] = score_hemi_avgd
+        else:
+            raise RuntimeError(f"Unknown metric: {result_metric}")
 
         cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        cbar_min = 0    #0
+        cbar_min = 0
+        threshold = significance_cutoff if result_metric == METRIC_CROSS_DECODING else 0.6
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
@@ -132,8 +113,6 @@ def plot(args):
             # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
             # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
-
-
             for i, (view, rois) in enumerate(rois_for_view[hemi].items()):
                 regions_indices = [names.index(roi) for roi in rois]
                 # label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
@@ -142,26 +121,6 @@ def plot(args):
                 #           in range(np.nanmax(atlas_labels))]
                 # cmap = ListedColormap(colors)
                 atlas_labels_current_view = np.array([l if l in regions_indices else np.nan for l in atlas_labels])
-                # fig = plot_surf_roi_custom(
-                #     fsaverage[f"infl_{hemi}"], roi_map=atlas_labels_current_view,
-                #     bg_map=fsaverage[f"sulc_{hemi}"], hemi=hemi,
-                #     view=view, alpha=1, cmap=cmap,
-                #     bg_on_data=True, darkness=0.4, categorical_cmap=True,
-                # )
-                # plot_surf_stat_map_custom(
-                #     fsaverage[f"infl_{hemi}"],
-                #     tfce_values[hemi][args.metric],
-                #     hemi=hemi,
-                #     view=view,
-                #     colorbar=False,
-                #     threshold=significance_cutoff,
-                #     vmax=cbar_max,
-                #     vmin=cbar_min,
-                #     cmap=CMAP_POS_ONLY,
-                #     figure=fig,
-                #     keep_bg=True,
-                # )
-
                 fig = plotting.plot_surf_stat_map(
                     fsaverage[f"infl_{hemi}"],
                     result_values[hemi],
@@ -169,7 +128,7 @@ def plot(args):
                     hemi=hemi,
                     view=view,
                     colorbar=False,
-                    threshold=significance_cutoff,
+                    threshold=threshold,
                     vmax=cbar_max,
                     vmin=cbar_min,
                     cmap=CMAP_POS_ONLY,
