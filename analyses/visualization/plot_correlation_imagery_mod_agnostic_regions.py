@@ -60,49 +60,61 @@ def run(args):
     scatter_kws = {'alpha':0.1, 's': 1}
     plt.figure()
     sns.regplot(x=cross_min, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
-    # plt.scatter(cross_min, imagery_filtered, alpha=0.2)
     plt.xlabel('min cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_min, imagery_filtered)
-    plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+    plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding.png'))
+    name = f'corr_imagery_cross_decoding.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name))
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
 
     plt.figure()
     sns.regplot(x=cross_images, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
     plt.xlabel('image cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_images, imagery_filtered)
-    plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+    plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding_images.png'))
+    name = f'corr_imagery_cross_decoding_images.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name))
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
 
     plt.figure()
     sns.regplot(x=cross_captions, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
     plt.xlabel('caption cross decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(cross_captions, imagery_filtered)
-    plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+    plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding_captions.png'))
+    name = f'corr_imagery_cross_decoding_captions.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name))
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+
 
     plt.figure()
     sns.regplot(x=within_images, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
     plt.xlabel('image decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(within_images, imagery_filtered)
-    plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+    plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_within_decoding_images.png'))
+    name = f'corr_imagery_within_decoding_images.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name))
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+
 
     plt.figure()
     sns.regplot(x=within_captions, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
     plt.xlabel('caption decoding accuracy')
     plt.ylabel('imagery decoding accuracy')
     corr = pearsonr(within_captions, imagery_filtered)
-    plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+    plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_within_decoding_captions.png'))
+    name = f'corr_imagery_within_decoding_captions.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name))
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
+
 
 
 def get_args():
