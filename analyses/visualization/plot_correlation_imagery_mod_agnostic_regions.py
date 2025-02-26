@@ -66,7 +66,7 @@ def run(args):
     plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding.png'
-    plt.savefig(os.path.join(RESULTS_DIR, name))
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
     plt.figure()
@@ -77,7 +77,7 @@ def run(args):
     plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding_images.png'
-    plt.savefig(os.path.join(RESULTS_DIR, name))
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
     plt.figure()
@@ -88,7 +88,7 @@ def run(args):
     plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding_captions.png'
-    plt.savefig(os.path.join(RESULTS_DIR, name))
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
 
@@ -100,7 +100,7 @@ def run(args):
     plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
     name = f'corr_imagery_within_decoding_images.png'
-    plt.savefig(os.path.join(RESULTS_DIR, name))
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
 
@@ -112,7 +112,7 @@ def run(args):
     plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
     name = f'corr_imagery_within_decoding_captions.png'
-    plt.savefig(os.path.join(RESULTS_DIR, name))
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
 
