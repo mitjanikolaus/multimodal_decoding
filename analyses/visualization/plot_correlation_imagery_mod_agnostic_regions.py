@@ -53,7 +53,7 @@ def run(args):
     plt.scatter(acc_cross_filtered, imagery_filtered)
     plt.xlabel('mean of min cross decoding accuracy')
     plt.ylabel('mean imagery decoding accuracy')
-    corr = pearsonr(tfce_filtered, imagery_filtered)
+    corr = pearsonr(acc_cross_filtered, imagery_filtered)
     plt.title(f'pearson r: {corr[0]:.2f} p={corr[1]:.4f}')
     plt.tight_layout()
     plt.savefig(os.path.join(RESULTS_DIR, f'corr_imagery_cross_decoding.png'))
