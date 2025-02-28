@@ -16,8 +16,8 @@ from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BET
 def run(args):
     for subject in args.subjects:
         print("\n", subject)
-        test_fmri, test_stim_ids, test_stim_types = get_fmri_voxel_data(args.betas_dir, subject, SPLIT_TEST)
-        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_voxel_data(args.betas_dir, subject, SPLIT_IMAGERY)
+        test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TEST)
+        imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_IMAGERY)
 
         assert np.all(test_stim_types[INDICES_TEST_STIM_IMAGE] == "image")
         assert np.all(test_stim_types[INDICES_TEST_STIM_CAPTION] == "caption")
@@ -41,7 +41,9 @@ def run(args):
             results_file_name = f"{subject}_{hemi}_{args.resolution}_test.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name), 'wb'))
             print("saved.")
-            print(f'original nans: {np.sum(np.isnan(test_fmri[0]))} ({np.mean(np.isnan(test_fmri[0])):.2f}%)')
+
+            test_fmri_betas_volume_space, _, _ = get_fmri_voxel_data(args.betas_dir, subject, SPLIT_TEST)
+            print(f'original nans: {np.sum(np.isnan(test_fmri_betas_volume_space[0]))} ({np.mean(np.isnan(test_fmri_betas_volume_space[0])):.2f}%)')
             print(f'transformed nans: {np.sum(np.isnan(surface_projection[0]))} ({np.mean(np.isnan(surface_projection[0])):.2f}%)')
 
             print("transforming to surface.. (imagery)", end=" ")
@@ -51,7 +53,7 @@ def run(args):
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name), 'wb'))
             print("saved.")
 
-        train_fmri, train_stim_ids, train_stim_types = get_fmri_voxel_data(args.betas_dir, subject, SPLIT_TRAIN)
+        train_fmri, train_stim_ids, train_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TRAIN)
         pickle.dump(train_stim_ids, open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_ids_train.p"), 'wb'))
         pickle.dump(train_stim_types, open(os.path.join(FMRI_STIM_INFO_DIR, f"{subject}_stim_types_train.p"), 'wb'))
 
