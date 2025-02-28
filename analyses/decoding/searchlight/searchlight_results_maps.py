@@ -98,7 +98,7 @@ def create_gifti_results_maps(args):
                     print(f"missing metric: {subj} {metric} {hemi}")
 
             if metric in subject_scores[args.subjects[-1]][hemi]:
-                subject_scores_avgd[hemi][metric] = np.mean(  # TODO at least 3 datapoints?
+                subject_scores_avgd[hemi][metric] = np.nanmean(  # TODO at least 3 datapoints?
                     [subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(subject_scores_avgd[hemi][metric])}")
                 path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
