@@ -494,8 +494,8 @@ def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata()
-        print(sample.reshape(-1).shape)
-        print(sample[graymatter_mask].reshape(-1).shape)
+        print(sample[~np.isnan(sample)].reshape(-1).shape)
+        print(sample[graymatter_mask][~np.isnan(sample[graymatter_mask])].reshape(-1).shape)
         print('\n')
         # sample = sample[graymatter_mask].astype('float32').reshape(-1)
         sample = sample.astype('float32').reshape(-1)
