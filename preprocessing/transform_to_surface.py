@@ -36,7 +36,7 @@ def run(args):
             white_matter_mesh = fsaverage[f"white_{hemi}"]
 
             print("transforming to surface.. (test)", end=" ")
-            surface_projection = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh).T #
+            surface_projection = surface.vol_to_surf(test_fmri, pial_mesh, inner_mesh=white_matter_mesh).T #
             print("done.")
             results_file_name = f"{subject}_{hemi}_{args.resolution}_test.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name), 'wb'))
