@@ -155,6 +155,30 @@ def run(args):
 
 
 
+    plt.figure()
+    sns.regplot(x=diff_captions, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+    plt.xlabel('performance advantage mod agnostic for caption decoding')
+    plt.ylabel('imagery decoding accuracy')
+    corr = pearsonr(diff_captions, imagery_filtered)
+    plt.title(f'pearson r: {corr[0]:.2f}')
+    plt.tight_layout()
+    name = f'corr_imagery_diff_metric_captions.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+
+    plt.figure()
+    sns.regplot(x=diff_images, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+    plt.xlabel('performance advantage mod agnostic for image decoding')
+    plt.ylabel('imagery decoding accuracy')
+    corr = pearsonr(diff_images, imagery_filtered)
+    plt.title(f'pearson r: {corr[0]:.2f}')
+    plt.tight_layout()
+    name = f'corr_imagery_diff_metric_images.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+
 
 
 def get_args():
