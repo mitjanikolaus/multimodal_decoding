@@ -9,7 +9,8 @@ from scipy.stats import pearsonr
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     load_per_subject_scores, add_searchlight_permutation_args
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS
+    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC
 from utils import HEMIS, RESULTS_DIR
 
 
@@ -55,7 +56,8 @@ def run(args):
         [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES] for sub in args.subjects], axis=0)
          for hemi in HEMIS]
     )[~np.isnan(imagery)]
-    cross_min = np.min((cross_images, cross_captions, within_images, within_captions), axis=0)
+    cross_min = np.min((cross_images, cross_captions), axis=0)
+    cross_min_metric = np.min((cross_images, cross_captions, within_images, within_captions), axis=0)
 
     scatter_kws = {'alpha':0.1, 's': 1}
     plt.figure()
@@ -66,6 +68,18 @@ def run(args):
     plt.title(f'pearson r: {corr[0]:.2f}')
     plt.tight_layout()
     name = f'corr_imagery_cross_decoding.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+    scatter_kws = {'alpha':0.1, 's': 1}
+    plt.figure()
+    sns.regplot(x=cross_min_metric, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+    plt.xlabel('min cross decoding accuracy metric')
+    plt.ylabel('imagery decoding accuracy')
+    corr = pearsonr(cross_min_metric, imagery_filtered)
+    plt.title(f'pearson r: {corr[0]:.2f}')
+    plt.tight_layout()
+    name = f'corr_imagery_cross_decoding_metric.png'
     plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
@@ -114,6 +128,32 @@ def run(args):
     name = f'corr_imagery_within_decoding_captions.png'
     plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
     print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+    mod_agnostic_images = np.concatenate(
+        [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
+         for hemi in HEMIS]
+    )[~np.isnan(imagery)]
+    mod_agnostic_captions = np.concatenate(
+        [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
+         for hemi in HEMIS]
+    )[~np.isnan(imagery)]
+
+    diff_images = mod_agnostic_images - within_images
+    diff_captions = mod_agnostic_captions - within_captions
+
+    diff_metric = np.min((diff_images, diff_captions), axis=0)
+    plt.figure()
+    sns.regplot(x=diff_metric, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+    plt.xlabel('performance advantage mod agnostic')
+    plt.ylabel('imagery decoding accuracy')
+    corr = pearsonr(diff_metric, imagery_filtered)
+    plt.title(f'pearson r: {corr[0]:.2f}')
+    plt.tight_layout()
+    name = f'corr_imagery_diff_metric.png'
+    plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
+    print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+
 
 
 
