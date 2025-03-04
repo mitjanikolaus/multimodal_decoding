@@ -77,13 +77,13 @@ def preprocess_event_files(event_files):
     return pd.concat(data, ignore_index=True)
 
 
-def get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample):
+def get_sessions(preprocessed_fmri_dir, sessions_subsample):
     if sessions_subsample:
-        sessions = [f'ses-{ses_idx}' for ses_idx in sessions_subsample]
-        session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
+        sessions = [f'_session_id_ses-{ses_idx}/coregister/' for ses_idx in sessions_subsample]
+        session_dirs = [os.path.join(preprocessed_fmri_dir, session) for session in sessions]
     else:
-        print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-        session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
+        print(f"Scanning for sessions in {preprocessed_fmri_dir}")
+        session_dirs = glob(os.path.join(preprocessed_fmri_dir, '_session_id_ses-*/coregister/'))
         sessions = [path.split(os.sep)[-1] for path in session_dirs]
     print(f"Sessions: {sessions}")
     return sessions, session_dirs
@@ -177,7 +177,7 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
+        preprocessed_fmri_dir = os.path.join(args.preprocessed_data_dir, 'preprocess_workflow', f'_subject_id_{subject}')
         realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
         raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
@@ -251,10 +251,10 @@ def run(args):
         scans = []
         event_files = []
         realign_files = []
-        sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
+        sessions, session_dirs = get_sessions(preprocessed_fmri_dir, sessions_subsample)
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
-            n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+            n_runs = len(glob(os.path.join(session_dir, 'rasub*run*_bold.nii')))
             runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
             print(f"Runs: {runs}")
             for run in runs:
@@ -270,7 +270,7 @@ def run(args):
                 realign_files.append(realign_file)
                 run_file = os.path.join(
                     session_dir,
-                    f'rara{subject}_{session}_task-coco_{run}_bold.nii'
+                    f'ra{subject}_{session}_task-coco_{run}_bold.nii'
                 )
                 run_nii = nib.load(run_file)
                 run_size = run_nii.shape[-1]
@@ -310,7 +310,7 @@ def get_args():
 
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
     parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
-    parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+    # parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 
