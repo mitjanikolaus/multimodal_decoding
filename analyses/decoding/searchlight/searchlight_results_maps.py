@@ -11,8 +11,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import load_p
     permutation_results_dir, add_searchlight_permutation_args, T_VAL_METRICS
 from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, \
-    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_MOD_SPECIFIC_IMAGES, \
     ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, \
     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, \
@@ -99,7 +98,7 @@ def create_gifti_results_maps(args):
                     print(f"missing metric: {subj} {metric} {hemi}")
 
             if metric in subject_scores[args.subjects[-1]][hemi]:
-                subject_scores_avgd[hemi][metric] = np.mean(  # TODO at least 3 datapoints?
+                subject_scores_avgd[hemi][metric] = np.nanmean(  # TODO at least 3 datapoints?
                     [subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(subject_scores_avgd[hemi][metric])}")
                 path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")

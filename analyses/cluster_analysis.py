@@ -154,11 +154,17 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
         for n in null_distribution_tfce_values
     ])
 
-    significance_cutoff = np.quantile(max_test_statistic_distr, 1 - p_value_threshold)
     print(f"{len(null_distribution_tfce_values)} permutations")
+    if p_value_threshold == 1 / len(null_distribution_tfce_values):
+        significance_cutoff = np.max(max_test_statistic_distr)
+    else:
+        significance_cutoff = np.quantile(max_test_statistic_distr, 1 - p_value_threshold, method='closest_observation')
 
-    for thresh in [0.05, 1e-2, 1e-3, 1e-4, 1e-5]:
-        val = np.quantile(max_test_statistic_distr, 1 - thresh)
+    for thresh in [0.05, 1e-2, 1e-3, 1e-4]:
+        if thresh == 1/len(null_distribution_tfce_values):
+            val = np.max(max_test_statistic_distr)
+        else:
+            val = np.quantile(max_test_statistic_distr, 1 - thresh, method='closest_observation')
         print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
 
     print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")

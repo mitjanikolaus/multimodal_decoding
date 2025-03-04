@@ -137,7 +137,7 @@ def run(args):
                             n_alphas_batch=args.n_alphas_batch,
                             n_targets_batch_refit=args.n_targets_batch_refit,
                             score_func=tensor_pairwise_accuracy,
-                            local_alpha=False,
+                            local_alpha=True,
                         )
                     )
 

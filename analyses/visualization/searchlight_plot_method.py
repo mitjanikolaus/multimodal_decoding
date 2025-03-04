@@ -101,7 +101,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
     # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
     #                                                   args.p_value_threshold)
-    significance_cutoff = 707.24
+    significance_cutoff = 711.98
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -113,6 +113,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
         os.makedirs(test_stat_imgs_dir, exist_ok=True)
 
         threshold = DEFAULT_T_VALUE_THRESH if stat_name.startswith("t-values") else significance_cutoff
+        vmin = 0 if stat_name.startswith("t-values") else significance_cutoff
         for i, view in enumerate(args.views):
             for j, hemi in enumerate(HEMIS):
                 scores_hemi = values[hemi][args.metric]
@@ -131,7 +132,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
                     colorbar=False,
                     threshold=threshold,
                     vmax=cbar_max[stat_name],
-                    vmin=0,
+                    vmin=vmin,
                     cmap=CMAP_POS_ONLY,
                 )
                 title = f"{args.metric}_{view}_{hemi}"
@@ -148,7 +149,7 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
             colorbar=True,
             threshold=threshold,
             vmax=cbar_max[stat_name],
-            vmin=0,
+            vmin=vmin,
             cmap=CMAP_POS_ONLY,
             figure=fig,
         )
