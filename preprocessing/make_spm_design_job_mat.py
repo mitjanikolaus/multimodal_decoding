@@ -209,7 +209,7 @@ def run(args):
         mthresh = 0.8
 
         # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject)
+        mask = get_graymatter_mask_path(subject, mni=False)
 
         # serial correlation (don't change)
         CVI = 'AR(1)'
