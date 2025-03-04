@@ -84,7 +84,7 @@ def get_sessions(preprocessed_fmri_dir, sessions_subsample):
     else:
         print(f"Scanning for sessions in {preprocessed_fmri_dir}")
         session_dirs = glob(os.path.join(preprocessed_fmri_dir, '_session_id_ses-*/coregister/'))
-        sessions = [path.split(os.sep)[-2] for path in session_dirs]
+        sessions = [path.split(os.sep)[-3] for path in session_dirs]
     print(f"Sessions: {sessions}")
     return sessions, session_dirs
 
