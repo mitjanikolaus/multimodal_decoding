@@ -103,7 +103,7 @@ def run(args):
     realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
 
     # Coregistration
-    coregister_node = Node(Coregister(out_prefix='ra'), name='coregister')
+    coregister_node = Node(Coregister(out_prefix='ra', jobtype='estimate'), name='coregister')
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
