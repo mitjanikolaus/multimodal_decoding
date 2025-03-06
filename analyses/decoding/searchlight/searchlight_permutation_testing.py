@@ -35,7 +35,7 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES_MOD_SPECIFIC_IM
     ACC_IMAGERY_MOD_SPECIFIC_IMAGES, CHANCE_VALUES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL
+    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS
 
 DEFAULT_N_JOBS = 10
 
@@ -66,8 +66,11 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
         metric_names = [ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
         metrics = [ACC_CAPTIONS, ACC_IMAGES]
         if additional_imagery_scores:
-            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
+            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
+                        ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS,
+                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
+                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
         for metric_specific_name, metric in zip(metric_names, metrics):
             scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
             scores[metric_specific_name][~nan_locations] = np.array(
@@ -76,8 +79,11 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
         metric_names = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
         metrics = [ACC_IMAGES, ACC_CAPTIONS]
         if additional_imagery_scores:
-            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
+            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
+                        ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
+                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
+                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
         for metric_specific_name, metric in zip(metric_names, metrics):
             scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
             scores[metric_specific_name][~nan_locations] = np.array(
@@ -264,6 +270,13 @@ def calc_t_values(per_subject_scores):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
+            t_values[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
+                (
+                    t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
+                    t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
+                    t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
+                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
+                axis=0)
             t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
                 (
                     t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
@@ -445,7 +458,8 @@ def calc_t_values_null_distr(args, out_path):
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
+                for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING,
+                                               METRIC_MOD_AGNOSTIC_AND_CROSS]:
                     tvals_shape = (
                         len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
@@ -469,6 +483,13 @@ def calc_t_values_null_distr(args, out_path):
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
+                        dsets[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
+                            (
+                                t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
+                                t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
+                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
+                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
+                            axis=0)
                         dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
                             (
                                 t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
@@ -671,5 +692,6 @@ if __name__ == "__main__":
     print(f"\n\nPermutation Testing for {args.metric}\n")
     create_null_distribution(args)
     calc_test_statistics(args)
-    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, args.tfce_value_threshold, get_hparam_suffix(args),
+    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, args.tfce_value_threshold,
+                 get_hparam_suffix(args),
                  args.resolution, args.radius, args.n_neighbors)
