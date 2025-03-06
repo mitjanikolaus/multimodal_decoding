@@ -103,7 +103,7 @@ def run(args):
     realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
 
     # Coregistration
-    coregister_node = Node(Coregister(out_prefix='ra', jobtype='estimate'), name='coregister')
+    coregister_node = Node(Coregister(out_prefix='ra'), name='coregister')
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -176,7 +176,7 @@ def run(args):
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
 
-    # run the pipeline
+    # run thef pipeline
     preproc.run('MultiProc', plugin_args={'n_procs': 15})
 
 
