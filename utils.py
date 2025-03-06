@@ -51,6 +51,7 @@ METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_captions_agno_captions_specif
 METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_imgs_agno_imgs_specific'
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
+METRIC_MOD_AGNOSTIC_AND_CROSS = 'mod_agnostic_and_cross'
 
 
 def nipype_subject_id(subject):
