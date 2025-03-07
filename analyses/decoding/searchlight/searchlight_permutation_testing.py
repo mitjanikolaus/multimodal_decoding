@@ -483,7 +483,7 @@ def calc_t_values_null_distr(args, out_path):
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
-                        dsets[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
+                        dsets[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS][iteration] = np.nanmin(
                             (
                                 t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
                                 t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
@@ -567,9 +567,6 @@ def calc_t_values_null_distr(args, out_path):
                 data_tvals[enough_data[hemi]] = np.concatenate(
                     [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[hemi_metric][i] = data_tvals
-                if hemi_metric.split('__')[1] == METRIC_MOD_AGNOSTIC_AND_CROSS:
-                    print(f'max t value for {METRIC_MOD_AGNOSTIC_AND_CROSS}')
-                    print(np.nanmax(data_tvals))
 
     print("finished assemble")
 
