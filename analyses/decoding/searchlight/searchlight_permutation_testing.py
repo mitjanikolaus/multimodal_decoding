@@ -567,7 +567,7 @@ def calc_t_values_null_distr(args, out_path):
                 data_tvals[enough_data[hemi]] = np.concatenate(
                     [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[hemi_metric][i] = data_tvals
-                if hemi_metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
+                if hemi_metric.split('__')[1] == METRIC_MOD_AGNOSTIC_AND_CROSS:
                     print(f'max t value for {METRIC_MOD_AGNOSTIC_AND_CROSS}')
                     print(np.nanmax(data_tvals))
 
