@@ -490,21 +490,6 @@ def calc_t_values_null_distr(args, out_path):
                                 t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
                                 t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
                             axis=0)
-                        if proc_id == 0:
-                            print('min')
-                            print(np.nanmin(
-                            (
-                                t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
-                                t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
-                            axis=0))
-                            print('parts')
-                            print(t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC])
-                            print(t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC])
-                            print(t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES])
-                            print(t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS])
-
                         dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
                             (
                                 t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
