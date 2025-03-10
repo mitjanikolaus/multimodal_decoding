@@ -37,7 +37,7 @@ def run(args):
             white_matter_mesh = fsaverage[f"white_{hemi}"]
 
             print("transforming to surface.. (test)", end=" ")
-            surface_projection = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='nearest').T
+            surface_projection = surface.vol_to_surf(test_fmri, pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='linear').T
             print("done.")
             results_file_name = f"{subject}_{hemi}_{args.resolution}_test.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name), 'wb'))
@@ -48,7 +48,7 @@ def run(args):
             print(f'transformed nans: {np.sum(np.isnan(surface_projection[0]))} ({100*np.mean(np.isnan(surface_projection[0])):.2f}%)')
 
             print("transforming to surface.. (imagery)", end=" ")
-            surface_projection = surface.vol_to_surf(imagery_fmri, pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='nearest').T
+            surface_projection = surface.vol_to_surf(imagery_fmri, pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='linear').T
             print("done.")
             results_file_name = f"{subject}_{hemi}_{args.resolution}_imagery.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name), 'wb'))
@@ -64,7 +64,7 @@ def run(args):
             white_matter_mesh = fsaverage[f"white_{hemi}"]
 
             print("transforming to surface.. (train part 1)", end=" ")
-            surface_projection = surface.vol_to_surf(train_fmri[:2500], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='nearest').T
+            surface_projection = surface.vol_to_surf(train_fmri[:2500], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='linear').T
             print("done.")
             results_file_name_1 = f"{subject}_{hemi}_train_1.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name_1), 'wb'))
@@ -72,7 +72,7 @@ def run(args):
 
             print("transforming to surface.. (train part 2)", end=" ")
             pial_mesh = fsaverage[f"pial_{hemi}"]
-            surface_projection = surface.vol_to_surf(train_fmri[2500:5000], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='nearest').T
+            surface_projection = surface.vol_to_surf(train_fmri[2500:5000], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='linear').T
             print("done.")
             results_file_name_2 = f"{subject}_{hemi}_train_2.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name_2), 'wb'))
@@ -80,7 +80,7 @@ def run(args):
 
             print("transforming to surface.. (train part 3)", end=" ")
             pial_mesh = fsaverage[f"pial_{hemi}"]
-            surface_projection = surface.vol_to_surf(train_fmri[5000:7500], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='nearest').T
+            surface_projection = surface.vol_to_surf(train_fmri[5000:7500], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='linear').T
             print("done.")
             results_file_name_3 = f"{subject}_{hemi}_train_3.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name_3), 'wb'))
@@ -88,7 +88,7 @@ def run(args):
 
             print("transforming to surface.. (train part 4)", end=" ")
             pial_mesh = fsaverage[f"pial_{hemi}"]
-            surface_projection = surface.vol_to_surf(train_fmri[7500:], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='nearest').T
+            surface_projection = surface.vol_to_surf(train_fmri[7500:], pial_mesh, mask_img=gray_matter_mask, inner_mesh=white_matter_mesh, interpolation='linear').T
             print("done.")
             results_file_name_4 = f"{subject}_{hemi}_train_4.p"
             pickle.dump(surface_projection, open(os.path.join(args.out_dir, results_file_name_4), 'wb'))
