@@ -204,7 +204,7 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
-    preproc.connect([(coregister_node, normalize, [('coregistered_source', 'image_to_align')])])
+    preproc.connect([(coregister_node, normalize, [('anat', 'image_to_align')])])
     preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
 
     # connect segment
