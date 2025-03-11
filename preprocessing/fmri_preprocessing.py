@@ -113,11 +113,11 @@ def run(args):
     # normalize_node.iterables = ('fwhm', [4])
 
     template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
-    normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize_func')
+    normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)), name='normalize_func')
     # fwhmlist = [4]
     # normalize_and_smooth_func.iterables = ('fwhm', fwhmlist)
 
-    normalize_struct = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize_struct')
+    normalize_struct = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)), name='normalize_struct')
     # normalize_struct.inputs.fwhm = 2
 
     # Info source (to provide input information to the pipeline)
