@@ -225,7 +225,7 @@ def run(args):
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
 
     preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
-    preproc.connect([(normalize, datasink_node, [('normalized_image', 'normalized.@image')])])
+    preproc.connect([(segment_node, datasink_node, [('native_class_images', 'segmented.@image')])])
 
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
