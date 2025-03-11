@@ -1,8 +1,7 @@
 import argparse
 import os
 import numpy as np
-from os.path import join as opj
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, Normalize12, DARTELNorm2MNI
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -13,7 +12,8 @@ import nipype.interfaces.matlab as mlab
 
 from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR
 
-mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
+SPM_PATH = os.path.expanduser('~/apps/spm12')
+mlab.MatlabCommand.set_default_paths(SPM_PATH)
 
 
 def print_session_names(sessions):
@@ -41,8 +41,7 @@ def run(args):
     anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
-        sess = []
-        folders = os.listdir(opj(data_root, subj))
+        folders = os.listdir(os.path.join(data_root, subj))
         sessions[subj] = sorted(folders)
     print_session_names(sessions)
 
@@ -51,10 +50,10 @@ def run(args):
     for subj in subjects:
         for ses in sessions[subj]:
             rns = []
-            files = os.listdir(opj(data_root, subj, ses, 'func'))
+            files = os.listdir(os.path.join(data_root, subj, ses, 'func'))
             for file in files:
                 if file.endswith("bold.nii.gz"):
-                    rns.append(opj(data_root, subj, ses, 'func', file[:-12]))
+                    rns.append(os.path.join(data_root, subj, ses, 'func', file[:-12]))
             runs[(subj, ses)] = sorted(rns)
     print_run_names(runs)
 
@@ -69,8 +68,8 @@ def run(args):
     time = interval * 1000
     for f, temp in enumerate([[0, 23], [1, 24]]):
         for i in range(12 - f):
-            slice2time[temp[0] + i * 2] = min(time, TR*1000)
-            slice2time[temp[1] + i * 2] = min(time, TR*1000)
+            slice2time[temp[0] + i * 2] = min(time, TR * 1000)
+            slice2time[temp[1] + i * 2] = min(time, TR * 1000)
             time += interval * 1000
 
     for idx, t in enumerate(slice2time):
@@ -102,8 +101,12 @@ def run(args):
     # Realignment
     realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
 
-    # Coregistration
-    coregister_node = Node(Coregister(out_prefix='ra'), name='coregister')
+    # Coregistration (coregistration of functional scans to anatomical scan)
+    coregister_node = Node(Coregister(out_prefix='ra', jobtype='estimate'), name='coregister')
+
+    # Normalization (transformation to MNI space)
+    template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    normalize_node = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -116,8 +119,8 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = opj('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
-    func_file = opj('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
+    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
+    func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
         SelectFiles({'anat': anat_file}, base_directory=anat_root), name="selectfiles_anat"
@@ -166,18 +169,19 @@ def run(args):
     preproc.connect([(realign_node, coregister_node, [('mean_image', 'source')])])
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
-    # preproc.connect([(gunzip_anat_node, coregister_node, [('out_file', 'target')])])
+
+    # connect coregister to normalize
+    preproc.connect([(coregister_node, normalize_node, [('coregistered_source', 'image_to_align')])])
+    preproc.connect([(coregister_node, normalize_node, [('coregistered_files', 'apply_to_files')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
-    # preproc.connect([(coregister_node, datasink_node, [('coregistered_files',  'coregister.@files')])])
-    # preproc.connect([(coregister_node, datasink_node, [('coregistered_source', 'coregister.@src')])])
 
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
 
     # run thef pipeline
-    preproc.run('MultiProc', plugin_args={'n_procs': 15})
+    preproc.run('MultiProc', plugin_args={'n_procs': 20})
 
 
 def get_args():
