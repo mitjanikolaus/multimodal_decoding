@@ -222,7 +222,7 @@ def run(args):
     # connect threshold
     preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
 
-    preproc.connect([(normalize_func, mask_func, [('outputnode.normalized_files', 'in_file')]),
+    preproc.connect([(normalize_func, mask_func, [('normalized_files', 'in_file')]),
                      (mask_GM, mask_func, [('out_file', 'mask_file')])
                      ])
 
