@@ -106,7 +106,7 @@ def run(args):
 
     # Normalization (transformation to MNI space)
     template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    normalize = Node(Normalize12(tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+    normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
     # normalize_anat = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize_anat")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
