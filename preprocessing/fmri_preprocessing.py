@@ -105,8 +105,20 @@ def run(args):
     coregister_node = Node(Coregister(out_prefix='ra', jobtype='estimate'), name='coregister')
 
     # Normalization (transformation to MNI space)
-    template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    normalize_node = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    # normalize_node = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+
+    # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
+    # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
+    # normalize_node.iterables = ('fwhm', [4])
+
+    template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
+    normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize_func')
+    # fwhmlist = [4]
+    # normalize_and_smooth_func.iterables = ('fwhm', fwhmlist)
+
+    normalize_struct = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize_struct')
+    # normalize_struct.inputs.fwhm = 2
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -171,8 +183,10 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
-    preproc.connect([(coregister_node, normalize_node, [('coregistered_source', 'image_to_align')])])
-    preproc.connect([(coregister_node, normalize_node, [('coregistered_files', 'apply_to_files')])])
+    # preproc.connect([(coregister_node, normalize_node, [('coregistered_source', 'image_to_align')])])
+    # preproc.connect([(coregister_node, normalize_node, [('coregistered_files', 'apply_to_files')])])
+    preproc.connect([(coregister_node, normalize_func, [('coregistered_files', 'apply_to_files')])])
+    preproc.connect([(coregister_node, normalize_struct, [('coregistered_source', 'apply_to_files')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
