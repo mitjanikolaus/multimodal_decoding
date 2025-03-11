@@ -106,8 +106,8 @@ def run(args):
 
     # Normalization (transformation to MNI space)
     template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    normalize_func = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize_func")
-    normalize_anat = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize_anat")
+    normalize = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+    # normalize_anat = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize_anat")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
     # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
@@ -205,15 +205,16 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
-    # preproc.connect([(coregister_node, normalize_node, [('coregistered_source', 'image_to_align')])])
-    # preproc.connect([(coregister_node, normalize_node, [('coregistered_files', 'apply_to_files')])])
     # preproc.connect([(???, normalize_func, [('???', 'flowfield_files')])])
     # preproc.connect([(???, normalize_anat, [('???', 'flowfield_files')])])
-    preproc.connect([(coregister_node, normalize_func, [('coregistered_files', 'apply_to_files')])])
-    preproc.connect([(coregister_node, normalize_anat, [('coregistered_source', 'apply_to_files')])])
+    preproc.connect([(coregister_node, normalize, [('coregistered_source', 'image_to_align')])])
+    preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
+    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
+
+    # preproc.connect([(coregister_node, normalize_anat, [('coregistered_source', 'apply_to_files')])])
 
     # connect segment
-    preproc.connect([(normalize_anat, segment_node, [('normalized_files', 'channel_files')])])
+    preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
 
     # Select GM segmentation file from segmentation output
     def get_gm(files):
@@ -222,7 +223,7 @@ def run(args):
     # connect threshold
     preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
 
-    preproc.connect([(normalize_func, mask_func, [('normalized_files', 'in_file')]),
+    preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
                      (mask_GM, mask_func, [('out_file', 'mask_file')])
                      ])
 
