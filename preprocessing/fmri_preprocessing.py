@@ -94,19 +94,19 @@ def run(args):
             time_acquisition=TR - (TR / (number_of_slices / multiband_factor)),
             slice_order=slice2time,
             ref_slice=slice2time[ref_slice_index],
-            out_prefix='a'),
+        ),
         name='stc'
     )
 
     # Realignment
-    realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
+    realign_node = Node(Realign(register_to_mean=True), name='realign')
 
     # Coregistration (coregistration of functional scans to anatomical scan)
-    coregister_node = Node(Coregister(out_prefix='ra', jobtype='estimate'), name='coregister')
+    coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
 
     # Normalization (transformation to MNI space)
     template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    normalize = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+    normalize = Node(Normalize12(tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
     # normalize_anat = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize_anat")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
@@ -138,10 +138,9 @@ def run(args):
                              output_type='NIFTI'),
                    name="mask_GM")
 
-    # mask_func = MapNode(ApplyMask(output_type='NIFTI'),
-    #                     name="mask_func",
-    #                     iterfield=["in_file"])
-
+    mask_func = MapNode(ApplyMask(output_type='NIFTI'),
+                        name="mask_func",
+                        iterfield=["in_file"])
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -205,13 +204,8 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
-    # preproc.connect([(???, normalize_func, [('???', 'flowfield_files')])])
-    # preproc.connect([(???, normalize_anat, [('???', 'flowfield_files')])])
     preproc.connect([(coregister_node, normalize, [('coregistered_source', 'image_to_align')])])
     preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
-    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
-
-    # preproc.connect([(coregister_node, normalize_anat, [('coregistered_source', 'apply_to_files')])])
 
     # connect segment
     preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
@@ -223,9 +217,9 @@ def run(args):
     # connect threshold
     preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
 
-    # preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
-    #                  (mask_GM, mask_func, [('out_file', 'mask_file')])
-    #                  ])
+    preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
+                     (mask_GM, mask_func, [('out_file', 'mask_file')])
+                     ])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
