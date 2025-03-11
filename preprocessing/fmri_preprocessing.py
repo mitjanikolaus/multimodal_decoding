@@ -1,8 +1,8 @@
 import argparse
 import os
 import numpy as np
-from nipype.interfaces.fsl import ApplyMask, Threshold
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12
+# from nipype.interfaces.fsl import ApplyMask,
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12, Threshold
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -133,14 +133,14 @@ def run(args):
     segment_node = Node(NewSegment(tissues=tissues), name='segment')
 
     # Threshold - Threshold GM probability image
-    mask_GM = Node(Threshold(thresh=0.0,
-                             args='-bin -dilF',
-                             output_type='NIFTI'),
-                   name="mask_GM")
-
-    mask_func = MapNode(ApplyMask(output_type='NIFTI'),
-                        name="mask_func",
-                        iterfield=["in_file"])
+    # mask_GM = Node(Threshold(thresh=0.0,
+    #                          args='-bin -dilF',
+    #                          output_type='NIFTI'),
+    #                name="mask_GM")
+    #
+    # mask_func = MapNode(ApplyMask(output_type='NIFTI'),
+    #                     name="mask_func",
+    #                     iterfield=["in_file"])
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -215,11 +215,11 @@ def run(args):
         return files[0][0]
 
     # connect threshold
-    preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
-
-    preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
-                     (mask_GM, mask_func, [('out_file', 'mask_file')])
-                     ])
+    # preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
+    #
+    # preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
+    #                  (mask_GM, mask_func, [('out_file', 'mask_file')])
+    #                  ])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
