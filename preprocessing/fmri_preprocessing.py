@@ -1,7 +1,8 @@
 import argparse
 import os
 import numpy as np
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, Normalize12, DARTELNorm2MNI
+from nipype.interfaces.fsl import ApplyMask, Threshold
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, DARTELNorm2MNI, NewSegment
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -84,7 +85,6 @@ def run(args):
     ##############
     # Gunzip to unpack tar.gz
     gunzip_func_node = MapNode(Gunzip(), iterfield=['in_file'], name='gunzip_func')
-    # gunzip_anat_node = Node(Gunzip(), name = 'gunzip_anat')   # new corrected anat files are not gz
 
     # Slice timing correction
     stc_node = Node(
@@ -113,12 +113,34 @@ def run(args):
     # normalize_node.iterables = ('fwhm', [4])
 
     template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
-    normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)), name='normalize_func')
+    normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
+                          name='normalize_func')
     # fwhmlist = [4]
     # normalize_and_smooth_func.iterables = ('fwhm', fwhmlist)
 
-    normalize_struct = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)), name='normalize_struct')
+    normalize_anat = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
+                            name='normalize_struct')
     # normalize_struct.inputs.fwhm = 2
+
+    tmp_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
+    tissue1 = ((tmp_img, 1), 2, (True, True), (False, False))
+    tissue2 = ((tmp_img, 2), 2, (True, True), (False, False))
+    tissue3 = ((tmp_img, 3), 2, (True, False), (False, False))
+    tissue4 = ((tmp_img, 4), 2, (False, False), (False, False))
+    tissue5 = ((tmp_img, 5), 2, (False, False), (False, False))
+    tissues = [tissue1, tissue2, tissue3, tissue4, tissue5]
+    segment_node = Node(NewSegment(tissues=tissues), name='segment')
+
+    # Threshold - Threshold GM probability image
+    mask_GM = Node(Threshold(thresh=0.0,
+                             args='-bin -dilF',
+                             output_type='NIFTI'),
+                   name="mask_GM")
+
+    mask_func = MapNode(ApplyMask(output_type='NIFTI'),
+                        name="mask_func",
+                        iterfield=["in_file"])
+
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -168,7 +190,6 @@ def run(args):
     preproc.connect([(infosrc_subjects, selectfiles_sessions, [('subject_id', 'subject_id')])])
 
     # connect file selectors to gunzip
-    # preproc.connect([(selectfiles_anat, gunzip_anat_node, [('anat', 'in_file')])])
     preproc.connect([(selectfiles_sessions, gunzip_func_node, [('func', 'in_file')])])
 
     # connect gunzip to STC
@@ -186,7 +207,21 @@ def run(args):
     # preproc.connect([(coregister_node, normalize_node, [('coregistered_source', 'image_to_align')])])
     # preproc.connect([(coregister_node, normalize_node, [('coregistered_files', 'apply_to_files')])])
     preproc.connect([(coregister_node, normalize_func, [('coregistered_files', 'apply_to_files')])])
-    preproc.connect([(coregister_node, normalize_struct, [('coregistered_source', 'apply_to_files')])])
+    preproc.connect([(coregister_node, normalize_anat, [('coregistered_source', 'apply_to_files')])])
+
+    # connect segment
+    preproc.connect([(normalize_anat, segment_node, [('normalized_files', 'channel_files')])])
+
+    # Select GM segmentation file from segmentation output
+    def get_gm(files):
+        return files[0][0]
+
+    # connect threshold
+    preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
+
+    preproc.connect([(normalize_func, mask_func, [('outputnode.normalized_files', 'in_file')]),
+                     (mask_GM, mask_func, [('out_file', 'mask_file')])
+                     ])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
