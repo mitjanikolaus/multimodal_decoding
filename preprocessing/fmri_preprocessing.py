@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 from nipype.interfaces.fsl import ApplyMask, Threshold
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, DARTELNorm2MNI, NewSegment, Normalize12
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -11,7 +11,7 @@ from nipype.algorithms.misc import Gunzip
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR
+from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS
 
 SPM_PATH = os.path.expanduser('~/apps/spm12')
 mlab.MatlabCommand.set_default_paths(SPM_PATH)
@@ -38,8 +38,8 @@ def run(args):
     print()
 
     # list subject sessions
-    data_root = FMRI_RAW_BIDS_DATA_DIR
-    anat_root = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
+    data_root = os.path.join(args.raw_data_dir, 'bids')
+    anat_root = os.path.join(args.raw_data_dir, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
         folders = os.listdir(os.path.join(data_root, subj))
@@ -166,7 +166,7 @@ def run(args):
     )
 
     # Working directory
-    workflow_dir = FMRI_PREPROCESSED_DATA_DIR
+    workflow_dir = args.out_data_dir
     os.makedirs(workflow_dir, exist_ok=True)
 
     # Datasink - creates an extra output folder for storing the desired files
@@ -223,7 +223,7 @@ def run(args):
     # connect threshold
     preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
 
-    preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
+    preproc.connect([(normalize, mask_func, [('outputnode.normalized_files', 'in_file')]),
                      (mask_GM, mask_func, [('out_file', 'mask_file')])
                      ])
 
@@ -234,11 +234,14 @@ def run(args):
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
 
     # run thef pipeline
-    preproc.run('MultiProc', plugin_args={'n_procs': 20})
+    preproc.run('MultiProc', plugin_args={'n_procs': 15})
 
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_DATA_DIR)
+    parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
