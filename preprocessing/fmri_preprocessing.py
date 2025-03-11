@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 from nipype.interfaces.fsl import ApplyMask, Threshold
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, DARTELNorm2MNI, NewSegment
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, DARTELNorm2MNI, NewSegment, Normalize12
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -105,21 +105,22 @@ def run(args):
     coregister_node = Node(Coregister(out_prefix='ra', jobtype='estimate'), name='coregister')
 
     # Normalization (transformation to MNI space)
-    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    # normalize_node = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+    template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    normalize_func = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
+    normalize_anat = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
     # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
     # normalize_node.iterables = ('fwhm', [4])
 
-    template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
-    normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
-                          name='normalize_func')
+    # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
+    # normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
+    #                       name='normalize_func')
     # fwhmlist = [4]
     # normalize_and_smooth_func.iterables = ('fwhm', fwhmlist)
 
-    normalize_anat = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
-                            name='normalize_struct')
+    # normalize_anat = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
+    #                         name='normalize_struct')
     # normalize_struct.inputs.fwhm = 2
 
     tmp_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
@@ -206,6 +207,8 @@ def run(args):
     # connect coregister to normalize
     # preproc.connect([(coregister_node, normalize_node, [('coregistered_source', 'image_to_align')])])
     # preproc.connect([(coregister_node, normalize_node, [('coregistered_files', 'apply_to_files')])])
+    # preproc.connect([(???, normalize_func, [('???', 'flowfield_files')])])
+    # preproc.connect([(???, normalize_anat, [('???', 'flowfield_files')])])
     preproc.connect([(coregister_node, normalize_func, [('coregistered_files', 'apply_to_files')])])
     preproc.connect([(coregister_node, normalize_anat, [('coregistered_source', 'apply_to_files')])])
 
