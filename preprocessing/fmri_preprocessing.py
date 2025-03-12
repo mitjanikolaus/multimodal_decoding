@@ -206,8 +206,8 @@ def run(args):
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
 
     # downsample anat
-    preproc.connect([(selectfiles_anat, downsample_node), [('anat', 'in_files')]])
-    preproc.connect([(selectfiles_anat, downsample_node), [('anat', 'target')]])
+    preproc.connect([(selectfiles_anat, downsample_node, [('anat', 'in_files')])])
+    preproc.connect([(selectfiles_anat, downsample_node, [('anat', 'target')])])
 
     # preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
     preproc.connect([(downsample_node, coregister_node, [('out_files', 'target')])])
