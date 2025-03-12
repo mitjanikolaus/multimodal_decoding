@@ -291,7 +291,7 @@ def create_composite_image(args):
     for metric in METRICS:
         img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
         cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
-        if metric in [ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC]:
+        if metric in [ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]:
             acc_scores_img = append_images([cbar, img], padding=50)
         else:
             acc_scores_img = append_images([img, cbar], padding=50)
