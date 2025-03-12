@@ -16,8 +16,8 @@ from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, CHANCE_VALUES, \
     load_null_distr_per_subject_scores, permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
-from eval import ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
+from eval import ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, \
+    ACC_CAPTIONS_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -36,6 +36,9 @@ DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
 
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
+
+METRICS = [ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
+           ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
 
 
 def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
@@ -94,14 +97,13 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
 
-    # null_distribution_tfce_values_file = os.path.join(
-    #     permutation_results_dir(args),
-    #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-    # )
-    # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-    # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-    #                                                   args.p_value_threshold)
-    significance_cutoff = 711.98
+    null_distribution_tfce_values_file = os.path.join(
+        permutation_results_dir(args),
+        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+    )
+    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+    significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                      args.p_value_threshold)
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -158,8 +160,6 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
 
 def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-    metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
-               ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     if subfolder:
@@ -167,7 +167,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
     os.makedirs(acc_scores_imgs_dir, exist_ok=True)
 
     print(f"plotting acc scores. {subfolder}")
-    for metric in metrics:
+    for metric in METRICS:
         cbar_max = None
         threshold = COLORBAR_THRESHOLD_MIN
         if CHANCE_VALUES[metric] == 0:
@@ -273,7 +273,8 @@ def plot_p_values(results_path, args):
 
 
 def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
+                                    searchlight_mode_from_args(args)))
 
     tfce_values_img_dir = str(os.path.join(results_path, "tmp", "tfce-values"))
     tfce_val_img = Image.open(os.path.join(tfce_values_img_dir, f"{args.metric}_lateral_left.png"))
@@ -286,10 +287,13 @@ def create_composite_image(args):
 
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
-    metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
-               ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]
-    for metric in metrics:
-        acc_scores_img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
+    for metric in METRICS:
+        img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
+        cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
+        if metric in [ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC]:
+            acc_scores_img = append_images([cbar, img], padding=50)
+        else:
+            acc_scores_img = append_images([img, cbar], padding=50)
 
         acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
         acc_scores_imgs.append(acc_scores_img)
@@ -307,7 +311,8 @@ def create_composite_image(args):
 
 
 def run(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution, searchlight_mode_from_args(args)))
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
+                                    searchlight_mode_from_args(args)))
     os.makedirs(results_path, exist_ok=True)
 
     plot_p_values(results_path, args)
@@ -349,15 +354,13 @@ def run(args):
                 plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
 
     if args.per_subject_plots:
-        metrics = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS,
-                   ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
         print("\n\nCreating per-subject plots..")
         for subject, scores in tqdm(per_subject_scores.items()):
-            fig = plt.figure(figsize=(5 * len(args.views), len(metrics) * 2))
-            subfigs = fig.subfigures(nrows=len(metrics), ncols=1)
+            fig = plt.figure(figsize=(5 * len(args.views), len(METRICS) * 2))
+            subfigs = fig.subfigures(nrows=len(METRICS), ncols=1)
             fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-            for subfig, metric in zip(subfigs, metrics):
+            for subfig, metric in zip(subfigs, METRICS):
                 subfig.suptitle(f'{metric}', x=0, horizontalalignment="left")
                 axes = subfig.subplots(nrows=1, ncols=2 * len(args.views), subplot_kw={'projection': '3d'})
                 cbar_max = None
