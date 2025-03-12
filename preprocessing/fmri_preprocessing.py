@@ -2,7 +2,8 @@ import argparse
 import os
 import numpy as np
 # from nipype.interfaces.fsl import ApplyMask,
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12, Threshold
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12, Threshold, \
+    ResliceToReference
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -101,13 +102,15 @@ def run(args):
     # Realignment
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
+    downsample_node = Node(ResliceToReference(voxel_sizes=[2,2,2]), name='downsample')
+
     # Coregistration (coregistration of functional scans to anatomical scan)
-    coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
+    # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
+    coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
 
     # Normalization (transformation to MNI space)
-    template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
-    # normalize_anat = Node(Normalize12(out_prefix='n', tpm=template, write_voxel_sizes=[2, 2, 2]), name="normalize_anat")
+    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    # normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
     # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
@@ -201,14 +204,22 @@ def run(args):
     # connect realign to coregister
     preproc.connect([(realign_node, coregister_node, [('mean_image', 'source')])])
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
-    preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
+
+    # downsample anat
+    preproc.connect([(selectfiles_anat, downsample_node), [('anat', 'in_files')]])
+    preproc.connect([(selectfiles_anat, downsample_node), [('anat', 'target')]])
+
+    # preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
+    preproc.connect([(downsample_node, coregister_node, [('out_files', 'target')])])
+
 
     # connect coregister to normalize
-    preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
-    preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
+    # preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
+    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
 
     # connect segment
-    preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
+    # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
+    preproc.connect([(downsample_node, segment_node, [('out_files', 'channel_files')])])
 
     # Select GM segmentation file from segmentation output
     def get_gm(files):
@@ -224,7 +235,9 @@ def run(args):
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
 
-    preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
+    # preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
+
     preproc.connect([(segment_node, datasink_node, [('native_class_images', 'segmented.@image')])])
 
     # draw graph of the pipeline
