@@ -16,21 +16,21 @@ def get_graymatter_mask_path(subject, mni=True):
     return mask_image_path
 
 
-def convert_mask_to_mni(subject):
-    print('Converting mask to MNI space')
-    mask_file = get_graymatter_mask_path(subject, mni=False)
-    out_file = get_graymatter_mask_path(subject, mni=True)
-
-    reg_file = f'{FREESURFER_BASE_DIR}/regfiles/{subject}/spm2fs.change-name.lta'
-    os.makedirs(os.path.dirname(out_file), exist_ok=True)
-    conv_cmd = f'mri_vol2vol --mov "{mask_file}" --reg "{reg_file}" --o "{out_file}" --tal --talres 2 --interp nearest'
-    result_code = os.system(conv_cmd)
-    if result_code != 0:
-        raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
-    print(f"Saved MNI mask to {out_file}")
-    mask_mni = nib.load(out_file)
-    mask_mni_data = mask_mni.get_fdata()
-    print(f"MNI space gray matter mask size: {mask_mni_data.sum()} ({mask_mni_data.mean()*100:.2f}%)")
+# def convert_mask_to_mni(subject):
+#     print('Converting mask to MNI space')
+#     mask_file = get_graymatter_mask_path(subject, mni=False)
+#     out_file = get_graymatter_mask_path(subject, mni=True)
+#
+#     reg_file = f'{FREESURFER_BASE_DIR}/regfiles/{subject}/spm2fs.change-name.lta'
+#     os.makedirs(os.path.dirname(out_file), exist_ok=True)
+#     conv_cmd = f'mri_vol2vol --mov "{mask_file}" --reg "{reg_file}" --o "{out_file}" --tal --talres 2 --interp nearest'
+#     result_code = os.system(conv_cmd)
+#     if result_code != 0:
+#         raise RuntimeError(f"mri_vol2vol failed with error code {result_code}")
+#     print(f"Saved MNI mask to {out_file}")
+#     mask_mni = nib.load(out_file)
+#     mask_mni_data = mask_mni.get_fdata()
+#     print(f"MNI space gray matter mask size: {mask_mni_data.sum()} ({mask_mni_data.mean()*100:.2f}%)")
 
 
 def run(args):
@@ -70,6 +70,8 @@ def run(args):
         data_masked[data_masked < 1] = 0
         data_masked = data_masked.astype(int)
         print(f"MNI space gray matter mask size: {data_masked.sum()} ({data_masked.mean() * 100:.2f}%)")
+
+        mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
         nib.save(mask_img, get_graymatter_mask_path(subject, mni=True))
 
