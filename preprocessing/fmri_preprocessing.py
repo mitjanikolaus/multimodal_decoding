@@ -102,7 +102,7 @@ def run(args):
     # Realignment
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
-    downsample_node = Node(ResliceToReference(voxel_sizes=[2,2,2]), name='downsample')
+    downsample_node = Node(ResliceToReference(voxel_sizes=[3,3,3]), name='downsample')
 
     # Coregistration (coregistration of functional scans to anatomical scan)
     # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
