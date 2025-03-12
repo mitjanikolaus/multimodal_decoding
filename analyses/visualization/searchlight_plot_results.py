@@ -11,14 +11,13 @@ import pickle
 
 from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
-from analyses.decoding.searchlight.searchlight_permutation_testing import METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
-    permutation_results_dir, \
+from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS, COLORBAR_MAX
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_CROSS_DECODING, save_plot_and_crop_img, \
-    append_images
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
+    save_plot_and_crop_img, append_images
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -28,7 +27,8 @@ CMAP_POS_ONLY = "hot"
 ACC_COLORBAR_MIN = 0.5
 ACC_COLORBAR_THRESHOLD = 0.6
 
-METRICS = [METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]  # METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
+METRICS = [METRIC_MOD_AGNOSTIC_AND_CROSS,
+           ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]  # METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
 
 def plot(args):
@@ -49,7 +49,7 @@ def plot(args):
         # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
         # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
         #                                                   args.p_value_threshold)
-        significance_cutoff = 711.98
+        significance_cutoff = 2333.16
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
@@ -76,7 +76,7 @@ def plot(args):
             }
         }
 
-        if result_metric == METRIC_CROSS_DECODING:
+        if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             result_values = dict()
@@ -94,9 +94,9 @@ def plot(args):
             raise RuntimeError(f"Unknown metric: {result_metric}")
 
         cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values[
-            'right']))) if result_metric == METRIC_CROSS_DECODING else COLORBAR_MAX
-        cbar_min = 0 if result_metric == METRIC_CROSS_DECODING else ACC_COLORBAR_MIN
-        threshold = significance_cutoff if result_metric == METRIC_CROSS_DECODING else ACC_COLORBAR_THRESHOLD
+            'right']))) if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS else COLORBAR_MAX
+        cbar_min = 0 if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS else ACC_COLORBAR_MIN
+        threshold = significance_cutoff if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS else ACC_COLORBAR_THRESHOLD
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")

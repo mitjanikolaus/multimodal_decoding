@@ -97,13 +97,14 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
 
-    null_distribution_tfce_values_file = os.path.join(
-        permutation_results_dir(args),
-        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-    )
-    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-    significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                      args.p_value_threshold)
+    # null_distribution_tfce_values_file = os.path.join(
+    #     permutation_results_dir(args),
+    #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+    # )
+    # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+    # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+    #                                                   args.p_value_threshold)
+    significance_cutoff = 2333.16
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
