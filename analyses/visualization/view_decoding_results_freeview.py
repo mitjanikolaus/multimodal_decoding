@@ -9,13 +9,18 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY_MOD_SPECIFIC_I
     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
+    METRIC_MOD_AGNOSTIC_AND_CROSS
 
-METRICS = T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING] + [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
-                           ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
-                           ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS,
-                           ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
-                           ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
+METRICS = T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING,
+                           METRIC_MOD_AGNOSTIC_AND_CROSS] + [ACC_IMAGERY_MOD_SPECIFIC_IMAGES,
+                                                             ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
+                                                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
+                                                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES,
+                                                             ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS,
+                                                             ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS,
+                                                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
+                                                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
 
 
 def run(args):
@@ -28,13 +33,13 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, ACC_IMAGERY_WHOLE_TEST,
-                       ACC_IMAGERY]:
+        for metric in [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, METRIC_MOD_AGNOSTIC_AND_CROSS,
+                       ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY]:
             args.metric = metric
             mask_paths.append(
                 os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
 
-            if metric == METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC:
+            if metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
                 clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
                 for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
                     mask_paths.append(file)
