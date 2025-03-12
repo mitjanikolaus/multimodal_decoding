@@ -299,8 +299,8 @@ def create_composite_image(args):
         acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
         acc_scores_imgs.append(acc_scores_img)
 
-    acc_scores_imgs_column_1 = append_images(acc_scores_imgs[:2], horizontally=False, padding=300)
-    acc_scores_imgs_column_2 = append_images(acc_scores_imgs[2:], horizontally=False, padding=300)
+    acc_scores_imgs_column_1 = append_images(acc_scores_imgs[:2], horizontally=False, padding=400)
+    acc_scores_imgs_column_2 = append_images(acc_scores_imgs[2:], horizontally=False, padding=400)
 
     acc_imgs = append_images([acc_scores_imgs_column_1, acc_scores_imgs_column_2], padding=400)
 
