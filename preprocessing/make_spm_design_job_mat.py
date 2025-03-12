@@ -16,8 +16,7 @@ import pandas as pd
 
 from data import IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, \
-    FMRI_BETAS_DIR
+from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_BETAS_DIR, FMRI_PREPROCESSING_DATASINK_DIR
 
 
 def get_condition_names(trial):
@@ -177,8 +176,7 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
-        realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
+        preprocessed_fmri_mni_space_dir = os.path.join(args.preprocessing_datasink_dir, 'normalized', subject)
         raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
         output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
@@ -254,7 +252,7 @@ def run(args):
         sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
-            n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+            n_runs = len(glob(os.path.join(session_dir, 'wrarasub*run*_bold.nii')))
             runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
             print(f"Runs: {runs}")
             for run in runs:
@@ -264,7 +262,7 @@ def run(args):
                 )
                 event_files.append(event_file)
                 realign_file = os.path.join(
-                    realignment_data_dir, subject, session,
+                    args.preprocessing_datasink_dir, 'realignment', subject, session,
                     f'rp_a{subject}_{session}_task-coco_{run}_bold.txt'
                 )
                 realign_files.append(realign_file)
@@ -309,8 +307,7 @@ def get_args():
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
-    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
-    parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+    parser.add_argument("--preprocessing-datasink-dir", type=str, default=FMRI_PREPROCESSING_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 
