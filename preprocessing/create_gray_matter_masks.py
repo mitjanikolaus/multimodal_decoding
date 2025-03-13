@@ -40,7 +40,8 @@ def run(args):
         print(subject)
 
         print('Creating mask')
-        c1_image_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', subject, f'c1{subject}_ses-01_run-01_T1W.nii')
+        # c1_image_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', subject, f'c1{subject}_ses-01_run-01_T1W.nii')
+        c1_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject, f'c1{subject}_ses-01_run-01_T1W_downsampled.nii')
         c1_img = nib.load(c1_image_path)
 
         # c1_img = smooth_img(c1_img, 4)
@@ -59,21 +60,26 @@ def run(args):
 
         nib.save(mask_img, mask_image_path)
 
-        c1_normalized_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, "segmented", subject, "ses-01", f"c1w{subject}_ses-01_run-01_T1W.nii")
-        c1_img = nib.load(c1_normalized_image_path)
-
-        # c1_img = smooth_img(c1_img, 4)
-
-        c1_img_data = c1_img.get_fdata()
-        data_masked = c1_img_data.copy()
-        data_masked[data_masked > 0] = 1
-        data_masked[data_masked < 1] = 0
-        data_masked = data_masked.astype(int)
-        print(f"MNI space gray matter mask size: {data_masked.sum()} ({data_masked.mean() * 100:.2f}%)")
-
-        mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
-
-        nib.save(mask_img, get_graymatter_mask_path(subject, mni=True))
+        # c1_normalized_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, "segmented", subject, "ses-01", f"c1w{subject}_ses-01_run-01_T1W.nii")
+        # c1_img = nib.load(c1_normalized_image_path)
+        # # c1_img = smooth_img(c1_img, 1)  # smooth in all directions with FWHM of 1mm
+        # c1_img_data = c1_img.get_fdata()
+        #
+        # # c2_normalized_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, "segmented", subject, "ses-01", f"c2w{subject}_ses-01_run-01_T1W.nii")
+        # # c2_img = nib.load(c2_normalized_image_path)
+        # # # c2_img = smooth_img(c2_img, 1)  # smooth in all directions with FWHM of 1mm
+        # # c2_img_data = c2_img.get_fdata()
+        #
+        # data_masked = c1_img_data.copy()
+        # # data_masked[(c1_img_data > 0) | (c2_img_data > 0)] = 1
+        # data_masked[c1_img_data > 0] = 1
+        # data_masked[data_masked < 1] = 0
+        # data_masked = data_masked.astype(int)
+        # print(f"MNI space gray matter mask size: {data_masked.sum()} ({data_masked.mean() * 100:.2f}%)")
+        #
+        # mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
+        #
+        # nib.save(mask_img, get_graymatter_mask_path(subject, mni=True))
 
         # conv_cmd = f'mri_vol2vol --mov ~/data/multimodal_decoding/fmri/graymatter_masks/sub-04/mask_orig_smoothed.nii --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-04/spm2fs.change-name.lta --o mask_sub-04_smoothed_mni.nii --tal --talres 2 --interp nearest
         # # --reg /home/mitja/data/multimodal_decoding/freesurfer/subjects/sub-04/mri/transforms/talairach.lta --s sub-04

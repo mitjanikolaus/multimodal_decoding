@@ -102,8 +102,6 @@ def run(args):
     # Realignment
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
-    downsample_node = Node(ResliceToReference(voxel_sizes=[3,3,3]), name='downsample')
-
     # Coregistration (coregistration of functional scans to anatomical scan)
     # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
     coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
@@ -156,7 +154,7 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
+    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W_downsampled.nii')
     func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
@@ -205,13 +203,7 @@ def run(args):
     preproc.connect([(realign_node, coregister_node, [('mean_image', 'source')])])
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
 
-    # downsample anat
-    preproc.connect([(selectfiles_anat, downsample_node, [('anat', 'in_files')])])
-    preproc.connect([(selectfiles_anat, downsample_node, [('anat', 'target')])])
-
-    # preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
-    preproc.connect([(downsample_node, coregister_node, [('out_files', 'target')])])
-
+    preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
     # preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
@@ -219,7 +211,7 @@ def run(args):
 
     # connect segment
     # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
-    preproc.connect([(downsample_node, segment_node, [('out_files', 'channel_files')])])
+    preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
 
     # Select GM segmentation file from segmentation output
     def get_gm(files):

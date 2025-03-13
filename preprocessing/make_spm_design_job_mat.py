@@ -76,13 +76,13 @@ def preprocess_event_files(event_files):
     return pd.concat(data, ignore_index=True)
 
 
-def get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample):
+def get_sessions(preprocessed_functional_data_dir, sessions_subsample):
     if sessions_subsample:
         sessions = [f'ses-{ses_idx}' for ses_idx in sessions_subsample]
-        session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
+        session_dirs = [os.path.join(preprocessed_functional_data_dir, session) for session in sessions]
     else:
-        print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-        session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
+        print(f"Scanning for sessions in {preprocessed_functional_data_dir}")
+        session_dirs = glob(os.path.join(preprocessed_functional_data_dir, 'ses-*'))
         sessions = [path.split(os.sep)[-1] for path in session_dirs]
     print(f"Sessions: {sessions}")
     return sessions, session_dirs
@@ -176,7 +176,7 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_fmri_mni_space_dir = os.path.join(args.preprocessing_datasink_dir, 'normalized', subject)
+        preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, 'coregistered', subject)
         raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
         output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
@@ -207,7 +207,7 @@ def run(args):
         mthresh = 0.8
 
         # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject, mni=True)
+        mask = get_graymatter_mask_path(subject, mni=False)
 
         # serial correlation (don't change)
         CVI = 'AR(1)'
@@ -249,10 +249,10 @@ def run(args):
         scans = []
         event_files = []
         realign_files = []
-        sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample)
+        sessions, session_dirs = get_sessions(preprocessed_functional_data_dir, sessions_subsample)
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
-            n_runs = len(glob(os.path.join(session_dir, 'wrarasub*run*_bold.nii')))
+            n_runs = len(glob(os.path.join(session_dir, 'rrasub*run*_bold.nii')))
             runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
             print(f"Runs: {runs}")
             for run in runs:
@@ -268,7 +268,7 @@ def run(args):
                 realign_files.append(realign_file)
                 run_file = os.path.join(
                     session_dir,
-                    f'rara{subject}_{session}_task-coco_{run}_bold.nii'
+                    f'rra{subject}_{session}_task-coco_{run}_bold.nii'
                 )
                 run_nii = nib.load(run_file)
                 run_size = run_nii.shape[-1]
