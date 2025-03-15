@@ -45,7 +45,8 @@ def run(args):
 
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 cmd = (f"mri_vol2surf --mov {path} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
-                       f"--projfrac 0.5 --interp trilinear --regheader {subject}")
+                       f"--regheader {subject}")
+                #--projfrac 0.5 --interp trilinear
                 jobs.append(cmd)
 
         def exec_command(cmd, silent=True):
