@@ -10,13 +10,15 @@ from utils import FREESURFER_BASE_DIR, SUBJECTS, FMRI_RAW_DATA_DIR
 
 
 def run(args):
-    os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
+    # os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
+    os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects_downsampled"
 
     processes = []
     std_out_files = []
     std_err_files = []
     for subject in args.subjects:
-        anat_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', subject, f'{subject}_ses-01_run-01_T1W.nii')
+        # anat_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', subject, f'{subject}_ses-01_run-01_T1W.nii')
+        anat_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', subject, f'{subject}_ses-01_run-01_T1W_downsampled.nii')
         outf = open(f'recon_out_{subject}.txt', 'w')
         errf = open(f'recon_err_{subject}.txt', 'w')
         std_out_files.append(outf)
