@@ -444,8 +444,6 @@ def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, res
         sample = sample.darrays[0].data
         fmri_betas.append(sample)
 
-        print(np.mean(np.isnan(sample)))
-
     fmri_betas = np.array(fmri_betas)
     return fmri_betas, stim_ids, stim_types
 
