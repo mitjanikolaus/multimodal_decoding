@@ -340,7 +340,7 @@ def stim_id_from_beta_file_name(beta_file_name, suffix='.nii'):
     return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(suffix, ''))
 
 
-def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, suffix='nii'):
+def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, suffix='.nii'):
     mode_suffix = ""
     if mode == MODALITY_SPECIFIC_CAPTIONS:
         mode_suffix = f"_{CAPTION}"
