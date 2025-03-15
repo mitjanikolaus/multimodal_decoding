@@ -336,24 +336,24 @@ class LatentFeatsConfig:
         self.combined_feats = f"{self.features}_test_{self.test_features}"
 
 
-def stim_id_from_beta_file_name(beta_file_name):
-    return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(".nii", ''))
+def stim_id_from_beta_file_name(beta_file_name, suffix='.nii'):
+    return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(suffix, ''))
 
 
-def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
+def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, suffix='nii'):
     mode_suffix = ""
     if mode == MODALITY_SPECIFIC_CAPTIONS:
         mode_suffix = f"_{CAPTION}"
     elif mode == MODALITY_SPECIFIC_IMAGES:
         mode_suffix = f"_{IMAGE}"
-    fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{split}{mode_suffix}*', "*.nii")
+    fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{split}{mode_suffix}*', f"*{suffix}")
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
 
     stim_ids = []
     stim_types = []
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
-        stim_id = stim_id_from_beta_file_name(os.path.basename(path))
+        stim_id = stim_id_from_beta_file_name(os.path.basename(path), suffix)
         if IMAGERY in split_name:
             stim_types.append(IMAGERY)
             stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
@@ -436,7 +436,38 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
 def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, resolution=DEFAULT_RESOLUTION,
                           hemi=HEMIS[0]):
     print(f"loading {mode} {split} {hemi} hemi fmri surface data.. ", end="")
-    fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, suffix='.gii')
+
+    fmri_betas = []
+    for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
+        sample = nib.load(fmri_betas_paths[idx])
+        sample = sample.darrays[0].data
+        fmri_betas.append(sample)
+
+        print(np.mean(np.isnan(sample)))
+
+    fmri_betas = np.array(fmri_betas)
+    return fmri_betas, stim_ids, stim_types
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
     print("done.")
 
     stim_ids, stim_types = get_stim_info(subject, split)
@@ -475,7 +506,7 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
 
 def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):
     if surface:
-        betas_dir += "_surface_level"
+        betas_dir = os.path.join(betas_dir, "surface")
         betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, resolution,
                                                                       "left")
         betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, resolution, "right")
