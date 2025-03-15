@@ -30,6 +30,8 @@ ACC_COLORBAR_THRESHOLD = 0.6
 METRICS = [METRIC_MOD_AGNOSTIC_AND_CROSS,
            ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]  # METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC
 
+CONTOUR_COLOR = 'lightseagreen'
+
 
 def plot(args):
     # plt.style.use("dark_background")
@@ -144,7 +146,7 @@ def plot(args):
                     levels=regions_indices,
                     hemi=hemi,
                     figure=fig,
-                    colors=['teal'] * len(regions_indices),
+                    colors=[CONTOUR_COLOR] * len(regions_indices),
                 )
 
                 title = f"{view}_{hemi}"
