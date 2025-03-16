@@ -154,7 +154,7 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W_downsampled.nii')
+    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W_downsampled_2mm.nii')
     func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
