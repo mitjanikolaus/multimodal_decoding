@@ -15,11 +15,11 @@ from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, IN
     get_fmri_voxel_data, IMAGE, CAPTION
 from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import FMRI_BETAS_SURFACE_DIR, SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR, FMRI_STIM_INFO_DIR, \
-    export_to_gifti, FREESURFER_BASE_DIR, FS_HEMI_NAMES
+    export_to_gifti, FS_HEMI_NAMES, FREESURFER_SUBJECTS_DIR
 
 
 def run(args):
-    os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
+    os.environ["SUBJECTS_DIR"] = FREESURFER_SUBJECTS_DIR
 
     for subject in args.subjects:
         print("\n", subject)
@@ -45,8 +45,7 @@ def run(args):
 
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 cmd = (f"mri_vol2surf --mov {path} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
-                       f"--regheader {subject}")
-                #--projfrac 0.5 --interp trilinear
+                       f"--regheader {subject} --projfrac 0.5 --interp trilinear")
                 jobs.append(cmd)
 
         def exec_command(cmd, silent=True):

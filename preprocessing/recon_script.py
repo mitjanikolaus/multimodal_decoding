@@ -6,13 +6,13 @@ import argparse
 import os
 import subprocess
 
-from utils import FREESURFER_BASE_DIR, SUBJECTS, FMRI_RAW_DATA_DIR
+from utils import FREESURFER_SUBJECTS_DIR, SUBJECTS, FMRI_RAW_DATA_DIR
 
 
 def run(args):
     # os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
-    os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects_downsampled"
-    os.makedirs(os.environ["SUBJECTS_DIR"], exist_ok=True)
+    os.environ["SUBJECTS_DIR"] = FREESURFER_SUBJECTS_DIR
+    os.makedirs(FREESURFER_SUBJECTS_DIR, exist_ok=True)
 
     processes = []
     std_out_files = []

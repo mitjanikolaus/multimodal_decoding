@@ -593,11 +593,3 @@ def apply_mask(mask_path, betas_list, args):
 
     return betas_list
 
-
-def load_graymatter_mask(subject):
-    gray_matter_mask_path = get_graymatter_mask_path(subject)
-    gray_matter_mask_img = nib.load(gray_matter_mask_path)
-    gray_matter_mask_data = gray_matter_mask_img.get_fdata()
-    gray_matter_mask = gray_matter_mask_data == 1
-    print(f"Gray matter mask size: {gray_matter_mask.sum()}")
-    return gray_matter_mask
