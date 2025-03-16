@@ -12,6 +12,7 @@ from utils import FREESURFER_BASE_DIR, SUBJECTS, FMRI_RAW_DATA_DIR
 def run(args):
     # os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
     os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects_downsampled"
+    os.makedirs(os.environ["SUBJECTS_DIR"], exist_ok=True)
 
     processes = []
     std_out_files = []
