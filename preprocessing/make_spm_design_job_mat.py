@@ -204,7 +204,7 @@ def run(args):
         GLOBAL = 'None'
 
         # implicit mask threhsold
-        mthresh = 0.8
+        mthresh = 0.0
 
         # explicit mask (if set, the threshold will be ignored)
         mask = get_graymatter_mask_path(subject, mni=False)
