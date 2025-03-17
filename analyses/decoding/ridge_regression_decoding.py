@@ -189,7 +189,7 @@ def run(args):
                     print(
                         f"Best alphas: {best_alpha}\n"
                         f"Pairwise acc (mean): {np.mean((results[ACC_CAPTIONS], results[ACC_IMAGES])):.4f}"
-                        f"Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
+                        f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                         f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
                         f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
                         f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
@@ -202,7 +202,7 @@ def run(args):
                     print(
                         f"Without standardization of predictions:\n"
                         f"Pairwise acc (mean): {np.mean((results_no_standardization[ACC_CAPTIONS], results_no_standardization[ACC_IMAGES])):.4f}"
-                        f"Pairwise acc (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
+                        f" | Pairwise acc (captions): {results_no_standardization[ACC_CAPTIONS]:.2f}"
                         f" | Pairwise acc (images): {results_no_standardization[ACC_IMAGES]:.2f}"
                         f" | Pairwise acc (imagery): {results_no_standardization[ACC_IMAGERY]:.2f}"
                         f" | Pairwise acc (imagery whole test set): "
