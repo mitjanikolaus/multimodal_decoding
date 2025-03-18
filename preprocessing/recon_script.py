@@ -10,7 +10,6 @@ from utils import FREESURFER_SUBJECTS_DIR, SUBJECTS, FMRI_RAW_DATA_DIR
 
 
 def run(args):
-    # os.environ["SUBJECTS_DIR"] = f"{FREESURFER_BASE_DIR}/subjects"
     os.environ["SUBJECTS_DIR"] = FREESURFER_SUBJECTS_DIR
     os.makedirs(FREESURFER_SUBJECTS_DIR, exist_ok=True)
 
