@@ -43,13 +43,14 @@ def run(args):
         c1_img = nib.load(c1_image_path)
         c1_img_data = c1_img.get_fdata()
 
-        c2_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject, f'c2{subject}_ses-01_run-01_T1W_downsampled_2mm.nii')
-        c2_img = nib.load(c2_image_path)
-        c2_img_data = c2_img.get_fdata()
+        # c2_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject, f'c2{subject}_ses-01_run-01_T1W_downsampled_2mm.nii')
+        # c2_img = nib.load(c2_image_path)
+        # c2_img_data = c2_img.get_fdata()
 
         # c1_img = smooth_img(c1_img, 4)
         data_masked = c1_img_data.copy()
-        data_masked[(c1_img_data > 0) | (c2_img_data > 0)] = 1
+        # data_masked[(c1_img_data > 0) | (c2_img_data > 0)] = 1
+        data_masked[c1_img_data > 0] = 1
         data_masked[data_masked < 1] = 0
         data_masked = data_masked.astype(int)
         print(f"Subject-space gray matter mask size: {data_masked.sum()} ({data_masked.mean()*100:.2f}%)")
