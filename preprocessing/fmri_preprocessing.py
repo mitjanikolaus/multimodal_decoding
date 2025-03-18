@@ -124,13 +124,14 @@ def run(args):
     #                         name='normalize_struct')
     # normalize_struct.inputs.fwhm = 2
 
-    tmp_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
-    tissue1 = ((tmp_img, 1), 2, (True, True), (False, False))
-    tissue2 = ((tmp_img, 2), 2, (True, True), (False, False))
-    tissue3 = ((tmp_img, 3), 2, (True, False), (False, False))
-    tissue4 = ((tmp_img, 4), 2, (False, False), (False, False))
-    tissue5 = ((tmp_img, 5), 2, (False, False), (False, False))
-    tissues = [tissue1, tissue2, tissue3, tissue4, tissue5]
+    tpm_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
+    tissue1 = ((tpm_img, 1), 2, (True, False), (False, False))
+    tissue2 = ((tpm_img, 2), 2, (True, False), (False, False))
+    tissue3 = ((tpm_img, 3), 2, (True, False), (False, False))
+    tissue4 = ((tpm_img, 4), 2, (False, False), (False, False))
+    tissue5 = ((tpm_img, 5), 2, (False, False), (False, False))
+    tissue6 = ((tpm_img, 6), 2, (False, False), (False, False))
+    tissues = [tissue1, tissue2, tissue3, tissue4, tissue5, tissue6]
     segment_node = Node(NewSegment(tissues=tissues), name='segment')
 
     # Threshold - Threshold GM probability image
