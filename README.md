@@ -47,7 +47,7 @@ python analyses/view_results_freeview.py
 
 ### Downsampling of anatomical scan:
 ```
-FSLOUTPUTTYPE='NIFTI' flirt.fsl -in ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-04/sub-04_ses-01_run-01_T1W.nii -ref ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-04/sub-04_ses-01_run-01_T1W.nii -applyisoxfm 2.0 -nosearch -out ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-04/sub-04_ses-01_run-01_T1W_downsampled_2mm.nii
+FSLOUTPUTTYPE='NIFTI' flirt.fsl -in ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii -ref ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii -applyisoxfm 2.0 -nosearch -out ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W_downsampled_2mm.nii
 
 ```
 
