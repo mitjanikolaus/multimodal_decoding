@@ -66,15 +66,29 @@ def plot(args):
         #     "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup'] #, 'S_intrapariet_and_P_trans' , 'G_occipital_sup'
         # }
         rois_for_view = {
-            "left": {
-                "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
-                "ventral": ['inferiortemporal', 'fusiform'],
+            METRIC_MOD_AGNOSTIC_AND_CROSS: {
+                "left": {
+                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+                    "ventral": ['inferiortemporal', 'fusiform'],
+                },
+                "right": {
+                    "medial": [],
+                    "lateral": [],
+                    "ventral": [],
+                }
             },
-            "right": {
-                "medial": [],
-                "lateral": [],
-                "ventral": [],
+            ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC: {
+                "left": {
+                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+                    "ventral": ['inferiortemporal', 'fusiform'],
+                },
+                "right": {
+                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+                    "ventral": ['inferiortemporal', 'fusiform'],
+                },
             }
         }
 
@@ -119,7 +133,7 @@ def plot(args):
             # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
             # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
 
-            for i, (view, rois) in enumerate(rois_for_view[hemi].items()):
+            for i, (view, rois) in enumerate(rois_for_view[result_metric][hemi].items()):
                 regions_indices = [names.index(roi) for roi in rois]
                 # label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
                 label_names = [r for r in rois]
