@@ -123,6 +123,11 @@ python preprocessing/transform_to_surface.py
 ```
 
 
+### All-in-one preprocessing
+```
+FSLOUTPUTTYPE='NIFTI' flirt.fsl -in ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii -ref ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii -applyisoxfm 2.0 -nosearch -out ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W_downsampled_2mm.nii && python preprocessing/fmri_preprocessing.py --subjects sub-01 && python preprocessing/create_gray_matter_masks.py --subjects sub-01 && python preprocessing/make_spm_design_job_mat.py --subjects sub-01 && rm -r ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/ && cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01;exit;"  -logfile matlab_output.txt && cd - && python preprocessing/create_symlinks_beta_files.py && python preprocessing/recon_script.py --subjects sub-01 && python preprocessing/transform_to_surface.py --subjects sub-01
+```
+
 ## DNN Feature extraction 
 
 ### BLIP2
