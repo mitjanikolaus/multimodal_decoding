@@ -86,7 +86,7 @@ def plot(args):
                 },
                 "right": {
                     "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+                    "lateral": ['inferiorparietal', 'middletemporal', 'bankssts'],
                     "ventral": ['inferiortemporal', 'fusiform'],
                 },
             }
