@@ -24,14 +24,13 @@ def run(args):
         print(f'downsampling {len(paths)} files')
 
         jobs = []
-        for hemi in args.hemis:
-            for path in tqdm(paths):
-                path_out = path.replace("coregistered", "coregistered_downsampled")
-                assert path != path_out
+        for path in tqdm(paths):
+            path_out = path.replace("coregistered", "coregistered_downsampled")
+            assert path != path_out
 
-                os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                cmd = f"flirt.fsl -in {path} -ref {path} -applyisoxfm 2.0 -nosearch -out {path_out}"
-                jobs.append(cmd)
+            os.makedirs(os.path.dirname(path_out), exist_ok=True)
+            cmd = f"flirt.fsl -in {path} -ref {path} -applyisoxfm 2.0 -nosearch -out {path_out}"
+            jobs.append(cmd)
 
         def exec_command(cmd, silent=True):
             if silent:
