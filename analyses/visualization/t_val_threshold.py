@@ -33,7 +33,7 @@ def run():
     null_distr_t_vals = np.array(null_distr_t_vals)
 
     threshold_values = []
-    p_vals = [0.05, 1e-2, 1e-3]
+    p_vals = [0.05, 1e-2, 1e-3, 1e-4]
     for thresh in p_vals:
         if thresh == 1 / len(null_distr_t_vals):
             val = np.max(null_distr_t_vals)
