@@ -28,7 +28,7 @@ def run(args):
     sessions = dict()
     for subj in subjects:
         folders = os.listdir(os.path.join(data_root, subj))
-        sessions[subj] = sorted(folders)
+        sessions[subj] = ['ses-01']
     print_session_names(sessions)
 
     # list functional runs
@@ -197,17 +197,6 @@ def run(args):
     # connect segment
     # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
     preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
-
-    # Select GM segmentation file from segmentation output
-    def get_gm(files):
-        return files[0][0]
-
-    # connect threshold
-    # preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
-    #
-    # preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
-    #                  (mask_GM, mask_func, [('out_file', 'mask_file')])
-    #                  ])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
