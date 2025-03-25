@@ -16,11 +16,9 @@ def run():
     for perm in range(N_PERMS):
         accs = []
         for _ in SUBJECTS:
-            latents = np.random.normal(0, 1, (3, 1024))
+            latents = np.random.normal(0, 1, (73, 1024))
             preds = np.random.normal(0, 1, (3, 1024))
-            # print(latents)
             acc = pairwise_accuracy(latents, preds)
-            # print(acc)
             accs.append(acc)
 
         test_res = stats.ttest_1samp(accs, popmean=0.5, alternative="greater")
