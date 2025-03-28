@@ -9,27 +9,9 @@ def run(args):
     os.environ["SUBJECTS_DIR"] = FREESURFER_SUBJECTS_DIR
     os.makedirs(FREESURFER_SUBJECTS_DIR, exist_ok=True)
 
-    processes = []
-    std_out_files = []
-    std_err_files = []
     assert os.path.isfile(args.anat_scan_path)
-    outf = open(f'recon_out_{args.subject}.txt', 'w')
-    errf = open(f'recon_err_{args.subject}.txt', 'w')
-    std_out_files.append(outf)
-    std_err_files.append(errf)
-    processes.append(
-        subprocess.Popen(["recon-all", "-s", args.subject, "-i", args.anat_path, "-all"], stdout=outf, stderr=errf)
-    )
-
-    print('waiting for the processes to be done ...')
-    for p in processes:
-        p.communicate()
-
-    for f in std_out_files:
-        f.close()
-
-    for f in std_err_files:
-        f.close()
+    cmd = f"recon-all -s {args.subject} -i {args.anat_scan_path} -all"
+    os.system(cmd)
 
 
 def get_args():
