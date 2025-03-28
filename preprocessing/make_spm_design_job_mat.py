@@ -252,7 +252,7 @@ def run(args):
         sessions, session_dirs = get_sessions(preprocessed_functional_data_dir, sessions_subsample)
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
-            n_runs = len(glob(os.path.join(session_dir, 'rrasub*run*_bold.nii')))
+            n_runs = len(glob(os.path.join(session_dir, 'wrasub*run*_bold.nii')))
             runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
             print(f"Runs: {runs}")
             for run in runs:
