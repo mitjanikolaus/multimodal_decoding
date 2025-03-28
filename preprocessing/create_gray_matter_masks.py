@@ -38,8 +38,8 @@ def run(args):
         print(subject)
 
         print('Creating mask')
-        # c1_image_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', subject, f'c1{subject}_ses-01_run-01_T1W.nii')
-        c1_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject, f'c1{subject}_ses-01_run-01_T1W_downsampled_2mm.nii')
+        c1_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject,
+                                     f'c1{subject}_ses-01_run-01_T1W{args.anat_scan_suffix}.nii')
         c1_img = nib.load(c1_image_path)
         c1_img_data = c1_img.get_fdata()
 
@@ -53,7 +53,7 @@ def run(args):
         data_masked[c1_img_data > 0] = 1
         data_masked[data_masked < 1] = 0
         data_masked = data_masked.astype(int)
-        print(f"Subject-space gray matter mask size: {data_masked.sum()} ({data_masked.mean()*100:.2f}%)")
+        print(f"Subject-space gray matter mask size: {data_masked.sum()} ({data_masked.mean() * 100:.2f}%)")
 
         mask_img = nib.Nifti1Image(data_masked, c1_img.affine, c1_img.header)
 
@@ -67,6 +67,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+
+    parser.add_argument("--anat-scan-suffix", type=str, default="")  # _downsampled_2mm
 
     return parser.parse_args()
 
