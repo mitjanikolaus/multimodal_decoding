@@ -1,7 +1,7 @@
 import argparse
 import os
 import numpy as np
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -101,12 +101,12 @@ def run(args):
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
     # Coregistration (coregistration of functional scans to anatomical scan)
-    # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
-    coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
+    coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
+    # coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
 
     # Normalization (transformation to MNI space)
-    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    # normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
+    template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
     # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
@@ -131,16 +131,6 @@ def run(args):
     tissue6 = ((tpm_img, 6), 2, (False, False), (False, False))
     tissues = [tissue1, tissue2, tissue3, tissue4, tissue5, tissue6]
     segment_node = Node(NewSegment(tissues=tissues), name='segment')
-
-    # Threshold - Threshold GM probability image
-    # mask_GM = Node(Threshold(thresh=0.0,
-    #                          args='-bin -dilF',
-    #                          output_type='NIFTI'),
-    #                name="mask_GM")
-    #
-    # mask_func = MapNode(ApplyMask(output_type='NIFTI'),
-    #                     name="mask_func",
-    #                     iterfield=["in_file"])
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -181,7 +171,6 @@ def run(args):
     # create the workflow
     preproc = Workflow(name='preprocess_workflow')
     preproc.base_dir = workflow_dir
-    # preproc.config['execution'] = {} # you can add configurations here
 
     # connect info source to file selectors
     preproc.connect([(infosrc_subjects, selectfiles_anat, [('subject_id', 'subject_id')])])
@@ -205,29 +194,18 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
-    # preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
-    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
+    preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
+    preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
 
     # connect segment
-    # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
-    preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
-
-    # Select GM segmentation file from segmentation output
-    def get_gm(files):
-        return files[0][0]
-
-    # connect threshold
-    # preproc.connect([(segment_node, mask_GM, [(('native_class_images', get_gm), 'in_file')])])
-    #
-    # preproc.connect([(normalize, mask_func, [('normalized_files', 'in_file')]),
-    #                  (mask_GM, mask_func, [('out_file', 'mask_file')])
-    #                  ])
+    preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
+    # preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
 
-    # preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
-    preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
+    preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
+    # preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
 
     preproc.connect([(segment_node, datasink_node, [('native_class_images', 'segmented.@image')])])
 
@@ -244,7 +222,7 @@ def get_args():
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_DATA_DIR)
     parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
-    parser.add_argument("--anat-scan-suffix", type=str, default="_downsampled_2mm")
+    parser.add_argument("--anat-scan-suffix", type=str, default="")
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
