@@ -41,8 +41,11 @@ def run(args):
     anat_root = os.path.join(args.raw_data_dir, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
-        folders = os.listdir(os.path.join(data_root, subj))
-        sessions[subj] = sorted(folders)
+        if args.sessions is not None:
+            sessions[subj] = args.sessions
+        else:
+            folders = os.listdir(os.path.join(data_root, subj))
+            sessions[subj] = sorted(folders)
     print_session_names(sessions)
 
     # list functional runs
@@ -143,7 +146,7 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W'+f'{args.anat_scan_suffix}.nii')
+    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W' + f'{args.anat_scan_suffix}.nii')
     func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
@@ -225,6 +228,9 @@ def get_args():
     parser.add_argument("--anat-scan-suffix", type=str, default="")
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+
+    parser.add_argument("--sessions", type=str, nargs='+', default=None,
+                        help="Default value of None uses all sessions")
 
     return parser.parse_args()
 
