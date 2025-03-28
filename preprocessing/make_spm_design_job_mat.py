@@ -176,7 +176,7 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, args.coregistered_dir_name, subject)
+        preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, "normalized", subject)
         raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
         output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
@@ -268,7 +268,7 @@ def run(args):
                 realign_files.append(realign_file)
                 run_file = os.path.join(
                     session_dir,
-                    f'rra{subject}_{session}_task-coco_{run}_bold.nii'
+                    f'wra{subject}_{session}_task-coco_{run}_bold.nii'
                 )
                 run_nii = nib.load(run_file)
                 run_size = run_nii.shape[-1]
@@ -305,8 +305,6 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
-
-    parser.add_argument("--coregistered-dir-name", type=str, default='coregistered')
 
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
     parser.add_argument("--preprocessing-datasink-dir", type=str, default=FMRI_PREPROCESSING_DATASINK_DIR)
