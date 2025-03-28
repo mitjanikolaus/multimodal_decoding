@@ -39,7 +39,7 @@ def run(args):
 
         print('Creating mask')
         c1_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject, 'ses-01',
-                                     f'c1{subject}_ses-01_run-01_T1W{args.anat_scan_suffix}.nii')
+                                     f'c1w{subject}_ses-01_run-01_T1W{args.anat_scan_suffix}.nii')
         c1_img = nib.load(c1_image_path)
         c1_img_data = c1_img.get_fdata()
 
