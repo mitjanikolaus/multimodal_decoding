@@ -107,8 +107,8 @@ def run(args):
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
     # Coregistration (coregistration of functional scans to anatomical scan)
-    coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
-    # coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
+    # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
+    coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
 
     # Normalization (transformation to MNI space)
     # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
