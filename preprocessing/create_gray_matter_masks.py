@@ -4,6 +4,7 @@ import nibabel as nib
 import numpy as np
 from nilearn.image import smooth_img
 
+from preprocessing.fmri_preprocessing import DEFAULT_ANAT_SCAN_SUFFIX
 from utils import SUBJECTS, FREESURFER_BASE_DIR, FMRI_RAW_DATA_DIR, FMRI_DATA_DIR, FMRI_PREPROCESSING_DATASINK_DIR
 
 
@@ -38,8 +39,8 @@ def run(args):
         print(subject)
 
         print('Creating mask')
-        c1_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject, 'ses-01',
-                                     f'c1w{subject}_ses-01_run-01_T1W{args.anat_scan_suffix}.nii')
+        c1_image_path = os.path.join(FMRI_PREPROCESSING_DATASINK_DIR, 'segmented', subject,
+                                     f'c1{subject}_ses-01_run-01_T1W{args.anat_scan_suffix}.nii')
         c1_img = nib.load(c1_image_path)
         c1_img_data = c1_img.get_fdata()
 
@@ -68,7 +69,7 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
-    parser.add_argument("--anat-scan-suffix", type=str, default="")  # _downsampled_2mm
+    parser.add_argument("--anat-scan-suffix", type=str, default=DEFAULT_ANAT_SCAN_SUFFIX)
 
     return parser.parse_args()
 

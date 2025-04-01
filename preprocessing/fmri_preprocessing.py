@@ -16,6 +16,9 @@ SPM_PATH = os.path.expanduser('~/apps/spm12')
 mlab.MatlabCommand.set_default_paths(SPM_PATH)
 
 
+DEFAULT_ANAT_SCAN_SUFFIX = "_downsampled_2mm"
+
+
 def print_session_names(sessions):
     for subject in sessions:
         print(subject)
@@ -108,8 +111,8 @@ def run(args):
     # coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
 
     # Normalization (transformation to MNI space)
-    template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
+    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    # normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
 
     # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
     # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
@@ -197,18 +200,18 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # connect coregister to normalize
-    preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
-    preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
+    # preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
+    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
 
     # connect segment
-    preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
-    # preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
+    # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
+    preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
 
-    preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
-    # preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
+    # preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
 
     preproc.connect([(segment_node, datasink_node, [('native_class_images', 'segmented.@image')])])
 
@@ -225,8 +228,7 @@ def get_args():
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_DATA_DIR)
     parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
-    parser.add_argument("--anat-scan-suffix", type=str, default="")
-    # parser.add_argument("--anat-scan-suffix", type=str, default="_downsampled_2mm")
+    parser.add_argument("--anat-scan-suffix", type=str, default=DEFAULT_ANAT_SCAN_SUFFIX)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
