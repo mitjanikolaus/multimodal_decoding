@@ -176,7 +176,7 @@ def run(args):
 
     for subject in args.subjects:
         print(subject)
-        preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, "normalized", subject)
+        preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, "coregistered", subject)
         raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
         output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
@@ -252,7 +252,7 @@ def run(args):
         sessions, session_dirs = get_sessions(preprocessed_functional_data_dir, sessions_subsample)
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
-            n_runs = len(glob(os.path.join(session_dir, 'wrasub*run*_bold.nii')))
+            n_runs = len(glob(os.path.join(session_dir, 'rrasub*run*_bold.nii')))
             runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
             print(f"Runs: {runs}")
             for run in runs:
@@ -268,7 +268,7 @@ def run(args):
                 realign_files.append(realign_file)
                 run_file = os.path.join(
                     session_dir,
-                    f'wra{subject}_{session}_task-coco_{run}_bold.nii'
+                    f'rra{subject}_{session}_task-coco_{run}_bold.nii'
                 )
                 run_nii = nib.load(run_file)
                 run_size = run_nii.shape[-1]
