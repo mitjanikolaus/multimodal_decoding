@@ -92,27 +92,46 @@ def plot(args):
             }
         }
 
+        result_values = dict()
+
         if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
-            result_values = dict()
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
 
+            threshold = significance_cutoff
+            cbar_min = 0
+            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+
         elif result_metric.startswith("pairwise_acc"):
-            result_values = {}
-            subject_scores = load_per_subject_scores(args)
+            # cbar_min = ACC_COLORBAR_MIN
+            # cbar_max = COLORBAR_MAX
+            # threshold = ACC_COLORBAR_THRESHOLD
+            # subject_scores = load_per_subject_scores(args)
+            # for hemi in HEMIS:
+            #     score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
+            #                                  axis=0)
+            #     result_values[hemi] = score_hemi_avgd
+            t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
             for hemi in HEMIS:
-                score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
-                                             axis=0)
-                result_values[hemi] = score_hemi_avgd
+                result_values[hemi] = t_values[hemi][args.metric]
+
+            # test statistic significance cutoff for p<0.05: 2.06
+            # min mean acc:
+            # 0.5308641975308642
+            # test statistic significance cutoff for p<0.01: 3.44
+            # min mean acc:
+            # 0.5740740740740741
+            # test statistic significance cutoff for p<0.001: 6.03
+            # min mean acc: 0.5902777777777778
+            threshold = 3.44
+            cbar_min = 0
+            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+
         else:
             raise RuntimeError(f"Unknown metric: {result_metric}")
 
-        cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values[
-            'right']))) if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS else COLORBAR_MAX
-        cbar_min = 0 if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS else ACC_COLORBAR_MIN
-        threshold = significance_cutoff if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS else ACC_COLORBAR_THRESHOLD
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
