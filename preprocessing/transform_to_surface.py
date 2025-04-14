@@ -34,10 +34,8 @@ def run(args):
         jobs = []
         for hemi in args.hemis:
             for path in tqdm(train_fmri + test_fmri + imagery_fmri):
-                path_out = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'surface'))
+                path_out = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'surface/'))
                 path_out = path_out.replace('.nii', '.gii')
-                if not path_out.endswith(os.sep):
-                    path_out += os.sep
                 assert path != path_out
 
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
