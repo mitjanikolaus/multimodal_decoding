@@ -8,7 +8,8 @@ from scipy.stats import pearsonr
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     add_searchlight_permutation_args
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
-    ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC
+    ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, \
+    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS
 from utils import HEMIS, RESULTS_DIR
 
 
@@ -45,6 +46,15 @@ def run(args):
         )[~np.isnan(imagery)]
         mod_agnostic_captions = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
+             for hemi in hemis]
+        )[~np.isnan(imagery)]
+
+        mod_specific_images = np.concatenate(
+            [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES] for sub in args.subjects], axis=0)
+             for hemi in hemis]
+        )[~np.isnan(imagery)]
+        mod_specific_captions = np.concatenate(
+            [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS] for sub in args.subjects], axis=0)
              for hemi in hemis]
         )[~np.isnan(imagery)]
 
@@ -126,6 +136,28 @@ def run(args):
         plt.title(f'pearson r: {corr[0]:.2f}')
         plt.tight_layout()
         name = f'corr_imagery_mod_agnostic_decoder_captions_{hemis_string}.png'
+        plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
+        print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+        plt.figure()
+        sns.regplot(x=mod_specific_images, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+        plt.xlabel('mod specific image decoding accuracy')
+        plt.ylabel('imagery decoding accuracy')
+        corr = pearsonr(mod_specific_images, imagery_filtered)
+        plt.title(f'pearson r: {corr[0]:.2f}')
+        plt.tight_layout()
+        name = f'corr_imagery_mod_specific_decoder_images_{hemis_string}.png'
+        plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
+        print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
+
+        plt.figure()
+        sns.regplot(x=mod_specific_captions, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+        plt.xlabel('mod specific caption decoding accuracy')
+        plt.ylabel('imagery decoding accuracy')
+        corr = pearsonr(mod_specific_captions, imagery_filtered)
+        plt.title(f'pearson r: {corr[0]:.2f}')
+        plt.tight_layout()
+        name = f'corr_imagery_mod_specific_decoder_captions_{hemis_string}.png'
         plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
         print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
