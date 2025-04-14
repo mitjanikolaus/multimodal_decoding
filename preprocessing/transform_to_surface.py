@@ -39,9 +39,9 @@ def run(args):
                 assert path != path_out
 
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                regheader = f"{subject}" if args.overwrite_regheader is None else args.overwrite_regheader
+                reg = f"--regheader {subject}" if args.overwrite_reg is None else f"--reg {args.overwrite_reg}"
                 cmd = (f"mri_vol2surf --mov {path} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
-                       f"--regheader {regheader} --projfrac 0.5") #--interp trilinear
+                       f"{reg} --projfrac 0.5") #--interp trilinear
                 jobs.append(cmd)
 
         def exec_command(cmd, silent=True):
@@ -65,7 +65,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 
-    parser.add_argument("--overwrite-regheader", type=str)
+    parser.add_argument("--overwrite-reg", type=str)
 
     parser.add_argument("--n-jobs", type=str, default=10)
 
