@@ -103,7 +103,7 @@ def load_event_files(tsv_files, log_file=None):
     imagery_conditions = [c for c in condition_names if "imagery" in c]
     print("Number of imagery conditions:", len(imagery_conditions))
     for c in imagery_conditions:
-        conds_imagery = events_df[events_df['glm_conditions'] == c]
+        conds_imagery = events_df[events_df['glm_conditions'][0] == c]
         print(f'number of repeats of imagery condition {c}: {len(conds_imagery)}')
 
     if log_file is not None:
