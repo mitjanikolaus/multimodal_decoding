@@ -16,7 +16,7 @@ SPM_PATH = os.path.expanduser('~/apps/spm12')
 mlab.MatlabCommand.set_default_paths(SPM_PATH)
 
 
-DEFAULT_ANAT_SCAN_SUFFIX = "_downsampled_3mm"
+DEFAULT_ANAT_SCAN_SUFFIX = "_downsampled_2mm"
 
 
 def print_session_names(sessions):
