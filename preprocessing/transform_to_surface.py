@@ -34,14 +34,14 @@ def run(args):
         jobs = []
         for hemi in args.hemis:
             for path in tqdm(train_fmri + test_fmri + imagery_fmri):
-                path_out = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'surface/'))
+                path_out = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'surface', hemi+os.sep))
                 path_out = path_out.replace('.nii', '.gii')
                 assert path != path_out
 
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 reg = f"--regheader {subject}" if args.overwrite_reg is None else f"--reg {args.overwrite_reg}"
                 cmd = (f"mri_vol2surf --mov {path} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
-                       f"{reg} --projfrac 0.5") #--interp trilinear
+                       f"{reg} --projfrac 0.5")  #--interp trilinear
                 jobs.append(cmd)
 
         def exec_command(cmd, silent=True):
