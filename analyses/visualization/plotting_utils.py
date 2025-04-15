@@ -21,7 +21,7 @@ from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
 
-CBAR_T_VAL_MAX = 10
+CBAR_T_VAL_MAX = 15
 
 
 def destrieux_label_names():
