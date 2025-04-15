@@ -21,6 +21,9 @@ from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
 
+CBAR_T_VAL_MAX = 5
+
+
 def destrieux_label_names():
     long_names = {}
     with open("atlas_data/destrieux.txt") as file:
@@ -150,8 +153,8 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                 # ticks = [0.5, 0.55, 0.6, 0.7, 0.8, 0.9]
                 # cbar_vmin = 0.5
                 cbar_vmin = 0
-                cbar_vmax = 5
-                ticks = [threshold, round(np.mean([threshold, 5]), 1), 5]
+                cbar_vmax = CBAR_T_VAL_MAX
+                ticks = [threshold, round(np.mean([threshold, CBAR_T_VAL_MAX]), 1), CBAR_T_VAL_MAX]
                 label = metric.replace("pairwise_acc_", "")
             else:
                 ticks = [0, threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks)/1000)*1000]
