@@ -88,7 +88,7 @@ def plot(args):
                     "lateral": ['inferiorparietal', 'middletemporal', 'bankssts'],
                     "ventral": ['inferiortemporal', 'fusiform'],
                 },
-            }
+            },
             ACC_IMAGERY_MOD_AGNOSTIC: {
                 "left": {
                     "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
