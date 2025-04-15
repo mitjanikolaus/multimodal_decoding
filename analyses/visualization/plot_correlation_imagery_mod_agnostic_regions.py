@@ -19,7 +19,8 @@ def run(args):
         return_nan_locations_and_n_neighbors=True,
     )
     for hemis in [['left'], ['right'], HEMIS]:
-        print(f'\n{hemis}')
+        hemis_string = "both" if hemis == HEMIS else hemis[0]
+        print(f'\nHEMIS: {hemis_string}')
         imagery = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects],
                      axis=0)
@@ -67,9 +68,7 @@ def run(args):
              for hemi in hemis]
         )[~np.isnan(imagery)]
         # cross_min = np.min((cross_images, cross_captions), axis=0)
-        cross_min_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions), axis=0)
-
-        hemis_string = "both" if hemis == HEMIS else hemis[0]
+        mod_agnostic_regions_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions), axis=0)
 
         # scatter_kws = {'alpha':0.1, 's': 1}
         # plt.figure()
@@ -85,13 +84,13 @@ def run(args):
 
         scatter_kws = {'alpha': 0.1, 's': 1}
         plt.figure()
-        sns.regplot(x=cross_min_metric, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
-        plt.xlabel('min cross decoding accuracy metric')
+        sns.regplot(x=mod_agnostic_regions_metric, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
+        plt.xlabel('mod agnostic regions metric')
         plt.ylabel('imagery decoding accuracy')
-        corr = pearsonr(cross_min_metric, imagery_filtered)
+        corr = pearsonr(mod_agnostic_regions_metric, imagery_filtered)
         plt.title(f'pearson r: {corr[0]:.2f}')
         plt.tight_layout()
-        name = f'corr_imagery_cross_decoding_metric_{hemis_string}.png'
+        name = f'corr_imagery_mod_agnostic_regions_metric_{hemis_string}.png'
         plt.savefig(os.path.join(RESULTS_DIR, name), dpi=300)
         print(f'{name} pearson r: {corr[0]:.2f} p={corr[1]:.10f}')
 
