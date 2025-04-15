@@ -125,7 +125,7 @@ def plot(args):
             # 0.5740740740740741
             # test statistic significance cutoff for p<0.001: 6.03
             # min mean acc: 0.5902777777777778
-            threshold = 3.44
+            threshold = 2.06
             cbar_min = 0
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
