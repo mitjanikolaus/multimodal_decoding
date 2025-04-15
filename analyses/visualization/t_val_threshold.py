@@ -1,11 +1,9 @@
-import pickle
 
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy import stats
 
-from eval import pairwise_accuracy, ACC_IMAGERY_MOD_AGNOSTIC
-from utils import SUBJECTS, HEMIS
+from eval import pairwise_accuracy
+from utils import SUBJECTS
 
 N_PERMS = 10000
 

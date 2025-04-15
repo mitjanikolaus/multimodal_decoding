@@ -117,6 +117,12 @@ def plot(args):
             for hemi in HEMIS:
                 result_values[hemi] = t_values[hemi][args.metric]
 
+            # from t-val table:
+            # for p<0.05: 2.015
+            # for p<0.01: 3.365
+            # for p<0.001: 5.893
+
+            # from permutation testing:
             # test statistic significance cutoff for p<0.05: 2.06
             # min mean acc:
             # 0.5308641975308642
@@ -125,7 +131,7 @@ def plot(args):
             # 0.5740740740740741
             # test statistic significance cutoff for p<0.001: 6.03
             # min mean acc: 0.5902777777777778
-            threshold = 2.06
+            threshold = 2.015
             cbar_min = 0
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
