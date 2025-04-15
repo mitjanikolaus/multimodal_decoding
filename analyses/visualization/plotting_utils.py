@@ -149,7 +149,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             if metric.startswith("pairwise_acc"):
                 # ticks = [0.5, 0.55, 0.6, 0.7, 0.8, 0.9]
                 # cbar_vmin = 0.5
-                ticks = [0, threshold, round(np.mean([threshold, np.max(ticks)]), 1), round(np.max(ticks), 1)-0.1]
+                ticks = [threshold, round(np.mean([threshold, 10]), 1), 10]
 
                 label = metric.replace("pairwise_acc_", "")
                 cbar_vmin = 0
