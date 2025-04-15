@@ -13,7 +13,7 @@ from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
-from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
+from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom, CBAR_T_VAL_MAX
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS, COLORBAR_MAX
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
@@ -144,7 +144,7 @@ def plot(args):
             # min mean acc: 0.5902777777777778
             threshold = 2.015
             cbar_min = 0
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = CBAR_T_VAL_MAX#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         else:
             raise RuntimeError(f"Unknown metric: {result_metric}")
