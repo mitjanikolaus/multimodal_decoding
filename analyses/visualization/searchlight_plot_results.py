@@ -15,7 +15,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
     get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS, COLORBAR_MAX
-from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
+from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
     save_plot_and_crop_img, append_images
 
@@ -27,7 +27,7 @@ CMAP_POS_ONLY = "hot"
 ACC_COLORBAR_MIN = 0.5
 ACC_COLORBAR_THRESHOLD = 0.55
 
-METRICS = [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS]
+METRICS = [ACC_IMAGERY_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS] #ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
 
 CONTOUR_COLOR = 'lightseagreen'
 
