@@ -148,28 +148,35 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     print(df.style.format(precision=3).to_latex(hrules=True))
 
 
-def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05):
-    max_test_statistic_distr = sorted([
-        np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
-        for n in null_distribution_tfce_values
-    ])
+def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05, multiple_comparisons_control=True):
+    if multiple_comparisons_control:
+        null_distr = sorted([
+            np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
+            for n in null_distribution_tfce_values
+        ])
+    else:
+        null_distr = sorted([
+            np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric]))
+            for n in null_distribution_tfce_values
+        ])
 
     print(f"{len(null_distribution_tfce_values)} permutations")
+    print(f"null distr size: {len(null_distr)}")
     if p_value_threshold == 1 / len(null_distribution_tfce_values):
-        significance_cutoff = np.max(max_test_statistic_distr)
+        significance_cutoff = np.max(null_distr)
     else:
-        significance_cutoff = np.quantile(max_test_statistic_distr, 1 - p_value_threshold, method='closest_observation')
+        significance_cutoff = np.quantile(null_distr, 1 - p_value_threshold, method='closest_observation')
 
     for thresh in [0.05, 1e-2, 1e-3, 1e-4]:
         if thresh == 1/len(null_distribution_tfce_values):
-            val = np.max(max_test_statistic_distr)
+            val = np.max(null_distr)
         else:
-            val = np.quantile(max_test_statistic_distr, 1 - thresh, method='closest_observation')
+            val = np.quantile(null_distr, 1 - thresh, method='closest_observation')
         print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
 
     print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
 
-    return significance_cutoff, max_test_statistic_distr
+    return significance_cutoff, null_distr
 
 
 def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, hparam_suffix, resolution, radius=None, n_neighbors=None):

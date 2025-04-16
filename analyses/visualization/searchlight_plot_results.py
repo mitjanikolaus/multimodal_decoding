@@ -43,14 +43,6 @@ def plot(args):
         os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
         args.metric = result_metric
-        # null_distribution_tfce_values_file = os.path.join(
-        #     permutation_results_dir(args),
-        #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-        # )
-        # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-        # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-        #                                                   args.p_value_threshold)
-        significance_cutoff = 2333.16
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
@@ -110,7 +102,16 @@ def plot(args):
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
-
+            #
+            # null_distribution_tfce_values_file = os.path.join(
+            #     permutation_results_dir(args),
+            #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+            # )
+            # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   args.p_value_threshold)
+            significance_cutoff = 2333.16
+            print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
@@ -124,9 +125,26 @@ def plot(args):
             #     score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
             #                                  axis=0)
             #     result_values[hemi] = score_hemi_avgd
-            t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
+
+            # t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
+            # for hemi in HEMIS:
+            #     result_values[hemi] = t_values[hemi][args.metric]
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
-                result_values[hemi] = t_values[hemi][args.metric]
+                result_values[hemi] = orig_result_values[hemi][args.metric]
+
+            null_distribution_tfce_values_file = os.path.join(
+                permutation_results_dir(args),
+                f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+            )
+            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                              args.p_value_threshold, multiple_comparisons_control=False)
+            print(f"{result_metric} significance cutoff: {significance_cutoff}")
+            threshold = significance_cutoff
+            cbar_min = 0
+            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
             # from t-val table:
             # for p<0.05: 2.015
@@ -142,9 +160,9 @@ def plot(args):
             # 0.5740740740740741
             # test statistic significance cutoff for p<0.001: 6.03
             # min mean acc: 0.5902777777777778
-            threshold = 2.015
-            cbar_min = 0
-            cbar_max = CBAR_T_VAL_MAX#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # threshold = 2.015
+            # cbar_min = 0
+            # cbar_max = CBAR_T_VAL_MAX
 
         else:
             raise RuntimeError(f"Unknown metric: {result_metric}")
