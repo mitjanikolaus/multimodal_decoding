@@ -146,8 +146,6 @@ def plot(args):
             cbar_max = 2000#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
             for hemi in HEMIS:
-                print(result_values[hemi].shape)
-                print(significance_cutoffs[hemi].shape)
                 print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
                 result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
             threshold = 1
