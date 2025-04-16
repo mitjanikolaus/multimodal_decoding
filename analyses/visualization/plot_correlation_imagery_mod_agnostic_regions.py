@@ -34,13 +34,14 @@ def run(args):
         #      for hemi in hemis]
         # )
         print(imagery.shape)
-        imagery_filtered = imagery[~np.isnan(imagery)]
+        filter = ~(np.isnan(imagery) | np.isinf(imagery))
+        imagery_filtered = imagery[filter]
 
         # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
         # tfce_values = pickle.load(open(tfce_values_path, 'rb'))
         # tfce = np.concatenate([tfce_values[hemi][args.metric] for hemi in HEMIS])
-        # tfce_filtered = tfce[~np.isnan(imagery) & (tfce > 0)]
-        # imagery_filtered = imagery[~np.isnan(imagery) & (tfce > 0)]
+        # tfce_filtered = tfce[filter & (tfce > 0)]
+        # imagery_filtered = imagery[filter & (tfce > 0)]
         # plt.scatter(tfce_filtered, imagery_filtered)
         # plt.xlabel('tfce value for mod agnostic regions')
         # plt.ylabel('mean imagery decoding accuracy')
@@ -52,29 +53,29 @@ def run(args):
         mod_agnostic_images = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[~np.isnan(imagery)]
+        )[filter]
         mod_agnostic_captions = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[~np.isnan(imagery)]
+        )[filter]
 
         mod_specific_images = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[~np.isnan(imagery)]
+        )[filter]
         mod_specific_captions = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[~np.isnan(imagery)]
+        )[filter]
 
         cross_images = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[~np.isnan(imagery)]
+        )[filter]
         cross_captions = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[~np.isnan(imagery)]
+        )[filter]
         # cross_min = np.min((cross_images, cross_captions), axis=0)
         mod_agnostic_regions_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions),
                                              axis=0)
@@ -172,11 +173,11 @@ def run(args):
     # mod_agnostic_images = np.concatenate(
     #     [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
     #      for hemi in HEMIS]
-    # )[~np.isnan(imagery)]
+    # )[filter]
     # mod_agnostic_captions = np.concatenate(
     #     [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
     #      for hemi in HEMIS]
-    # )[~np.isnan(imagery)]
+    # )[filter]
 
     # diff_images = mod_agnostic_images - mod_agnostic_images
     # diff_captions = mod_agnostic_captions - mod_agnostic_captions
