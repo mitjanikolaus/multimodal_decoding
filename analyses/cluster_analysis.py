@@ -173,7 +173,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
         print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
     else:
         print('not using multiple comparisons control')
-        significance_cutoffs = {hemi: np.zeros_like(null_distribution_tfce_values[0][hemi][metric]) for hemi in HEMIS}
+        significance_cutoff = {hemi: np.zeros_like(null_distribution_tfce_values[0][hemi][metric]) for hemi in HEMIS}
 
         for hemi in HEMIS:
             null_distr = np.array(([n[hemi][metric] for n in null_distribution_tfce_values])).T
@@ -184,14 +184,11 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
                     significance_cutoff_for_vertex = np.max(null_distr_for_vertex)
                 else:
                     significance_cutoff_for_vertex = np.quantile(null_distr_for_vertex, 1 - p_value_threshold, method='closest_observation')
-                significance_cutoffs[hemi][vertex] = significance_cutoff_for_vertex
+                significance_cutoff[hemi][vertex] = significance_cutoff_for_vertex
 
-        all_cutoffs = np.concatenate((significance_cutoffs[HEMIS[0]], significance_cutoffs[HEMIS[1]]))
+        all_cutoffs = np.concatenate((significance_cutoff[HEMIS[0]], significance_cutoff[HEMIS[1]]))
         significance_cutoff = np.mean(all_cutoffs)
-        print(f"Significance cutoff: {significance_cutoff:.3f} std: {np.std(all_cutoffs)}")
-        print(significance_cutoffs[HEMIS[0]][:10])
-        print(significance_cutoffs[HEMIS[1]][:10])
-
+        print(f"Mean significance cutoff: {np.mean(all_cutoffs):.3f} std: {np.std(all_cutoffs)}")
 
     return significance_cutoff, null_distr
 

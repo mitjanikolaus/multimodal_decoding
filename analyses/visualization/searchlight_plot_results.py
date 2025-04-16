@@ -139,14 +139,17 @@ def plot(args):
                 f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
             )
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               args.p_value_threshold, multiple_comparisons_control=False)
-            threshold = significance_cutoff
+            # threshold = significance_cutoff
             cbar_min = 0
             cbar_max = 1000#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
             for hemi in HEMIS:
-                print(f"frac values above thresh: {np.mean(result_values[hemi] > threshold)}")
+                print(f"frac values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
+                result_values[result_values[hemi] < significance_cutoffs[hemi]] = 0
+            threshold = 1
+
             # from t-val table:
             # for p<0.05: 2.015
             # for p<0.01: 3.365
