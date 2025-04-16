@@ -158,6 +158,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
             for n in null_distribution_tfce_values
         ])
         print(f"null distr size: {len(null_distr)}")
+        print(f"null distr max values: {null_distr[-20:]}")
         if p_value_threshold == 1 / len(null_distribution_tfce_values):
             significance_cutoff = np.max(null_distr)
         else:
