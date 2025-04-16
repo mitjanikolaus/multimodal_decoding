@@ -156,10 +156,10 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
         ])
     else:
         print('not using multiple comparisons control')
-        null_distr = np.sort([
+        null_distr = np.sort(np.array([
             np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric]))
             for n in null_distribution_tfce_values
-        ])
+        ]).flatten())
         print(null_distr.shape)
 
     print(f"{len(null_distribution_tfce_values)} permutations")
