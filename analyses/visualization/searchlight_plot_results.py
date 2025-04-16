@@ -140,6 +140,8 @@ def plot(args):
             )
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                              args.p_value_threshold, multiple_comparisons_control=True)
+            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               0.01, multiple_comparisons_control=False)
             significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               0.001, multiple_comparisons_control=False)
@@ -154,6 +156,7 @@ def plot(args):
             for hemi in HEMIS:
                 print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
                 result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
+                print(result_values[hemi][result_values[hemi] > significance_cutoffs[hemi]])
             threshold = 1
 
             # from t-val table:
