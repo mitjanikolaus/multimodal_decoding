@@ -141,7 +141,6 @@ def plot(args):
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               args.p_value_threshold, multiple_comparisons_control=False)
-            print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
