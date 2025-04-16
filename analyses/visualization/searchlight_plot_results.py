@@ -143,8 +143,10 @@ def plot(args):
                                                               args.p_value_threshold, multiple_comparisons_control=False)
             threshold = significance_cutoff
             cbar_min = 0
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 100#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
+            for hemi in HEMIS:
+                print(f"frac values above thresh: {np.mean(result_values[hemi] > threshold)}")
             # from t-val table:
             # for p<0.05: 2.015
             # for p<0.01: 3.365
