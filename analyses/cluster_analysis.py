@@ -150,12 +150,12 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
 
 def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05, multiple_comparisons_control=True):
     if multiple_comparisons_control:
-        null_distr = sorted([
+        null_distr = np.sort([
             np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
             for n in null_distribution_tfce_values
         ])
     else:
-        null_distr = sorted([
+        null_distr = np.sort([
             np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric]))
             for n in null_distribution_tfce_values
         ])
