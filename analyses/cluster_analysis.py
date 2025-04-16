@@ -186,8 +186,12 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
                     significance_cutoff_for_vertex = np.quantile(null_distr_for_vertex, 1 - p_value_threshold, method='closest_observation')
                 significance_cutoffs[hemi][vertex] = significance_cutoff_for_vertex
 
-        significance_cutoff = np.mean(np.concatenate((significance_cutoffs[HEMIS[0]], significance_cutoffs[HEMIS[1]])))
-        print(f"Significance cutoff: {significance_cutoff:.3f}")
+        all_cutoffs = np.concatenate((significance_cutoffs[HEMIS[0]], significance_cutoffs[HEMIS[1]]))
+        significance_cutoff = np.mean(all_cutoffs)
+        print(f"Significance cutoff: {significance_cutoff:.3f} std: {np.std(all_cutoffs)}")
+        print(significance_cutoffs[HEMIS[0]][:10])
+        print(significance_cutoffs[HEMIS[1]][:10])
+
 
     return significance_cutoff, null_distr
 
