@@ -149,7 +149,7 @@ def plot(args):
                 print(result_values[hemi].shape)
                 print(significance_cutoffs[hemi].shape)
                 print(f"frac values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
-                result_values[result_values[hemi] < significance_cutoffs[hemi]] = 0
+                result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
             threshold = 1
 
             # from t-val table:
