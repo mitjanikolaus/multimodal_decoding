@@ -33,12 +33,13 @@ def run(args):
         #              axis=0)
         #      for hemi in hemis]
         # )
+        nan_locs = np.concatenate([nan_locations[hemi] for hemi in hemis])
         print(imagery.shape)
         filter = ~np.isnan(imagery)
         print(np.mean(filter))
-        filter = ~(nan_locations)
+        filter = ~(nan_locs)
         print(np.mean(filter))
-        filter = ~(np.isnan(imagery) | nan_locations)
+        filter = ~(np.isnan(imagery) | nan_locs)
         print(np.mean(filter))
         imagery_filtered = imagery[filter]
 
