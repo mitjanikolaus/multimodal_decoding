@@ -50,13 +50,7 @@ def run(args):
         )
 
         nan_locs = np.isnan(mod_agnostic_images)
-        print(imagery.shape)
-        filter = ~np.isnan(imagery)
-        print(np.mean(filter))
-        filter = ~(nan_locs)
-        print(np.mean(filter))
         filter = ~(np.isnan(imagery) | nan_locs)
-        print(np.mean(filter))
 
         imagery_filtered = imagery[filter]
         mod_agnostic_images = mod_agnostic_images[filter]
@@ -86,10 +80,6 @@ def run(args):
         # cross_min = np.min((cross_images, cross_captions), axis=0)
         mod_agnostic_regions_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions),
                                              axis=0)
-        print(np.sum(np.isnan(mod_agnostic_regions_metric)))
-        print(np.sum(np.isinf(mod_agnostic_regions_metric)))
-        print(np.sum(np.isnan(imagery_filtered)))
-        print(np.sum(np.isinf(imagery_filtered)))
         # scatter_kws = {'alpha':0.1, 's': 1}
         # plt.figure()
         # sns.regplot(x=cross_min, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
