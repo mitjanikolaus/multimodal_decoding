@@ -16,10 +16,7 @@ from utils import HEMIS, RESULTS_DIR
 
 
 def run(args):
-    subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
-        args,
-        return_nan_locations_and_n_neighbors=True,
-    )
+    subject_scores = load_per_subject_scores(args, )
     for hemis in [['left'], ['right'], HEMIS]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
@@ -33,15 +30,6 @@ def run(args):
         #              axis=0)
         #      for hemi in hemis]
         # )
-        nan_locs = np.concatenate([nan_locations[hemi] for hemi in hemis])
-        print(imagery.shape)
-        filter = ~np.isnan(imagery)
-        print(np.mean(filter))
-        filter = ~(nan_locs)
-        print(np.mean(filter))
-        filter = ~(np.isnan(imagery) | nan_locs)
-        print(np.mean(filter))
-        imagery_filtered = imagery[filter]
 
         # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
         # tfce_values = pickle.load(open(tfce_values_path, 'rb'))
@@ -59,7 +47,20 @@ def run(args):
         mod_agnostic_images = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_IMAGES_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
              for hemi in hemis]
-        )[filter]
+        )
+
+        nan_locs = np.concatenate([np.isnan(mod_agnostic_images[hemi]) for hemi in hemis])
+        print(imagery.shape)
+        filter = ~np.isnan(imagery)
+        print(np.mean(filter))
+        filter = ~(nan_locs)
+        print(np.mean(filter))
+        filter = ~(np.isnan(imagery) | nan_locs)
+        print(np.mean(filter))
+
+        imagery_filtered = imagery[filter]
+        mod_agnostic_images = mod_agnostic_images[filter]
+
         mod_agnostic_captions = np.concatenate(
             [np.mean([subject_scores[sub][hemi][ACC_CAPTIONS_MOD_AGNOSTIC] for sub in args.subjects], axis=0)
              for hemi in hemis]
