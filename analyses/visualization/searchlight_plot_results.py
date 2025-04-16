@@ -156,7 +156,7 @@ def plot(args):
             for hemi in HEMIS:
                 print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
                 result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
-                print([round(val) for val in result_values[hemi][result_values[hemi] > significance_cutoffs[hemi]]])
+                print([round(val) for val in result_values[hemi][result_values[hemi] > significance_cutoffs[hemi]][:20]])
             threshold = 1
 
             # from t-val table:
