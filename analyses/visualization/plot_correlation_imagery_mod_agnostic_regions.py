@@ -33,6 +33,7 @@ def run(args):
         #              axis=0)
         #      for hemi in hemis]
         # )
+        print(imagery.shape)
         imagery_filtered = imagery[~np.isnan(imagery)]
 
         # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
