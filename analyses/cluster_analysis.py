@@ -177,7 +177,6 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
 
         for hemi in HEMIS:
             null_distr = np.array(([n[hemi][metric] for n in null_distribution_tfce_values])).T
-            print(null_distr.shape)
             for vertex, null_distr_for_vertex in enumerate(null_distr):
                 null_distr_for_vertex = np.sort(null_distr_for_vertex)
                 if p_value_threshold == 1 / len(null_distr_for_vertex):
