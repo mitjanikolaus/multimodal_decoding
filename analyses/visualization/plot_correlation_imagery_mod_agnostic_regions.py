@@ -49,7 +49,7 @@ def run(args):
              for hemi in hemis]
         )
 
-        nan_locs = np.concatenate([np.isnan(mod_agnostic_images[hemi]) for hemi in hemis])
+        nan_locs = np.isnan(mod_agnostic_images)
         print(imagery.shape)
         filter = ~np.isnan(imagery)
         print(np.mean(filter))
