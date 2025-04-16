@@ -82,10 +82,10 @@ def run(args):
         # cross_min = np.min((cross_images, cross_captions), axis=0)
         mod_agnostic_regions_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions),
                                              axis=0)
-        print(len(np.isnan(mod_agnostic_regions_metric)))
-        print(len(np.isinf(mod_agnostic_regions_metric)))
-        print(len(np.isnan(imagery_filtered)))
-        print(len(np.isinf(imagery_filtered)))
+        print(np.sum(np.isnan(mod_agnostic_regions_metric)))
+        print(np.sum(np.isinf(mod_agnostic_regions_metric)))
+        print(np.sum(np.isnan(imagery_filtered)))
+        print(np.sum(np.isinf(imagery_filtered)))
         # scatter_kws = {'alpha':0.1, 's': 1}
         # plt.figure()
         # sns.regplot(x=cross_min, y=imagery_filtered, color='black', scatter_kws=scatter_kws)
