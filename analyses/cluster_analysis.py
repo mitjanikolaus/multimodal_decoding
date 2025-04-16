@@ -74,7 +74,8 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors, threshold):
+def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors,
+                                 threshold):
     t_values_path = os.path.join(results_dir, "t_values.p")
     t_values = pickle.load(open(t_values_path, "rb"))
 
@@ -143,45 +144,56 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
                 mask[hemi] = cluster_map_extended
                 pickle.dump(mask, open(path_out, "wb"))
 
-
     df = pd.DataFrame.from_records(clusters_df, index=["hemi", "id"])
     print(df.style.format(precision=3).to_latex(hrules=True))
 
 
-def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05, multiple_comparisons_control=True):
+def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05,
+                             multiple_comparisons_control=True):
+    print(f"{len(null_distribution_tfce_values)} permutations")
+
     if multiple_comparisons_control:
         null_distr = np.sort([
             np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
             for n in null_distribution_tfce_values
         ])
+        print(f"null distr size: {len(null_distr)}")
+        if p_value_threshold == 1 / len(null_distribution_tfce_values):
+            significance_cutoff = np.max(null_distr)
+        else:
+            significance_cutoff = np.quantile(null_distr, 1 - p_value_threshold, method='closest_observation')
+
+        for thresh in [0.05, 1e-2, 1e-3, 1e-4]:
+            if thresh == 1 / len(null_distribution_tfce_values):
+                val = np.max(null_distr)
+            else:
+                val = np.quantile(null_distr, 1 - thresh, method='closest_observation')
+            print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
+
+        print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
     else:
         print('not using multiple comparisons control')
-        null_distr = np.sort(np.array([
-            np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric]))
-            for n in null_distribution_tfce_values
-        ]).flatten())
-        print(null_distr.shape)
+        significance_cutoffs = {hemi: np.zeros_like(null_distribution_tfce_values[0][hemi][metric]) for hemi in HEMIS}
 
-    print(f"{len(null_distribution_tfce_values)} permutations")
-    print(f"null distr size: {len(null_distr)}")
-    if p_value_threshold == 1 / len(null_distribution_tfce_values):
-        significance_cutoff = np.max(null_distr)
-    else:
-        significance_cutoff = np.quantile(null_distr, 1 - p_value_threshold, method='closest_observation')
+        for hemi in HEMIS:
+            null_distr = np.array(([n[hemi][metric] for n in null_distribution_tfce_values])).T
+            print(null_distr.shape)
+            for vertex, null_distr_for_vertex in enumerate(null_distr):
+                null_distr_for_vertex = np.sort(null_distr_for_vertex)
+                if p_value_threshold == 1 / len(null_distr_for_vertex):
+                    significance_cutoff_for_vertex = np.max(null_distr_for_vertex)
+                else:
+                    significance_cutoff_for_vertex = np.quantile(null_distr_for_vertex, 1 - p_value_threshold, method='closest_observation')
+                significance_cutoffs[hemi][vertex] = significance_cutoff_for_vertex
 
-    for thresh in [0.05, 1e-2, 1e-3, 1e-4]:
-        if thresh == 1/len(null_distribution_tfce_values):
-            val = np.max(null_distr)
-        else:
-            val = np.quantile(null_distr, 1 - thresh, method='closest_observation')
-        print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
-
-    print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
+        significance_cutoff = np.mean(np.concatenate((significance_cutoffs[HEMIS[0]], significance_cutoffs[HEMIS[1]])))
+        print(f"Significance cutoff: {significance_cutoff:.3f}")
 
     return significance_cutoff, null_distr
 
 
-def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, hparam_suffix, resolution, radius=None, n_neighbors=None):
+def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, hparam_suffix, resolution, radius=None,
+                 n_neighbors=None):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
 
