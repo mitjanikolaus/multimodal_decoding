@@ -1,12 +1,14 @@
 import argparse
 import os
+import pickle
+
 import seaborn as sns
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
-    add_searchlight_permutation_args
+    add_searchlight_permutation_args, permutation_results_dir
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
     ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, \
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS
@@ -21,11 +23,16 @@ def run(args):
     for hemis in [['left'], ['right'], HEMIS]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
+
+        t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
         imagery = np.concatenate(
-            [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects],
-                     axis=0)
-             for hemi in hemis]
+            [t_values[hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for hemi in hemis]
         )
+        # imagery = np.concatenate(
+        #     [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects],
+        #              axis=0)
+        #      for hemi in hemis]
+        # )
         imagery_filtered = imagery[~np.isnan(imagery)]
 
         # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
@@ -68,7 +75,8 @@ def run(args):
              for hemi in hemis]
         )[~np.isnan(imagery)]
         # cross_min = np.min((cross_images, cross_captions), axis=0)
-        mod_agnostic_regions_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions), axis=0)
+        mod_agnostic_regions_metric = np.min((cross_images, cross_captions, mod_agnostic_images, mod_agnostic_captions),
+                                             axis=0)
 
         # scatter_kws = {'alpha':0.1, 's': 1}
         # plt.figure()
