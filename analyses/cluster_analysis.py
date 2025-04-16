@@ -187,7 +187,6 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
                 significance_cutoff[hemi][vertex] = significance_cutoff_for_vertex
 
         all_cutoffs = np.concatenate((significance_cutoff[HEMIS[0]], significance_cutoff[HEMIS[1]]))
-        significance_cutoff = np.mean(all_cutoffs)
         print(f"Mean significance cutoff: {np.mean(all_cutoffs):.3f} std: {np.std(all_cutoffs)}")
 
     return significance_cutoff, null_distr
