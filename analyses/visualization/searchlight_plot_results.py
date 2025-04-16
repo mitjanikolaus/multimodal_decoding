@@ -143,7 +143,7 @@ def plot(args):
                                                               args.p_value_threshold, multiple_comparisons_control=False)
             # threshold = significance_cutoff
             cbar_min = 0
-            cbar_max = 1000#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 2000#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
             for hemi in HEMIS:
                 print(result_values[hemi].shape)
