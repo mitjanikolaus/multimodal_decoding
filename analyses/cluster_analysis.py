@@ -172,7 +172,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
 
         print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
     else:
-        print('not using multiple comparisons control')
+        print('not controlling for multiple comparisons')
         significance_cutoff = {hemi: np.zeros_like(null_distribution_tfce_values[0][hemi][metric]) for hemi in HEMIS}
 
         for hemi in HEMIS:
