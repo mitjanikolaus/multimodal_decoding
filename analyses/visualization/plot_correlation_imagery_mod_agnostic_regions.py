@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
-    add_searchlight_permutation_args, permutation_results_dir
+    add_searchlight_permutation_args, permutation_results_dir, get_hparam_suffix
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
     ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, \
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS
@@ -16,20 +16,20 @@ from utils import HEMIS, RESULTS_DIR
 
 
 def run(args):
-    subject_scores = load_per_subject_scores(args, )
+    subject_scores = load_per_subject_scores(args)
     for hemis in [['left'], ['right'], HEMIS]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
 
-        t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
-        imagery = np.concatenate(
-            [t_values[hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for hemi in hemis]
-        )
+        # t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
         # imagery = np.concatenate(
-        #     [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects],
-        #              axis=0)
-        #      for hemi in hemis]
+        #     [t_values[hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for hemi in hemis]
         # )
+        imagery = np.concatenate(
+            [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects],
+                     axis=0)
+             for hemi in hemis]
+        )
 
         # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
         # tfce_values = pickle.load(open(tfce_values_path, 'rb'))
