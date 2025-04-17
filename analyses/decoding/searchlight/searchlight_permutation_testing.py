@@ -251,40 +251,43 @@ def calc_t_value(values, popmean, sigma=0):
             t_val = np.nan
         else:
             t_val = ttest_1samp_no_p(values_no_nan-popmean, sigma=sigma)
-
+            if t_val > 20:
+                print(f't val {t_val} for values {values_no_nan}')
         return t_val
     else:
         return 0
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2, metric=None, sigma=0):
+def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=3, metric=None, sigma=0):
     data = data.round(precision)
     iterator = tqdm(data.T, desc=f'calculating t-values for {metric}') if use_tqdm else data.T
-    if t_vals_cache is None:
-        return np.array(
-            [calc_t_value(x, popmean) for x in iterator]
-        )
-    else:
-        t_vals = []
-        for x in iterator:
-            x_no_nan = x[~np.isnan(x)]
-            if x_no_nan.mean() > popmean:
-                key = hashlib.sha1(np.sort(x_no_nan)).hexdigest()
-                if key in t_vals_cache:
-                    t_vals.append(t_vals_cache[key])
-                else:
-                    if np.all(x_no_nan == x_no_nan[0]):
-                        # If all values are equal, the t-value would be disproportionally high, so we discard the value
-                        t_val = np.nan
-                    else:
-                        t_val = ttest_1samp_no_p(x_no_nan - popmean, sigma=sigma)
-                    t_vals.append(t_val)
-                    t_vals_cache[key] = t_val
-            else:
-                # mean is below popmean, t value won't be significant
-                t_vals.append(0)
-
-        return np.array(t_vals)
+    # if t_vals_cache is None:
+    return np.array(
+        [calc_t_value(x, popmean) for x in iterator]
+    )
+    # else:
+    #     t_vals = []
+    #     for x in iterator:
+    #         x_no_nan = x[~np.isnan(x)]
+    #         if x_no_nan.mean() > popmean:
+    #             key = hashlib.sha1(np.sort(x_no_nan)).hexdigest()
+    #             if key in t_vals_cache:
+    #                 t_vals.append(t_vals_cache[key])
+    #             else:
+    #                 if np.all(x_no_nan == x_no_nan[0]):
+    #                     # If all values are equal, the t-value would be disproportionally high, so we discard the value
+    #                     t_val = np.nan
+    #                 else:
+    #                     t_val = ttest_1samp_no_p(x_no_nan - popmean, sigma=sigma)
+    #                     if t_val > 20:
+    #                         print(f't val {t_val} for values {x_no_nan}')
+    #                 t_vals.append(t_val)
+    #                 t_vals_cache[key] = t_val
+    #         else:
+    #             # mean is below popmean, t value won't be significant
+    #             t_vals.append(0)
+    #
+    #     return np.array(t_vals)
 
 
 def calc_t_values(per_subject_scores):
