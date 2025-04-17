@@ -47,6 +47,8 @@ T_VAL_METRICS = [
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS
 ]
 
+MIN_NUM_DATAPOINTS = 4
+
 
 def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations,
                    additional_imagery_scores=False):
@@ -246,12 +248,12 @@ def calc_t_value(values, popmean, sigma=0):
     # use heuristic (mean needs to be greater than popmean) to speed up calculation
     values_no_nan = values[~np.isnan(values)]
     if values_no_nan.mean() > popmean:
-        if np.all(values_no_nan == values_no_nan[0]):
-            # If all values are equal, the t-value would be disproportionally high, so we discard the value
+        if np.all(values_no_nan.round(2) == values_no_nan[0].round(2)):
+            # If all values are (almost) equal, the t-value would be disproportionally high, so we discard the value
             t_val = np.nan
         else:
             t_val = ttest_1samp_no_p(values_no_nan-popmean, sigma=sigma)
-            if t_val > 20:
+            if t_val > 100:
                 print(f't val {t_val} for values {values_no_nan}')
         return t_val
     else:
@@ -297,7 +299,7 @@ def calc_t_values(per_subject_scores):
         for metric in T_VAL_METRICS:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
-            enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
+            enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) >= MIN_NUM_DATAPOINTS)[:, 0]
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
             t_values[hemi][metric][enough_data] = calc_image_t_values(
                 data[:, enough_data], popmean, t_vals_cache=t_vals_cache, use_tqdm=True, metric=metric
@@ -549,9 +551,9 @@ def calc_t_values_null_distr(args, out_path):
         hemi: np.argwhere(
             (~np.isnan(
                 [per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
-                axis=0) > 2)[:, 0]
+                axis=0) >= MIN_NUM_DATAPOINTS)[:, 0]
         for hemi in HEMIS
-    }  # at least 3 datapoints
+    }
     enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
     print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
 
