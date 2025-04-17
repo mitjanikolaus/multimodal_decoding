@@ -139,25 +139,26 @@ def plot(args):
                 f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
             )
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               args.p_value_threshold, multiple_comparisons_control=True)
-            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              0.01, multiple_comparisons_control=False)
-            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              0.001, multiple_comparisons_control=False)
-            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              0.0001, multiple_comparisons_control=False)
-            significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              args.p_value_threshold, multiple_comparisons_control=False)
-            # threshold = significance_cutoff
+            threshold = significance_cutoff
+            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   0.01, multiple_comparisons_control=False)
+            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   0.001, multiple_comparisons_control=False)
+            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   0.0001, multiple_comparisons_control=False)
+            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   args.p_value_threshold, multiple_comparisons_control=False)
             cbar_min = 0
-            cbar_max = 2000#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # cbar_max = 2000
+            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
-            for hemi in HEMIS:
-                print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
-                result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
-                print([round(val) for val in result_values[hemi][result_values[hemi] > 2000][:20]])
-            threshold = 1
+            # for hemi in HEMIS:
+            #     print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
+            #     result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
+            #     print([round(val) for val in result_values[hemi][result_values[hemi] > 2000][:20]])
+            # threshold = 1
 
             # from t-val table:
             # for p<0.05: 2.015
