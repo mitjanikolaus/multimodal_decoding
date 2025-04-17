@@ -260,8 +260,10 @@ def calc_t_value(values, popmean, sigma=0):
         return 0
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=3, metric=None, sigma=0):
-    data = data.round(precision)
+def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=None, metric=None, sigma=0):
+    if precision is not None:
+        data = data.round(precision)
+
     iterator = tqdm(data.T, desc=f'calculating t-values for {metric}') if use_tqdm else data.T
     # if t_vals_cache is None:
     return np.array(
