@@ -209,26 +209,60 @@ def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
     return edge_lengths_dicts
 
 
-def calc_t_value(values, popmean, epsilon=1e-8):
+# Adapted from https://github.com/mne-tools/mne-python/blob/maint/1.9/mne/stats/parametric.py#L19-L57
+def ttest_1samp_no_p(X, sigma=0, method="relative"):
+    """Perform one-sample t-test.
+
+    This is a modified version of :func:`scipy.stats.ttest_1samp` that avoids
+    a (relatively) time-consuming p-value calculation, and can adjust
+    for implausibly small variance values :footcite:`RidgwayEtAl2012`.
+
+    Parameters
+    ----------
+    X : array
+        Array to return t-values for.
+    sigma : float
+        The variance estimate will be given by ``var + sigma * max(var)`` or
+        ``var + sigma``, depending on "method". By default this is 0 (no
+        adjustment). See Notes for details.
+    method : str
+        If 'relative', the minimum variance estimate will be sigma * max(var),
+        if 'absolute' the minimum variance estimate will be sigma.
+
+    Returns
+    -------
+    t : array
+        T-values, potentially adjusted using the hat method.
+
+    """
+    var = np.var(X, axis=0, ddof=1)
+    if sigma > 0:
+        limit = sigma * np.max(var) if method == "relative" else sigma
+        var += limit
+    return np.mean(X, axis=0) / np.sqrt(var / X.shape[0])
+
+
+def calc_t_value(values, popmean, sigma=0):
     # use heuristic (mean needs to be greater than popmean) to speed up calculation
     values_no_nan = values[~np.isnan(values)]
     if values_no_nan.mean() > popmean:
         if np.all(values_no_nan == values_no_nan[0]):
-            # Add/subtract epsilon for numerical stability
-            values_no_nan[0] = values_no_nan[0] + epsilon
-            values_no_nan[-1] = values_no_nan[-1] - epsilon
-        t_val = stats.ttest_1samp(values_no_nan, popmean=popmean, alternative="greater")[0]
+            # If all values are equal, the t-value would be disproportionally high, so we discard the value
+            t_val = np.nan
+        else:
+            t_val = ttest_1samp_no_p(values_no_nan-popmean, sigma=sigma)
+
         return t_val
     else:
         return 0
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2, epsilon=1e-8, metric=None):
+def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2, metric=None, sigma=0):
     data = data.round(precision)
     iterator = tqdm(data.T, desc=f'calculating t-values for {metric}') if use_tqdm else data.T
     if t_vals_cache is None:
         return np.array(
-            [calc_t_value(x, popmean, epsilon) for x in iterator]
+            [calc_t_value(x, popmean) for x in iterator]
         )
     else:
         t_vals = []
@@ -240,12 +274,10 @@ def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precis
                     t_vals.append(t_vals_cache[key])
                 else:
                     if np.all(x_no_nan == x_no_nan[0]):
-                        # Add/subtract epsilon for numerical stability
-                        x_no_nan[0] = x_no_nan[0] + epsilon
-                        x_no_nan[-1] = x_no_nan[-1] - epsilon
-                    t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
-                    if np.isinf(t_val):
-                        print(f"Inf t-val for values: {x_no_nan}")
+                        # If all values are equal, the t-value would be disproportionally high, so we discard the value
+                        t_val = np.nan
+                    else:
+                        t_val = ttest_1samp_no_p(x_no_nan - popmean, sigma=sigma)
                     t_vals.append(t_val)
                     t_vals_cache[key] = t_val
             else:
