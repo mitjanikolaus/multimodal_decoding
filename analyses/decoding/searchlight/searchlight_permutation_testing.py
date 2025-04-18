@@ -253,7 +253,7 @@ def calc_t_value(values, popmean, sigma=0):
             t_val = np.nan
         else:
             t_val = ttest_1samp_no_p(values_no_nan-popmean, sigma=sigma)
-            if t_val > 35:
+            if t_val > 50:
                 print(f't val {t_val} for values {values_no_nan}')
         return t_val
     else:
