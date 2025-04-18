@@ -55,7 +55,7 @@ IMAGES_IMAGERY_CONDITION = [
     [141343, f'images/train2017/000000141343.jpg',
      'A teddy bear lying down on the sidewalk in front of a store'],
     [213506, f'images/train2017/000000213506.jpg',
-     'A woman leaning out a window to talk to someone on the sidewal'],
+     'A woman leaning out a window to talk to someone on the sidewalk'],
     [162396, f'images/train2017/000000162396.jpg',
      'The man on the skateboard and the dog are getting their picture taken'],
 ]
@@ -99,7 +99,7 @@ IMAGERY_SCENES = {
     'sub-07':
         [
             ('A teddy bear lying down on the sidewalk in front of a store', 141343),
-            ('A woman leaning out a window to talk to someone on the sidewal', 213506),
+            ('A woman leaning out a window to talk to someone on the sidewalk', 213506),
             ('The man on the skateboard and the dog are getting their picture taken', 162396),
         ],
 }
