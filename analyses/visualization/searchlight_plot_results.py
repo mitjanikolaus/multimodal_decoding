@@ -116,7 +116,9 @@ def plot(args):
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
-            cbar_max = CBAR_TFCE_MAX_VALUE#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # cbar_max = CBAR_TFCE_MAX_VALUE
+            cbar_max = 500000
+            # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         elif result_metric.startswith("pairwise_acc"):
             # cbar_min = ACC_COLORBAR_MIN
@@ -174,6 +176,8 @@ def plot(args):
 
         else:
             raise RuntimeError(f"Unknown metric: {result_metric}")
+
+        print(f"{result_metric} cbar max: {cbar_max}")
 
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
