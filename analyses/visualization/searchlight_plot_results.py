@@ -27,6 +27,8 @@ CMAP_POS_ONLY = "hot"
 ACC_COLORBAR_MIN = 0.5
 ACC_COLORBAR_THRESHOLD = 0.55
 
+CBAR_TFCE_MAX_VALUE = 100000
+
 METRICS = [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS] #ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
 
 CONTOUR_COLOR = 'lightseagreen'
@@ -114,7 +116,7 @@ def plot(args):
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = CBAR_TFCE_MAX_VALUE#np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         elif result_metric.startswith("pairwise_acc"):
             # cbar_min = ACC_COLORBAR_MIN
@@ -140,19 +142,11 @@ def plot(args):
             )
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              args.p_value_threshold, multiple_comparisons_control=True)
+                                                              args.p_value_threshold)
             threshold = significance_cutoff
-            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-            #                                                   0.01, multiple_comparisons_control=False)
-            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-            #                                                   0.001, multiple_comparisons_control=False)
-            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-            #                                                   0.0001, multiple_comparisons_control=False)
-            # significance_cutoffs, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-            #                                                   args.p_value_threshold, multiple_comparisons_control=False)
             cbar_min = 0
             # cbar_max = 2000
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = CBAR_TFCE_MAX_VALUE  #np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
             # for hemi in HEMIS:
             #     print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")

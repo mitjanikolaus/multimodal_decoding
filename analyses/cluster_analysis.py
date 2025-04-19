@@ -148,48 +148,30 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     print(df.style.format(precision=3).to_latex(hrules=True))
 
 
-def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05,
-                             multiple_comparisons_control=True):
+def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05):
     print(f"{len(null_distribution_tfce_values)} permutations")
 
-    if multiple_comparisons_control:
-        null_distr = np.sort([
-            np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
-            for n in null_distribution_tfce_values
-        ])
-        print(f"null distr size: {len(null_distr)}")
-        print(f"null distr max values: {null_distr[-100:]}")
-        print(f"num null distr values greater than 1000: {np.sum(null_distr > 1000)}")
+    null_distr = np.sort([
+        np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
+        for n in null_distribution_tfce_values
+    ])
+    print(f"null distr size: {len(null_distr)}")
+    print(f"null distr max values: {null_distr[-100:]}")
+    print(f"num null distr values greater than 1000: {np.sum(null_distr > 1000)}")
 
-        if p_value_threshold == 1 / len(null_distribution_tfce_values):
-            significance_cutoff = np.max(null_distr)
-        else:
-            significance_cutoff = np.quantile(null_distr, 1 - p_value_threshold, method='closest_observation')
-
-        for thresh in [0.05, 1e-2, 1e-3, 1e-4]:
-            if thresh == 1 / len(null_distribution_tfce_values):
-                val = np.max(null_distr)
-            else:
-                val = np.quantile(null_distr, 1 - thresh, method='closest_observation')
-            print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
-
-        print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
+    if p_value_threshold == 1 / len(null_distribution_tfce_values):
+        significance_cutoff = np.max(null_distr)
     else:
-        print('not controlling for multiple comparisons')
-        significance_cutoff = {hemi: np.zeros_like(null_distribution_tfce_values[0][hemi][metric]) for hemi in HEMIS}
+        significance_cutoff = np.quantile(null_distr, 1 - p_value_threshold, method='closest_observation')
 
-        for hemi in HEMIS:
-            null_distr = np.array(([n[hemi][metric] for n in null_distribution_tfce_values])).T
-            for vertex, null_distr_for_vertex in enumerate(null_distr):
-                null_distr_for_vertex = np.sort(null_distr_for_vertex)
-                if p_value_threshold == 1 / len(null_distr_for_vertex):
-                    significance_cutoff_for_vertex = np.max(null_distr_for_vertex)
-                else:
-                    significance_cutoff_for_vertex = np.quantile(null_distr_for_vertex, 1 - p_value_threshold, method='closest_observation')
-                significance_cutoff[hemi][vertex] = significance_cutoff_for_vertex
+    for thresh in [0.05, 1e-2, 1e-3, 1e-4]:
+        if thresh == 1 / len(null_distribution_tfce_values):
+            val = np.max(null_distr)
+        else:
+            val = np.quantile(null_distr, 1 - thresh, method='closest_observation')
+        print(f"(info) cluster test statistic significance cutoff for p<{thresh}: {val:.2f}")
 
-        all_cutoffs = np.concatenate((significance_cutoff[HEMIS[0]], significance_cutoff[HEMIS[1]]))
-        print(f"Mean significance cutoff for p<{p_value_threshold}: {np.mean(all_cutoffs):.3f} std: {np.std(all_cutoffs)}")
+    print(f"using cluster test statistic significance cutoff for p<{p_value_threshold}: {significance_cutoff:.3f}")
 
     return significance_cutoff, null_distr
 
