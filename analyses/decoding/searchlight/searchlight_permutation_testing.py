@@ -350,7 +350,7 @@ def calc_test_statistics(args):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
         tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
-                                       dh=args.tfce_dh, clip_value=args.tfce_clip)
+                                       dh=args.tfce_dh)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
         tfce_values = pickle.load(open(tfce_values_path, 'rb'))
@@ -619,7 +619,7 @@ def permutation_results_dir(args):
 
 
 def get_hparam_suffix(args):
-    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}_dh_{args.tfce_dh}_clip_{args.tfce_clip}"
+    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}_dh_{args.tfce_dh}"
 
 
 def create_null_distribution(args):
@@ -649,7 +649,6 @@ def create_null_distribution(args):
                     tfce_values.append(
                         calc_tfce_values(
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
-                            clip_value=args.tfce_clip
                         )
                     )
                 # tfce_values = [
@@ -704,7 +703,6 @@ def add_searchlight_permutation_args(parser):
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
     parser.add_argument("--tfce-dh", type=float, default=0.1)
-    parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--metric", type=str, default=METRIC_MOD_AGNOSTIC_AND_CROSS)
 
