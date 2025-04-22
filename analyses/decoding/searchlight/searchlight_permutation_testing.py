@@ -260,43 +260,18 @@ def calc_t_value(values, popmean, sigma=0):
         return 0
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=None, metric=None, sigma=0):
+def calc_image_t_values(data, popmean, use_tqdm=False, precision=None, metric=None, sigma=0):
     if precision is not None:
         data = data.round(precision)
 
     iterator = tqdm(data.T, desc=f'calculating t-values for {metric}') if use_tqdm else data.T
-    # if t_vals_cache is None:
     return np.array(
-        [calc_t_value(x, popmean) for x in iterator]
+        [calc_t_value(x, popmean, sigma) for x in iterator]
     )
-    # else:
-    #     t_vals = []
-    #     for x in iterator:
-    #         x_no_nan = x[~np.isnan(x)]
-    #         if x_no_nan.mean() > popmean:
-    #             key = hashlib.sha1(np.sort(x_no_nan)).hexdigest()
-    #             if key in t_vals_cache:
-    #                 t_vals.append(t_vals_cache[key])
-    #             else:
-    #                 if np.all(x_no_nan == x_no_nan[0]):
-    #                     # If all values are equal, the t-value would be disproportionally high, so we discard the value
-    #                     t_val = np.nan
-    #                 else:
-    #                     t_val = ttest_1samp_no_p(x_no_nan - popmean, sigma=sigma)
-    #                     if t_val > 20:
-    #                         print(f't val {t_val} for values {x_no_nan}')
-    #                 t_vals.append(t_val)
-    #                 t_vals_cache[key] = t_val
-    #         else:
-    #             # mean is below popmean, t value won't be significant
-    #             t_vals.append(0)
-    #
-    #     return np.array(t_vals)
 
 
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
-    t_vals_cache = {}
     for hemi in HEMIS:
         for metric in T_VAL_METRICS:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
@@ -304,7 +279,7 @@ def calc_t_values(per_subject_scores):
             enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) >= MIN_NUM_DATAPOINTS)[:, 0]
             t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
             t_values[hemi][metric][enough_data] = calc_image_t_values(
-                data[:, enough_data], popmean, t_vals_cache=t_vals_cache, use_tqdm=True, metric=metric
+                data[:, enough_data], popmean, use_tqdm=True, metric=metric
             )
 
         with warnings.catch_warnings():
@@ -508,7 +483,6 @@ def calc_t_values_null_distr(args, out_path):
             else:
                 iterator = enumerate(permutations)
 
-            t_vals_cache = {}
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
@@ -517,7 +491,7 @@ def calc_t_values_null_distr(args, out_path):
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(permutation, args.subjects)])
                         popmean = CHANCE_VALUES[metric]
-                        t_values[hemi][metric] = calc_image_t_values(data, popmean, t_vals_cache=t_vals_cache)
+                        t_values[hemi][metric] = calc_image_t_values(data, popmean)
                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
 
                     with warnings.catch_warnings():
