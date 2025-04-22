@@ -104,15 +104,15 @@ def plot(args):
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
-            #
-            # null_distribution_tfce_values_file = os.path.join(
-            #     permutation_results_dir(args),
-            #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-            # )
-            # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-            #                                                   args.p_value_threshold)
-            significance_cutoff = 2333.16
+
+            null_distribution_tfce_values_file = os.path.join(
+                permutation_results_dir(args),
+                f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+            )
+            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                              args.p_value_threshold)
+            # significance_cutoff = 2333.16
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
