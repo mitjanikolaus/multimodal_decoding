@@ -36,7 +36,7 @@ def run(args):
             args.metric = metric
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
             tfce_values = pickle.load(open(tfce_values_path, 'rb'))
-            tfce_values = np.concatenate([tfce_values[hemi][args.metric] for hemi in HEMIS])
+            tfce_values = np.concatenate([tfce_values[hemi][args.metric] for hemi in hemis])
 
             print(f'{metric} tfce nan locs: {np.mean(np.isnan(tfce_values))}')
             print(f'{metric} 0 locs: {np.mean(tfce_values == 0)}')
