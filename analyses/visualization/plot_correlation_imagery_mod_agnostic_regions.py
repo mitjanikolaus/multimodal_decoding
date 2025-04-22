@@ -16,20 +16,10 @@ from utils import HEMIS, RESULTS_DIR, METRIC_MOD_AGNOSTIC_AND_CROSS
 
 
 def run(args):
-    # subject_scores = load_per_subject_scores(args)
     for hemis in [['left'], ['right'], HEMIS]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
 
-        # t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
-        # imagery = np.concatenate(
-        #     [t_values[hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for hemi in hemis]
-        # )
-        # imagery = np.concatenate(
-        #     [np.mean([subject_scores[sub][hemi][ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] for sub in args.subjects],
-        #              axis=0)
-        #      for hemi in hemis]
-        # )
         tfce_scores = dict()
         filter = None
         for metric in [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS]:
@@ -43,8 +33,8 @@ def run(args):
             if metric == ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC:
                 filter = ~np.isnan(tfce_values) & (tfce_values > 0)
 
-            tfce_values_filtered = tfce_values[filter]
-            tfce_scores[metric] = tfce_values_filtered
+            # tfce_values_filtered = tfce_values[filter]
+            tfce_scores[metric] = tfce_values#tfce_values_filtered
 
         # imagery_filtered = imagery[filter & (tfce > 0)]
         # plt.scatter(tfce_filtered, imagery_filtered)
