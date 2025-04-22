@@ -16,7 +16,7 @@ from utils import HEMIS, RESULTS_DIR, METRIC_MOD_AGNOSTIC_AND_CROSS
 
 
 def run(args):
-    subject_scores = load_per_subject_scores(args)
+    # subject_scores = load_per_subject_scores(args)
     for hemis in [['left'], ['right'], HEMIS]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
