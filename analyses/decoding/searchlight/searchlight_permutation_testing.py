@@ -350,7 +350,7 @@ def calc_test_statistics(args):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
         tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
-                                       dh=args.tfce_dh)
+                                       dh=args.tfce_dh, use_tqdm=True)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
         tfce_values = pickle.load(open(tfce_values_path, 'rb'))

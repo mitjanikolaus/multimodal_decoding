@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from nilearn import datasets
 from nilearn.surface import surface
+from tqdm import tqdm
 
 from analyses.decoding.searchlight.searchlight import get_adjacency_matrix
 from utils import export_to_gifti, HEMIS, FS_HEMI_NAMES
@@ -242,7 +243,8 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
-def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices"):
+def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices",
+                     use_tqdm=False):
     tfce_values = dict()
 
     for hemi in HEMIS:
@@ -275,7 +277,8 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
 
         tfce_values[hemi] = {metric: np.zeros(shape=values.shape, dtype=np.float32)}
 
-        for score_thresh in score_threshs:
+        iterator = tqdm(score_threshs) if use_tqdm else score_threshs
+        for score_thresh in iterator:
             clusters_dict = calc_clusters(
                 values,
                 score_thresh,
