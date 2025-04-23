@@ -1,7 +1,7 @@
 import argparse
 import os
-import subprocess
 
+from preprocessing.fmri_preprocessing import DEFAULT_ANAT_SCAN_SUFFIX
 from utils import FREESURFER_SUBJECTS_DIR, FMRI_RAW_DATA_DIR, SUBJECTS
 
 
@@ -18,8 +18,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     default_path = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat', SUBJECTS[0],
-                                f'{SUBJECTS[0]}_ses-01_run-01_T1W.nii')
-    # _downsampled_2mm
+                                f'{SUBJECTS[0]}_ses-01_run-01_T1W{DEFAULT_ANAT_SCAN_SUFFIX}.nii')
     parser.add_argument("--anat-scan-path", type=str, default=default_path)
 
     parser.add_argument("--subject", type=str, default=SUBJECTS[0])
