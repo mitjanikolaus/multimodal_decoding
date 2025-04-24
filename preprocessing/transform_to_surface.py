@@ -11,6 +11,7 @@ from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, IN
     SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST, TEST_STIM_TYPES, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, \
     IMAGE, CAPTION
 from utils import SUBJECTS, FMRI_BETAS_DIR, FS_HEMI_NAMES, FREESURFER_SUBJECTS_DIR
+import nibabel as nib
 
 
 def run(args):
@@ -34,13 +35,22 @@ def run(args):
         jobs = []
         for hemi in args.hemis:
             for path in tqdm(train_fmri + test_fmri + imagery_fmri):
+                # transform NaNs to zeros
+                img = nib.load(path)
+                img_data = img.get_fdata()
+                img_data[np.isnan(img_data)] = 0
+                img_zeroed = nib.Nifti1Image(img_data, img.affine, img.header)
+                path_img_zeroed = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'nan_to_zero'+os.sep))
+                assert path != path_img_zeroed
+                nib.save(img_zeroed, path_img_zeroed)
+
                 path_out = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'surface', hemi+os.sep))
                 path_out = path_out.replace('.nii', '.gii')
                 assert path != path_out
 
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 reg = f"--regheader {subject}" if args.overwrite_reg is None else f"--reg {args.overwrite_reg}"
-                cmd = (f"mri_vol2surf --mov {path} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
+                cmd = (f"mri_vol2surf --mov {path_img_zeroed} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
                        f"{reg} --interp trilinear --projfrac-avg 0 1 0.2") # --interp nearest") #--projfrac 0.5  #--interp trilinear
                 jobs.append(cmd)
 
@@ -55,6 +65,8 @@ def run(args):
             delayed(exec_command)(cmd)
             for cmd in tqdm(jobs)
         )
+
+        os.remove(os.path.join(args.betas_dir, 'nan_to_zero'))
 
 
 def get_args():
