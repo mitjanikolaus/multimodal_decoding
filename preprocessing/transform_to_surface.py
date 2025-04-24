@@ -42,6 +42,7 @@ def run(args):
                 img_zeroed = nib.Nifti1Image(img_data, img.affine, img.header)
                 path_img_zeroed = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'nan_to_zero'+os.sep))
                 assert path != path_img_zeroed
+                os.makedirs(os.path.dirname(path_img_zeroed), exist_ok=True)
                 nib.save(img_zeroed, path_img_zeroed)
 
                 path_out = path.replace(args.betas_dir, os.path.join(args.betas_dir, 'surface', hemi+os.sep))
