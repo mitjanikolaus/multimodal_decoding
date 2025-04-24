@@ -1,4 +1,5 @@
 import argparse
+import shutil
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -67,7 +68,7 @@ def run(args):
             for cmd in tqdm(jobs)
         )
 
-        os.remove(os.path.join(args.betas_dir, 'nan_to_zero'))
+        shutil.rmtree(os.path.join(args.betas_dir, 'nan_to_zero'))
 
 
 def get_args():
