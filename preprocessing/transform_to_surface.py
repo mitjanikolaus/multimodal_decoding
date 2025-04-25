@@ -68,7 +68,7 @@ def run(args):
             for cmd in tqdm(jobs)
         )
 
-        shutil.rmtree(os.path.join(args.betas_dir, 'nan_to_zero'))
+        shutil.rmtree(os.path.join(args.betas_dir, 'nan_to_zero', subject))
 
 
 def get_args():
