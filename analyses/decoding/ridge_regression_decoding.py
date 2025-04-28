@@ -133,7 +133,7 @@ def run(args):
                     sklearn.set_config(assume_finite=True)
 
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    clf = GridSearchCV(estimator=Ridge(), param_grid=dict(alpha=args.l2_regularization_alphas), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, refit=True, verbose=3)
+                    clf = GridSearchCV(estimator=Ridge(fit_intercept=False), param_grid=dict(alpha=args.l2_regularization_alphas), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, refit=True, verbose=3)
                     # clf = KernelRidgeCV(
                     #     cv=NUM_CV_SPLITS,
                     #     alphas=args.l2_regularization_alphas,
