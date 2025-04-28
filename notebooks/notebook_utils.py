@@ -256,17 +256,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
             data_item_acc_mean["value"] = (results[ACC_CAPTIONS] + results[ACC_IMAGES]) / 2
             data.append(data_item_acc_mean)
   
-    df = pd.DataFrame.from_records(data)
-
-    if "test_features" in df.columns:
-        df = df[(df.test_features == df.features) | df.test_features.isna()].copy()
-
-    if "surface" in df.columns:
-        df["surface"] = df.surface.fillna(False)
-    else:
-        df["surface"] = False
-
-        
+    df = pd.DataFrame.from_records(data)  
 
     # df["vision_features"] = df.vision_features.replace(
     #     {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
