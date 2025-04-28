@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 import nibabel as nib
 from tqdm import trange
 
-from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from preprocessing.create_gray_matter_masks import get_gray_matter_mask_path
 from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR
 
 MODALITY_SPECIFIC_IMAGES = "images"

@@ -15,7 +15,7 @@ from nipype.interfaces.base import Bunch
 import pandas as pd
 
 from data import IDS_IMAGES_TEST
-from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
+from preprocessing.create_gray_matter_masks import get_gray_matter_mask_path
 from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_BETAS_DIR, FMRI_PREPROCESSING_DATASINK_DIR
 
 
@@ -212,7 +212,7 @@ def run(args):
         mthresh = 0.0
 
         # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject, mni=False)
+        mask = get_gray_matter_mask_path(subject, mni=False)
 
         # serial correlation (don't change)
         CVI = 'AR(1)'
