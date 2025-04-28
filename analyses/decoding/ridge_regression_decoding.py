@@ -7,7 +7,9 @@ import os
 import pickle
 
 import torch
-from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import RidgeCV, Ridge
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import GridSearchCV
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
@@ -130,7 +132,8 @@ def run(args):
                     # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
                     sklearn.set_config(assume_finite=True)
 
-                    clf = RidgeCV(alphas=args.l2_regularization_alphas, scoring=pairwise_accuracy, cv=NUM_CV_SPLITS)
+                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                    clf = GridSearchCV(estimator=Ridge, param_grid=dict(alpha=args.l2_regularization_alphas, fit_intercept=False), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, refit=True, verbose=3)
                     # clf = KernelRidgeCV(
                     #     cv=NUM_CV_SPLITS,
                     #     alphas=args.l2_regularization_alphas,
@@ -152,13 +155,15 @@ def run(args):
                     print(f"Elapsed time: {int(end - start)}s")
 
                     # best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
-                    best_alpha = np.round(clf.best_alphas_[0])
+                    best_alpha = clf.best_params_["alpha"]
+
+                    best_model = clf.best_estimator_
 
                     test_fmri_betas = test_fmri_betas.astype(np.float32)
-                    test_predicted_latents = clf.predict(test_fmri_betas)
+                    test_predicted_latents = best_model.predict(test_fmri_betas)
 
                     imagery_fmri_betas = imagery_fmri_betas.astype(np.float32)
-                    imagery_predicted_latents = clf.predict(imagery_fmri_betas)
+                    imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
 
                     # imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
                     # test_predicted_latents = backend.to_numpy(test_predicted_latents)
@@ -238,6 +243,7 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
+    parser.add_argument("--n-jobs", type=int, default=10)
     # parser.add_argument("--n-targets-batch", type=int, default=1024)
     # parser.add_argument("--n-targets-batch-refit", type=int, default=1024)
     # parser.add_argument("--n-alphas-batch", type=int, default=1)
