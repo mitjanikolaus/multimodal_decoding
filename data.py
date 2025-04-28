@@ -438,7 +438,7 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
 
 
 def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=HEMIS[0]):
-    print(f"loading {mode} {split} {hemi} hemi fmri surface data.. ", end="")
+    print(f"loading {subject} {mode} {split} {hemi} hemi fmri surface data.. ", end="")
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, suffix='.gii')
 
     fmri_betas = []
@@ -487,7 +487,7 @@ def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode)
 
     fmri_betas = []
-    for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
+    for idx in trange(len(fmri_betas_paths), desc=f"loading {subject} {split} fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.get_fdata().astype('float32').reshape(-1)
         fmri_betas.append(sample)
