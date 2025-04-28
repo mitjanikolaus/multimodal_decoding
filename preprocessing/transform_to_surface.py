@@ -8,8 +8,8 @@ import os
 
 from tqdm import tqdm
 
-from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, INDICES_TEST_STIM_CAPTION, IMAGERY_SCENES, \
-    SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST, TEST_STIM_TYPES, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, \
+from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, INDICES_TEST_STIM_CAPTION, \
+    IMAGERY_SCENES, SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST, TEST_STIM_TYPES, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, \
     IMAGE, CAPTION
 from utils import SUBJECTS, FMRI_BETAS_DIR, FS_HEMI_NAMES, FREESURFER_SUBJECTS_DIR, HEMIS
 import nibabel as nib
@@ -57,8 +57,9 @@ def run(args):
 
                 reg = f"--regheader {subject}"
                 cmd = (
-                    f"mri_vol2surf --mov {path_img_zeroed} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
-                    f"{reg} --interp trilinear --projfrac-avg 0 1 0.2")
+                    f"mri_vol2surf --mov {path_img_zeroed} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} "
+                    f"--trgsubject fsaverage {reg} --interp trilinear --projfrac-avg 0 1 0.2"
+                )
 
                 if silent:
                     cmd = cmd + " >/dev/null 2>&1"
