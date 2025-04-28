@@ -16,8 +16,6 @@ from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES,
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_TEST, SPLIT_IMAGERY, get_fmri_data
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
-from himalaya.backend import set_backend
-from himalaya.kernel_ridge import KernelRidgeCV
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
 
 NUM_CV_SPLITS = 5
@@ -57,12 +55,6 @@ def tensor_pairwise_accuracy(
 
 
 def run(args):
-    # if torch.cuda.is_available() and not args.force_cpu:
-    #     print("Setting backend to cuda")
-    #     backend = set_backend("torch_cuda")
-    # else:
-    #     backend = set_backend("numpy")
-
     for training_mode in args.training_modes:
         for subject in args.subjects:
             train_fmri_betas_full, train_stim_ids, train_stim_types = get_fmri_data(
@@ -128,23 +120,8 @@ def run(args):
                     )
                     print(f"train latents shape: {train_latents.shape}")
 
-                    # skip input data checking to limit memory use
-                    # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
-                    sklearn.set_config(assume_finite=True)
-
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
                     clf = GridSearchCV(estimator=Ridge(fit_intercept=False), param_grid=dict(alpha=args.l2_regularization_alphas), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, refit=True, verbose=3)
-                    # clf = KernelRidgeCV(
-                    #     cv=NUM_CV_SPLITS,
-                    #     alphas=args.l2_regularization_alphas,
-                    #     solver_params=dict(
-                    #         n_targets_batch=args.n_targets_batch,
-                    #         n_alphas_batch=args.n_alphas_batch,
-                    #         n_targets_batch_refit=args.n_targets_batch_refit,
-                    #         score_func=tensor_pairwise_accuracy,
-                    #         local_alpha=False,
-                    #     )
-                    # )
 
                     train_latents = train_latents.astype(np.float32)
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
@@ -154,7 +131,6 @@ def run(args):
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
-                    # best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
                     best_alpha = clf.best_params_["alpha"]
 
                     best_model = clf.best_estimator_
@@ -164,9 +140,6 @@ def run(args):
 
                     imagery_fmri_betas = imagery_fmri_betas.astype(np.float32)
                     imagery_predicted_latents = best_model.predict(imagery_fmri_betas)
-
-                    # imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
-                    # test_predicted_latents = backend.to_numpy(test_predicted_latents)
 
                     results = {
                         "alpha": best_alpha,
@@ -244,17 +217,12 @@ def get_args():
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
     parser.add_argument("--n-jobs", type=int, default=10)
-    # parser.add_argument("--n-targets-batch", type=int, default=1024)
-    # parser.add_argument("--n-targets-batch-refit", type=int, default=1024)
-    # parser.add_argument("--n-alphas-batch", type=int, default=1)
 
     parser.add_argument("--surface", action='store_true', default=False)
     parser.add_argument("--resolution", default=DEFAULT_RESOLUTION)
     parser.add_argument("--masks", nargs='+', type=str, default=[None])
 
     parser.add_argument("--overwrite", action='store_true', default=False)
-
-    # parser.add_argument("--force-cpu", action='store_true', default=False)
 
     return parser.parse_args()
 
