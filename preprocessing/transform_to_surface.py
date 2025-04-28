@@ -34,7 +34,7 @@ def run(args):
         train_fmri, _, _ = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TRAIN)
 
         paths = []
-        for path in tqdm(train_fmri + test_fmri + imagery_fmri):
+        for path in train_fmri + test_fmri + imagery_fmri:
             paths.append(path)
 
         def transform(path, betas_dir, silent=True):
