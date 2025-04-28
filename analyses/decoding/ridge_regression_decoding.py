@@ -121,7 +121,7 @@ def run(args):
                     print(f"train latents shape: {train_latents.shape}")
 
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    clf = GridSearchCV(estimator=Ridge(fit_intercept=False), param_grid=dict(alpha=args.l2_regularization_alphas), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, refit=True, verbose=3)
+                    clf = GridSearchCV(estimator=Ridge(fit_intercept=False), param_grid=dict(alpha=args.l2_regularization_alphas), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, pre_dispatch=args.n_pre_dispatch, refit=True, verbose=3)
 
                     train_latents = train_latents.astype(np.float32)
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
@@ -217,6 +217,7 @@ def get_args():
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
     parser.add_argument("--n-jobs", type=int, default=10)
+    parser.add_argument("--n-pre-dispatch", type=int, default=10)
 
     parser.add_argument("--surface", action='store_true', default=False)
     parser.add_argument("--resolution", default=DEFAULT_RESOLUTION)
