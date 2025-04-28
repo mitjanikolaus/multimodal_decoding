@@ -437,8 +437,7 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
     return nn_latent_vectors
 
 
-def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, resolution=DEFAULT_RESOLUTION,
-                          hemi=HEMIS[0]):
+def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=HEMIS[0]):
     print(f"loading {mode} {split} {hemi} hemi fmri surface data.. ", end="")
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, suffix='.gii')
 
@@ -449,40 +448,6 @@ def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, res
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
-    return fmri_betas, stim_ids, stim_types
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
-    print("done.")
-
-    stim_ids, stim_types = get_stim_info(subject, split)
-
-    if mode == MODALITY_SPECIFIC_CAPTIONS:
-        fmri_betas = fmri_betas[stim_types == CAPTION]
-        stim_ids = stim_ids[stim_types == CAPTION]
-        stim_types = stim_types[stim_types == CAPTION]
-    elif mode == MODALITY_SPECIFIC_IMAGES:
-        fmri_betas = fmri_betas[stim_types == IMAGE]
-        stim_ids = stim_ids[stim_types == IMAGE]
-        stim_types = stim_types[stim_types == IMAGE]
-
     return fmri_betas, stim_ids, stim_types
 
 
@@ -509,9 +474,8 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
 def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):
     if surface:
         betas_dir = os.path.join(betas_dir, "surface")
-        betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, resolution,
-                                                                      "left")
-        betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, resolution, "right")
+        betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, "left")
+        betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, "right")
 
         betas = np.hstack((betas_left_hemi, betas_right_hemi))
         return betas, stim_ids, stim_types
@@ -596,4 +560,3 @@ def apply_mask(mask_path, betas_list, args):
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
     return betas_list
-
