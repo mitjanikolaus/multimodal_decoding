@@ -58,7 +58,7 @@ def run(args):
                 reg = f"--regheader {subject}" if overwrite_reg is None else f"--reg {overwrite_reg}"
                 cmd = (
                     f"mri_vol2surf --mov {path_img_zeroed} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
-                    f"{reg} --interp trilinear --projfrac-avg 0 1 0.2")  # --projfrac 0.5") # --interp nearest"
+                    f"{reg} --interp trilinear --projfrac 0.5")  # --projfrac-avg 0 1 0.2") # --interp nearest"
 
                 if silent:
                     cmd = cmd + " >/dev/null 2>&1"
