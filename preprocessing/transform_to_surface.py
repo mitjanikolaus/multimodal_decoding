@@ -37,7 +37,7 @@ def run(args):
         for path in tqdm(train_fmri + test_fmri + imagery_fmri):
             paths.append(path)
 
-        def transform(path, betas_dir, overwrite_reg, silent=True):
+        def transform(path, betas_dir, silent=True):
             # fist transform NaNs to zeros
             img = nib.load(path)
             img_data = img.get_fdata()
@@ -55,7 +55,7 @@ def run(args):
                 assert path != path_out
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
 
-                reg = f"--regheader {subject}" if overwrite_reg is None else f"--reg {overwrite_reg}"
+                reg = f"--regheader {subject}"
                 cmd = (
                     f"mri_vol2surf --mov {path_img_zeroed} --o {path_out} --hemi {FS_HEMI_NAMES[hemi]} --trgsubject fsaverage "
                     f"{reg} --interp trilinear --projfrac-avg 0 1 0.2")
@@ -67,7 +67,7 @@ def run(args):
                     raise RuntimeError(f"failed to convert {path} to surface {result_code}")
 
         Parallel(n_jobs=int(args.n_jobs))(
-            delayed(transform)(path, args.betas_dir, args.overwrite_reg)
+            delayed(transform)(path, args.betas_dir)
             for path in tqdm(paths)
         )
 
@@ -80,8 +80,6 @@ def get_args():
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
-
-    parser.add_argument("--overwrite-reg", type=str)
 
     parser.add_argument("--n-jobs", type=str, default=10)
 
