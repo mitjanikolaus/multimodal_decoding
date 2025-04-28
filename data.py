@@ -442,7 +442,7 @@ def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hem
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, suffix='.gii')
 
     fmri_betas = []
-    for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
+    for idx in trange(len(fmri_betas_paths), desc=f"loading {hemi} hemi {split} fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
         sample = sample.darrays[0].data
         fmri_betas.append(sample)
