@@ -7,6 +7,7 @@ import os
 import pickle
 
 import torch
+from sklearn.linear_model import RidgeCV
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
@@ -54,11 +55,11 @@ def tensor_pairwise_accuracy(
 
 
 def run(args):
-    if torch.cuda.is_available() and not args.force_cpu:
-        print("Setting backend to cuda")
-        backend = set_backend("torch_cuda")
-    else:
-        backend = set_backend("numpy")
+    # if torch.cuda.is_available() and not args.force_cpu:
+    #     print("Setting backend to cuda")
+    #     backend = set_backend("torch_cuda")
+    # else:
+    #     backend = set_backend("numpy")
 
     for training_mode in args.training_modes:
         for subject in args.subjects:
@@ -129,17 +130,18 @@ def run(args):
                     # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
                     sklearn.set_config(assume_finite=True)
 
-                    clf = KernelRidgeCV(
-                        cv=NUM_CV_SPLITS,
-                        alphas=args.l2_regularization_alphas,
-                        solver_params=dict(
-                            n_targets_batch=args.n_targets_batch,
-                            n_alphas_batch=args.n_alphas_batch,
-                            n_targets_batch_refit=args.n_targets_batch_refit,
-                            score_func=tensor_pairwise_accuracy,
-                            local_alpha=False,
-                        )
-                    )
+                    clf = RidgeCV(alphas=args.l2_regularization_alphas, scoring=pairwise_accuracy, cv=NUM_CV_SPLITS)
+                    # clf = KernelRidgeCV(
+                    #     cv=NUM_CV_SPLITS,
+                    #     alphas=args.l2_regularization_alphas,
+                    #     solver_params=dict(
+                    #         n_targets_batch=args.n_targets_batch,
+                    #         n_alphas_batch=args.n_alphas_batch,
+                    #         n_targets_batch_refit=args.n_targets_batch_refit,
+                    #         score_func=tensor_pairwise_accuracy,
+                    #         local_alpha=False,
+                    #     )
+                    # )
 
                     train_latents = train_latents.astype(np.float32)
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
@@ -149,7 +151,8 @@ def run(args):
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
-                    best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
+                    # best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
+                    best_alpha = np.round(clf.best_alphas_[0])
 
                     test_fmri_betas = test_fmri_betas.astype(np.float32)
                     test_predicted_latents = clf.predict(test_fmri_betas)
@@ -157,8 +160,8 @@ def run(args):
                     imagery_fmri_betas = imagery_fmri_betas.astype(np.float32)
                     imagery_predicted_latents = clf.predict(imagery_fmri_betas)
 
-                    imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
-                    test_predicted_latents = backend.to_numpy(test_predicted_latents)
+                    # imagery_predicted_latents = backend.to_numpy(imagery_predicted_latents)
+                    # test_predicted_latents = backend.to_numpy(test_predicted_latents)
 
                     results = {
                         "alpha": best_alpha,
@@ -235,9 +238,9 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
-    parser.add_argument("--n-targets-batch", type=int, default=1024)
-    parser.add_argument("--n-targets-batch-refit", type=int, default=1024)
-    parser.add_argument("--n-alphas-batch", type=int, default=1)
+    # parser.add_argument("--n-targets-batch", type=int, default=1024)
+    # parser.add_argument("--n-targets-batch-refit", type=int, default=1024)
+    # parser.add_argument("--n-alphas-batch", type=int, default=1)
 
     parser.add_argument("--surface", action='store_true', default=False)
     parser.add_argument("--resolution", default=DEFAULT_RESOLUTION)
@@ -245,7 +248,7 @@ def get_args():
 
     parser.add_argument("--overwrite", action='store_true', default=False)
 
-    parser.add_argument("--force-cpu", action='store_true', default=False)
+    # parser.add_argument("--force-cpu", action='store_true', default=False)
 
     return parser.parse_args()
 
