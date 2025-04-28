@@ -195,7 +195,7 @@ def run(args):
                     )
                     results.update(scores)
                     print(
-                        f"Best alphas: {best_alpha}\n"
+                        f"Best alpha: {best_alpha}\n"
                         f"Pairwise acc (mean): {np.mean((results[ACC_CAPTIONS], results[ACC_IMAGES])):.4f}"
                         f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
                         f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
