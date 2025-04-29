@@ -176,6 +176,9 @@ def run(args):
                         f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                     )
 
+                    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
+                    pickle.dump(results, open(results_file_path, 'wb'))
+
                     results_no_standardization = calc_all_pairwise_accuracy_scores(
                         test_latents, test_predicted_latents, test_stim_types,
                         imagery_latents, imagery_predicted_latents, standardize_predictions=False
@@ -189,8 +192,6 @@ def run(args):
                         f" | Pairwise acc (imagery whole test set): "
                         f"{results_no_standardization[ACC_IMAGERY_WHOLE_TEST]:.2f}"
                     )
-                    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
-                    pickle.dump(results, open(results_file_path, 'wb'))
 
 
 def get_args():
