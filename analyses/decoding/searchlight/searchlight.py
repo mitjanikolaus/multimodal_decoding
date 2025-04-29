@@ -25,7 +25,7 @@ from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentF
     SPLIT_IMAGERY, TRAINING_MODES
 from eval import ACC_CAPTIONS, ACC_IMAGES, calc_imagery_pairwise_accuracy_scores
 
-from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
+from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 10
 
@@ -326,7 +326,7 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
 
-    parser.add_argument("--model", type=str, default="imagebind")
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
