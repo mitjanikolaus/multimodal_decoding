@@ -2,12 +2,11 @@ import argparse
 import time
 
 import numpy as np
-import sklearn
 import os
 import pickle
 
 import torch
-from sklearn.linear_model import RidgeCV, Ridge
+from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
@@ -121,7 +120,12 @@ def run(args):
                     print(f"train latents shape: {train_latents.shape}")
 
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
-                    clf = GridSearchCV(estimator=Ridge(fit_intercept=False), param_grid=dict(alpha=args.l2_regularization_alphas), scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs, pre_dispatch=args.n_pre_dispatch, refit=True, verbose=3)
+                    clf = GridSearchCV(
+                        estimator=Ridge(fit_intercept=False),
+                        param_grid=dict(alpha=args.l2_regularization_alphas),
+                        scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                        pre_dispatch=args.n_pre_dispatch, refit=True, verbose=3
+                    )
 
                     train_latents = train_latents.astype(np.float32)
                     train_fmri_betas = train_fmri_betas.astype(np.float32)
