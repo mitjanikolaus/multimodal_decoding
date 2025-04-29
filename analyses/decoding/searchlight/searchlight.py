@@ -128,7 +128,7 @@ def custom_search_light(
         shuffled_indices=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
-    with warnings.catch_warnings():  # might not converge
+    with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
@@ -187,13 +187,13 @@ def run(args):
         for training_mode in args.training_modes:
             for hemi in args.hemis:
                 train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, args.resolution, hemi
+                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, hemi
                 )
                 test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_TEST, resolution=args.resolution, hemi=hemi
+                    args.betas_dir, subject, SPLIT_TEST, hemi=hemi
                 )
                 imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_IMAGERY, resolution=args.resolution, hemi=hemi
+                    args.betas_dir, subject, SPLIT_IMAGERY, hemi=hemi
                 )
                 nan_locations = np.isnan(train_fmri[0])
                 train_fmri, test_fmri, imagery_fmri = standardize_fmri_betas(train_fmri, test_fmri, imagery_fmri)
