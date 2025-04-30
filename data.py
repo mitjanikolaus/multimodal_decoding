@@ -508,6 +508,7 @@ def standardize_latents(train_latents, test_latents, imagery_latents=None):
 
 
 def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas=None):
+    print('standardizing betas .. ', end='')
     nan_locations = np.isnan(train_fmri_betas[0])
     train_fmri_betas = train_fmri_betas[:, ~nan_locations]
     test_fmri_betas = test_fmri_betas[:, ~nan_locations]
@@ -521,8 +522,10 @@ def standardize_fmri_betas(train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
     if imagery_fmri_betas is not None:
         imagery_fmri_betas = scaler.transform(imagery_fmri_betas)
+        print('done.')
         return train_fmri_betas, test_fmri_betas, imagery_fmri_betas
 
+    print('done.')
     return train_fmri_betas, test_fmri_betas
 
 
@@ -552,10 +555,12 @@ def create_shuffled_indices(seed):
 
 def apply_mask(mask_path, betas_list, args):
     if mask_path is not None:
+        print('applying mask.. ', end='')
         if not args.surface:
             raise NotImplementedError("The --surface option needs to be specified when using masks")
         mask = pickle.load(open(mask_path, 'rb'))
         mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         betas_list = [betas[:, mask_flat == 1].copy() for betas in betas_list]
 
+        print('done.')
     return betas_list
