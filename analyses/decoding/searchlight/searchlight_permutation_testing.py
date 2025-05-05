@@ -252,7 +252,7 @@ def calc_t_value(values, popmean, sigma=0):
         # If all values are (almost) equal, the t-value would be disproportionally high, so we discard the value
         t_val = np.nan
     else:
-        t_val = ttest_1samp_no_p(values_no_nan-popmean, sigma=sigma)
+        t_val = ttest_1samp_no_p(values_no_nan - popmean, sigma=sigma)
         if t_val > 50:
             print(f't val {t_val} for values {values_no_nan}')
     return t_val
@@ -451,9 +451,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
             scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
             subject_scores_null_distr[i][hemi] = scores
 
-    subject_scores_null_distr_path = os.path.join(
-        permutation_results_dir(args), f"{subject}_scores_null_distr.p"
-    )
+    subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
     pickle.dump(subject_scores_null_distr, open(subject_scores_null_distr_path, 'wb'))
     return subject_scores_null_distr
 
@@ -461,9 +459,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
 def calc_t_values_null_distr(args, out_path):
     per_subject_scores_null_distr = dict()
     for subject in tqdm(args.subjects):
-        subject_scores_null_distr_path = os.path.join(
-            permutation_results_dir(args), f"{subject}_scores_null_distr.p"
-        )
+        subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
         if not os.path.isfile(subject_scores_null_distr_path):
             per_subject_scores_null_distr[subject] = assemble_null_distr_per_subject_scores(subject, args)
         else:
@@ -524,7 +520,8 @@ def calc_t_values_null_distr(args, out_path):
                             axis=0
                         )
 
-    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr[args.subjects[0]])), len(args.subjects))
+    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr[args.subjects[0]])),
+                                               len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     n_vertices = per_subject_scores_null_distr[args.subjects[0]][0][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
@@ -544,8 +541,8 @@ def calc_t_values_null_distr(args, out_path):
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
     desc = "filtering scores for enough data and splitting up for jobs"
     for perm_id in trange(len(per_subject_scores_null_distr[args.subjects[0]]), desc=desc):
-    # for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr[0]),
-    #                        desc=desc):
+        # for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr[0]),
+        #                        desc=desc):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
@@ -554,8 +551,9 @@ def calc_t_values_null_distr(args, out_path):
                     for job_id in range(args.n_jobs):
                         filtered = per_subject_scores_null_distr[subj][perm_id][hemi][metric][enough_data[hemi]]
                         scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered[
-                                                                      job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
-                                                                          hemi]]
+                                                                           job_id * n_per_job[hemi]:(job_id + 1) *
+                                                                                                    n_per_job[
+                                                                                                        hemi]]
                 # for metric in scores[subj][hemi].keys():
                 #     for job_id in range(args.n_jobs):
                 #         filtered = scores[subj][hemi][metric][enough_data[hemi]]
