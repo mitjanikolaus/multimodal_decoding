@@ -15,7 +15,7 @@ import pickle
 from nilearn.surface import surface
 from scipy import stats
 from scipy.spatial.distance import cdist
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, \
     calc_significance_cutoff, create_masks
@@ -363,107 +363,112 @@ def calc_test_statistics(args):
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
-def load_null_distr_per_subject_scores(args):
-    per_subject_scores_null_distr = []
+def assemble_null_distr_per_subject_scores(subject, args):
+    print(f"assembling {subject} null distr scores")
 
-    for subject in tqdm(args.subjects):
-        for hemi in HEMIS:
-            feats_config_mod_agnostic = LatentFeatsConfig(
-                args.model,
-                args.features,
-                args.test_features,
-                args.vision_features,
-                args.lang_features,
-                logging=False
-            )
-            results_mod_agnostic_file = get_results_file_path(
-                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
-                searchlight_mode_from_args(args), args.l2_regularization_alpha,
-            )
-            results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
-            nan_locations = results_agnostic['nan_locations']
+    subject_scores_null_distr = []
+    for hemi in HEMIS:
+        feats_config_mod_agnostic = LatentFeatsConfig(
+            args.model,
+            args.features,
+            args.test_features,
+            args.vision_features,
+            args.lang_features,
+            logging=False
+        )
+        results_mod_agnostic_file = get_results_file_path(
+            feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
+            searchlight_mode_from_args(args), args.l2_regularization_alpha,
+        )
+        results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
+        nan_locations = results_agnostic['nan_locations']
 
-            feats_config_mod_specific_images = LatentFeatsConfig(
-                args.mod_specific_images_model,
-                args.mod_specific_images_features,
-                args.mod_specific_images_test_features,
-                args.vision_features,
-                args.lang_features,
-                logging=False
-            )
-            results_mod_specific_images_file = get_results_file_path(
-                feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
-                searchlight_mode_from_args(args), args.l2_regularization_alpha,
-            )
+        feats_config_mod_specific_images = LatentFeatsConfig(
+            args.mod_specific_images_model,
+            args.mod_specific_images_features,
+            args.mod_specific_images_test_features,
+            args.vision_features,
+            args.lang_features,
+            logging=False
+        )
+        results_mod_specific_images_file = get_results_file_path(
+            feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
+            searchlight_mode_from_args(args), args.l2_regularization_alpha,
+        )
 
-            feats_config_mod_specific_captions = LatentFeatsConfig(
-                args.mod_specific_captions_model,
-                args.mod_specific_captions_features,
-                args.mod_specific_captions_test_features,
-                args.vision_features,
-                args.lang_features,
-                logging=False
-            )
-            results_mod_specific_captions_file = get_results_file_path(
-                feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
-                searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
-            )
+        feats_config_mod_specific_captions = LatentFeatsConfig(
+            args.mod_specific_captions_model,
+            args.mod_specific_captions_features,
+            args.mod_specific_captions_test_features,
+            args.vision_features,
+            args.lang_features,
+            logging=False
+        )
+        results_mod_specific_captions_file = get_results_file_path(
+            feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
+            searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
+        )
 
-            def load_null_distr_scores(base_path):
-                scores_dir = os.path.join(base_path, "null_distr")
-                print(f'loading scores from {scores_dir}')
-                score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-                if len(score_paths) == 0:
-                    raise RuntimeError(f"No null distribution scores found: {scores_dir}")
-                last_idx = int(os.path.basename(score_paths[-1])[:-2])
-                assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
+        def load_null_distr_scores(base_path):
+            scores_dir = os.path.join(base_path, "null_distr")
+            print(f'loading scores from {scores_dir}')
+            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+            if len(score_paths) == 0:
+                raise RuntimeError(f"No null distribution scores found: {scores_dir}")
+            last_idx = int(os.path.basename(score_paths[-1])[:-2])
+            assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
 
-                def load_scores_from_pickle(paths, proc_id):
-                    job_scores = []
-                    iterator = tqdm(paths) if proc_id == 0 else paths
-                    for path in iterator:
-                        scores = pickle.load(open(path, "rb"))
-                        job_scores.append(scores)
-                    return job_scores
+            def load_scores_from_pickle(paths, proc_id):
+                job_scores = []
+                iterator = tqdm(paths) if proc_id == 0 else paths
+                for path in iterator:
+                    scores = pickle.load(open(path, "rb"))
+                    job_scores.append(scores)
+                return job_scores
 
-                n_per_job = math.ceil(len(score_paths) / args.n_jobs)
-                all_scores = Parallel(n_jobs=args.n_jobs)(
-                    delayed(load_scores_from_pickle)(
-                        score_paths[id * n_per_job:(id + 1) * n_per_job],
-                        id,
-                    )
-                    for id in range(args.n_jobs)
+            n_per_job = math.ceil(len(score_paths) / args.n_jobs)
+            all_scores = Parallel(n_jobs=args.n_jobs)(
+                delayed(load_scores_from_pickle)(
+                    score_paths[id * n_per_job:(id + 1) * n_per_job],
+                    id,
                 )
-                return np.concatenate(all_scores)
+                for id in range(args.n_jobs)
+            )
+            return np.concatenate(all_scores)
 
-            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_mod_agnostic_file))
-            null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
-            null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
+        null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_mod_agnostic_file))
+        null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
+        null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
 
-            num_permutations = len(null_distribution_agnostic[0])
-            print('final per subject scores null distribution dict creation:')
-            for i in tqdm(range(num_permutations)):
-                distr = [null_distr[i] for null_distr in null_distribution_agnostic]
-                distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-                distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
-                if len(per_subject_scores_null_distr) <= i:
-                    per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
-                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-                per_subject_scores_null_distr[i][subject][hemi] = scores
-    return per_subject_scores_null_distr
+        num_permutations = len(null_distribution_agnostic[0])
+        print('final per subject scores null distribution dict creation:')
+        for i in tqdm(range(num_permutations)):
+            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
+            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
+            distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
+            if len(subject_scores_null_distr) <= i:
+                subject_scores_null_distr.append(dict())
+            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+            subject_scores_null_distr[i][hemi] = scores
+
+    subject_scores_null_distr_path = os.path.join(
+        permutation_results_dir(args), f"{subject}_scores_null_distr.p"
+    )
+    pickle.dump(subject_scores_null_distr, open(subject_scores_null_distr_path, 'wb'))
+    return subject_scores_null_distr
 
 
 def calc_t_values_null_distr(args, out_path):
-    per_subject_scores_null_distr_path = os.path.join(
-        permutation_results_dir(args), f"per_subject_scores_null_distr.p"
-    )
-    if not os.path.isfile(per_subject_scores_null_distr_path):
-        print("loading per subject null distr scores")
-        per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
-        os.makedirs(os.path.dirname(per_subject_scores_null_distr_path), exist_ok=True)
-        pickle.dump(per_subject_scores_null_distr, open(per_subject_scores_null_distr_path, 'wb'))
-    else:
-        per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
+    per_subject_scores_null_distr = dict()
+    for subject in tqdm(args.subjects):
+        subject_scores_null_distr_path = os.path.join(
+            permutation_results_dir(args), f"{subject}_scores_null_distr.p"
+        )
+        if not os.path.isfile(subject_scores_null_distr_path):
+            per_subject_scores_null_distr[subject] = assemble_null_distr_per_subject_scores(subject, args)
+        else:
+            print(f"loading assembled null distr scores for {subject}")
+            per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
 
     def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path, subjects):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
@@ -519,14 +524,14 @@ def calc_t_values_null_distr(args, out_path):
                             axis=0
                         )
 
-    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
+    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr[args.subjects[0]])), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
+    n_vertices = per_subject_scores_null_distr[args.subjects[0]][0][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
     enough_data = {
         hemi: np.argwhere(
             (~np.isnan(
-                [per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
+                [per_subject_scores_null_distr[subj][0][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
                 axis=0) >= MIN_NUM_DATAPOINTS)[:, 0]
         for hemi in HEMIS
     }
@@ -538,18 +543,25 @@ def calc_t_values_null_distr(args, out_path):
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
     desc = "filtering scores for enough data and splitting up for jobs"
-    for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr),
-                           desc=desc):
+    for perm_id in trange(len(per_subject_scores_null_distr[args.subjects[0]]), desc=desc):
+    # for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr[0]),
+    #                        desc=desc):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
             for hemi in HEMIS:
-                for metric in scores[subj][hemi].keys():
+                for metric in per_subject_scores_null_distr[subj][perm_id][hemi].keys():
                     for job_id in range(args.n_jobs):
-                        filtered = scores[subj][hemi][metric][enough_data[hemi]]
-                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[
+                        filtered = per_subject_scores_null_distr[subj][perm_id][hemi][metric][enough_data[hemi]]
+                        scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered[
                                                                       job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
                                                                           hemi]]
+                # for metric in scores[subj][hemi].keys():
+                #     for job_id in range(args.n_jobs):
+                #         filtered = scores[subj][hemi][metric][enough_data[hemi]]
+                #         scores_jobs[job_id][id][subj][hemi][metric] = filtered[
+                #                                                       job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
+                #                                                           hemi]]
 
     tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
                      range(args.n_jobs)}
