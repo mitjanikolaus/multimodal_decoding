@@ -254,8 +254,6 @@ def calc_t_value(values, popmean, sigma=0):
     else:
         t_val = ttest_1samp_no_p(values_no_nan - popmean, sigma=sigma)
     return t_val
-    # else:
-    #     return 0
 
 
 def calc_image_t_values(data, popmean, use_tqdm=False, precision=None, metric=None, sigma=0):
