@@ -246,8 +246,6 @@ def ttest_1samp_no_p(X, sigma=0, method="relative"):
 
 def calc_t_value(values, popmean, sigma=0):
     values_no_nan = values[~np.isnan(values)]
-    # use heuristic (mean needs to be greater than popmean) to speed up calculation
-    # if values_no_nan.mean() > popmean:
     if np.all(values_no_nan.round(2) == values_no_nan[0].round(2)):
         # If all values are (almost) equal, the t-value would be disproportionally high, so we discard the value
         t_val = np.nan
