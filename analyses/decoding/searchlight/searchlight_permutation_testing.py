@@ -276,11 +276,7 @@ def calc_t_values(per_subject_scores):
         for metric in T_VAL_METRICS:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
-            enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) >= MIN_NUM_DATAPOINTS)[:, 0]
-            t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
-            t_values[hemi][metric][enough_data] = calc_image_t_values(
-                data[:, enough_data], popmean, use_tqdm=True, metric=metric
-            )
+            t_values[hemi][metric] = calc_image_t_values(data, popmean, use_tqdm=True, metric=metric)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -524,42 +520,25 @@ def calc_t_values_null_distr(args, out_path):
                                                len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[args.subjects[0]][0][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
-    enough_data = {
-        hemi: np.argwhere(
-            (~np.isnan(
-                [per_subject_scores_null_distr[subj][0][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
-                axis=0) >= MIN_NUM_DATAPOINTS)[:, 0]
-        for hemi in HEMIS
+    n_vertices = {
+        hemi: per_subject_scores_null_distr[args.subjects[0]][0][hemi][ACC_IMAGES_MOD_AGNOSTIC].shape[0] for hemi in
+        HEMIS
     }
-    enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
-    print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
 
-    n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
+    n_per_job = {hemi: math.ceil(len(n_vertices[hemi]) / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
-    desc = "filtering scores for enough data and splitting up for jobs"
-    for perm_id in trange(len(per_subject_scores_null_distr[args.subjects[0]]), desc=desc):
-        # for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr[0]),
-        #                        desc=desc):
+    for perm_id in trange(len(per_subject_scores_null_distr[args.subjects[0]]), desc="splitting up for jobs"):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
             for hemi in HEMIS:
                 for metric in per_subject_scores_null_distr[subj][perm_id][hemi].keys():
                     for job_id in range(args.n_jobs):
-                        filtered = per_subject_scores_null_distr[subj][perm_id][hemi][metric][enough_data[hemi]]
-                        scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered[
-                                                                           job_id * n_per_job[hemi]:(job_id + 1) *
-                                                                                                    n_per_job[
-                                                                                                        hemi]]
-                # for metric in scores[subj][hemi].keys():
-                #     for job_id in range(args.n_jobs):
-                #         filtered = scores[subj][hemi][metric][enough_data[hemi]]
-                #         scores_jobs[job_id][id][subj][hemi][metric] = filtered[
-                #                                                       job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
-                #                                                           hemi]]
+                        scores_job = per_subject_scores_null_distr[subj][perm_id][hemi][metric]
+                        filtered = scores_job[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
+                        scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered
 
     tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
                      range(args.n_jobs)}
@@ -585,10 +564,7 @@ def calc_t_values_null_distr(args, out_path):
 
         for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
             for hemi_metric in tmp_files[0].keys():
-                hemi = hemi_metric.split('__')[0]
-                data_tvals = np.repeat(np.nan, n_vertices)
-                data_tvals[enough_data[hemi]] = np.concatenate(
-                    [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+                data_tvals = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[hemi_metric][i] = data_tvals
 
     print("finished assemble")
