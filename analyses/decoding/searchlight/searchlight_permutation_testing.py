@@ -525,7 +525,7 @@ def calc_t_values_null_distr(args, out_path):
         HEMIS
     }
 
-    n_per_job = {hemi: math.ceil(len(n_vertices[hemi]) / args.n_jobs) for hemi in HEMIS}
+    n_per_job = {hemi: math.ceil(n_vertices[hemi] / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
