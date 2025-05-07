@@ -250,9 +250,8 @@ def calc_t_value(values, popmean, sigma=0):
         t_val = np.nan
     else:
         t_val = ttest_1samp_no_p(values - popmean, sigma=sigma)
-        if np.all(values.round(2) == values[0].round(2)):
-            if t_val > 100:
-                print(f'tval {t_val} for values {values}')
+        if t_val > 100:
+            print(f'tval {t_val} for values {values}')
     return t_val
 
 
