@@ -19,7 +19,7 @@ from eval import ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMA
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
-COLORBAR_MAX = 0.8
+ACC_COLORBAR_MAX = 0.8
 COLORBAR_THRESHOLD_MIN = 0.55
 
 COLORBAR_DIFFERENCE_MAX = 0.1
@@ -167,7 +167,6 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
 
     print(f"plotting acc scores. {subfolder}")
     for metric in METRICS:
-        cbar_max = None
         threshold = COLORBAR_THRESHOLD_MIN
         if CHANCE_VALUES[metric] == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
@@ -182,9 +181,6 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
                 f"max: {np.nanmax(score_hemi_avgd):.2f}")
 
             for i, view in enumerate(args.views):
-                if cbar_max is None:
-                    cbar_max = min(np.nanmax(score_hemi_avgd), 99)
-
                 plotting.plot_surf_stat_map(
                     fsaverage[f"infl_{hemi}"],
                     score_hemi_avgd,
@@ -194,7 +190,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
                     bg_on_data=True,
                     colorbar=False,
                     threshold=threshold,
-                    vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                    vmax=ACC_COLORBAR_MAX,
                     vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
                     cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
                     symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
@@ -211,7 +207,7 @@ def plot_acc_scores(per_subject_scores, args, results_path, subfolder=""):
             bg_on_data=True,
             colorbar=True,
             threshold=threshold,
-            vmax=COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_MAX,
+            vmax=ACC_COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_MAX,
             vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
             cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
             symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
@@ -287,15 +283,15 @@ def create_composite_image(args):
     acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
     acc_scores_imgs = []
     for metric in METRICS:
-        img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
-        cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{metric}.png"))
-        if metric in [ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]:
-            acc_scores_img = append_images([cbar, img], padding=50)
-        else:
-            acc_scores_img = append_images([img, cbar], padding=50)
-
+        acc_scores_img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
+        # if metric in [ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]:
+        #     acc_scores_img = append_images([cbar, img], padding=50)
+        # else:
+        #     acc_scores_img = append_images([img, cbar], padding=50)
         acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
         acc_scores_imgs.append(acc_scores_img)
+
+    # cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{ACC_IMAGES_MOD_AGNOSTIC}.png"))
 
     acc_scores_imgs_column_1 = append_images(acc_scores_imgs[:2], horizontally=False, padding=400)
     acc_scores_imgs_column_2 = append_images(acc_scores_imgs[2:], horizontally=False, padding=400)
@@ -383,7 +379,7 @@ def run(args):
                             axes=axes[i * 2 + j],
                             colorbar=True if axes[i * 2 + j] == axes[-1] else False,
                             threshold=COLORBAR_THRESHOLD_MIN if cbar_min >= 0 else COLORBAR_DIFFERENCE_THRESHOLD_MIN,
-                            vmax=COLORBAR_MAX if cbar_min >= 0 else None,  # cbar_max,
+                            vmax=ACC_COLORBAR_MAX if cbar_min >= 0 else None,  # cbar_max,
                             vmin=0.5 if cbar_min >= 0 else None,
                             cmap=CMAP_POS_ONLY if cbar_min >= 0 else CMAP,
                             symmetric_cbar=True if cbar_min < 0 else "auto",
