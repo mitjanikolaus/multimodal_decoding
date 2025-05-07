@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 import itertools
 import math
 import warnings
@@ -13,7 +12,6 @@ from glob import glob
 import pickle
 
 from nilearn.surface import surface
-from scipy import stats
 from scipy.spatial.distance import cdist
 from tqdm import tqdm, trange
 
@@ -534,19 +532,19 @@ def calc_t_values_null_distr(args, out_path):
                         filtered = scores_job[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
                         scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered
 
-    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
-                     range(args.n_jobs)}
-    Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-        delayed(calc_permutation_t_values)(
-            scores_jobs[id],
-            permutations,
-            id,
-            tmp_filenames[id],
-            args.subjects,
-        )
-        for id in range(args.n_jobs)
-    )
-
+    # tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
+    #                  range(args.n_jobs)}
+    # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+    #     delayed(calc_permutation_t_values)(
+    #         scores_jobs[id],
+    #         permutations,
+    #         id,
+    #         tmp_filenames[id],
+    #         args.subjects,
+    #     )
+    #     for id in range(args.n_jobs)
+    # )
+    #
     tmp_files = dict()
     for job_id in range(args.n_jobs):
         tmp_files[job_id] = h5py.File(tmp_filenames[job_id], 'r')
