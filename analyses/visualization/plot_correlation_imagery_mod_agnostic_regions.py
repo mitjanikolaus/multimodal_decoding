@@ -21,12 +21,6 @@ def calc_additional_test_statistics(args):
     for metric in COMPARISON_METRICS:
         t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
         args.metric = metric
-        # if not os.path.isfile(t_values_path):
-        #     print(f"Calculating t-values")
-        #     per_subject_scores = load_per_subject_scores(args)
-        #     t_values = calc_t_values(per_subject_scores)
-        #     pickle.dump(t_values, open(t_values_path, 'wb'))
-        # else:
         t_values = pickle.load(open(t_values_path, 'rb'))
         tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
         if not os.path.isfile(tfce_values_path):
@@ -40,22 +34,22 @@ def calc_additional_test_statistics(args):
 def run(args):
     calc_additional_test_statistics(args)
 
-    for hemis in [['left'], ['right'], HEMIS]:
+    for hemis in [HEMIS[0], HEMIS[1]]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
 
         tfce_scores = dict()
-        filter = None
+        # filter = None
         for metric in [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC] + COMPARISON_METRICS:
             args.metric = metric
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
             tfce_values = pickle.load(open(tfce_values_path, 'rb'))
             tfce_values = np.concatenate([tfce_values[hemi][args.metric] for hemi in hemis])
 
-            print(f'{metric} tfce nan locs: {np.mean(np.isnan(tfce_values))}')
-            print(f'{metric} 0 locs: {np.mean(tfce_values == 0)}')
-            if metric == ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC:
-                filter = ~np.isnan(tfce_values) & (tfce_values > 0)
+            # print(f'{metric} tfce nan locs: {np.mean(np.isnan(tfce_values))}')
+            # print(f'{metric} 0 locs: {np.mean(tfce_values == 0)}')
+            # if metric == ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC:
+            #     filter = ~np.isnan(tfce_values) & (tfce_values > 0)
 
             # tfce_values_filtered = tfce_values[filter]
             tfce_scores[metric] = tfce_values  # tfce_values_filtered
