@@ -20,7 +20,7 @@ from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 ACC_COLORBAR_MAX = 0.8
-COLORBAR_THRESHOLD_MIN = 0.52
+COLORBAR_THRESHOLD_MIN = 0.5
 
 COLORBAR_DIFFERENCE_MAX = 0.1
 
