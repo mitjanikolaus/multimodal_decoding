@@ -245,13 +245,15 @@ def ttest_1samp_no_p(X, sigma=0, method="relative"):
 def calc_t_value(values, popmean, sigma=0):
     # values_no_nan = values[~np.isnan(values)]
     # if np.all(values_no_nan.round(2) == values_no_nan[0].round(2)):
-    #     # If all values are (almost) equal, the t-value would be disproportionally high, so we discard the value
-    #     t_val = np.nan
-    # else:
-    t_val = ttest_1samp_no_p(values - popmean, sigma=sigma)
-    if np.all(values.round(2) == values[0].round(2)):
-        if t_val > 100:
-            print(f'tval {t_val} for values {values}')
+    if np.all(values == values[0]):
+        # If all values are equal, the t-value would be disproportionally high, so we discard the value
+        print(f'setting t val to nan for {values}')
+        t_val = np.nan
+    else:
+        t_val = ttest_1samp_no_p(values - popmean, sigma=sigma)
+        if np.all(values.round(2) == values[0].round(2)):
+            if t_val > 100:
+                print(f'tval {t_val} for values {values}')
     return t_val
 
 
