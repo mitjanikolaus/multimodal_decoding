@@ -250,8 +250,8 @@ def calc_t_value(values, popmean, sigma=0):
     # else:
     t_val = ttest_1samp_no_p(values - popmean, sigma=sigma)
     if np.all(values.round(2) == values[0].round(2)):
-        # If all values are (almost) equal, the t-value would be disproportionally high, so we discard the value
-        print(f'tval {t_val} for values {values}')
+        if t_val > 100:
+            print(f'tval {t_val} for values {values}')
     return t_val
 
 
