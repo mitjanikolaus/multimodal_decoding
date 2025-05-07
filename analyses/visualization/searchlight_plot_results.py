@@ -119,6 +119,7 @@ def plot(args):
             # cbar_max = CBAR_TFCE_MAX_VALUE
             cbar_max = 500000
             # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            print(f"{result_metric} max tfce value across hemis: {np.nanmax(np.concatenate((result_values['left'], result_values['right'])))}")
 
         elif result_metric.startswith("pairwise_acc"):
             # cbar_min = ACC_COLORBAR_MIN
@@ -149,6 +150,7 @@ def plot(args):
             cbar_min = 0
             # cbar_max = 2000
             cbar_max = CBAR_TFCE_MAX_VALUE  #np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            print(f"{result_metric} max tfce value across hemis: {np.nanmax(np.concatenate((result_values['left'], result_values['right'])))}")
 
             # for hemi in HEMIS:
             #     print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
