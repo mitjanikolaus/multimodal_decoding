@@ -156,9 +156,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
         np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
         for n in null_distribution_tfce_values
     ])
-    print(f"null distr size: {len(null_distr)}")
-    print(f"null distr max values: {null_distr[-100:]}")
-    print(f"num null distr values greater than 1000: {np.sum(null_distr > 1000)}")
+    print(f"null distr max values: {null_distr[-5:]}")
 
     if p_value_threshold == 1 / len(null_distribution_tfce_values):
         significance_cutoff = np.max(null_distr)
