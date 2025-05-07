@@ -34,7 +34,7 @@ def calc_additional_test_statistics(args):
 def run(args):
     calc_additional_test_statistics(args)
 
-    for hemis in [HEMIS[0], HEMIS[1]]:
+    for hemis in [[HEMIS[0]], [HEMIS[1]]]:
         hemis_string = "both" if hemis == HEMIS else hemis[0]
         print(f'\nHEMIS: {hemis_string}')
 
