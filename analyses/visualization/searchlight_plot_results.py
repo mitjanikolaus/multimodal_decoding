@@ -12,7 +12,7 @@ import pickle
 from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
-    get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
+    get_hparam_suffix, add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom, CBAR_T_VAL_MAX
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS, COLORBAR_MAX
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
@@ -29,7 +29,7 @@ ACC_COLORBAR_THRESHOLD = 0.55
 
 CBAR_TFCE_MAX_VALUE = 300000
 
-METRICS = [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS] #ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
+METRICS = [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS]
 
 CONTOUR_COLOR = 'lightseagreen'
 

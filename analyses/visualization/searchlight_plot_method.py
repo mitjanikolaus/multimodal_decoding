@@ -1,7 +1,6 @@
 import argparse
 import warnings
 
-import h5py
 import numpy as np
 from PIL import Image
 from nilearn import datasets, plotting
@@ -13,9 +12,8 @@ from tqdm import tqdm
 
 from analyses.cluster_analysis import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
-from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, CHANCE_VALUES, \
-    load_null_distr_per_subject_scores, permutation_results_dir, \
-    get_hparam_suffix, add_searchlight_permutation_args
+from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, permutation_results_dir, \
+    get_hparam_suffix, add_searchlight_permutation_args, load_per_subject_scores
 from eval import ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, \
     ACC_CAPTIONS_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
@@ -97,14 +95,14 @@ def plot_test_statistics(test_statistics, args, results_path, subfolder=""):
     test_statistics_filtered = test_statistics.copy()
     del test_statistics_filtered['t-values']
 
-    # null_distribution_tfce_values_file = os.path.join(
-    #     permutation_results_dir(args),
-    #     f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-    # )
-    # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-    # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-    #                                                   args.p_value_threshold)
-    significance_cutoff = 2333.16
+    null_distribution_tfce_values_file = os.path.join(
+        permutation_results_dir(args),
+        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+    )
+    null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+    significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                      args.p_value_threshold)
+    # significance_cutoff = 2333.16
 
     print(f"plotting test stats {subfolder}")
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -312,47 +310,47 @@ def create_composite_image(args):
 
 
 def run(args):
-    # results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
-    #                                 searchlight_mode_from_args(args)))
-    # os.makedirs(results_path, exist_ok=True)
-    #
-    # plot_p_values(results_path, args)
-    #
-    # per_subject_scores = load_per_subject_scores(args)
-    # plot_acc_scores(per_subject_scores, args, results_path)
-    #
-    # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-    # test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
-    # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-    # test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
-    # plot_test_statistics(test_statistics, args, results_path)
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
+                                    searchlight_mode_from_args(args)))
+    os.makedirs(results_path, exist_ok=True)
+
+    plot_p_values(results_path, args)
+
+    per_subject_scores = load_per_subject_scores(args)
+    plot_acc_scores(per_subject_scores, args, results_path)
+
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    test_statistics = {"t-values": pickle.load(open(t_values_path, 'rb'))}
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    test_statistics["tfce-values"] = pickle.load(open(tfce_values_path, 'rb'))
+    plot_test_statistics(test_statistics, args, results_path)
 
     create_composite_image(args)
 
-    if args.plot_null_distr:
-        print("plotting acc maps for null distribution examples")
-        per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
-        for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
-            plot_acc_scores(per_subject_scores_null_distr[i], args, results_path, subfolder=f"_null_distr_{i}")
-
-        print("plotting test stats for null distribution examples")
-        t_values_null_distribution_path = os.path.join(
-            permutation_results_dir(args), f"t_values_null_distribution.hdf5"
-        )
-        with h5py.File(t_values_null_distribution_path, 'r') as null_distribution_t_values:
-            t_values_smooth_null_distribution = None
-            null_distribution_tfce_values_file = os.path.join(
-                permutation_results_dir(args),
-                f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-            )
-            null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-
-            for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
-                test_statistics = {"t-values": null_distribution_t_values[i]}
-                if t_values_smooth_null_distribution is not None:
-                    test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
-                test_statistics["tfce-values"] = null_distribution_test_statistic[i]
-                plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
+    # if args.plot_null_distr:
+    #     print("plotting acc maps for null distribution examples")
+    #     per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
+    #     for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
+    #         plot_acc_scores(per_subject_scores_null_distr[i], args, results_path, subfolder=f"_null_distr_{i}")
+    #
+    #     print("plotting test stats for null distribution examples")
+    #     t_values_null_distribution_path = os.path.join(
+    #         permutation_results_dir(args), f"t_values_null_distribution.hdf5"
+    #     )
+    #     with h5py.File(t_values_null_distribution_path, 'r') as null_distribution_t_values:
+    #         t_values_smooth_null_distribution = None
+    #         null_distribution_tfce_values_file = os.path.join(
+    #             permutation_results_dir(args),
+    #             f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+    #         )
+    #         null_distribution_test_statistic = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+    #
+    #         for i in range(PLOT_NULL_DISTR_NUM_SAMPLES):
+    #             test_statistics = {"t-values": null_distribution_t_values[i]}
+    #             if t_values_smooth_null_distribution is not None:
+    #                 test_statistics["t-values-smoothed"] = t_values_smooth_null_distribution[i]
+    #             test_statistics["tfce-values"] = null_distribution_test_statistic[i]
+    #             plot_test_statistics(test_statistics, args, results_path, subfolder=f"_null_distr_{i}")
 
     if args.per_subject_plots:
         print("\n\nCreating per-subject plots..")
