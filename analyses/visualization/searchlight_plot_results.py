@@ -27,7 +27,7 @@ CMAP_POS_ONLY = "hot"
 ACC_COLORBAR_MIN = 0.5
 ACC_COLORBAR_THRESHOLD = 0.55
 
-CBAR_TFCE_MAX_VALUE = 300000
+CBAR_TFCE_MAX_VALUE = 400000
 
 METRICS = [ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, METRIC_MOD_AGNOSTIC_AND_CROSS]
 
@@ -117,7 +117,7 @@ def plot(args):
             threshold = significance_cutoff
             cbar_min = 0
             # cbar_max = CBAR_TFCE_MAX_VALUE
-            cbar_max = 500000
+            cbar_max = 400000
             # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             print(f"{result_metric} max tfce value across hemis: {np.nanmax(np.concatenate((result_values['left'], result_values['right'])))}")
 
