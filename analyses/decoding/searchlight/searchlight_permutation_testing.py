@@ -247,7 +247,6 @@ def calc_t_value(values, popmean, sigma=0):
     # if np.all(values_no_nan.round(2) == values_no_nan[0].round(2)):
     if np.all(values == values[0]):
         # If all values are equal, the t-value would be disproportionally high, so we discard the value
-        print(f'setting t val to nan for {values}')
         t_val = np.nan
     else:
         t_val = ttest_1samp_no_p(values - popmean, sigma=sigma)
