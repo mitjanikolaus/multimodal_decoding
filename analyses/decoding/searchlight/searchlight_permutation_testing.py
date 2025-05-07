@@ -553,7 +553,8 @@ def calc_t_values_null_distr(args, out_path):
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
         for hemi_metric in tmp_files[0].keys():
-            tvals_shape = (args.n_permutations_group_level, n_vertices)
+            hemi = hemi_metric.split('__')[0]
+            tvals_shape = (args.n_permutations_group_level, n_vertices[hemi])
             all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
 
         for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
