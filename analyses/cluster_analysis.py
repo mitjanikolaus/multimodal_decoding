@@ -217,6 +217,9 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
         masks = copy.deepcopy(p_values)
         for hemi in HEMIS:
             print(f'{hemi} hemi mask size for threshold {p_value_threshold}: {np.mean(p_values[hemi] <= p_value_threshold)}')
+            print(f'{hemi} hemi min p vals {p_value_threshold}: {np.sort(p_values[hemi])[:10]}')
+            print(f'{hemi} hemi max p vals {p_value_threshold}: {np.sort(p_values[hemi])[-10:]}')
+
             masks[hemi][p_values[hemi] <= p_value_threshold] = 1
             masks[hemi][p_values[hemi] > p_value_threshold] = 0
             masks[hemi][np.isnan(p_values[hemi])] = 0
