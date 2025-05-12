@@ -11,6 +11,7 @@ from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
 from tqdm import tqdm
 from glob import glob
 import pickle
+import os
 
 HP_KEYS = ["alpha", "model", "subject", "features", "test_features", "vision_features", "lang_features",
            "training_mode", "mask",
@@ -237,6 +238,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
 
     result_files = sorted(glob(f"{RIDGE_DECODER_OUT_DIR}/*/*/*/results.p"))
     for result_file_path in tqdm(result_files):
+        # print(f'loading {result_file_path}')
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
             if recompute_acc_scores:
@@ -283,7 +285,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     # df["lang_features"] = df["lang_features"].fillna("unk")
 
     df["mask"] = df["mask"].fillna("whole_brain")
-    df["mask"] = df["mask"].apply(lambda x: x.replace("p_values_", "").replace(".p", ""))
+    df["mask"] = df["mask"].apply(lambda x: os.path.basename(x).replace("p_values_", "").replace(".p", ""))
 
     df["model_feat"] = df.model + "_" + df.features
 
