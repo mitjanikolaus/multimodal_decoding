@@ -173,7 +173,7 @@ def define_multi_regressors(realign_files):
 
 def process_scans(subject, task_name, args):
     preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, "coregistered", subject)
-    realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
+    realignment_data_dir = os.path.join(args.preprocessing_datasink_dir, "realignment")
     raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
     scans = []
