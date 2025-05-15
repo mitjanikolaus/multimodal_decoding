@@ -5,25 +5,23 @@ import numpy as np
 from joblib import Parallel, delayed
 
 import os
-import pickle
 
 from tqdm import tqdm
 
-from data import get_fmri_data_paths, INDICES_TEST_STIM_IMAGE, TEST_STIM_IDS, INDICES_TEST_STIM_CAPTION, \
-    IMAGERY_SCENES, SPLIT_IMAGERY, SPLIT_TRAIN, SPLIT_TEST, TEST_STIM_TYPES, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, \
+from data import get_fmri_data_paths, IMAGERY_SCENES, SPLIT_IMAGERY, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, \
     IMAGE, CAPTION, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, \
     IDS_IMAGES_TEST, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_TEST_CAPTION_ATTENDED, \
-    SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_IMAGERY_WEAK, IDS_IMAGES_IMAGERY_WEAK
-from utils import SUBJECTS, FMRI_BETAS_DIR, FS_HEMI_NAMES, FREESURFER_SUBJECTS_DIR, HEMIS, FMRI_STIM_INFO_DIR
+    SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_IMAGERY_WEAK, IDS_IMAGES_IMAGERY_WEAK, ALL_SPLITS
+from utils import SUBJECTS, FMRI_BETAS_DIR, FS_HEMI_NAMES, FREESURFER_SUBJECTS_DIR, HEMIS
 import nibabel as nib
 
 
-def to_surface(args, splits):
+def to_surface(args):
     os.environ["SUBJECTS_DIR"] = FREESURFER_SUBJECTS_DIR
 
     for subject in args.subjects:
         print("\n", subject)
-        for split in splits:
+        for split in args.splits:
             fmri_data_paths, stim_ids, stim_types = get_fmri_data_paths(args.betas_dir, subject, split)
 
             if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED]:
@@ -41,20 +39,6 @@ def to_surface(args, splits):
 
             elif split == SPLIT_IMAGERY_WEAK:
                 assert np.all(stim_ids == IDS_IMAGES_IMAGERY_WEAK)
-
-            #
-            # test_fmri, test_stim_ids, test_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TEST)
-            # imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_data_paths(args.betas_dir, subject, SPLIT_IMAGERY)
-            #
-            # assert np.all(test_stim_types[INDICES_TEST_STIM_IMAGE] == IMAGE)
-            # assert np.all(test_stim_types[INDICES_TEST_STIM_CAPTION] == CAPTION)
-            # assert np.all(test_stim_ids == TEST_STIM_IDS)
-            # assert np.all(test_stim_types == TEST_STIM_TYPES)
-            # assert np.all(imagery_stim_ids == IMAGERY_STIMS_IDS[subject])
-            # assert np.all(imagery_stim_types == IMAGERY_STIMS_TYPES[subject])
-            # assert np.all(imagery_stim_ids == [i[1] for i in IMAGERY_SCENES[subject]])
-            #
-            # train_fmri, _, _ = get_fmri_data_paths(args.betas_dir, subject, SPLIT_TRAIN)
 
             paths = []
             for path in fmri_data_paths:
@@ -108,6 +92,8 @@ def get_args():
 
     parser.add_argument("--n-jobs", type=str, default=10)
 
+    parser.add_argument("--splits", type=str, nargs="+", default=ALL_SPLITS)
+
     return parser.parse_args()
 
 
@@ -115,4 +101,4 @@ if __name__ == "__main__":
     args = get_args()
     os.makedirs(args.out_dir, exist_ok=True)
 
-    to_surface(args, splits=[SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY])
+    to_surface(args)

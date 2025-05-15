@@ -7,7 +7,7 @@ import os
 
 from tqdm import tqdm
 
-from data import IMAGERY, SPLIT_IMAGERY_WEAK
+from data import IMAGERY, SPLIT_IMAGERY_WEAK, ALL_SPLITS, ALL_SPLITS_BASE_DATA
 from utils import SUBJECTS, FMRI_BETAS_DIR, ATTENTION_MOD_FMRI_BETAS_DIR
 
 SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery', 'blank']
@@ -15,18 +15,14 @@ SPLITS = ['train_image', 'train_caption', 'test_caption', 'test_image', 'imagery
 SUFFIX = "*bf(1)"
 
 
-def get_subdir(split_name, beta_dir, subject):
-    subdir = os.path.join(beta_dir, subject, f"betas_{split_name}")
+def get_subdir(slink_dir, subject, split_name):
+    subdir = os.path.join(slink_dir, subject, f"betas_{split_name}")
     if not os.path.isdir(subdir):
         os.makedirs(subdir)
     return subdir
 
 
-def create_symlinks_for_beta_files(betas_dir, subject, splits):
-    r"""
-    this function makes several subdirectories and creates symbolic links
-    to the corresponding beta files. it also renames the links with the coco sample id.
-    """
+def create_symlinks_for_beta_files(betas_dir, slink_dir, subject, splits):
     beta_file_addresses = sorted(glob(os.path.join(betas_dir, subject, 'unstructured', 'beta_*.nii'), recursive=True))
 
     all_slink_names = set()
@@ -41,12 +37,12 @@ def create_symlinks_for_beta_files(betas_dir, subject, splits):
 
         if split_name in splits:
             if split_name in ['blank', 'fixation', 'fixation_whitescreen']:
-                slink_name = os.path.join(get_subdir(split_name, betas_dir, subject), f"beta_{split_name}.nii")
+                slink_name = os.path.join(get_subdir(slink_dir, subject, split_name), f"beta_{split_name}.nii")
             else:
                 stim_id = int(beta_name.split(split_name)[1].replace("_", ""))
                 if (split_name == IMAGERY) and (betas_dir == ATTENTION_MOD_FMRI_BETAS_DIR):
                     split_name = SPLIT_IMAGERY_WEAK
-                slink_name = os.path.join(get_subdir(split_name, betas_dir, subject), f"beta_{stim_id:06d}.nii")
+                slink_name = os.path.join(get_subdir(slink_dir, subject, split_name), f"beta_{stim_id:06d}.nii")
 
             if slink_name in all_slink_names:
                 raise Exception(f'slink already defined: {slink_name}')
@@ -67,6 +63,9 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
+    parser.add_argument("--slink-dir", type=str, default=FMRI_BETAS_DIR)
+
+    parser.add_argument("--splits", type=str, nargs='+', default=ALL_SPLITS_BASE_DATA)
 
     return parser.parse_args()
 
@@ -75,4 +74,4 @@ if __name__ == "__main__":
     args = get_args()
     for subject in args.subjects:
         print(subject)
-        create_symlinks_for_beta_files(args.betas_dir, subject, SPLITS)
+        create_symlinks_for_beta_files(args.betas_dir, args.slink_dir, subject, SPLITS)
