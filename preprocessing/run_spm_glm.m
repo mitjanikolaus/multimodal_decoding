@@ -6,10 +6,10 @@ function []=run_spm_glm_stage_1(subject, betas_dir)
     spm_get_defaults('cmdline',true);
 
     if nargin < 2
-        home = getenv('HOME');
-        betas_dir =  [home,'/data/multimodal_decoding/fmri/betas/']
+        betas_dir = "unstructured";
     end
-    data_dir = [betas_dir, subject, '/unstructured'];
+    home = getenv('HOME');
+    data_dir = [home,'/data/multimodal_decoding/fmri/betas/',subject,betas_dir];
     cd(data_dir)
 
     data_dir

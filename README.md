@@ -134,8 +134,8 @@ pip install 'git+https://github.com/facebookresearch/detectron2.git'
 ```
 python preprocessing/fmri_preprocessing.py --subjects sub-01 --fmri-bids-dir ~/data/multimodal_decoding/attention_modulation/fmri/raw/ --out-data-dir ~/data/multimodal_decoding/attention_modulation/fmri/preprocessed/
 python preprocessing/make_spm_design_job_mat_attention_mod.py --subjects sub-01
-cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01 /home/$USER/data/multimodal_decoding/attention_modulation/fmri/betas/;exit;"  -logfile matlab_output.txt && cd -
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01 unstructured_additional_test;exit;"  -logfile matlab_output.txt && cd -
 
-python preprocessing/create_symlinks_beta_files.py --subjects sub-01 --betas-dir ~/data/multimodal_decoding/attention_modulation/fmri/betas --splits imagery_weak test_caption_attended test_caption_unattended test_image_attended test_image_unattended
+python preprocessing/create_symlinks_beta_files.py --subjects sub-01 --unstructured-dir-name unstructured_additional_test --splits imagery_weak test_caption_attended test_caption_unattended test_image_attended test_image_unattended
 python preprocessing/transform_to_surface.py --subjects sub-01 --splits imagery_weak test_caption_attended test_caption_unattended test_image_attended test_image_unattended
 ```
