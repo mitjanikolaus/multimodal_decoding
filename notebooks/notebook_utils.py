@@ -141,12 +141,9 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
                         verify_num_datapoints=True, plot_legend=True, shorten_label_texts=True):
-    
-    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
-    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
-    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
-    for mode in TRAINING_MODES:
+    training_modes_to_check = TRAINING_MODES if plot_modality_specific else [MODALITY_AGNOSTIC]
+    for mode in training_modes_to_check:
         data_mode = data[data.training_mode == mode]
         for x_variable_value in order:
             length = len(data_mode[(data_mode[x_variable] == x_variable_value) & (data_mode.metric == metrics[0])])
@@ -159,6 +156,10 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                     raise RuntimeError(message)
                 else:
                     print(f"Warning: {message}")
+
+    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
+    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
+    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
     catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=order, metrics=metrics,
                                                        x_variable=x_variable, legend_title=legend_title,
