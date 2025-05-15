@@ -20,7 +20,6 @@ def to_surface(args):
     os.environ["SUBJECTS_DIR"] = FREESURFER_SUBJECTS_DIR
 
     for subject in args.subjects:
-        print("\n", subject)
         for split in args.splits:
             fmri_data_paths, stim_ids, stim_types = get_fmri_data_paths(args.betas_dir, subject, split)
 
@@ -76,7 +75,7 @@ def to_surface(args):
 
             Parallel(n_jobs=int(args.n_jobs))(
                 delayed(transform)(path, args.betas_dir)
-                for path in tqdm(paths)
+                for path in tqdm(paths, desc=f'{subject} {split}')
             )
 
         shutil.rmtree(os.path.join(args.betas_dir, 'nan_to_zero', subject))
