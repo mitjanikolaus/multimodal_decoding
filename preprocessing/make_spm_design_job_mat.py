@@ -198,7 +198,7 @@ def process_scans(subject, task_name, args):
             realign_files.append(realign_file)
             run_file = os.path.join(
                 session_dir,
-                f'rrara{subject}_{session}_task-{task_name}_{run}_bold.nii'
+                f'rra{subject}_{session}_task-{task_name}_{run}_bold.nii'
             )
             run_nii = nib.load(run_file)
             run_size = run_nii.shape[-1]
