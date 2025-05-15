@@ -8,7 +8,7 @@ from data import IMAGERY, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED
     SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_IMAGERY
 from preprocessing.make_spm_design_job_mat import define_fmri_betas_jobs
 from utils import ATTENTION_MOD_FMRI_BETAS_DIR, ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, \
-    ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR
+    ATTENTION_MOD_FMRI_PREPROCESSED_DATASINK_DIR
 
 FIXATION = "fixation"
 FIXATION_WHITESCREEN = "fixation_whitescreen"
@@ -131,7 +131,7 @@ def get_args():
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
     parser.add_argument("--raw-data-dir", type=str, default=ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR)
-    parser.add_argument("--preprocessed-data-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--preprocessing-datasink-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=ATTENTION_MOD_FMRI_BETAS_DIR)
 
