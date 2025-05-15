@@ -429,8 +429,9 @@ def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
         stim_id = stim_id_from_beta_file_name(os.path.basename(path), suffix)
-        # TODO: imagery_weak
-        if IMAGERY in split_name:
+        if SPLIT_IMAGERY_WEAK in split_name:
+            stim_types.append(IMAGERY)
+        elif IMAGERY in split_name:
             stim_types.append(IMAGERY)
             stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
         elif IMAGE in split_name:

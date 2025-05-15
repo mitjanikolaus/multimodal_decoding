@@ -14,7 +14,7 @@ from tqdm import tqdm
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_IMAGERY, get_fmri_data, \
-    ALL_SPLITS, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS
+    ALL_SPLITS, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, ALL_SPLITS_BASE_DATA
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
@@ -25,7 +25,7 @@ NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
-def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DEFAULT_RESOLUTION):
+def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DEFAULT_RESOLUTION, training_splits=[SPLIT_TRAIN]):
     run_str = f"{feats_config.model}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
@@ -43,6 +43,9 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
     if surface:
         run_str += f"_surface_{resolution}"
 
+    if (len(training_splits) > 1) or (training_splits[0] != SPLIT_TRAIN):
+        run_str += f"_train_splits_{'_'.join(training_splits)}"
+
     return run_str
 
 
@@ -51,8 +54,7 @@ def get_fmri_data_for_splits(subject, splits, training_mode, main_betas_dir, att
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
     for split in tqdm(splits, desc="loading fmri data"):
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
-        betas_dir = main_betas_dir if split in [SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS,
-                                           SPLIT_IMAGERY] else attn_mod_betas_dir
+        betas_dir = main_betas_dir if split in ALL_SPLITS_BASE_DATA else attn_mod_betas_dir
         fmri_betas[split], stim_ids[split], stim_types[split] = get_fmri_data(
             betas_dir,
             subject,
@@ -98,7 +100,7 @@ def run(args):
                     if mask is not None:
                         print("Mask: ", os.path.basename(mask))
 
-                    run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution)
+                    run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution, args.training_splits)
                     results_file_path = os.path.join(
                         RIDGE_DECODER_ATTN_MOD_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
@@ -119,7 +121,10 @@ def run(args):
                     )
 
                     start = time.time()
-                    clf.fit(fmri_betas[SPLIT_TRAIN], latents[SPLIT_TRAIN])
+                    fmri_betas_train = np.concatenate([fmri_betas[split] for split in args.training_splits])
+                    latents_train = np.concatenate([latents[split] for split in args.training_splits])
+                    print(f"Training set size: {len(fmri_betas_train)} (splits: {args.training_splits}")
+                    clf.fit(fmri_betas_train, latents_train)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
@@ -129,32 +134,6 @@ def run(args):
 
                     predicted_latents = {split: best_model.predict(fmri_betas[split]) for split in TEST_SPLITS}
 
-                    # results = {
-                    #     "alpha": best_alpha,
-                    #     "model": model,
-                    #     "subject": subject,
-                    #     "features": feats_config.features,
-                    #     "test_features": feats_config.test_features,
-                    #     "vision_features": feats_config.vision_features,
-                    #     "lang_features": feats_config.lang_features,
-                    #     "training_mode": training_mode,
-                    #     "mask": mask,
-                    #     "num_voxels": test_fmri_betas.shape[1],
-                    #     "stimulus_ids": test_stim_ids,
-                    #     "stimulus_types": test_stim_types,
-                    #     "imagery_stimulus_ids": imagery_stim_ids,
-                    #     "predictions": test_predicted_latents,
-                    #     "imagery_predictions": imagery_predicted_latents,
-                    #     "latents": test_latents,
-                    #     "imagery_latents": imagery_latents,
-                    #     "surface": args.surface,
-                    #     "resolution": args.resolution,
-                    # }
-                    # scores = calc_all_pairwise_accuracy_scores(
-                    #     test_latents, test_predicted_latents, test_stim_types,
-                    #     imagery_latents, imagery_predicted_latents, standardize_predictions=True
-                    # )
-                    # results.update(scores)
                     scores_df = calc_all_pairwise_accuracy_scores(latents, predicted_latents)
                     scores_df["model"] = model
                     scores_df["subject"] = subject
@@ -163,33 +142,15 @@ def run(args):
                     scores_df["vision_features"] = feats_config.vision_features
                     scores_df["lang_features"] = feats_config.lang_features
                     scores_df["training_mode"] = training_mode
+                    scores_df["training_splits"] = args.training_splits
                     scores_df["mask"] = mask
                     scores_df["num_voxels"] = fmri_betas[SPLIT_TRAIN].shape[1]
                     scores_df["surface"] = args.surface
                     scores_df["resolution"] = args.resolution
-                    # print(
-                    #     f"Best alpha: {best_alpha}\n"
-                    #     f"Pairwise acc (mean): {np.mean((results[ACC_CAPTIONS], results[ACC_IMAGES])):.4f}"
-                    #     f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                    #     f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
-                    #     f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
-                    #     f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
-                    # )
                     print(
                         f"Best alpha: {best_alpha}"
                     )
 
-                    # results_no_standardization = calc_all_pairwise_accuracy_scores(
-                    #     latents, predicted_latents, stim_types, standardize_predictions=False
-                    # )
-                    # print(
-                    #     f"Without standardization of predictions:\n"
-                    #     f"Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
-                    #     f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
-                    #     f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
-                    #     f" | Pairwise acc (imagery whole test set): "
-                    #     f"{results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
-                    # )
                     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
                     scores_df.to_csv(results_file_path, index=False)
 
@@ -207,6 +168,8 @@ def get_args():
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
     parser.add_argument("--attn-mod-betas-dir", type=str, default=ATTENTION_MOD_FMRI_BETAS_DIR)
+
+    parser.add_argument("--training-splits", type=str, default=[SPLIT_TRAIN])
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
