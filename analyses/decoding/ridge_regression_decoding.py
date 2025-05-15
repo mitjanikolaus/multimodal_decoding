@@ -2,11 +2,13 @@ import argparse
 import time
 
 import numpy as np
-import sklearn
 import os
 import pickle
 
 import torch
+from sklearn.linear_model import Ridge
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
@@ -15,8 +17,7 @@ from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES,
     ALL_SPLITS, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
     ACC_IMAGERY_WHOLE_TEST
-from himalaya.backend import set_backend
-from himalaya.kernel_ridge import KernelRidgeCV
+from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
     ATTENTION_MOD_FMRI_BETAS_DIR, RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE
 
@@ -43,17 +44,6 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
         run_str += f"_surface_{resolution}"
 
     return run_str
-
-
-def tensor_pairwise_accuracy(
-        latents, predictions, metric="cosine", standardize_predictions=False, standardize_latents=False
-):
-    if torch.is_tensor(latents) and latents.is_cuda:
-        latents = latents.cpu().numpy()
-        predictions = predictions.cpu().numpy()
-    predictions = predictions.squeeze()
-
-    return pairwise_accuracy(latents, predictions, metric, standardize_predictions, standardize_latents)
 
 
 def get_fmri_data_for_splits(subject, splits, training_mode, main_betas_dir, attn_mod_betas_dir=None, surface=False,
@@ -84,12 +74,6 @@ def get_latents_for_splits(subject, feats_config, splits, training_mode):
 
 
 def run(args):
-    if torch.cuda.is_available() and not args.force_cpu:
-        print("Setting backend to cuda")
-        backend = set_backend("torch_cuda")
-    else:
-        backend = set_backend("numpy")
-
     for training_mode in args.training_modes:
         for subject in args.subjects:
             fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
@@ -126,20 +110,12 @@ def run(args):
                     latents = standardize_latents(latents)
                     print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
 
-                    # skip input data checking to limit memory use
-                    # (https://gallantlab.org/himalaya/troubleshooting.html?highlight=cuda)
-                    sklearn.set_config(assume_finite=True)
-
-                    clf = KernelRidgeCV(
-                        cv=NUM_CV_SPLITS,
-                        alphas=args.l2_regularization_alphas,
-                        solver_params=dict(
-                            n_targets_batch=args.n_targets_batch,
-                            n_alphas_batch=args.n_alphas_batch,
-                            n_targets_batch_refit=args.n_targets_batch_refit,
-                            score_func=tensor_pairwise_accuracy,
-                            local_alpha=False,
-                        )
+                    pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+                    clf = GridSearchCV(
+                        estimator=Ridge(fit_intercept=False),
+                        param_grid=dict(alpha=args.l2_regularization_alphas),
+                        scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
+                        pre_dispatch=args.n_pre_dispatch, refit=True, verbose=3
                     )
 
                     start = time.time()
@@ -147,11 +123,11 @@ def run(args):
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
-                    best_alpha = np.round(backend.to_numpy(clf.best_alphas_[0]))
+                    best_alpha = clf.best_params_["alpha"]
 
-                    predicted_latents = {split: clf.predict(fmri_betas[split]) for split in TEST_SPLITS}
+                    best_model = clf.best_estimator_
 
-                    predicted_latents = {split: backend.to_numpy(lats) for split, lats in predicted_latents.items()}
+                    predicted_latents = {split: best_model.predict(fmri_betas[split]) for split in TEST_SPLITS}
 
                     # results = {
                     #     "alpha": best_alpha,
@@ -163,11 +139,22 @@ def run(args):
                     #     "lang_features": feats_config.lang_features,
                     #     "training_mode": training_mode,
                     #     "mask": mask,
-                    #     "num_voxels": fmri_betas[SPLIT_TRAIN].shape[1],
-                    #     # "predictions": predicted_latents,
+                    #     "num_voxels": test_fmri_betas.shape[1],
+                    #     "stimulus_ids": test_stim_ids,
+                    #     "stimulus_types": test_stim_types,
+                    #     "imagery_stimulus_ids": imagery_stim_ids,
+                    #     "predictions": test_predicted_latents,
+                    #     "imagery_predictions": imagery_predicted_latents,
+                    #     "latents": test_latents,
+                    #     "imagery_latents": imagery_latents,
                     #     "surface": args.surface,
                     #     "resolution": args.resolution,
                     # }
+                    # scores = calc_all_pairwise_accuracy_scores(
+                    #     test_latents, test_predicted_latents, test_stim_types,
+                    #     imagery_latents, imagery_predicted_latents, standardize_predictions=True
+                    # )
+                    # results.update(scores)
                     scores_df = calc_all_pairwise_accuracy_scores(latents, predicted_latents)
                     scores_df["model"] = model
                     scores_df["subject"] = subject
@@ -180,10 +167,16 @@ def run(args):
                     scores_df["num_voxels"] = fmri_betas[SPLIT_TRAIN].shape[1]
                     scores_df["surface"] = args.surface
                     scores_df["resolution"] = args.resolution
-
-                    # results.update(scores)
+                    # print(
+                    #     f"Best alpha: {best_alpha}\n"
+                    #     f"Pairwise acc (mean): {np.mean((results[ACC_CAPTIONS], results[ACC_IMAGES])):.4f}"
+                    #     f" | Pairwise acc (captions): {results[ACC_CAPTIONS]:.2f}"
+                    #     f" | Pairwise acc (images): {results[ACC_IMAGES]:.2f}"
+                    #     f" | Pairwise acc (imagery): {results[ACC_IMAGERY]:.2f}"
+                    #     f" | Pairwise acc (imagery whole test set): {results[ACC_IMAGERY_WHOLE_TEST]:.2f}"
+                    # )
                     print(
-                        f"Best alphas: {best_alpha}"
+                        f"Best alpha: {best_alpha}"
                     )
 
                     # results_no_standardization = calc_all_pairwise_accuracy_scores(
@@ -233,17 +226,14 @@ def get_args():
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
-    parser.add_argument("--n-targets-batch", type=int, default=1024)
-    parser.add_argument("--n-targets-batch-refit", type=int, default=1024)
-    parser.add_argument("--n-alphas-batch", type=int, default=1)
+    parser.add_argument("--n-jobs", type=int, default=10)
+    parser.add_argument("--n-pre-dispatch", type=int, default=10)
 
     parser.add_argument("--surface", action='store_true', default=False)
     parser.add_argument("--resolution", default=DEFAULT_RESOLUTION)
     parser.add_argument("--masks", nargs='+', type=str, default=[None])
 
     parser.add_argument("--overwrite", action='store_true', default=False)
-
-    parser.add_argument("--force-cpu", action='store_true', default=False)
 
     return parser.parse_args()
 

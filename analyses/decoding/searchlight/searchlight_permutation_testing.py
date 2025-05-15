@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 import itertools
 import math
 import warnings
@@ -13,9 +12,8 @@ from glob import glob
 import pickle
 
 from nilearn.surface import surface
-from scipy import stats
 from scipy.spatial.distance import cdist
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, \
     calc_significance_cutoff, create_masks
@@ -23,30 +21,21 @@ from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
 from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, \
     searchlight_mode_from_args, get_results_file_path
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
-    FEATURE_COMBINATION_CHOICES, LANG_FEATS_ONLY, VISION_FEATS_ONLY, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, \
-    LANG_FEAT_COMBINATION_CHOICES
+    FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES
 from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
     ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_AGNOSTIC, \
     ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, \
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES
+    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, \
+    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, \
+    ACC_IMAGERY_MOD_SPECIFIC_IMAGES, CHANCE_VALUES
 from utils import SUBJECTS, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL
+    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS
 
 DEFAULT_N_JOBS = 10
-
-CHANCE_VALUES = {
-    ACC_CAPTIONS_MOD_AGNOSTIC: 0.5,
-    ACC_IMAGES_MOD_AGNOSTIC: 0.5,
-    ACC_IMAGERY_MOD_AGNOSTIC: 0.5,
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC: 0.5,
-    ACC_IMAGES_MOD_SPECIFIC_IMAGES: 0.5,
-    ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS: 0.5,
-    ACC_CAPTIONS_MOD_SPECIFIC_IMAGES: 0.5,
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS: 0.5,
-    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
-    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
-}
 
 T_VAL_METRICS = [
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC,
@@ -56,26 +45,46 @@ T_VAL_METRICS = [
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS
 ]
 
+MIN_NUM_DATAPOINTS = 4
 
-def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations):
+
+def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations,
+                   additional_imagery_scores=False):
     scores = dict()
 
-    for metric_agnostic_name, metric in zip([
-        ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-        ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC], [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
-    ):
+    metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
+    metric_names = [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
+                    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
+    # if additional_imagery_scores:
+    #     metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+    #     metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
+    for metric_agnostic_name, metric in zip(metric_names, metrics):
         scores[metric_agnostic_name] = np.repeat(np.nan, nan_locations.shape)
         scores[metric_agnostic_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
 
     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
-        for metric_specific_name, metric in zip([ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                                                [ACC_CAPTIONS, ACC_IMAGES]):
+        metric_names = [ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
+        metrics = [ACC_CAPTIONS, ACC_IMAGES]
+        if additional_imagery_scores:
+            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
+                        ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS,
+                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
+                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
+        for metric_specific_name, metric in zip(metric_names, metrics):
             scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
             scores[metric_specific_name][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_captions])
 
-        for metric_specific_name, metric in zip([ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                                                [ACC_IMAGES, ACC_CAPTIONS]):
+        metric_names = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
+        metrics = [ACC_IMAGES, ACC_CAPTIONS]
+        if additional_imagery_scores:
+            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
+                        ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
+                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
+                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
+        for metric_specific_name, metric in zip(metric_names, metrics):
             scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
             scores[metric_specific_name][~nan_locations] = np.array(
                 [score[metric] for score in scores_mod_specific_images])
@@ -90,7 +99,8 @@ def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_spe
     return scores
 
 
-def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, hemis=HEMIS):
+def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, hemis=HEMIS,
+                            additional_imagery_scores=False):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -153,7 +163,8 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 print(f"Missing modality-specific results: {results_mod_specific_captions_file}")
                 scores_captions = None
 
-            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations)
+            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations,
+                                    additional_imagery_scores)
 
             # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
             # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
@@ -198,67 +209,72 @@ def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
     return edge_lengths_dicts
 
 
-def calc_t_value(values, popmean, epsilon=1e-8):
-    # use heuristic (mean needs to be greater than popmean) to speed up calculation
-    values_no_nan = values[~np.isnan(values)]
-    if values_no_nan.mean() > popmean:
-        if np.all(values_no_nan == values_no_nan[0]):
-            # Add/subtract epsilon for numerical stability
-            values_no_nan[0] = values_no_nan[0] + epsilon
-            values_no_nan[-1] = values_no_nan[-1] - epsilon
-        t_val = stats.ttest_1samp(values_no_nan, popmean=popmean, alternative="greater")[0]
-        return t_val
+# Adapted from https://github.com/mne-tools/mne-python/blob/maint/1.9/mne/stats/parametric.py#L19-L57
+def ttest_1samp_no_p(X, sigma=0, method="relative"):
+    """Perform one-sample t-test.
+
+    This is a modified version of :func:`scipy.stats.ttest_1samp` that avoids
+    a (relatively) time-consuming p-value calculation, and can adjust
+    for implausibly small variance values :footcite:`RidgwayEtAl2012`.
+
+    Parameters
+    ----------
+    X : array
+        Array to return t-values for.
+    sigma : float
+        The variance estimate will be given by ``var + sigma * max(var)`` or
+        ``var + sigma``, depending on "method". By default this is 0 (no
+        adjustment). See Notes for details.
+    method : str
+        If 'relative', the minimum variance estimate will be sigma * max(var),
+        if 'absolute' the minimum variance estimate will be sigma.
+
+    Returns
+    -------
+    t : array
+        T-values, potentially adjusted using the hat method.
+
+    """
+    var = np.var(X, axis=0, ddof=1)
+    if sigma > 0:
+        limit = sigma * np.max(var) if method == "relative" else sigma
+        var += limit
+    return np.mean(X, axis=0) / np.sqrt(var / X.shape[0])
+
+
+def calc_t_value(values, popmean, sigma=0):
+    if np.all(values == values[0]):
+        # If all values are equal, the t-value is not defined
+        t_val = np.nan
     else:
-        return 0
+        t_val = ttest_1samp_no_p(values - popmean, sigma=sigma)
+    return t_val
 
 
-def calc_image_t_values(data, popmean, use_tqdm=False, t_vals_cache=None, precision=2, epsilon=1e-8, metric=None):
-    data = data.round(precision)
+def calc_image_t_values(data, popmean, use_tqdm=False, metric=None, sigma=0):
     iterator = tqdm(data.T, desc=f'calculating t-values for {metric}') if use_tqdm else data.T
-    if t_vals_cache is None:
-        return np.array(
-            [calc_t_value(x, popmean, epsilon) for x in iterator]
-        )
-    else:
-        t_vals = []
-        for x in iterator:
-            x_no_nan = x[~np.isnan(x)]
-            if x_no_nan.mean() > popmean:
-                key = hashlib.sha1(np.sort(x_no_nan)).hexdigest()
-                if key in t_vals_cache:
-                    t_vals.append(t_vals_cache[key])
-                else:
-                    if np.all(x_no_nan == x_no_nan[0]):
-                        # Add/subtract epsilon for numerical stability
-                        x_no_nan[0] = x_no_nan[0] + epsilon
-                        x_no_nan[-1] = x_no_nan[-1] - epsilon
-                    t_val = stats.ttest_1samp(x_no_nan, popmean=popmean, alternative="greater")[0]
-                    if np.isinf(t_val):
-                        print(f"Inf t-val for values: {x_no_nan}")
-                    t_vals.append(t_val)
-                    t_vals_cache[key] = t_val
-            else:
-                # mean is below popmean, t value won't be significant
-                t_vals.append(0)
-
-        return np.array(t_vals)
+    return np.array(
+        [calc_t_value(x, popmean, sigma) for x in iterator]
+    )
 
 
 def calc_t_values(per_subject_scores):
     t_values = {hemi: dict() for hemi in HEMIS}
-    t_vals_cache = {}
     for hemi in HEMIS:
         for metric in T_VAL_METRICS:
             data = np.array([per_subject_scores[subj][hemi][metric] for subj in args.subjects])
             popmean = CHANCE_VALUES[metric]
-            enough_data = np.argwhere(((~np.isnan(data)).sum(axis=0)) > 2)[:, 0]  # at least 3 datapoints
-            t_values[hemi][metric] = np.repeat(np.nan, data.shape[1])
-            t_values[hemi][metric][enough_data] = calc_image_t_values(
-                data[:, enough_data], popmean, t_vals_cache=t_vals_cache, use_tqdm=True, metric=metric
-            )
+            t_values[hemi][metric] = calc_image_t_values(data, popmean, use_tqdm=True, metric=metric)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
+            t_values[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
+                (
+                    t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
+                    t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
+                    t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
+                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
+                axis=0)
             t_values[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC] = np.nanmin(
                 (
                     t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
@@ -293,7 +309,7 @@ def calc_test_statistics(args):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
         tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
-                                       dh=args.tfce_dh, clip_value=args.tfce_clip)
+                                       dh=args.tfce_dh, use_tqdm=True)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
         tfce_values = pickle.load(open(tfce_values_path, 'rb'))
@@ -331,107 +347,108 @@ def calc_test_statistics(args):
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
-def load_null_distr_per_subject_scores(args):
-    per_subject_scores_null_distr = []
+def assemble_null_distr_per_subject_scores(subject, args):
+    print(f"assembling {subject} null distr scores")
 
-    for subject in tqdm(args.subjects):
-        for hemi in HEMIS:
-            feats_config_mod_agnostic = LatentFeatsConfig(
-                args.model,
-                args.features,
-                args.test_features,
-                args.vision_features,
-                args.lang_features,
-                logging=False
-            )
-            results_mod_agnostic_file = get_results_file_path(
-                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
-                searchlight_mode_from_args(args), args.l2_regularization_alpha,
-            )
-            results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
-            nan_locations = results_agnostic['nan_locations']
+    subject_scores_null_distr = []
+    for hemi in HEMIS:
+        feats_config_mod_agnostic = LatentFeatsConfig(
+            args.model,
+            args.features,
+            args.test_features,
+            args.vision_features,
+            args.lang_features,
+            logging=False
+        )
+        results_mod_agnostic_file = get_results_file_path(
+            feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
+            searchlight_mode_from_args(args), args.l2_regularization_alpha,
+        )
+        results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
+        nan_locations = results_agnostic['nan_locations']
 
-            feats_config_mod_specific_images = LatentFeatsConfig(
-                args.mod_specific_images_model,
-                args.mod_specific_images_features,
-                args.mod_specific_images_test_features,
-                args.vision_features,
-                args.lang_features,
-                logging=False
-            )
-            results_mod_specific_images_file = get_results_file_path(
-                feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
-                searchlight_mode_from_args(args), args.l2_regularization_alpha,
-            )
+        feats_config_mod_specific_images = LatentFeatsConfig(
+            args.mod_specific_images_model,
+            args.mod_specific_images_features,
+            args.mod_specific_images_test_features,
+            args.vision_features,
+            args.lang_features,
+            logging=False
+        )
+        results_mod_specific_images_file = get_results_file_path(
+            feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
+            searchlight_mode_from_args(args), args.l2_regularization_alpha,
+        )
 
-            feats_config_mod_specific_captions = LatentFeatsConfig(
-                args.mod_specific_captions_model,
-                args.mod_specific_captions_features,
-                args.mod_specific_captions_test_features,
-                args.vision_features,
-                args.lang_features,
-                logging=False
-            )
-            results_mod_specific_captions_file = get_results_file_path(
-                feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
-                searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
-            )
+        feats_config_mod_specific_captions = LatentFeatsConfig(
+            args.mod_specific_captions_model,
+            args.mod_specific_captions_features,
+            args.mod_specific_captions_test_features,
+            args.vision_features,
+            args.lang_features,
+            logging=False
+        )
+        results_mod_specific_captions_file = get_results_file_path(
+            feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
+            searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
+        )
 
-            def load_null_distr_scores(base_path):
-                scores_dir = os.path.join(base_path, "null_distr")
-                print(f'loading scores from {scores_dir}')
-                score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-                if len(score_paths) == 0:
-                    raise RuntimeError(f"No null distribution scores found: {scores_dir}")
-                last_idx = int(os.path.basename(score_paths[-1])[:-2])
-                assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
+        def load_null_distr_scores(base_path):
+            scores_dir = os.path.join(base_path, "null_distr")
+            print(f'loading scores from {scores_dir}')
+            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+            if len(score_paths) == 0:
+                raise RuntimeError(f"No null distribution scores found: {scores_dir}")
+            last_idx = int(os.path.basename(score_paths[-1])[:-2])
+            assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
 
-                def load_scores_from_pickle(paths, proc_id):
-                    job_scores = []
-                    iterator = tqdm(paths) if proc_id == 0 else paths
-                    for path in iterator:
-                        scores = pickle.load(open(path, "rb"))
-                        job_scores.append(scores)
-                    return job_scores
+            def load_scores_from_pickle(paths, proc_id):
+                job_scores = []
+                iterator = tqdm(paths) if proc_id == 0 else paths
+                for path in iterator:
+                    scores = pickle.load(open(path, "rb"))
+                    job_scores.append(scores)
+                return job_scores
 
-                n_per_job = math.ceil(len(score_paths) / args.n_jobs)
-                all_scores = Parallel(n_jobs=args.n_jobs)(
-                    delayed(load_scores_from_pickle)(
-                        score_paths[id * n_per_job:(id + 1) * n_per_job],
-                        id,
-                    )
-                    for id in range(args.n_jobs)
+            n_per_job = math.ceil(len(score_paths) / args.n_jobs)
+            all_scores = Parallel(n_jobs=args.n_jobs)(
+                delayed(load_scores_from_pickle)(
+                    score_paths[id * n_per_job:(id + 1) * n_per_job],
+                    id,
                 )
-                return np.concatenate(all_scores)
+                for id in range(args.n_jobs)
+            )
+            return np.concatenate(all_scores)
 
-            null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_mod_agnostic_file))
-            null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
-            null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
+        null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_mod_agnostic_file))
+        null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
+        null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
 
-            num_permutations = len(null_distribution_agnostic[0])
-            print('final per subject scores null distribution dict creation:')
-            for i in tqdm(range(num_permutations)):
-                distr = [null_distr[i] for null_distr in null_distribution_agnostic]
-                distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-                distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
-                if len(per_subject_scores_null_distr) <= i:
-                    per_subject_scores_null_distr.append({subj: dict() for subj in args.subjects})
-                scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
-                per_subject_scores_null_distr[i][subject][hemi] = scores
-    return per_subject_scores_null_distr
+        num_permutations = len(null_distribution_agnostic[0])
+        print('final per subject scores null distribution dict creation:')
+        for i in tqdm(range(num_permutations)):
+            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
+            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
+            distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
+            if len(subject_scores_null_distr) <= i:
+                subject_scores_null_distr.append(dict())
+            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+            subject_scores_null_distr[i][hemi] = scores
+
+    subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
+    pickle.dump(subject_scores_null_distr, open(subject_scores_null_distr_path, 'wb'))
+    return subject_scores_null_distr
 
 
 def calc_t_values_null_distr(args, out_path):
-    per_subject_scores_null_distr_path = os.path.join(
-        permutation_results_dir(args), f"per_subject_scores_null_distr.p"
-    )
-    if not os.path.isfile(per_subject_scores_null_distr_path):
-        print("loading per subject null distr scores")
-        per_subject_scores_null_distr = load_null_distr_per_subject_scores(args)
-        os.makedirs(os.path.dirname(per_subject_scores_null_distr_path), exist_ok=True)
-        pickle.dump(per_subject_scores_null_distr, open(per_subject_scores_null_distr_path, 'wb'))
-    else:
-        per_subject_scores_null_distr = pickle.load(open(per_subject_scores_null_distr_path, 'rb'))
+    per_subject_scores_null_distr = dict()
+    for subject in tqdm(args.subjects):
+        subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
+        if not os.path.isfile(subject_scores_null_distr_path):
+            per_subject_scores_null_distr[subject] = assemble_null_distr_per_subject_scores(subject, args)
+        else:
+            print(f"loading assembled null distr scores for {subject}")
+            per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
 
     def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path, subjects):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
@@ -440,7 +457,8 @@ def calc_t_values_null_distr(args, out_path):
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING]:
+                for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING,
+                                               METRIC_MOD_AGNOSTIC_AND_CROSS]:
                     tvals_shape = (
                         len(permutations), per_subject_scores[0][subjects[0]][hemi][ACC_IMAGES_MOD_AGNOSTIC].size)
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
@@ -450,7 +468,6 @@ def calc_t_values_null_distr(args, out_path):
             else:
                 iterator = enumerate(permutations)
 
-            t_vals_cache = {}
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
@@ -459,11 +476,18 @@ def calc_t_values_null_distr(args, out_path):
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
                              zip(permutation, args.subjects)])
                         popmean = CHANCE_VALUES[metric]
-                        t_values[hemi][metric] = calc_image_t_values(data, popmean, t_vals_cache=t_vals_cache)
+                        t_values[hemi][metric] = calc_image_t_values(data, popmean)
                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
+                        dsets[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS][iteration] = np.nanmin(
+                            (
+                                t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
+                                t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
+                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
+                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
+                            axis=0)
                         dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
                             (
                                 t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
@@ -480,37 +504,29 @@ def calc_t_values_null_distr(args, out_path):
                             axis=0
                         )
 
-    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr)), len(args.subjects))
+    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr[args.subjects[0]])),
+                                               len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = per_subject_scores_null_distr[0][args.subjects[0]][HEMIS[0]][ACC_IMAGES_MOD_AGNOSTIC].shape[0]
-    enough_data = {
-        hemi: np.argwhere(
-            (~np.isnan(
-                [per_subject_scores_null_distr[0][subj][hemi][ACC_IMAGES_MOD_AGNOSTIC] for subj in args.subjects])).sum(
-                axis=0) > 2)[:, 0]
-        for hemi in HEMIS
-    }  # at least 3 datapoints
-    enough_data_lengths = {hemi: len(e) for hemi, e in enough_data.items()}
-    print(f"original n vertices: {n_vertices} | enough data: {enough_data_lengths}")
+    n_vertices = {
+        hemi: per_subject_scores_null_distr[args.subjects[0]][0][hemi][ACC_IMAGES_MOD_AGNOSTIC].shape[0] for hemi in
+        HEMIS
+    }
 
-    n_per_job = {hemi: math.ceil(len(enough_data[hemi]) / args.n_jobs) for hemi in HEMIS}
+    n_per_job = {hemi: math.ceil(n_vertices[hemi] / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
-    desc = "filtering scores for enough data and splitting up for jobs"
-    for id, scores in tqdm(enumerate(per_subject_scores_null_distr), total=len(per_subject_scores_null_distr),
-                           desc=desc):
+    for perm_id in trange(len(per_subject_scores_null_distr[args.subjects[0]]), desc="splitting up for jobs"):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
             for hemi in HEMIS:
-                for metric in scores[subj][hemi].keys():
+                for metric in per_subject_scores_null_distr[subj][perm_id][hemi].keys():
                     for job_id in range(args.n_jobs):
-                        filtered = scores[subj][hemi][metric][enough_data[hemi]]
-                        scores_jobs[job_id][id][subj][hemi][metric] = filtered[
-                                                                      job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[
-                                                                          hemi]]
+                        scores_job = per_subject_scores_null_distr[subj][perm_id][hemi][metric]
+                        filtered = scores_job[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
+                        scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered
 
     tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
                      range(args.n_jobs)}
@@ -531,15 +547,13 @@ def calc_t_values_null_distr(args, out_path):
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
         for hemi_metric in tmp_files[0].keys():
-            tvals_shape = (args.n_permutations_group_level, n_vertices)
+            hemi = hemi_metric.split('__')[0]
+            tvals_shape = (args.n_permutations_group_level, n_vertices[hemi])
             all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
 
         for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
             for hemi_metric in tmp_files[0].keys():
-                hemi = hemi_metric.split('__')[0]
-                data_tvals = np.repeat(np.nan, n_vertices)
-                data_tvals[enough_data[hemi]] = np.concatenate(
-                    [tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
+                data_tvals = np.concatenate([tmp_files[job_id][hemi_metric][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[hemi_metric][i] = data_tvals
 
     print("finished assemble")
@@ -554,7 +568,7 @@ def permutation_results_dir(args):
 
 
 def get_hparam_suffix(args):
-    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}_dh_{args.tfce_dh}_clip_{args.tfce_clip}"
+    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}_dh_{args.tfce_dh}"
 
 
 def create_null_distribution(args):
@@ -584,7 +598,6 @@ def create_null_distribution(args):
                     tfce_values.append(
                         calc_tfce_values(
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
-                            clip_value=args.tfce_clip
                         )
                     )
                 # tfce_values = [
@@ -639,9 +652,8 @@ def add_searchlight_permutation_args(parser):
     parser.add_argument("--tfce-h", type=float, default=2.0)
     parser.add_argument("--tfce-e", type=float, default=1.0)
     parser.add_argument("--tfce-dh", type=float, default=0.1)
-    parser.add_argument("--tfce-clip", type=float, default=100)
 
-    parser.add_argument("--metric", type=str, default=METRIC_CROSS_DECODING)
+    parser.add_argument("--metric", type=str, default=METRIC_MOD_AGNOSTIC_AND_CROSS)
 
     return parser
 
@@ -654,6 +666,7 @@ def get_args():
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
     parser.add_argument("--p-value-threshold", type=float, default=0.01)
+    parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()
 
@@ -665,5 +678,6 @@ if __name__ == "__main__":
     print(f"\n\nPermutation Testing for {args.metric}\n")
     create_null_distribution(args)
     calc_test_statistics(args)
-    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, get_hparam_suffix(args),
+    create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, args.tfce_value_threshold,
+                 get_hparam_suffix(args),
                  args.resolution, args.radius, args.n_neighbors)

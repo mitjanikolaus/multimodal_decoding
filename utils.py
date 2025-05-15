@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from PIL.Image import Image
+from PIL import Image
 from matplotlib import pyplot as plt
 
 from nibabel import GiftiImage
@@ -28,13 +28,15 @@ FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
 FMRI_ANAT_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
 FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
-FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "mni305")
+FMRI_PREPROCESSING_DATASINK_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
 FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
 FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
-FMRI_BETAS_SURFACE_DIR = os.path.join(FMRI_DATA_DIR, "betas_surface_level")
+FMRI_BETAS_SURFACE_DIR = os.path.join(FMRI_BETAS_DIR, "surface")
 FMRI_STIM_INFO_DIR = os.path.join(FMRI_DATA_DIR, "stim_info")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
+FREESURFER_SUBJECTS_DIR = os.path.join(FREESURFER_BASE_DIR, "subjects_downsampled_2mm")
+
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
@@ -53,13 +55,13 @@ METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_captions_agno_captions_specif
 METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_imgs_agno_imgs_specific'
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
+METRIC_MOD_AGNOSTIC_AND_CROSS = 'mod_agnostic_and_cross'
 
 ATTENTION_MOD_DATA_DIR = os.path.join(DATA_DIR, "attention_modulation")
 ATTENTION_MOD_FMRI_DATA_DIR = os.path.join(ATTENTION_MOD_DATA_DIR, "fmri")
 ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "raw")
 
 ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "preprocessed")
-ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, "mni305")
 ATTENTION_MOD_FMRI_BETAS_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas")
 ATTENTION_MOD_FMRI_BETAS_SURFACE_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas_surface_level")
 

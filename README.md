@@ -2,16 +2,9 @@
 
 ## Decoding analysis
 ```
-CUDA_AVAILABLE_DEVICE=0 python analyses/decoding/ridge_regression_decoding.py --cuda
+python analyses/decoding/ridge_regression_decoding.py
 ```
 
-
-
-## Encoding analysis
-
-```
-CUDA_VISIBLE_DEVICES=0 python analyses/encoding/ridge_regression_encoding.py --models imagebind --training-modes train_image train_caption --cuda --create-null-distr
-```
 
 ## Searchlight analysis
 
@@ -22,8 +15,8 @@ python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 -
 ```
 Modality-specific decoders:
 ```
-python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --features vision --test-features vision --training-mode train_images --n-jobs 15
-python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --features lang --test-features lang --training-mode train_captions --n-jobs 15
+python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --training-mode images --n-jobs 15
+python analyses/searchlight/searchlight.py --model imagebind --n-neighbors 750 --training-mode captions --n-jobs 15
 ```
 ## Visualization with freeview
 
@@ -42,7 +35,17 @@ python analyses/view_results_freeview.py
 - Parts of the preprocessing pipeline are based on SPM. Therefore, we require matlab and
 [SPM version 12](https://www.fil.ion.ucl.ac.uk/spm/software/spm12/) to be installed
 (SPM should be installed to `~/apps/spm12/`).
-- For conversion to MNI space, we rely on [freesurfer](https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall).
+- For conversion to surface space, we rely on [freesurfer](https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall).
+
+
+### Downsampling of anatomical scan:
+```
+FSLOUTPUTTYPE='NIFTI' flirt.fsl -in ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii -ref ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii -applyisoxfm 2.0 -nosearch -out ~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W_downsampled_2mm.nii
+
+```
+
+This conversion decreases the voxel size of the anatomical scan from 1mm<sup>3</sup> to 2mm<sup>3</sup>. The functional
+data (which has a voxel size of 3mm<sup>3</sup>) will be coregistered to this downsampled image. 
 
 
 ### (1) STC, Realignment and Coregistration
@@ -51,6 +54,7 @@ This script performs the following steps using SPM:
 1. Slice time correction (STC)
 2. Realignment
 3. Coregistration
+4. Segmentation of the anatomical scan
 
 ```
 python preprocessing/fmri_preprocessing.py
@@ -59,26 +63,7 @@ python preprocessing/fmri_preprocessing.py
 The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
 the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
 
-### (2) Transformation to MNI space
 
-First, we're running recon-all to generate cortical reconstructions for all subjects:
-```
-python preprocessing/recon_script.py
-```
-
-Then, we create an LTA (Linear Transform Archive) file for conversion of functional scans from the subject space to MNI
-space (repeat this for all subjects).
-```
-tkregisterfv --mov ~/data/multimodal_decoding/fmri/preprocessed/preprocess_workflow/_subject_id_sub-01/_session_id_ses-01/coregister/rameanasub-01_ses-01_task-coco_run-01_bold.nii --s sub-01 --regheader --reg ~/data/multimodal_decoding/freesurfer/regfiles/sub-01/spm2fs
-```
-
-
-Finally, we can convert all data to MNI space:
-```
-python preprocessing/transform_to_mni.py
-```
-
-Note: The mni conversion also increases the voxel size from 1mm<sup>3</sup> to 2mm<sup>3</sup>.
 
 ### (3) Gray Matter Masks
 
@@ -86,16 +71,13 @@ Gray matter masks are used to perform the analysis only on voxels that belong to
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
 included. 
 
-As a first step, we took the corrected T1w image of the first session for each subject
-(e.g. `~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/sub-01_ses-01_run-01_T1W.nii`) and segment it using
-SPM. (The output of this step is part of the raw data folder, so you don't have to repeat it.)
-Then, we take the c1 (gray matter) segmentation (e.g. `c1sub-01_ses-01_run-01_T1W.nii`) and use the following script to
-create a binary mask.
+The input to this script is the c1 (gray matter) segmentation of the T1w image (anatomical scan) of the first session
+(e.g. `~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/c1sub-01_ses-01_run-01_T1W_downsampled_2mm.nii`), which
+was created in the previous step.
+The following script creates the gray matter masks for each subject.
 ```
 python preprocessing/create_gray_matter_masks.py
 ```
-Finally, the aforementioned script is also converting the mask to MNI space. The final masks are saved to
-`~/data/multimodal_decoding/fmri/preprocessed/graymatter_masks/sub-0*/mask_mni.nii`.
 
 ### (4) Generation of beta values
 
@@ -107,8 +89,8 @@ python preprocessing/make_spm_design_job_mat.py --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01;exit;"  -logfile matlab_output.txt && cd -
 ```
 
-__Note:__ Repeat these steps separately for each subject by adapting the subject identifier (`sub-01`) for both matlab and python
-scripts!
+__Note:__ Repeat these steps separately for each subject by adapting the subject identifier (`sub-01`) for both matlab
+and python scripts!
 
 #### Organization of beta values
 Next, we can create symbolic links for all beta files that are organized into separate folders for
@@ -118,7 +100,13 @@ images/captions/imagery as well as train/test trials and contain the correspondi
 python preprocessing/create_symlinks_beta_files.py
 ```
 
+
 ### (5) Transformation to surface space
+
+First, we're running recon-all to generate cortical reconstructions for all subjects (repeat for each subject):
+```
+python preprocessing/recon_script.py --subject sub-01
+```
 
 Then, we can convert all data to surface space to perform the searchlight analyses:
 

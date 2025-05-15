@@ -11,6 +11,7 @@ from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
 from tqdm import tqdm
 from glob import glob
 import pickle
+import os
 
 HP_KEYS = ["alpha", "model", "subject", "features", "test_features", "vision_features", "lang_features",
            "training_mode", "mask",
@@ -109,7 +110,7 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     lgd = None
     if plot_legend:
         # lgd = g.fig.legend(loc='upper left', title="", bbox_to_anchor=(1, 0.9), ncol=2)
-        lgd = g.fig.legend(ncol=2, title=legend_title, loc="upper left",
+        lgd = g.fig.legend(ncol=3, title=legend_title, loc="upper left",
                            bbox_to_anchor=legend_bbox)  # , bbox_to_anchor=(0.02, 0.95), ncol=9)
         bbox_extra_artists = (lgd,)
 
@@ -140,12 +141,9 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
                         verify_num_datapoints=True, plot_legend=True, shorten_label_texts=True):
-    
-    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
-    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
-    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
-    for mode in TRAINING_MODES:
+    training_modes_to_check = TRAINING_MODES if plot_modality_specific else [MODALITY_AGNOSTIC]
+    for mode in training_modes_to_check:
         data_mode = data[data.training_mode == mode]
         for x_variable_value in order:
             length = len(data_mode[(data_mode[x_variable] == x_variable_value) & (data_mode.metric == metrics[0])])
@@ -158,6 +156,10 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                     raise RuntimeError(message)
                 else:
                     print(f"Warning: {message}")
+
+    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
+    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
+    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
     catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=order, metrics=metrics,
                                                        x_variable=x_variable, legend_title=legend_title,
@@ -237,6 +239,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
 
     result_files = sorted(glob(f"{RIDGE_DECODER_OUT_DIR}/*/*/*/results.p"))
     for result_file_path in tqdm(result_files):
+        # print(f'loading {result_file_path}')
         results = pickle.load(open(result_file_path, 'rb'))
         if results['model'] in models:
             if recompute_acc_scores:
@@ -255,21 +258,8 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
             data_item_acc_mean["metric"] = ACC_MEAN
             data_item_acc_mean["value"] = (results[ACC_CAPTIONS] + results[ACC_IMAGES]) / 2
             data.append(data_item_acc_mean)
-
-            # data_item_acc_cross_mean = {k: value for k, value in results.items() if k in HP_KEYS}
-            # data_item_acc_cross_mean["metric"] = ACC_CROSS_MEAN
-            # data_item_acc_cross_mean["value"] = (results[ACC_CROSS_IMAGES_TO_CAPTIONS] + results[ACC_CROSS_CAPTIONS_TO_IMAGES]) / 2
-            # data.append(data_item_acc_cross_mean)
-
-    df = pd.DataFrame.from_records(data)
-
-    if "test_features" in df.columns:
-        df = df[(df.test_features == df.features) | df.test_features.isna()].copy()
-
-    if "surface" in df.columns:
-        df["surface"] = df.surface.fillna(False)
-    else:
-        df["surface"] = False
+  
+    df = pd.DataFrame.from_records(data)  
 
     # df["vision_features"] = df.vision_features.replace(
     #     {"visual_feature_mean": "vision_features_mean", "visual_feature_cls": "vision_features_cls"})
@@ -296,7 +286,7 @@ def load_results_data(models, metrics=METRICS_BASE, recompute_acc_scores=False, 
     # df["lang_features"] = df["lang_features"].fillna("unk")
 
     df["mask"] = df["mask"].fillna("whole_brain")
-    df["mask"] = df["mask"].apply(lambda x: x.replace("p_values_", "").replace(".p", ""))
+    df["mask"] = df["mask"].apply(lambda x: os.path.basename(x).replace("p_values_", "").replace(".p", ""))
 
     df["model_feat"] = df.model + "_" + df.features
 

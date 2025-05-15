@@ -25,7 +25,7 @@ from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentF
     SPLIT_IMAGERY, TRAINING_MODES
 from eval import ACC_CAPTIONS, ACC_IMAGES, calc_imagery_pairwise_accuracy_scores
 
-from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR
+from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL
 
 DEFAULT_N_JOBS = 10
 
@@ -128,7 +128,7 @@ def custom_search_light(
         shuffled_indices=None,
 ):
     group_iter = GroupIterator(len(A), n_jobs)
-    with warnings.catch_warnings():  # might not converge
+    with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
@@ -187,13 +187,13 @@ def run(args):
         for training_mode in args.training_modes:
             for hemi in args.hemis:
                 train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, args.resolution, hemi
+                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, hemi
                 )
                 test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_TEST, resolution=args.resolution, hemi=hemi
+                    args.betas_dir, subject, SPLIT_TEST, hemi=hemi
                 )
                 imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_IMAGERY, resolution=args.resolution, hemi=hemi
+                    args.betas_dir, subject, SPLIT_IMAGERY, hemi=hemi
                 )
                 nan_locations = np.isnan(train_fmri[0])
                 train_fmri, test_fmri, imagery_fmri = standardize_fmri_betas(train_fmri, test_fmri, imagery_fmri)
@@ -326,7 +326,7 @@ def get_args():
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
 
-    parser.add_argument("--model", type=str, default="imagebind")
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
                         choices=FEATURE_COMBINATION_CHOICES)
     parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,

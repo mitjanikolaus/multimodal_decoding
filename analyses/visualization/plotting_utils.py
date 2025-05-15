@@ -21,6 +21,9 @@ from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
 
+CBAR_T_VAL_MAX = 15
+
+
 def destrieux_label_names():
     long_names = {}
     with open("atlas_data/destrieux.txt") as file:
@@ -145,21 +148,32 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                                   vmax,
                                                   cbar_tick_format,
                                                   threshold)
-            cbar_vmin = 0
+
+            if metric.startswith("pairwise_acc"):
+                # ticks = [0.5, 0.55, 0.6, 0.7, 0.8, 0.9]
+                # cbar_vmin = 0.5
+                cbar_vmin = 0
+                # cbar_vmax = CBAR_T_VAL_MAX
+                ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
+                label = metric.replace("pairwise_acc_", "")
+            else:
+                ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks)/1000)*1000]
+                # ticks = [threshold, np.mean([threshold, np.max(ticks)]), np.max(ticks)]
+                label = "TFCE"
+                cbar_vmin = 0
+
             bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)
             # we need to create a proxy mappable
             proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
             proxy_mappable.set_array(surf_map_faces)
             cax, _ = make_axes(axes, location='bottom', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
-            # if metric == "tfce":
-            # ticks = [0, threshold,  round(np.mean([threshold, np.max(ticks)]), -3), round(np.max(ticks), -3)]
-            ticks = [threshold,  np.mean([threshold, np.max(ticks)]), np.max(ticks)]
+
 
             # else:
             #     ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
             figure.colorbar(
-                proxy_mappable, cax=cax, ticks=ticks, label="TFCE",
+                proxy_mappable, cax=cax, ticks=ticks, label=label,
                 boundaries=bounds, spacing='proportional',
                 format=ScalarFormatter(useOffset=False), orientation='horizontal')
             cax.xaxis.set_ticks_position('top')

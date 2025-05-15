@@ -10,7 +10,6 @@ from sklearn.preprocessing import StandardScaler
 import nibabel as nib
 from tqdm import trange
 
-from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR, FMRI_BETAS_DIR, \
     FS_HEMI_NAMES, FREESURFER_HOME_DIR
 
@@ -70,7 +69,7 @@ IMAGES_IMAGERY_CONDITION = [
     [141343, f'images/train2017/000000141343.jpg',
      'A teddy bear lying down on the sidewalk in front of a store'],
     [213506, f'images/train2017/000000213506.jpg',
-     'A woman leaning out a window to talk to someone on the sidewal'],
+     'A woman leaning out a window to talk to someone on the sidewalk'],
     [162396, f'images/train2017/000000162396.jpg',
      'The man on the skateboard and the dog are getting their picture taken'],
 ]
@@ -114,7 +113,7 @@ IMAGERY_SCENES = {
     'sub-07':
         [
             ('A teddy bear lying down on the sidewalk in front of a store', 141343),
-            ('A woman leaning out a window to talk to someone on the sidewal', 213506),
+            ('A woman leaning out a window to talk to someone on the sidewalk', 213506),
             ('The man on the skateboard and the dog are getting their picture taken', 162396),
         ],
 }
@@ -274,9 +273,9 @@ LANG_CLS_FEAT_KEY = "lang_features_cls"
 FUSED_MEAN_FEAT_KEY = "fused_mean_features"
 FUSED_CLS_FEAT_KEY = "fused_cls_features"
 
-FEATURE_COMBINATION_CHOICES = [AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS,
-                               FUSED_FEATS_MEAN,
-                               MATCHED_FEATS, SELECT_DEFAULT]
+FEATURE_COMBINATION_CHOICES = [
+    AVG_FEATS, LANG_FEATS_ONLY, VISION_FEATS_ONLY, FUSED_FEATS_CLS, FUSED_FEATS_MEAN, MATCHED_FEATS, SELECT_DEFAULT
+]
 
 VISION_FEAT_COMBINATION_CHOICES = [VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY, SELECT_DEFAULT]
 LANG_FEAT_COMBINATION_CHOICES = [LANG_MEAN_FEAT_KEY, LANG_CLS_FEAT_KEY, SELECT_DEFAULT]
@@ -306,6 +305,7 @@ DEFAULT_FEATURES = {
     "gpt2-xl": LANG_FEATS_ONLY,
     "vit-b-16": VISION_FEATS_ONLY,
     "vit-l-16": VISION_FEATS_ONLY,
+    "vit-h-14": VISION_FEATS_ONLY,
     "resnet-18": VISION_FEATS_ONLY,
     "resnet-50": VISION_FEATS_ONLY,
     "resnet-152": VISION_FEATS_ONLY,
@@ -338,6 +338,7 @@ DEFAULT_VISION_FEATURES = {
     "gpt2-xl": FEATS_NA,
     "vit-b-16": VISION_MEAN_FEAT_KEY,
     "vit-l-16": VISION_MEAN_FEAT_KEY,
+    "vit-h-14": VISION_MEAN_FEAT_KEY,
     "resnet-18": VISION_MEAN_FEAT_KEY,
     "resnet-50": VISION_MEAN_FEAT_KEY,
     "resnet-152": VISION_MEAN_FEAT_KEY,
@@ -370,6 +371,7 @@ DEFAULT_LANG_FEATURES = {
     "gpt2-xl": LANG_MEAN_FEAT_KEY,
     "vit-b-16": FEATS_NA,
     "vit-l-16": FEATS_NA,
+    "vit-h-14": FEATS_NA,
     "resnet-18": FEATS_NA,
     "resnet-50": FEATS_NA,
     "resnet-152": FEATS_NA,
@@ -404,28 +406,32 @@ class LatentFeatsConfig:
         self.combined_feats = f"{self.features}_test_{self.test_features}"
 
 
-def stim_id_from_beta_file_name(beta_file_name):
-    return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(".nii", ''))
+def stim_id_from_beta_file_name(beta_file_name, suffix='.nii'):
+    return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(suffix, ''))
 
 
-def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
+def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=None, suffix='.nii'):
     mode_suffix = ""
     if mode == MODALITY_SPECIFIC_CAPTIONS:
         mode_suffix = f"_{CAPTION}"
     elif mode == MODALITY_SPECIFIC_IMAGES:
         mode_suffix = f"_{IMAGE}"
-    fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{split}{mode_suffix}*', "*.nii")
+
+    if hemi is None:
+        fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{split}{mode_suffix}*', f"*{suffix}")
+    else:
+        fmri_addresses_regex = os.path.join(betas_dir, hemi, subject, f'betas_{split}{mode_suffix}*', f"*{suffix}")
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
 
     stim_ids = []
     stim_types = []
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
-        stim_id = stim_id_from_beta_file_name(os.path.basename(path))
+        stim_id = stim_id_from_beta_file_name(os.path.basename(path), suffix)
+        # TODO: imagery_weak
         if IMAGERY in split_name:
             stim_types.append(IMAGERY)
-            if betas_dir == FMRI_BETAS_DIR:
-                stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
+            stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
         elif IMAGE in split_name:
             stim_types.append(IMAGE)
         elif CAPTION in split_name:
@@ -510,21 +516,16 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
     return nn_latent_vectors
 
 
-def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, resolution=DEFAULT_RESOLUTION,
-                          hemi=HEMIS[0]):
-    fmri_betas = pickle.load(open(os.path.join(betas_dir, f"{subject}_{hemi}_{resolution}_{split}.p"), 'rb'))
+def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=HEMIS[0]):
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, suffix='.gii')
 
-    stim_ids, stim_types = get_stim_info(subject, split)
+    fmri_betas = []
+    for idx in trange(len(fmri_betas_paths), desc=f"loading {subject} {mode} {hemi} hemi {split} fmri data"):
+        sample = nib.load(fmri_betas_paths[idx])
+        sample = sample.darrays[0].data
+        fmri_betas.append(sample)
 
-    if mode == MODALITY_SPECIFIC_CAPTIONS:
-        fmri_betas = fmri_betas[stim_types == CAPTION]
-        stim_ids = stim_ids[stim_types == CAPTION]
-        stim_types = stim_types[stim_types == CAPTION]
-    elif mode == MODALITY_SPECIFIC_IMAGES:
-        fmri_betas = fmri_betas[stim_types == IMAGE]
-        stim_ids = stim_ids[stim_types == IMAGE]
-        stim_types = stim_types[stim_types == IMAGE]
-
+    fmri_betas = np.array(fmri_betas)
     return fmri_betas, stim_ids, stim_types
 
 
@@ -550,10 +551,9 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
 
 def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):
     if surface:
-        betas_dir += "_surface_level"
-        betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, resolution,
-                                                                      "left")
-        betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, resolution, "right")
+        betas_dir = os.path.join(betas_dir, "surface")
+        betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, "left")
+        betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, "right")
 
         betas = np.hstack((betas_left_hemi, betas_right_hemi))
         return betas, stim_ids, stim_types
@@ -564,12 +564,10 @@ def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=Fal
 def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode)
 
-    graymatter_mask = load_graymatter_mask(subject)
     fmri_betas = []
-    for idx in trange(len(fmri_betas_paths), desc="loading fmri data"):
+    for idx in trange(len(fmri_betas_paths), desc=f"loading {subject} {split} fmri data"):
         sample = nib.load(fmri_betas_paths[idx])
-        sample = sample.get_fdata()
-        sample = sample[graymatter_mask].astype('float32').reshape(-1)
+        sample = sample.get_fdata().astype('float32').reshape(-1)
         fmri_betas.append(sample)
 
     fmri_betas = np.array(fmri_betas)
@@ -642,12 +640,3 @@ def apply_mask(mask, fmri_betas, args):
         fmri_betas = {split: betas[:, mask_flat == 1].copy() for split, betas in fmri_betas.items()}
 
     return fmri_betas
-
-
-def load_graymatter_mask(subject):
-    gray_matter_mask_path = get_graymatter_mask_path(subject)
-    gray_matter_mask_img = nib.load(gray_matter_mask_path)
-    gray_matter_mask_data = gray_matter_mask_img.get_fdata()
-    gray_matter_mask = gray_matter_mask_data == 1
-    print(f"Gray matter mask size: {gray_matter_mask.sum()}")
-    return gray_matter_mask

@@ -1,7 +1,8 @@
 import argparse
 import os
 
-from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, T_VAL_METRICS
+from analyses.encoding.encoding_permutation_testing import permutation_results_dir, get_hparam_suffix, T_VAL_METRICS, \
+    add_encoding_permutation_args
 from data import SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEATS_ONLY, LANG_FEATS_ONLY
 from eval import METRIC_CROSS_ENCODING
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, DEFAULT_RESOLUTION, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, \
@@ -48,29 +49,10 @@ def run(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
+
+    parser = add_encoding_permutation_args(parser)
+
     parser.add_argument("--p-values-threshold", type=float, default=0.05)
-
-    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--features", type=str, default=SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
-    parser.add_argument("--test-features", type=str, default=SELECT_DEFAULT,
-                        choices=FEATURE_COMBINATION_CHOICES)
-
-    parser.add_argument("--mod-specific-images-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-images-features", type=str, default=VISION_FEATS_ONLY)
-    parser.add_argument("--mod-specific-images-test-features", type=str, default=VISION_FEATS_ONLY)
-
-    parser.add_argument("--mod-specific-captions-model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--mod-specific-captions-features", type=str, default=LANG_FEATS_ONLY)
-    parser.add_argument("--mod-specific-captions-test-features", type=str, default=LANG_FEATS_ONLY)
-
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
-    parser.add_argument("--l2-regularization-alpha", type=float, default=1)
-
-    parser.add_argument("--tfce-h", type=float, default=2.0)
-    parser.add_argument("--tfce-e", type=float, default=1.0)
-    parser.add_argument("--tfce-dh", type=float, default=0.01)
-    parser.add_argument("--tfce-clip", type=float, default=100)
 
     parser.add_argument("--n-clusters", type=int, default=10)
 

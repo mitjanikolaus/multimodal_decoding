@@ -10,9 +10,8 @@ from nipype.interfaces.base import Bunch
 import pandas as pd
 
 from data import IDS_IMAGES_TEST
-from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
-from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, FMRI_PREPROCESSED_MNI_DATA_DIR, \
-    FMRI_BETAS_DIR
+from preprocessing.create_gray_matter_masks import get_gray_matter_mask_path
+from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_BETAS_DIR, FMRI_PREPROCESSING_DATASINK_DIR
 
 
 def get_condition_names(trial):
@@ -72,13 +71,13 @@ def preprocess_event_files(event_files):
     return pd.concat(data, ignore_index=True)
 
 
-def get_sessions(preprocessed_fmri_mni_space_dir, sessions_subsample):
+def get_sessions(preprocessed_functional_data_dir, sessions_subsample):
     if sessions_subsample:
         sessions = [f'ses-{ses_idx}' for ses_idx in sessions_subsample]
-        session_dirs = [os.path.join(preprocessed_fmri_mni_space_dir, session) for session in sessions]
+        session_dirs = [os.path.join(preprocessed_functional_data_dir, session) for session in sessions]
     else:
-        print(f"Scanning for sessions in {preprocessed_fmri_mni_space_dir}")
-        session_dirs = glob(os.path.join(preprocessed_fmri_mni_space_dir, 'ses-*'))
+        print(f"Scanning for sessions in {preprocessed_functional_data_dir}")
+        session_dirs = glob(os.path.join(preprocessed_functional_data_dir, 'ses-*'))
         sessions = [path.split(os.sep)[-1] for path in session_dirs]
     print(f"Sessions: {sessions}")
     return sessions, session_dirs
@@ -89,6 +88,18 @@ def load_event_files(tsv_files, condition_proc_func, log_file=None):
     condition_names = sorted(set(np.concatenate(events_df['glm_conditions'].values)))
     if 'null' in condition_names:
         condition_names.remove('null')
+
+    print("Number of conditions: ", len(condition_names))
+    print("Number of train image conditions:", len([c for c in condition_names if "train_image" in c]))
+    print("Number of train caption conditions:", len([c for c in condition_names if "train_caption" in c]))
+
+    print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
+    print("Number of test conditions:", len([c for c in condition_names if "test" in c]))
+    imagery_conditions = [c for c in condition_names if "imagery" in c]
+    print("Number of imagery conditions:", len(imagery_conditions))
+    for c in imagery_conditions:
+        conds_imagery = [c in conds for conds in events_df['glm_conditions'].values]
+        print(f'number of repeats of imagery condition {c}: {np.sum(conds_imagery)}')
 
     if log_file is not None:
         events_df.to_csv(log_file, sep="\t")
@@ -161,17 +172,17 @@ def define_multi_regressors(realign_files):
 
 
 def process_scans(subject, task_name, args):
-    preprocessed_fmri_mni_space_dir = os.path.join(args.mni_data_dir, subject)
+    preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, "coregistered", subject)
     realignment_data_dir = os.path.join(args.preprocessed_data_dir, "datasink", "realignment")
     raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
 
     scans = []
     event_files = []
     realign_files = []
-    sessions, session_dirs = get_sessions(preprocessed_fmri_mni_space_dir, args.sessions)
+    sessions, session_dirs = get_sessions(preprocessed_functional_data_dir, args.sessions)
     for session, session_dir in zip(sessions, session_dirs):
         print(f"Scanning for runs in {session_dir}")
-        n_runs = len(glob(os.path.join(session_dir, 'rarasub*run*_bold.nii')))
+        n_runs = len(glob(os.path.join(session_dir, 'rrasub*run*_bold.nii')))
         runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
         print(f"Runs: {runs}")
         for run in runs:
@@ -224,8 +235,39 @@ def get_base_fmri_spec(units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh
     return fmri_spec
 
 
-def define_fmri_betas_jobs(units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh, mask, CVI, output_dir, subject,
+def define_fmri_betas_jobs(output_dir, subject,
                            task_name, args, condition_proc_func):
+    #####################
+    # fmri parameters:
+    #####################
+
+    # timings
+    units = 'secs'  # units for design secs/scans
+    RT = 2.0  # interscan interval
+    fmri_t = 46.0  # microtime resolution (16). in case of slice-timing set it to number of slices
+    fmri_t0 = 23.0  # microtime onset (8). in case of slice-timing, set it to the reference slice
+
+    # no factorial design (don't change)
+    # matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
+
+    # hrf
+    derivs = [0.0, 0.0]  # HRF derivatives
+
+    # do not model interaction (don't change)
+    VOLT = 1.0
+
+    # no global minimization (don't change)
+    GLOBAL = 'None'
+
+    # implicit mask threhsold
+    mthresh = 0.8
+
+    # explicit mask (if set, the threshold will be ignored)
+    mask = get_gray_matter_mask_path(subject)
+
+    # serial correlation (don't change)
+    CVI = 'AR(1)'
+
     fmri_spec = get_base_fmri_spec(units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh, mask, CVI)
 
     fmri_spec['dir'] = np.array([output_dir], dtype=object)
@@ -233,8 +275,6 @@ def define_fmri_betas_jobs(units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mth
     scans, event_files, realign_files = process_scans(subject, task_name, args)
 
     fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
-
-    # multi regressors
     fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
 
     # conditions
@@ -270,44 +310,12 @@ def run(args):
 
         output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
 
-        #####################
-        # fmri parameters:
-        #####################
-
-        # timings
-        units = 'secs'  # units for design secs/scans
-        RT = 2.0  # interscan interval
-        fmri_t = 46.0  # microtime resolution (16). in case of slice-timing set it to number of slices
-        fmri_t0 = 23.0  # microtime onset (8). in case of slice-timing, set it to the reference slice
-
-        # no factorial design (don't change)
-        # matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
-
-        # hrf
-        derivs = [0.0, 0.0]  # HRF derivatives
-
-        # do not model interaction (don't change)
-        VOLT = 1.0
-
-        # no global minimization (don't change)
-        GLOBAL = 'None'
-
-        # implicit mask threhsold
-        mthresh = 0.8
-
-        # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject)
-
-        # serial correlation (don't change)
-        CVI = 'AR(1)'
-
         task_name = "coco"
 
         os.makedirs(output_dir, exist_ok=True)
 
         jobs, condition_names = define_fmri_betas_jobs(
-            units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh, mask, CVI, output_dir, subject, task_name, args,
-            condition_proc_func=preprocess_event_files
+            output_dir, subject, task_name, args, condition_proc_func=preprocess_event_files
         )
 
         print("Number of conditions: ", len(condition_names))
@@ -327,8 +335,7 @@ def get_args():
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
     parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
-    parser.add_argument("--preprocessed-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
-    parser.add_argument("--mni-data-dir", type=str, default=FMRI_PREPROCESSED_MNI_DATA_DIR)
+    parser.add_argument("--preprocessing-datasink-dir", type=str, default=FMRI_PREPROCESSING_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 

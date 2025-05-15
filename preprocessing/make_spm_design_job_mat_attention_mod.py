@@ -6,10 +6,9 @@ import os
 
 from data import IMAGERY, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, \
     SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_IMAGERY
-from preprocessing.create_gray_matter_masks import get_graymatter_mask_path
 from preprocessing.make_spm_design_job_mat import define_fmri_betas_jobs
 from utils import ATTENTION_MOD_FMRI_BETAS_DIR, ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, \
-    ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR
+    ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR
 
 FIXATION = "fixation"
 FIXATION_WHITESCREEN = "fixation_whitescreen"
@@ -95,46 +94,20 @@ def run(args):
         # fmri parameters:
         #####################
 
-        # timings
-        units = 'secs'  # units for design secs/scans
-        RT = 2.0  # interscan interval
-        fmri_t = 46.0  # microtime resolution (16). in case of slice-timing set it to number of slices
-        fmri_t0 = 23.0  # microtime onset (8). in case of slice-timing, set it to the reference slice
-
-        # no factorial design (don't change)
-        # matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
-
-        # hrf
-        derivs = [0.0, 0.0]  # HRF derivatives
-
-        # do not model interaction (don't change)
-        VOLT = 1.0
-
-        # no global minimization (don't change)
-        GLOBAL = 'None'
-
-        # implicit mask threhsold
-        mthresh = 0.8
-
-        # explicit mask (if set, the threshold will be ignored)
-        mask = get_graymatter_mask_path(subject)
-
-        # serial correlation (don't change)
-        CVI = 'AR(1)'
-
         task_name = "coco_singletask_imagery"
 
         output_dir = str(os.path.join(args.output_dir, subject, "unstructured"))
         os.makedirs(output_dir, exist_ok=True)
 
         jobs, conditions = define_fmri_betas_jobs(
-            units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh, mask, CVI, output_dir, subject, task_name, args,
-            condition_proc_func=preprocess_attention_mod_event_files
+            output_dir, subject, task_name, args, condition_proc_func=preprocess_attention_mod_event_files
         )
         print("Number of conditions: ", len(conditions))
 
-        for cond in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED,
-                     IMAGERY_INSTRUCTION]:
+        for cond in [
+            SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED,
+            SPLIT_TEST_CAPTION_UNATTENDED, IMAGERY_INSTRUCTION
+        ]:
             print(f"Number of {cond} conditions: {len([c for c in conditions if cond in c])}")
 
         print(
@@ -142,7 +115,8 @@ def run(args):
 
         print("")
         unique_conds = set(conditions)
-        for cond in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
+        for cond in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED,
+                     SPLIT_TEST_CAPTION_UNATTENDED]:
             print(f"Number of unique {cond} conditions: {len([c for c in unique_conds if cond in c])}")
         print(
             f"Number of unique imagery conditions: {len([c for c in unique_conds if (IMAGERY in c) and not (IMAGERY_INSTRUCTION in c)])}")
@@ -158,7 +132,6 @@ def get_args():
 
     parser.add_argument("--raw-data-dir", type=str, default=ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR)
     parser.add_argument("--preprocessed-data-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR)
-    parser.add_argument("--mni-data-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_MNI_DATA_DIR)
 
     parser.add_argument("--output-dir", type=str, default=ATTENTION_MOD_FMRI_BETAS_DIR)
 

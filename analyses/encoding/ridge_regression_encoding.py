@@ -8,9 +8,9 @@ from tqdm import tqdm
 
 from data import CAPTION, IMAGE, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, create_shuffled_indices, \
     create_null_distr_shuffled_indices, SPLIT_TRAIN, SPLIT_TEST, TRAINING_MODES, MODALITY_AGNOSTIC
-from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES, CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS
+from eval import CORR_ALL, CORR_CAPTIONS, CORR_IMAGES
 from himalaya.backend import set_backend
-from himalaya.ridge import RidgeCV, GroupRidgeCV
+from himalaya.ridge import RidgeCV
 from himalaya.scoring import correlation_score
 import os
 import pickle
@@ -32,11 +32,11 @@ def calc_correlation_metrics(test_fmri_betas, test_predicted_betas, stim_types, 
         targets_mod = test_fmri_betas[stim_types == modality]
         corr_scores[metric_name] = backend.to_numpy(correlation_score(targets_mod, preds_mod))
 
-    for mod_preds, mod_targets, metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
-                                                   [CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]):
-        preds_mod = test_predicted_betas[stim_types == mod_preds].copy()
-        targets_mod = test_fmri_betas[stim_types == mod_targets]
-        corr_scores[metric_name] = backend.to_numpy(correlation_score(targets_mod, preds_mod))
+    # for mod_preds, mod_targets, metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
+    #                                                [CORR_CROSS_CAPTIONS_TO_IMAGES, CORR_CROSS_IMAGES_TO_CAPTIONS]):
+    #     preds_mod = test_predicted_betas[stim_types == mod_preds].copy()
+    #     targets_mod = test_fmri_betas[stim_types == mod_targets]
+    #     corr_scores[metric_name] = backend.to_numpy(correlation_score(targets_mod, preds_mod))
 
     return corr_scores
 

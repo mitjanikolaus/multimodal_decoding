@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from data import CAPTION, IMAGE, SPLIT_TEST, SPLIT_IMAGERY, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_IMAGERY_WEAK, \
     SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTIONS, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, \
     SPLIT_TEST_CAPTION_UNATTENDED
+from utils import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -20,11 +21,27 @@ ACC_CAPTIONS_MOD_AGNOSTIC = "pairwise_acc_captions_mod_agnostic"
 ACC_IMAGERY_MOD_AGNOSTIC = "pairwise_acc_imagery_mod_agnostic"
 ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC = "pairwise_acc_imagery_whole_test_set_mod_agnostic"
 
+ACC_IMAGERY_NO_STD_MOD_AGNOSTIC = "pairwise_acc_imagery_no_std_mod_agnostic"
+ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC = "pairwise_acc_imagery_whole_test_set_no_std_mod_agnostic"
+
 ACC_IMAGES_MOD_SPECIFIC_IMAGES = "pairwise_acc_images_mod_specific_images"
 ACC_CAPTIONS_MOD_SPECIFIC_IMAGES = "pairwise_acc_captions_mod_specific_images"
 
 ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_captions_mod_specific_captions"
 ACC_IMAGES_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_images_mod_specific_captions"
+
+ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_imagery_mod_specific_captions"
+ACC_IMAGERY_MOD_SPECIFIC_IMAGES = "pairwise_acc_imagery_mod_specific_images"
+
+ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_imagery_whole_test_mod_specific_captions"
+ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES = "pairwise_acc_imagery_whole_test_mod_specific_images"
+
+ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_imagery_no_std_mod_specific_captions"
+ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES = "pairwise_acc_imagery_no_std_mod_specific_images"
+
+ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS = "pairwise_acc_imagery_whole_test_no_std_mod_specific_captions"
+ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES = "pairwise_acc_imagery_whole_test_no_std_mod_specific_images"
+
 
 ACC_IMAGERY = "pairwise_acc_imagery"
 ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
@@ -32,8 +49,6 @@ ACC_IMAGERY_WHOLE_TEST = "pairwise_acc_imagery_whole_test_set"
 CORR_ALL = "corr"
 CORR_CAPTIONS = "corr_captions"
 CORR_IMAGES = "corr_images"
-CORR_CROSS_IMAGES_TO_CAPTIONS = "corr_cross_images_to_captions"
-CORR_CROSS_CAPTIONS_TO_IMAGES = "corr_cross_captions_to_images"
 
 CORR_CAPTIONS_MOD_AGNOSTIC = "corr_captions_mod_agnostic"
 CORR_IMAGES_MOD_AGNOSTIC = "corr_images_mod_agnostic"
@@ -42,9 +57,29 @@ CORR_IMAGES_MOD_SPECIFIC_CAPTIONS = "corr_images_mod_specific_captions"
 CORR_IMAGES_MOD_SPECIFIC_IMAGES = "corr_images_mod_specific_images"
 CORR_CAPTIONS_MOD_SPECIFIC_IMAGES = "corr_captions_mod_specific_images"
 
-METRIC_CROSS_ENCODING = "corr_cross_encoding"
+METRIC_CROSS_ENCODING = "cross_encoding"
 
 DISTANCE_METRIC_COSINE = "cosine"
+
+
+CHANCE_VALUES = {
+    ACC_CAPTIONS_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGES_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGERY_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC: 0.5,
+    ACC_IMAGES_MOD_SPECIFIC_IMAGES: 0.5,
+    ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS: 0.5,
+    ACC_CAPTIONS_MOD_SPECIFIC_IMAGES: 0.5,
+    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS: 0.5,
+    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
+    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC: 0,
+    CORR_CAPTIONS_MOD_AGNOSTIC: 0,
+    CORR_IMAGES_MOD_AGNOSTIC: 0,
+    CORR_CAPTIONS_MOD_SPECIFIC_CAPTIONS: 0,
+    CORR_IMAGES_MOD_SPECIFIC_CAPTIONS: 0,
+    CORR_IMAGES_MOD_SPECIFIC_IMAGES: 0,
+    CORR_CAPTIONS_MOD_SPECIFIC_IMAGES: 0,
+}
 
 
 def get_distance_matrix_csls(predictions, latents, knn=100, metric=DISTANCE_METRIC_COSINE):

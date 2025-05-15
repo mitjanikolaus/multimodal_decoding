@@ -1,8 +1,7 @@
 import argparse
 import os
 import numpy as np
-from os.path import join as opj
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -11,9 +10,13 @@ from nipype.algorithms.misc import Gunzip
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_ANAT_DATA_DIR
+from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_ANAT_DATA_DIR
 
-mlab.MatlabCommand.set_default_paths(os.path.expanduser('~/apps/spm12'))
+SPM_PATH = os.path.expanduser('~/apps/spm12')
+mlab.MatlabCommand.set_default_paths(SPM_PATH)
+
+
+DEFAULT_ANAT_SCAN_SUFFIX = "_downsampled_2mm"
 
 
 def print_session_names(sessions):
@@ -37,11 +40,15 @@ def run(args):
     print()
 
     # list subject sessions
+    # data_root = os.path.join(args.raw_data_dir, 'bids')
+    # anat_root = os.path.join(args.raw_data_dir, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
-        sess = []
-        folders = os.listdir(opj(args.fmri_bids_dir, subj))
-        sessions[subj] = sorted(folders)
+        if args.sessions is not None:
+            sessions[subj] = args.sessions
+        else:
+            folders = os.listdir(os.path.join(args.fmri_bids_dir, subj))
+            sessions[subj] = sorted(folders)
     print_session_names(sessions)
 
     # list functional runs
@@ -49,10 +56,10 @@ def run(args):
     for subj in subjects:
         for ses in sessions[subj]:
             rns = []
-            files = os.listdir(opj(args.fmri_bids_dir, subj, ses, 'func'))
+            files = os.listdir(os.path.join(args.fmri_bids_dir, subj, ses, 'func'))
             for file in files:
                 if file.endswith("bold.nii.gz"):
-                    rns.append(opj(args.fmri_bids_dir, subj, ses, 'func', file[:-12]))
+                    rns.append(os.path.join(args.fmri_bids_dir, subj, ses, 'func', file[:-12]))
             runs[(subj, ses)] = sorted(rns)
     print_run_names(runs)
 
@@ -67,8 +74,8 @@ def run(args):
     time = interval * 1000
     for f, temp in enumerate([[0, 23], [1, 24]]):
         for i in range(12 - f):
-            slice2time[temp[0] + i * 2] = min(time, TR*1000)
-            slice2time[temp[1] + i * 2] = min(time, TR*1000)
+            slice2time[temp[0] + i * 2] = min(time, TR * 1000)
+            slice2time[temp[1] + i * 2] = min(time, TR * 1000)
             time += interval * 1000
 
     for idx, t in enumerate(slice2time):
@@ -83,7 +90,6 @@ def run(args):
     ##############
     # Gunzip to unpack tar.gz
     gunzip_func_node = MapNode(Gunzip(), iterfield=['in_file'], name='gunzip_func')
-    # gunzip_anat_node = Node(Gunzip(), name = 'gunzip_anat')   # new corrected anat files are not gz
 
     # Slice timing correction
     stc_node = Node(
@@ -93,15 +99,44 @@ def run(args):
             time_acquisition=TR - (TR / (number_of_slices / multiband_factor)),
             slice_order=slice2time,
             ref_slice=slice2time[ref_slice_index],
-            out_prefix='a'),
+        ),
         name='stc'
     )
 
     # Realignment
-    realign_node = Node(Realign(register_to_mean=True, out_prefix='r'), name='realign')
+    realign_node = Node(Realign(register_to_mean=True), name='realign')
 
-    # Coregistration
-    coregister_node = Node(Coregister(out_prefix='ra'), name='coregister')
+    # Coregistration (coregistration of functional scans to anatomical scan)
+    # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
+    coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
+
+    # Normalization (transformation to MNI space)
+    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
+    # normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
+
+    # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
+    # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
+    # normalize_node.iterables = ('fwhm', [4])
+
+    # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
+    # normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
+    #                       name='normalize_func')
+    # fwhmlist = [4]
+    # normalize_and_smooth_func.iterables = ('fwhm', fwhmlist)
+
+    # normalize_anat = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
+    #                         name='normalize_struct')
+    # normalize_struct.inputs.fwhm = 2
+
+    tpm_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
+    tissue1 = ((tpm_img, 1), 2, (True, False), (False, False))
+    tissue2 = ((tpm_img, 2), 2, (True, False), (False, False))
+    tissue3 = ((tpm_img, 3), 2, (True, False), (False, False))
+    tissue4 = ((tpm_img, 4), 2, (False, False), (False, False))
+    tissue5 = ((tpm_img, 5), 2, (False, False), (False, False))
+    tissue6 = ((tpm_img, 6), 2, (False, False), (False, False))
+    tissues = [tissue1, tissue2, tissue3, tissue4, tissue5, tissue6]
+    segment_node = Node(NewSegment(tissues=tissues), name='segment')
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
@@ -114,8 +149,8 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = opj('{subject_id}', '{subject_id}_ses-01_run-01_T1W.nii')
-    func_file = opj('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
+    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W' + f'{args.anat_scan_suffix}.nii')
+    func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
         SelectFiles({'anat': anat_file}, base_directory=args.fmri_anat_dir), name="selectfiles_anat"
@@ -126,10 +161,10 @@ def run(args):
     )
 
     # Working directory
-    os.makedirs(args.out_dir, exist_ok=True)
+    os.makedirs(args.out_data_dir, exist_ok=True)
 
     # Datasink - creates an extra output folder for storing the desired files
-    datasink_node = Node(DataSink(base_directory=args.out_dir, container='datasink'), name="datasink")
+    datasink_node = Node(DataSink(base_directory=args.out_data_dir, container='datasink'), name="datasink")
 
     # Remove nipype's prefix for the files and folders in the datasink
     substitutions = [('_subject_id_', ''), ('_session_id_', '')]
@@ -140,7 +175,7 @@ def run(args):
     #################################################
     # create the workflow
     preproc = Workflow(name='preprocess_workflow')
-    preproc.base_dir = args.out_dir
+    preproc.base_dir = args.out_data_dir
 
     # connect info source to file selectors
     preproc.connect([(infosrc_subjects, selectfiles_anat, [('subject_id', 'subject_id')])])
@@ -160,10 +195,24 @@ def run(args):
     # connect realign to coregister
     preproc.connect([(realign_node, coregister_node, [('mean_image', 'source')])])
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
+
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
+
+    # connect coregister to normalize
+    # preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
+    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
+
+    # connect segment
+    # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
+    preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
 
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
+
+    # preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
+
+    preproc.connect([(segment_node, datasink_node, [('native_class_images', 'segmented.@image')])])
 
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
@@ -176,12 +225,17 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--fmri-bids-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+
     parser.add_argument("--fmri-anat-dir", type=str, default=FMRI_ANAT_DATA_DIR)
+    parser.add_argument("--anat-scan-suffix", type=str, default=DEFAULT_ANAT_SCAN_SUFFIX)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
-    parser.add_argument("--out-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
+    parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
+
+    parser.add_argument("--sessions", type=str, nargs='+', default=None,
+                        help="Default value of None uses all sessions")
 
     return parser.parse_args()
 
