@@ -5,7 +5,6 @@ import numpy as np
 import os
 import pickle
 
-import torch
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -13,13 +12,11 @@ from tqdm import tqdm
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
-    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, SPLIT_IMAGERY, get_fmri_data, \
-    ALL_SPLITS, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, ALL_SPLITS_BASE_DATA
-from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, \
-    ACC_IMAGERY_WHOLE_TEST
-from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, RIDGE_DECODER_OUT_DIR, DEFAULT_MODEL, DEFAULT_RESOLUTION
+    standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
+    ALL_SPLITS, TEST_SPLITS, ALL_SPLITS_BASE_DATA
+from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
-    ATTENTION_MOD_FMRI_BETAS_DIR, RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE
+    RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -49,12 +46,11 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
     return run_str
 
 
-def get_fmri_data_for_splits(subject, splits, training_mode, main_betas_dir, attn_mod_betas_dir=None, surface=False,
+def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, surface=False,
                              resolution=DEFAULT_RESOLUTION):
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
     for split in tqdm(splits, desc="loading fmri data"):
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
-        betas_dir = main_betas_dir if split in ALL_SPLITS_BASE_DATA else attn_mod_betas_dir
         fmri_betas[split], stim_ids[split], stim_types[split] = get_fmri_data(
             betas_dir,
             subject,
@@ -79,7 +75,7 @@ def run(args):
     for training_mode in args.training_modes:
         for subject in args.subjects:
             fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
-                subject, ALL_SPLITS, training_mode, args.betas_dir, args.attn_mod_betas_dir, args.surface,
+                subject, ALL_SPLITS, training_mode, args.betas_dir, args.surface,
                 args.resolution
             )
             for mask in args.masks:
@@ -167,7 +163,6 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
-    parser.add_argument("--attn-mod-betas-dir", type=str, default=ATTENTION_MOD_FMRI_BETAS_DIR)
 
     parser.add_argument("--training-splits", type=str, default=[SPLIT_TRAIN])
 
