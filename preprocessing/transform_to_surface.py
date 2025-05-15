@@ -99,6 +99,5 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(args.out_dir, exist_ok=True)
 
     to_surface(args)
