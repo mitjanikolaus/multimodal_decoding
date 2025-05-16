@@ -23,7 +23,9 @@ def get_subdir(betas_dir, subject, split_name):
 
 
 def create_symlinks_for_beta_files(betas_dir, unstructured_dir_name, subject, splits):
-    beta_file_addresses = sorted(glob(os.path.join(betas_dir, subject, unstructured_dir_name, 'beta_*.nii'), recursive=True))
+    regex = os.path.join(betas_dir, subject, unstructured_dir_name, 'beta_*.nii')
+    print(f'looking for betas with regex: {regex}')
+    beta_file_addresses = sorted(glob(regex), recursive=True)
 
     all_slink_names = set()
     all_beta_relative_paths = set()
