@@ -37,13 +37,14 @@ def create_symlinks_for_beta_files(betas_dir, unstructured_dir_name, subject, sp
         if split_name.endswith('_'):
             split_name = split_name[:-1]
 
+        if (split_name == IMAGERY) and (unstructured_dir_name == ATTENTION_MOD_UNSTRUCTURED_DIR_NAME):
+            split_name = SPLIT_IMAGERY_WEAK
+
         if split_name in splits:
             if split_name in ['blank', 'fixation', 'fixation_whitescreen']:
                 slink_name = os.path.join(get_subdir(betas_dir, subject, split_name), f"beta_{split_name}.nii")
             else:
                 stim_id = int(beta_name.split(split_name)[1].replace("_", ""))
-                if (split_name == IMAGERY) and (unstructured_dir_name == ATTENTION_MOD_UNSTRUCTURED_DIR_NAME):
-                    split_name = SPLIT_IMAGERY_WEAK
                 slink_name = os.path.join(get_subdir(betas_dir, subject, split_name), f"beta_{stim_id:06d}.nii")
 
             if slink_name in all_slink_names:
