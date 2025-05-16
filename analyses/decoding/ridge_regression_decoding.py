@@ -119,7 +119,7 @@ def run(args):
                     start = time.time()
                     fmri_betas_train = np.concatenate([fmri_betas[split] for split in args.training_splits])
                     latents_train = np.concatenate([latents[split] for split in args.training_splits])
-                    print(f"Training set size: {len(fmri_betas_train)} (splits: {args.training_splits}")
+                    print(f"Training set size: {len(fmri_betas_train)} (splits: {args.training_splits})")
                     clf.fit(fmri_betas_train, latents_train)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
