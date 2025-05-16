@@ -149,8 +149,7 @@ def get_candidate_latents(split, latents):
     return all_candidate_latents
 
 
-def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", standardize_latents=False,
-                                      comp_cross_decoding_scores=True):
+def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", standardize_latents=False):
     results = []
 
     for split in TEST_SPLITS:
