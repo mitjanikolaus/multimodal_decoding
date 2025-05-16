@@ -49,7 +49,7 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
 def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, surface=False,
                              resolution=DEFAULT_RESOLUTION):
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
-    for split in tqdm(splits, desc="loading fmri data"):
+    for split in splits:
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
         fmri_betas[split], stim_ids[split], stim_types[split] = get_fmri_data(
             betas_dir,
