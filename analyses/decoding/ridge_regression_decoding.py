@@ -138,7 +138,7 @@ def run(args):
                     scores_df["vision_features"] = feats_config.vision_features
                     scores_df["lang_features"] = feats_config.lang_features
                     scores_df["training_mode"] = training_mode
-                    scores_df["training_splits"] = args.training_splits
+                    scores_df["training_splits"] = '_'.join(args.training_splits)
                     scores_df["mask"] = mask
                     scores_df["num_voxels"] = fmri_betas[SPLIT_TRAIN].shape[1]
                     scores_df["surface"] = args.surface
