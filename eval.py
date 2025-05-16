@@ -182,33 +182,6 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
         results.append({"metric": SPLIT_IMAGERY, "value": acc, "standardized_predictions": "all_imagery",
                         "latents": latents_mode})
 
-    # for modality, acc_metric_name in zip([CAPTION, IMAGE], [ACC_CAPTIONS, ACC_IMAGES]):
-    #     preds_mod = predictions[SPLIT_TEST][stim_types == modality]
-    #     latents_mod = latents[SPLIT_TEST][stim_types == modality]
-    #
-    #     results[acc_metric_name] = pairwise_accuracy(
-    #         latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
-    #     )
-    #
-    # if comp_cross_decoding_scores:
-    #     # TODO
-    #     for mod_preds, mod_latents, acc_metric_name in zip([CAPTION, IMAGE], [IMAGE, CAPTION],
-    #                                                        [ACC_CROSS_CAPTIONS_TO_IMAGES,
-    #                                                         ACC_CROSS_IMAGES_TO_CAPTIONS]):
-    #         preds_mod = predictions[SPLIT_TEST][stim_types == mod_preds]
-    #         latents_mod = latents[SPLIT_TEST][stim_types == mod_latents]
-    #
-    #         results[acc_metric_name] = pairwise_accuracy(
-    #             latents_mod, preds_mod, metric, standardize_predictions, standardize_latents
-    #         )
-    #
-    # if latents[SPLIT_IMAGERY] is not None:
-    #     imagery_scores = calc_imagery_pairwise_accuracy_scores(
-    #         latents[[SPLIT_IMAGERY]], predictions[SPLIT_IMAGERY], latents[SPLIT_TEST], metric,
-    #         standardize_predictions, standardize_latents,
-    #         test_set_preds=None
-    #     )
-    #     results.update(imagery_scores)
     results = pd.DataFrame(results)
     return results
 

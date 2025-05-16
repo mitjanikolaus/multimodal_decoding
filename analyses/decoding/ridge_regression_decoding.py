@@ -164,7 +164,7 @@ def get_args():
 
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
-    parser.add_argument("--training-splits", type=str, default=[SPLIT_TRAIN])
+    parser.add_argument("--training-splits", type=str, nargs="+", default=[SPLIT_TRAIN])
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
