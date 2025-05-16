@@ -342,24 +342,26 @@ def stim_id_from_beta_file_name(beta_file_name, suffix='.nii'):
     return int(beta_file_name.replace('beta_I', '').replace('beta_C', '').replace('beta_', '').replace(suffix, ''))
 
 
-def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=None, suffix='.nii'):
-    mode_suffix = ""
-    if mode == MODALITY_SPECIFIC_CAPTIONS:
-        mode_suffix = f"_{CAPTION}"
-    elif mode == MODALITY_SPECIFIC_IMAGES:
-        mode_suffix = f"_{IMAGE}"
-
-    if hemi is None:
-        fmri_addresses_regex = os.path.join(betas_dir, subject, f'betas_{split}{mode_suffix}*', f"*{suffix}")
+def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=None, file_suffix='.nii'):
+    base_path = os.path.join(betas_dir, subject) if hemi is None else os.path.join(betas_dir, hemi, subject)
+    if split == SPLIT_TRAIN:
+        if mode == MODALITY_SPECIFIC_CAPTIONS:
+            mode_suffix = f"_{CAPTION}"
+        elif mode == MODALITY_SPECIFIC_IMAGES:
+            mode_suffix = f"_{IMAGE}"
+        else:
+            mode_suffix = "_*"
+        fmri_addresses_regex = os.path.join(base_path, f'betas_{split}{mode_suffix}', f"*{file_suffix}")
     else:
-        fmri_addresses_regex = os.path.join(betas_dir, hemi, subject, f'betas_{split}{mode_suffix}*', f"*{suffix}")
+        fmri_addresses_regex = os.path.join(base_path, f'betas_{split}', f"*{file_suffix}")
+
     fmri_betas_paths = sorted(glob(fmri_addresses_regex))
 
     stim_ids = []
     stim_types = []
     for path in fmri_betas_paths:
         split_name = path.split(os.sep)[-2]
-        stim_id = stim_id_from_beta_file_name(os.path.basename(path), suffix)
+        stim_id = stim_id_from_beta_file_name(os.path.basename(path), file_suffix)
         if IMAGERY in split_name:
             stim_types.append(IMAGERY)
             stim_id = IMAGERY_SCENES[subject][stim_id - 1][1]
