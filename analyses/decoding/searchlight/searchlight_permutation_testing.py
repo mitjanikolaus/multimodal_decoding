@@ -285,9 +285,8 @@ def calc_t_values(per_subject_scores):
             t_values[hemi][METRIC_CROSS_DECODING] = np.nanmin(
                 (
                     t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
-                    t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]),
+                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
+                ),
                 axis=0
             )
 
@@ -498,9 +497,7 @@ def calc_t_values_null_distr(args, out_path):
                         dsets[hemi][METRIC_CROSS_DECODING][iteration] = np.nanmin(
                             (
                                 t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]),
+                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
                             axis=0
                         )
 
