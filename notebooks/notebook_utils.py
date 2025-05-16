@@ -4,9 +4,8 @@ import seaborn as sns
 
 from data import DEFAULT_FEATURES, DEFAULT_VISION_FEATURES, DEFAULT_LANG_FEATURES, TRAINING_MODES, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import ACC_MODALITY_AGNOSTIC, ACC_CROSS_IMAGES_TO_CAPTIONS, ACC_CROSS_CAPTIONS_TO_IMAGES, \
-    calc_all_pairwise_accuracy_scores
+    calc_all_pairwise_accuracy_scores, ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 from utils import SUBJECTS, RIDGE_DECODER_OUT_DIR
-from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 from tqdm import tqdm
 from glob import glob
