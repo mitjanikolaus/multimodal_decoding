@@ -589,7 +589,6 @@ def create_null_distribution(args):
 
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
-                # t_values = [id * n_per_job: (id + 1) * n_per_job]
                 indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
                 iterator = tqdm(indices) if proc_id == 0 else indices
                 tfce_values = []
@@ -600,10 +599,6 @@ def create_null_distribution(args):
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
                         )
                     )
-                # tfce_values = [
-                #     calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
-                #     iterator
-                # ]
                 return tfce_values
 
         n_per_job = math.ceil(args.n_permutations_group_level / args.n_jobs)
