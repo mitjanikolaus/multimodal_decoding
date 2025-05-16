@@ -13,7 +13,7 @@ from tqdm import tqdm
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
-    ALL_SPLITS, TEST_SPLITS, ALL_SPLITS_BASE_DATA
+    ALL_SPLITS, TEST_SPLITS
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
     RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE
