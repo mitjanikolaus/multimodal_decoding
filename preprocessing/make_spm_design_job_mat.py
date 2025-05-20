@@ -193,7 +193,7 @@ def process_scans(subject, task_name, args, event_file_path_func):
                    glob(os.path.join(session_dir, f'rrasub*{task_name}_run-*_bold.nii'))]
         print(f"Runs: {run_ids}")
         for run in run_ids:
-            event_file = event_file_path_func(args.raw_fmri_data_dir, session, subject, task_name, run)
+            event_file = event_file_path_func(args.raw_data_dir, session, subject, task_name, run)
             event_files.append(event_file)
             realign_file = os.path.join(
                 realignment_data_dir, subject, session,
