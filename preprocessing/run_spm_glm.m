@@ -9,7 +9,7 @@ function []=run_spm_glm_stage_1(subject, betas_dir)
         betas_dir = "unstructured";
     end
     home = getenv('HOME');
-    data_dir = [home,'/data/multimodal_decoding/fmri/betas/',subject,betas_dir];
+    data_dir = [home,'/data/multimodal_decoding/fmri/betas/',subject,'/',betas_dir];
     cd(data_dir)
 
     data_dir
