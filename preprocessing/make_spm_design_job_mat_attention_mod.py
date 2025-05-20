@@ -94,7 +94,7 @@ def run(args):
         # fmri parameters:
         #####################
 
-        task_name = "coco_singletask_imagery"
+        task_name = "FUNCIMGRun1Back167dynSENSE12"
 
         output_dir = str(os.path.join(args.output_dir, subject, ATTENTION_MOD_UNSTRUCTURED_DIR_NAME))
         os.makedirs(output_dir, exist_ok=True)

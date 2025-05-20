@@ -182,10 +182,9 @@ def process_scans(subject, task_name, args):
     sessions, session_dirs = get_sessions(preprocessed_functional_data_dir, args.sessions)
     for session, session_dir in zip(sessions, session_dirs):
         print(f"Scanning for runs in {session_dir}")
-        n_runs = len(glob(os.path.join(session_dir, 'rrasub*run*_bold.nii')))
-        runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
-        print(f"Runs: {runs}")
-        for run in runs:
+        run_ids = [fname.split(f"{task_name}_")[1].split('_bold.nii')[0] for fname in glob(os.path.join(session_dir, f'rrasub*{task_name}_run-*_bold.nii'))]
+        print(f"Runs: {run_ids}")
+        for run in run_ids:
             event_file = os.path.join(
                 raw_fmri_subj_data_dir, session, "func",
                 f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
