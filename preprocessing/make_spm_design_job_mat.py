@@ -175,7 +175,7 @@ def event_file_path(raw_fmri_data_dir, session, subject, task_name, run):
     raw_fmri_subj_data_dir = str(os.path.join(raw_fmri_data_dir, subject))
     return os.path.join(
         raw_fmri_subj_data_dir, session, "func",
-        f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
+        f"{subject}_{session}_task-*_{run}_events.tsv"
     )
 
 
