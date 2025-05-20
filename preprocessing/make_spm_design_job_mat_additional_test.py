@@ -88,6 +88,8 @@ def preprocess_additional_test_event_files(event_files):
 
 def event_file_path_additional_test(raw_fmri_data_dir, session, subject, task_name, run):
     task_name = 'coco_singletask_imagery'
+    if len (run) < 6:
+        run = f'0{run}'
     return os.path.join(
         raw_fmri_data_dir, "Extra", "events",
         f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
