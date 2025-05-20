@@ -89,17 +89,17 @@ def load_event_files(tsv_files, condition_proc_func, log_file=None):
     if 'null' in condition_names:
         condition_names.remove('null')
 
-    print("Number of conditions: ", len(condition_names))
-    print("Number of train image conditions:", len([c for c in condition_names if "train_image" in c]))
-    print("Number of train caption conditions:", len([c for c in condition_names if "train_caption" in c]))
-
-    print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
-    print("Number of test conditions:", len([c for c in condition_names if "test" in c]))
+    # print("Number of conditions: ", len(condition_names))
+    # print("Number of train image conditions:", len([c for c in condition_names if "train_image" in c]))
+    # print("Number of train caption conditions:", len([c for c in condition_names if "train_caption" in c]))
+    #
+    # print("Number of train conditions:", len([c for c in condition_names if "train" in c]))
+    # print("Number of test conditions:", len([c for c in condition_names if "test" in c]))
     imagery_conditions = [c for c in condition_names if "imagery" in c]
-    print("Number of imagery conditions:", len(imagery_conditions))
+    # print("Number of imagery conditions:", len(imagery_conditions))
     for c in imagery_conditions:
         conds_imagery = [c in conds for conds in events_df['glm_conditions'].values]
-        print(f'number of repeats of imagery condition {c}: {np.sum(conds_imagery)}')
+        # print(f'number of repeats of imagery condition {c}: {np.sum(conds_imagery)}')
 
     if log_file is not None:
         events_df.to_csv(log_file, sep="\t")
