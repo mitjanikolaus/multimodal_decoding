@@ -171,7 +171,7 @@ def define_multi_regressors(realign_files):
     return fromarrays([reg_names, x], names=['name', 'val'])
 
 
-def event_file_path(raw_fmri_subj_data_dir, session, subject, task_name):
+def event_file_path(raw_fmri_subj_data_dir, session, subject, task_name, run):
     return os.path.join(
         raw_fmri_subj_data_dir, session, "func",
         f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
@@ -193,7 +193,7 @@ def process_scans(subject, task_name, args, event_file_path_func):
                    glob(os.path.join(session_dir, f'rrasub*{task_name}_run-*_bold.nii'))]
         print(f"Runs: {run_ids}")
         for run in run_ids:
-            event_file = event_file_path_func(raw_fmri_subj_data_dir, session, subject, task_name)
+            event_file = event_file_path_func(raw_fmri_subj_data_dir, session, subject, task_name, run)
             event_files.append(event_file)
             realign_file = os.path.join(
                 realignment_data_dir, subject, session,
