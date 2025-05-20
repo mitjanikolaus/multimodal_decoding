@@ -65,7 +65,7 @@ def get_attention_mod_condition_names(trial):
     return conditions
 
 
-def preprocess_attention_mod_event_files(event_files):
+def preprocess_additional_test_event_files(event_files):
     data = []
     onset_shift = 0
 
@@ -86,6 +86,13 @@ def preprocess_attention_mod_event_files(event_files):
     return pd.concat(data, ignore_index=True)
 
 
+def event_file_path_additional_test(raw_fmri_subj_data_dir, session, subject, task_name):
+    return os.path.join(
+        raw_fmri_subj_data_dir, "Extra", "events",
+        f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
+    )
+
+
 def run(args):
     for subject in args.subjects:
         print(subject)
@@ -100,7 +107,8 @@ def run(args):
         os.makedirs(output_dir, exist_ok=True)
 
         jobs, conditions = define_fmri_betas_jobs(
-            output_dir, subject, task_name, args, condition_proc_func=preprocess_attention_mod_event_files
+            output_dir, subject, task_name, args, event_file_path_func=event_file_path_additional_test,
+            condition_proc_func=preprocess_additional_test_event_files
         )
         print("Number of conditions: ", len(conditions))
 

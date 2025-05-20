@@ -171,7 +171,14 @@ def define_multi_regressors(realign_files):
     return fromarrays([reg_names, x], names=['name', 'val'])
 
 
-def process_scans(subject, task_name, args):
+def event_file_path(raw_fmri_subj_data_dir, session, subject, task_name):
+    return os.path.join(
+        raw_fmri_subj_data_dir, session, "func",
+        f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
+    )
+
+
+def process_scans(subject, task_name, args, event_file_path_func):
     preprocessed_functional_data_dir = os.path.join(args.preprocessing_datasink_dir, "coregistered", subject)
     realignment_data_dir = os.path.join(args.preprocessing_datasink_dir, "realignment")
     raw_fmri_subj_data_dir = str(os.path.join(args.raw_data_dir, subject))
@@ -182,13 +189,11 @@ def process_scans(subject, task_name, args):
     sessions, session_dirs = get_sessions(preprocessed_functional_data_dir, args.sessions)
     for session, session_dir in zip(sessions, session_dirs):
         print(f"Scanning for runs in {session_dir}")
-        run_ids = [fname.split(f"{task_name}_")[1].split('_bold.nii')[0] for fname in glob(os.path.join(session_dir, f'rrasub*{task_name}_run-*_bold.nii'))]
+        run_ids = [fname.split(f"{task_name}_")[1].split('_bold.nii')[0] for fname in
+                   glob(os.path.join(session_dir, f'rrasub*{task_name}_run-*_bold.nii'))]
         print(f"Runs: {run_ids}")
         for run in run_ids:
-            event_file = os.path.join(
-                raw_fmri_subj_data_dir, session, "func",
-                f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
-            )
+            event_file = event_file_path_func(raw_fmri_subj_data_dir, session, subject, task_name)
             event_files.append(event_file)
             realign_file = os.path.join(
                 realignment_data_dir, subject, session,
@@ -234,8 +239,7 @@ def get_base_fmri_spec(units, RT, fmri_t, fmri_t0, derivs, VOLT, GLOBAL, mthresh
     return fmri_spec
 
 
-def define_fmri_betas_jobs(output_dir, subject,
-                           task_name, args, condition_proc_func):
+def define_fmri_betas_jobs(output_dir, subject, task_name, args, event_file_path_func, condition_proc_func):
     #####################
     # fmri parameters:
     #####################
@@ -271,7 +275,7 @@ def define_fmri_betas_jobs(output_dir, subject,
 
     fmri_spec['dir'] = np.array([output_dir], dtype=object)
 
-    scans, event_files, realign_files = process_scans(subject, task_name, args)
+    scans, event_files, realign_files = process_scans(subject, task_name, args, event_file_path_func)
 
     fmri_spec['sess']['scans'] = np.array(scans, dtype=object)[:, np.newaxis]
     fmri_spec['sess']['regress'] = define_multi_regressors(realign_files)
@@ -314,7 +318,8 @@ def run(args):
         os.makedirs(output_dir, exist_ok=True)
 
         jobs, condition_names = define_fmri_betas_jobs(
-            output_dir, subject, task_name, args, condition_proc_func=preprocess_event_files
+            output_dir, subject, task_name, args, event_file_path_func=event_file_path,
+            condition_proc_func=preprocess_event_files
         )
 
         print("Number of conditions: ", len(condition_names))

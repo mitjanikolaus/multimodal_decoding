@@ -5,7 +5,7 @@ from glob import glob
 import pandas as pd
 
 from data import IMAGERY
-from preprocessing.make_spm_design_job_mat_attention_mod import ID_TO_TRIAL_TYPE, SPLIT_TEST_IMAGE_ATTENDED, \
+from preprocessing.make_spm_design_job_mat_additional_test import ID_TO_TRIAL_TYPE, SPLIT_TEST_IMAGE_ATTENDED, \
     SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED
 from utils import ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR
 
