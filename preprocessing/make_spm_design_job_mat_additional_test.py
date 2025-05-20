@@ -89,7 +89,7 @@ def preprocess_additional_test_event_files(event_files):
 def event_file_path_additional_test(raw_fmri_data_dir, session, subject, task_name, run):
     return os.path.join(
         raw_fmri_data_dir, "Extra", "events",
-        f"{subject}_{session}_task-{task_name}_{run}_events.tsv"
+        f"{subject}_{session}_task-*_{run}_events.tsv"
     )
 
 
