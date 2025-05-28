@@ -17,7 +17,7 @@ from analyses.visualization.plotting_utils import plot_surf_contours_custom, plo
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
-    save_plot_and_crop_img, append_images
+    save_plot_and_crop_img, append_images, METRIC_CROSS_DECODING
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -29,7 +29,7 @@ ACC_COLORBAR_THRESHOLD = 0.52
 
 CBAR_TFCE_MAX_VALUE = 400000
 
-METRICS = [METRIC_MOD_AGNOSTIC_AND_CROSS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
+METRICS = [METRIC_CROSS_DECODING, METRIC_MOD_AGNOSTIC_AND_CROSS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
 
 CONTOUR_COLOR = 'lightseagreen'
 
