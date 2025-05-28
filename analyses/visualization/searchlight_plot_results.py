@@ -300,7 +300,7 @@ def get_args():
     parser = add_searchlight_permutation_args(parser)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
-    parser.add_argument("--p-value-threshold", type=float, default=0.01)
+    parser.add_argument("--p-value-threshold", type=float, default=1e-4)
 
     return parser.parse_args()
 
