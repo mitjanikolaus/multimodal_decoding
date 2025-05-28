@@ -35,8 +35,6 @@ CONTOUR_COLOR = 'lightseagreen'
 
 
 def plot(args):
-    # plt.style.use("dark_background")
-
     for result_metric in METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
@@ -48,16 +46,6 @@ def plot(args):
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-        # rois_for_view = {
-        #     "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
-        #                'G_oc-temp_med-Parahip', 'S_pericallosal'],
-        #     "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'S_temporal_sup', 'S_front_inf',
-        #                 'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_temporal_inf',
-        #                 'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], # , 'G_front_inf-Orbital',  'G_orbital',
-        #     "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_oc-temp_lat-fusifor',
-        #                 'Pole_temporal'], #, 'G_front_inf-Orbital', 'G_orbital',
-        #     "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup'] #, 'S_intrapariet_and_P_trans' , 'G_occipital_sup'
-        # }
         rois_for_view = {
             METRIC_MOD_AGNOSTIC_AND_CROSS: {
                 "left": {
