@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='multimodal_decoding',
+    name='multimodal_decoding_additional_test',
     version='0.1',
     packages=find_packages(),
     url='',
