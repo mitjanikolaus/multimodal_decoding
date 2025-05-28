@@ -71,6 +71,18 @@ def plot(args):
                     "ventral": [],
                 }
             },
+            METRIC_CROSS_DECODING: {
+                "left": {
+                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+                    "ventral": ['inferiortemporal', 'fusiform'],
+                },
+                "right": {
+                    "medial": [],
+                    "lateral": [],
+                    "ventral": [],
+                }
+            },
             ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC: {
                 "left": {
                     "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
@@ -99,7 +111,7 @@ def plot(args):
 
         result_values = dict()
 
-        if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
+        if result_metric in [METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_CROSS_DECODING]:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
