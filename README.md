@@ -60,7 +60,7 @@ python preprocessing/fmri_preprocessing.py
 ```
 
 The input for this script are the raw fMRI BIDS found at `~/data/multimodal_decoding/fmri/raw/bids` as well as 
-the corrected T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/corrected_anat`.
+the downsampled T1w images of the first session: `~/data/multimodal_decoding/fmri/raw/anat_downsampled`.
 
 
 
@@ -70,9 +70,8 @@ Gray matter masks are used to perform the analysis only on voxels that belong to
 We consider a very inclusive mask, any voxel that has a probability greater than 0 to belong to gray matter tissue is
 included. 
 
-The input to this script is the c1 (gray matter) segmentation of the T1w image (anatomical scan) of the first session
-(e.g. `~/data/multimodal_decoding/fmri/raw/corrected_anat/sub-01/c1sub-01_ses-01_run-01_T1W_downsampled_2mm.nii`), which
-was created in the previous step.
+The input to this script is the c1 (gray matter) segmentation of the T1w image (anatomical scan) of the first session,
+which was created in the previous step.
 The following script creates the gray matter masks for each subject.
 ```
 python preprocessing/create_gray_matter_masks.py
