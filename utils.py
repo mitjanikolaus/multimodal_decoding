@@ -17,8 +17,7 @@ LATENT_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 LATENT_FEATURES_NORMALIZATIONS_DIR = os.path.join(LATENT_FEATURES_DIR, "normalizations")
 
 
-STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.p")
-STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
+STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.csv")
 
 RESULTS_FILE = "results.p"
 

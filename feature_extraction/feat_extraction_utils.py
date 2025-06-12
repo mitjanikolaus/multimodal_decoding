@@ -1,13 +1,12 @@
 import os
 import pickle
 
-import numpy as np
+import pandas as pd
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from data import IMAGES_IMAGERY_CONDITION
-from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, LATENT_FEATURES_DIR, \
+from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, LATENT_FEATURES_DIR, \
     model_features_file_path
 
 
@@ -17,7 +16,7 @@ class CoCoDataset(Dataset):
     The data is filtered for ids contained in the `stimuli_ids_path` file.
     """
 
-    def __init__(self, coco_root, stim_info_path, stimuli_ids_path, mode='both'):
+    def __init__(self, coco_root=COCO_IMAGES_DIR, stim_info_path=STIM_INFO_PATH, mode='both'):
         r"""
         Args:
             `coco_root` (str): address to the coco2017 root folder (= the parent directory of `images` folder)
@@ -25,16 +24,16 @@ class CoCoDataset(Dataset):
             `mode` (str): can be `caption` or `image` to load captions or images, respectively. Default: `image`
         """
         super().__init__()
-        data = np.load(stim_info_path, allow_pickle=True)
-        data.extend(IMAGES_IMAGERY_CONDITION)
-        self.stimuli_ids = pickle.load(open(stimuli_ids_path, "rb"))
-        self.img_paths = {id: path for id, path, _ in data if id in self.stimuli_ids}
-        self.captions = {id: caption for id, _, caption in data if id in self.stimuli_ids}
+        data = pd.read_csv(stim_info_path, index_col=0)
+        data = data[data.used == True]
+
+        self.img_paths = data.img_path.to_dict()
+        self.captions = data.caption.to_dict()
         self.root = coco_root
         self.mode = mode
 
     def __len__(self):
-        return len(self.stimuli_ids)
+        return len(self.img_paths)
 
     def __getitem__(self, index):
         id = self.stimuli_ids[index]
@@ -50,6 +49,8 @@ class CoCoDataset(Dataset):
             img_path = os.path.join(self.root, self.img_paths[id])
             cap = self.captions[id]
             return id, cap, img_path
+        else:
+            raise RuntimeError("Unknown mode: ", self.mode)
 
     def get_img_by_coco_id(self, coco_id):
         img_path = os.path.join(self.root, self.img_paths[coco_id])
@@ -80,7 +81,7 @@ class FeatureExtractor:
 
         self.model_name = model_name
 
-        self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'both')
+        self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, 'both')
         self.dloader = DataLoader(self.ds, shuffle=False, batch_size=batch_size)
 
         os.makedirs(LATENT_FEATURES_DIR, exist_ok=True)

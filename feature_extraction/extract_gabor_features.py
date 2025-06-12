@@ -4,7 +4,6 @@ import pickle
 
 import numpy as np
 from joblib import Parallel, delayed
-from matplotlib import pyplot as plt
 from scipy import ndimage
 from skimage.filters import gabor_kernel
 from torch.utils.data import DataLoader
@@ -15,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from data import LANG_CLS_FEAT_KEY, VISION_CLS_FEAT_KEY
 from feature_extraction.feat_extraction_utils import FeatureExtractor, CoCoDataset
-from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, model_features_file_path
+from utils import COCO_IMAGES_DIR, STIM_INFO_PATH, model_features_file_path
 
 BATCH_SIZE = 1000
 N_JOBS = 20
@@ -58,7 +57,7 @@ class GaborFeatureExtractor(FeatureExtractor):
 
         self.model_name = model_name
 
-        self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, STIMULI_IDS_PATH, 'both')
+        self.ds = CoCoDataset(COCO_IMAGES_DIR, STIM_INFO_PATH, 'both')
         self.dloader = DataLoader(self.ds, shuffle=False, batch_size=batch_size)
 
     def extract_features(self):
