@@ -16,14 +16,13 @@ COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/")
 LATENT_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 LATENT_FEATURES_NORMALIZATIONS_DIR = os.path.join(LATENT_FEATURES_DIR, "normalizations")
 
-
-STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.csv")
-
 RESULTS_FILE = "results.p"
 
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
 FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
 FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
+STIM_INFO_PATH = os.path.join(FMRI_RAW_BIDS_DATA_DIR, "stimuli", "stimuli.csv")
+
 FMRI_DOWNSAMPLED_ANAT_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "anat_downsampled")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_PREPROCESSING_DATASINK_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
