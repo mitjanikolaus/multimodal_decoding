@@ -7,13 +7,13 @@ import pandas as pd
 from data import IMAGERY
 from preprocessing.make_spm_design_job_mat_additional_test import ID_TO_TRIAL_TYPE, SPLIT_TEST_IMAGE_ATTENDED, \
     SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED
-from utils import ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR
+from utils import ADDITIONAL_TEST_SUBJECTS, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR
 
 if __name__ == "__main__":
     all_trials = []
-    for subject in ATTENTION_MOD_SUBJECTS:
+    for subject in ADDITIONAL_TEST_SUBJECTS:
         print(subject)
-        path = os.path.join(ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, subject)
+        path = os.path.join(ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, subject)
         print(f"Scanning for sessions in {path}")
         session_dirs = glob(os.path.join(path, 'ses-*'))
         rep_counter = Counter()

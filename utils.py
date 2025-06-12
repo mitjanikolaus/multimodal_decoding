@@ -56,17 +56,17 @@ METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
 METRIC_MOD_AGNOSTIC_AND_CROSS = 'mod_agnostic_and_cross'
 
-ATTENTION_MOD_DATA_DIR = os.path.join(DATA_DIR, "attention_modulation")
-ATTENTION_MOD_FMRI_DATA_DIR = os.path.join(ATTENTION_MOD_DATA_DIR, "fmri")
-ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "bids")
+ADDITIONAL_TEST_DATA_DIR = os.path.join(DATA_DIR, "additional_test")
+ADDITIONAL_TEST_FMRI_DATA_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "fmri")
+ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR = os.path.join(ADDITIONAL_TEST_FMRI_DATA_DIR, "bids")
 
-ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "preprocessed")
-ATTENTION_MOD_FMRI_PREPROCESSED_DATASINK_DIR = os.path.join(ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, "datasink")
-ATTENTION_MOD_UNSTRUCTURED_DIR_NAME = "unstructured_additional_test"
+ADDITIONAL_TEST_FMRI_PREPROCESSED_DATA_DIR = os.path.join(ADDITIONAL_TEST_FMRI_DATA_DIR, "preprocessed")
+ADDITIONAL_TEST_FMRI_PREPROCESSED_DATASINK_DIR = os.path.join(ADDITIONAL_TEST_FMRI_PREPROCESSED_DATA_DIR, "datasink")
+ADDITIONAL_TEST_UNSTRUCTURED_DIR_NAME = "unstructured_additional_test"
 
-ATTENTION_MOD_SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
+ADDITIONAL_TEST_SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
 
-RIDGE_DECODER_ATTN_MOD_OUT_DIR = os.path.join(ATTENTION_MOD_DATA_DIR, "whole_brain_decoding")
+RIDGE_DECODER_ATTN_MOD_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "whole_brain_decoding")
 
 
 def nipype_subject_id(subject):

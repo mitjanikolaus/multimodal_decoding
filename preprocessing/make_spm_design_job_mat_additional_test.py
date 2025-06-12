@@ -7,8 +7,8 @@ import os
 from data import IMAGERY, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, \
     SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_IMAGERY
 from preprocessing.make_spm_design_job_mat import define_fmri_betas_jobs
-from utils import ATTENTION_MOD_SUBJECTS, ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR, \
-    ATTENTION_MOD_FMRI_PREPROCESSED_DATASINK_DIR, FMRI_BETAS_DIR, ATTENTION_MOD_UNSTRUCTURED_DIR_NAME
+from utils import ADDITIONAL_TEST_SUBJECTS, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
+    ADDITIONAL_TEST_FMRI_PREPROCESSED_DATASINK_DIR, FMRI_BETAS_DIR, ADDITIONAL_TEST_UNSTRUCTURED_DIR_NAME
 
 FIXATION = "fixation"
 FIXATION_WHITESCREEN = "fixation_whitescreen"
@@ -107,7 +107,7 @@ def run(args):
         # task_name = "FUNCIMGRun1Back167dynSENSE12"
         task_name = "coco_singletask_imagery"
 
-        output_dir = str(os.path.join(args.output_dir, subject, ATTENTION_MOD_UNSTRUCTURED_DIR_NAME))
+        output_dir = str(os.path.join(args.output_dir, subject, ADDITIONAL_TEST_UNSTRUCTURED_DIR_NAME))
         os.makedirs(output_dir, exist_ok=True)
 
         jobs, conditions = define_fmri_betas_jobs(
@@ -139,11 +139,11 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=ATTENTION_MOD_SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=ADDITIONAL_TEST_SUBJECTS)
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
-    parser.add_argument("--raw-data-dir", type=str, default=ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR)
-    parser.add_argument("--preprocessing-datasink-dir", type=str, default=ATTENTION_MOD_FMRI_PREPROCESSED_DATASINK_DIR)
+    parser.add_argument("--raw-data-dir", type=str, default=ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--preprocessing-datasink-dir", type=str, default=ADDITIONAL_TEST_FMRI_PREPROCESSED_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
 
