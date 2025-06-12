@@ -1,7 +1,6 @@
 import argparse
 import os
-import numpy as np
-from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment, Normalize12
+from nipype.interfaces.spm import SliceTiming, Realign, Coregister, NewSegment
 from nipype.interfaces.utility import IdentityInterface
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node
@@ -10,7 +9,7 @@ from nipype.algorithms.misc import Gunzip
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_RAW_DATA_DIR, FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_ANAT_DATA_DIR
+from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_BIDS_DATA_DIR, FMRI_DOWNSAMPLED_ANAT_DATA_DIR
 
 SPM_PATH = os.path.expanduser('~/apps/spm12')
 mlab.MatlabCommand.set_default_paths(SPM_PATH)
@@ -40,14 +39,12 @@ def run(args):
     print()
 
     # list subject sessions
-    # data_root = os.path.join(args.raw_data_dir, 'bids')
-    # anat_root = os.path.join(args.raw_data_dir, 'corrected_anat')
     sessions = dict()
     for subj in subjects:
         if args.sessions is not None:
             sessions[subj] = args.sessions
         else:
-            folders = os.listdir(os.path.join(args.fmri_bids_dir, subj))
+            folders = os.listdir(os.path.join(args.bids_data_dir, subj))
             sessions[subj] = sorted(folders)
     print_session_names(sessions)
 
@@ -56,10 +53,10 @@ def run(args):
     for subj in subjects:
         for ses in sessions[subj]:
             rns = []
-            files = os.listdir(os.path.join(args.fmri_bids_dir, subj, ses, 'func'))
+            files = os.listdir(os.path.join(args.bids_data_dir, subj, ses, 'func'))
             for file in files:
                 if file.endswith("bold.nii.gz"):
-                    rns.append(os.path.join(args.fmri_bids_dir, subj, ses, 'func', file[:-12]))
+                    rns.append(os.path.join(args.bids_data_dir, subj, ses, 'func', file[:-12]))
             runs[(subj, ses)] = sorted(rns)
     print_run_names(runs)
 
@@ -78,12 +75,14 @@ def run(args):
             slice2time[temp[1] + i * 2] = min(time, TR * 1000)
             time += interval * 1000
 
+    print("Slice Timing: ")
     for idx, t in enumerate(slice2time):
-        print(f"{idx:02d} {t:10.4f}")
+        # print(f"{idx:02d} {t:10.4f}")
+        print(f"{t/1000:.4f}", end=', ')
 
-    toprint = np.array(slice2time).argsort()
-    for i in range(0, 46, 2):
-        print(f"{toprint[i] + 1:02d} {toprint[i + 1] + 1:02d} {slice2time[toprint[i]]:10.4f}")
+    # toprint = np.array(slice2time).argsort()
+    # for i in range(0, 46, 2):
+    #     print(f"{toprint[i] + 1:02d} {toprint[i + 1] + 1:02d} {slice2time[toprint[i]]:10.4f}")
 
     ##############
     # Nipype Nodes
@@ -107,26 +106,7 @@ def run(args):
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
     # Coregistration (coregistration of functional scans to anatomical scan)
-    # coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
     coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
-
-    # Normalization (transformation to MNI space)
-    # template = os.path.join(SPM_PATH, 'tpm/TPM.nii')  # template in form of a tissue probability map to normalize to
-    # normalize = Node(Normalize12(tpm=template, jobtype='estwrite', write_voxel_sizes=[2, 2, 2]), name="normalize")
-
-    # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
-    # normalize_node = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=[2, 2, 2]), name='normalize')
-    # normalize_node.iterables = ('fwhm', [4])
-
-    # template = os.path.join(SPM_PATH, 'canonical/avg305T1.nii')
-    # normalize_func = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
-    #                       name='normalize_func')
-    # fwhmlist = [4]
-    # normalize_and_smooth_func.iterables = ('fwhm', fwhmlist)
-
-    # normalize_anat = Node(DARTELNorm2MNI(modulate=True, template_file=template, voxel_size=(2.0, 2.0, 2.0)),
-    #                         name='normalize_struct')
-    # normalize_struct.inputs.fwhm = 2
 
     tpm_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
     tissue1 = ((tpm_img, 1), 2, (True, False), (False, False))
@@ -149,15 +129,15 @@ def run(args):
     infosrc_sessions.iterables = [('session_id', sessions)]
 
     # File selector (to list files for the pipeline based on the info sources)
-    anat_file = os.path.join('{subject_id}', '{subject_id}_ses-01_run-01_T1W' + f'{args.anat_scan_suffix}.nii')
+    anat_file = os.path.join('{subject_id}_ses-01_run-01_T1w' + f'{args.anat_scan_suffix}.nii')
     func_file = os.path.join('{subject_id}', '{session_id}', 'func', '*bold.nii.gz')
 
     selectfiles_anat = Node(
-        SelectFiles({'anat': anat_file}, base_directory=args.fmri_anat_dir), name="selectfiles_anat"
+        SelectFiles({'anat': anat_file}, base_directory=args.downsampled_anat_data_dir), name="selectfiles_anat"
     )
 
     selectfiles_sessions = Node(
-        SelectFiles({'func': func_file}, base_directory=args.fmri_bids_dir), name="selectfiles_sessions"
+        SelectFiles({'func': func_file}, base_directory=args.bids_data_dir), name="selectfiles_sessions"
     )
 
     # Working directory
@@ -198,12 +178,7 @@ def run(args):
 
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
-    # connect coregister to normalize
-    # preproc.connect([(selectfiles_anat, normalize, [('anat', 'image_to_align')])])
-    # preproc.connect([(coregister_node, normalize, [('coregistered_files', 'apply_to_files')])])
-
     # connect segment
-    # preproc.connect([(normalize, segment_node, [('normalized_image', 'channel_files')])])
     preproc.connect([(selectfiles_anat, segment_node, [('anat', 'channel_files')])])
 
     # keeping realignment params
@@ -224,9 +199,10 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--fmri-bids-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--bids-data-dir", type=str, default=FMRI_BIDS_DATA_DIR)
+    parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
-    parser.add_argument("--fmri-anat-dir", type=str, default=FMRI_ANAT_DATA_DIR)
+    parser.add_argument("--downsampled-anat-data-dir", type=str, default=FMRI_DOWNSAMPLED_ANAT_DATA_DIR)
     parser.add_argument("--anat-scan-suffix", type=str, default=DEFAULT_ANAT_SCAN_SUFFIX)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)

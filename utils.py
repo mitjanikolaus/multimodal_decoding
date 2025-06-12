@@ -16,23 +16,22 @@ COCO_IMAGES_DIR = os.path.expanduser("~/data/coco/")
 LATENT_FEATURES_DIR = os.path.join(DATA_DIR, "nn_features")
 LATENT_FEATURES_NORMALIZATIONS_DIR = os.path.join(LATENT_FEATURES_DIR, "normalizations")
 
-
-STIM_INFO_PATH = os.path.join(DATA_DIR, "stimuli.p")
-STIMULI_IDS_PATH = os.path.join(DATA_DIR, "stimuli_ids.p")
-
 RESULTS_FILE = "results.csv"
 PREDICTIONS_FILE = "predictions.p"
 
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
-FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
-FMRI_ANAT_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, 'corrected_anat')
-FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
+FMRI_STIM_INFO_DIR = os.path.join(FMRI_DATA_DIR, "stim_info")
+FMRI_DOWNSAMPLED_ANAT_DATA_DIR = os.path.join(FMRI_DATA_DIR, "anat_downsampled")
+FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_PREPROCESSING_DATASINK_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
-FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
-FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
+
+FMRI_BIDS_DATA_DIR = os.path.join(FMRI_DATA_DIR, "bids")
+
+STIM_INFO_PATH = os.path.join(FMRI_BIDS_DATA_DIR, "stimuli", "stimuli.csv")
+FMRI_BETAS_DIR = os.path.join(FMRI_BIDS_DATA_DIR, "derivatives", "betas")
+
 FMRI_BETAS_SURFACE_DIR = os.path.join(FMRI_BETAS_DIR, "surface")
-FMRI_STIM_INFO_DIR = os.path.join(FMRI_DATA_DIR, "stim_info")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_SUBJECTS_DIR = os.path.join(FREESURFER_BASE_DIR, "subjects_downsampled_2mm")
@@ -64,8 +63,6 @@ ATTENTION_MOD_FMRI_RAW_BIDS_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR,
 ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "preprocessed")
 ATTENTION_MOD_FMRI_PREPROCESSED_DATASINK_DIR = os.path.join(ATTENTION_MOD_FMRI_PREPROCESSED_DATA_DIR, "datasink")
 ATTENTION_MOD_UNSTRUCTURED_DIR_NAME = "unstructured_additional_test"
-# ATTENTION_MOD_FMRI_BETAS_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas")
-# ATTENTION_MOD_FMRI_BETAS_SURFACE_DIR = os.path.join(ATTENTION_MOD_FMRI_DATA_DIR, "betas_surface_level")
 
 ATTENTION_MOD_SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
 

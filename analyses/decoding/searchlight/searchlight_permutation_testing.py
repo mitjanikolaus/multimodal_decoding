@@ -285,9 +285,8 @@ def calc_t_values(per_subject_scores):
             t_values[hemi][METRIC_CROSS_DECODING] = np.nanmin(
                 (
                     t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
-                    t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]),
+                    t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
+                ),
                 axis=0
             )
 
@@ -498,9 +497,7 @@ def calc_t_values_null_distr(args, out_path):
                         dsets[hemi][METRIC_CROSS_DECODING][iteration] = np.nanmin(
                             (
                                 t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS]),
+                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
                             axis=0
                         )
 
@@ -589,7 +586,6 @@ def create_null_distribution(args):
 
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
-                # t_values = [id * n_per_job: (id + 1) * n_per_job]
                 indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
                 iterator = tqdm(indices) if proc_id == 0 else indices
                 tfce_values = []
@@ -600,10 +596,6 @@ def create_null_distribution(args):
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
                         )
                     )
-                # tfce_values = [
-                #     calc_tfce_values(vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e) for vals in
-                #     iterator
-                # ]
                 return tfce_values
 
         n_per_job = math.ceil(args.n_permutations_group_level / args.n_jobs)
@@ -665,7 +657,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=10000)
 
-    parser.add_argument("--p-value-threshold", type=float, default=0.01)
+    parser.add_argument("--p-value-threshold", type=float, default=1e-4)
     parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()

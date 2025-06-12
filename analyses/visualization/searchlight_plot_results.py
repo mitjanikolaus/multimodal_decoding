@@ -17,7 +17,7 @@ from analyses.visualization.plotting_utils import plot_surf_contours_custom, plo
 from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
-    save_plot_and_crop_img, append_images
+    save_plot_and_crop_img, append_images, METRIC_CROSS_DECODING
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -35,8 +35,6 @@ CONTOUR_COLOR = 'lightseagreen'
 
 
 def plot(args):
-    # plt.style.use("dark_background")
-
     for result_metric in METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
@@ -48,18 +46,20 @@ def plot(args):
 
         fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-        # rois_for_view = {
-        #     "medial": ['G_precuneus', 'S_subparietal', 'G_cingul-Post-dorsal', 'S_parieto_occipital',
-        #                'G_oc-temp_med-Parahip', 'S_pericallosal'],
-        #     "lateral": ['G_pariet_inf-Angular', 'G_occipital_middle', 'S_temporal_sup', 'S_front_inf',
-        #                 'G_front_inf-Opercular', 'S_precentral-inf-part', 'G_temporal_inf',
-        #                 'G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo', 'S_interm_prim-Jensen', 'G_temp_sup-Lateral'], # , 'G_front_inf-Orbital',  'G_orbital',
-        #     "ventral": ['S_oc-temp_lat', 'G_temporal_inf', 'G_oc-temp_lat-fusifor',
-        #                 'Pole_temporal'], #, 'G_front_inf-Orbital', 'G_orbital',
-        #     "posterior": ['G_pariet_inf-Angular', 'S_temporal_sup', 'G_parietal_sup'] #, 'S_intrapariet_and_P_trans' , 'G_occipital_sup'
-        # }
         rois_for_view = {
             METRIC_MOD_AGNOSTIC_AND_CROSS: {
+                "left": {
+                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+                    "ventral": ['inferiortemporal', 'fusiform'],
+                },
+                "right": {
+                    "medial": [],
+                    "lateral": [],
+                    "ventral": [],
+                }
+            },
+            METRIC_CROSS_DECODING: {
                 "left": {
                     "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
                     "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
@@ -99,7 +99,7 @@ def plot(args):
 
         result_values = dict()
 
-        if result_metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
+        if result_metric in [METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_CROSS_DECODING]:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
@@ -300,7 +300,7 @@ def get_args():
     parser = add_searchlight_permutation_args(parser)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
-    parser.add_argument("--p-value-threshold", type=float, default=0.01)
+    parser.add_argument("--p-value-threshold", type=float, default=1e-4)
 
     return parser.parse_args()
 
