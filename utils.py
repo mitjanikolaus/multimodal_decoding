@@ -19,17 +19,18 @@ LATENT_FEATURES_NORMALIZATIONS_DIR = os.path.join(LATENT_FEATURES_DIR, "normaliz
 RESULTS_FILE = "results.p"
 
 FMRI_DATA_DIR = os.path.join(DATA_DIR, "fmri")
-FMRI_RAW_DATA_DIR = os.path.join(FMRI_DATA_DIR, "raw")
-FMRI_RAW_BIDS_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "bids")
-STIM_INFO_PATH = os.path.join(FMRI_RAW_BIDS_DATA_DIR, "stimuli", "stimuli.csv")
-
-FMRI_DOWNSAMPLED_ANAT_DATA_DIR = os.path.join(FMRI_RAW_DATA_DIR, "anat_downsampled")
+FMRI_STIM_INFO_DIR = os.path.join(FMRI_DATA_DIR, "stim_info")
+FMRI_DOWNSAMPLED_ANAT_DATA_DIR = os.path.join(FMRI_DATA_DIR, "anat_downsampled")
+FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
 FMRI_PREPROCESSED_DATA_DIR = os.path.join(FMRI_DATA_DIR, "preprocessed")
 FMRI_PREPROCESSING_DATASINK_DIR = os.path.join(FMRI_PREPROCESSED_DATA_DIR, "datasink")
-FMRI_BETAS_DIR = os.path.join(FMRI_DATA_DIR, "betas")
-FMRI_NORMALIZATIONS_DIR = os.path.join(FMRI_DATA_DIR, "normalizations")
+
+FMRI_BIDS_DATA_DIR = os.path.join(FMRI_DATA_DIR, "bids")
+
+STIM_INFO_PATH = os.path.join(FMRI_BIDS_DATA_DIR, "stimuli", "stimuli.csv")
+FMRI_BETAS_DIR = os.path.join(FMRI_BIDS_DATA_DIR, "derivatives", "betas")
+
 FMRI_BETAS_SURFACE_DIR = os.path.join(FMRI_BETAS_DIR, "surface")
-FMRI_STIM_INFO_DIR = os.path.join(FMRI_DATA_DIR, "stim_info")
 
 FREESURFER_BASE_DIR = os.path.join(DATA_DIR, "freesurfer")
 FREESURFER_SUBJECTS_DIR = os.path.join(FREESURFER_BASE_DIR, "subjects_downsampled_2mm")
@@ -37,7 +38,7 @@ FREESURFER_SUBJECTS_DIR = os.path.join(FREESURFER_BASE_DIR, "subjects_downsample
 FREESURFER_HOME_DIR = "/usr/local/freesurfer/7.4.1"
 
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
-RIDGE_DECODER_OUT_DIR = os.path.expanduser("~/data/multimodal_decoding/whole_brain_decoding/")
+RIDGE_DECODER_OUT_DIR = os.path.join(DATA_DIR, "whole_brain_decoding/")
 
 SUBJECTS = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-07']
 HEMIS = ['left', 'right']

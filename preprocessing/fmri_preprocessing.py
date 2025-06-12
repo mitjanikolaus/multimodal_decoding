@@ -9,7 +9,7 @@ from nipype.algorithms.misc import Gunzip
 
 import nipype.interfaces.matlab as mlab
 
-from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_DOWNSAMPLED_ANAT_DATA_DIR
+from utils import FMRI_PREPROCESSED_DATA_DIR, SUBJECTS, FMRI_BIDS_DATA_DIR, FMRI_DOWNSAMPLED_ANAT_DATA_DIR
 
 SPM_PATH = os.path.expanduser('~/apps/spm12')
 mlab.MatlabCommand.set_default_paths(SPM_PATH)
@@ -200,7 +200,7 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--bids-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--bids-data-dir", type=str, default=FMRI_BIDS_DATA_DIR)
     parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
 
     parser.add_argument("--downsampled-anat-data-dir", type=str, default=FMRI_DOWNSAMPLED_ANAT_DATA_DIR)

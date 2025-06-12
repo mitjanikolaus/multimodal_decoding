@@ -6,7 +6,7 @@ function []=run_spm_glm_stage_1(subject)
     spm_get_defaults('cmdline',true);
 
     home = getenv('HOME');
-    data_dir = [home,'/data/multimodal_decoding/fmri/betas/', subject, '/unstructured'];
+    data_dir = [home,'/data/multimodal_decoding/fmri/bids/derivatives/betas/', subject, '/unstructured'];
     cd(data_dir)
 
     %design

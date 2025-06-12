@@ -16,7 +16,7 @@ import pandas as pd
 
 from data import IDS_IMAGES_TEST
 from preprocessing.create_gray_matter_masks import get_gray_matter_mask_path
-from utils import SUBJECTS, FMRI_RAW_BIDS_DATA_DIR, FMRI_BETAS_DIR, FMRI_PREPROCESSING_DATASINK_DIR
+from utils import SUBJECTS, FMRI_BIDS_DATA_DIR, FMRI_BETAS_DIR, FMRI_PREPROCESSING_DATASINK_DIR
 
 
 def get_condition_names(trial):
@@ -311,7 +311,7 @@ def get_args():
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
-    parser.add_argument("--raw-data-dir", type=str, default=FMRI_RAW_BIDS_DATA_DIR)
+    parser.add_argument("--raw-data-dir", type=str, default=FMRI_BIDS_DATA_DIR)
     parser.add_argument("--preprocessing-datasink-dir", type=str, default=FMRI_PREPROCESSING_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)

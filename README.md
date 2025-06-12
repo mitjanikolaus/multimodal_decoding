@@ -40,7 +40,7 @@ python analyses/view_results_freeview.py
 
 ### Downsampling of anatomical scan:
 ```
-FSLOUTPUTTYPE='NIFTI' flirt.fsl -in ~/data/multimodal_decoding/fmri/raw/bids/sub-01/ses-01/anat/sub-01_ses-01_run-01_T1w.nii -ref ~/data/multimodal_decoding/fmri/raw/bids/sub-01/ses-01/anat/sub-01_ses-01_run-01_T1w.nii -applyisoxfm 2.0 -nosearch -out ~/data/multimodal_decoding/fmri/raw/anat_downsampled/sub-01_ses-01_run-01_T1w_downsampled_2mm.nii
+FSLOUTPUTTYPE='NIFTI' flirt.fsl -in ~/data/multimodal_decoding/fmri/bids/sub-01/ses-01/anat/sub-01_ses-01_run-01_T1w.nii -ref ~/data/multimodal_decoding/fmri/bids/sub-01/ses-01/anat/sub-01_ses-01_run-01_T1w.nii -applyisoxfm 2.0 -nosearch -out ~/data/multimodal_decoding/fmri/anat_downsampled/sub-01_ses-01_run-01_T1w_downsampled_2mm.nii
 ```
 
 This conversion decreases the voxel size of the anatomical scan from 1mm<sup>3</sup> to 2mm<sup>3</sup>. The functional
