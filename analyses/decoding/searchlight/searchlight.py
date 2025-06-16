@@ -1,5 +1,4 @@
 import argparse
-import gc
 import time
 import warnings
 
@@ -25,12 +24,13 @@ from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
     TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
-from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL
+from utils import SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL, \
+    ADDITIONAL_TEST_DATA_DIR
 
 DEFAULT_N_JOBS = 10
 
-SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
-SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
+SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "searchlight")
+SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR, "permutation_testing_results")
 
 
 def train_and_test(
@@ -246,7 +246,7 @@ def searchlight_mode_from_args(args):
 
 def get_results_dir(feats_config, hemi, subject, training_mode, mode):
     results_dir = os.path.join(
-        SEARCHLIGHT_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats,
+        SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats,
         feats_config.vision_features, feats_config.lang_features, subject, hemi, mode
     )
     return results_dir
@@ -294,6 +294,6 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    os.makedirs(SEARCHLIGHT_OUT_DIR, exist_ok=True)
+    os.makedirs(SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR, exist_ok=True)
 
     run(args)

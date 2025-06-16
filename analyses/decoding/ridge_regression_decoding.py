@@ -16,7 +16,7 @@ from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES,
     ALL_SPLITS, TEST_SPLITS, get_latents_for_splits
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
-    RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE, HEMIS
+    DECODER_ADDITIONAL_TEST_OUT_DIR, PREDICTIONS_FILE, HEMIS
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -91,7 +91,7 @@ def run(args):
                     run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution,
                                           args.training_splits)
                     results_file_path = os.path.join(
-                        RIDGE_DECODER_ATTN_MOD_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
+                        DECODER_ADDITIONAL_TEST_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
                     if os.path.isfile(results_file_path) and not args.overwrite:
                         print(f"Skipping decoder training as results are already present at {results_file_path}")
@@ -145,7 +145,7 @@ def run(args):
                     scores_df.to_csv(results_file_path, index=False)
 
                     predictions_file_path = os.path.join(
-                        RIDGE_DECODER_ATTN_MOD_OUT_DIR, training_mode, subject, run_str, PREDICTIONS_FILE
+                        DECODER_ADDITIONAL_TEST_OUT_DIR, training_mode, subject, run_str, PREDICTIONS_FILE
                     )
                     pickle.dump(predicted_latents, open(predictions_file_path, 'wb'))
 

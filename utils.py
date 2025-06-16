@@ -66,7 +66,7 @@ ADDITIONAL_TEST_UNSTRUCTURED_DIR_NAME = "unstructured_additional_test"
 
 ADDITIONAL_TEST_SUBJECTS = ['sub-01', 'sub-02', 'sub-04', 'sub-05', 'sub-07']
 
-RIDGE_DECODER_ATTN_MOD_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "whole_brain_decoding")
+DECODER_ADDITIONAL_TEST_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "whole_brain_decoding")
 
 
 def nipype_subject_id(subject):
