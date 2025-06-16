@@ -130,7 +130,7 @@ ALL_CANDIDATE_LATENTS = "all_candidate_latents"
 LIMITED_CANDIDATE_LATENTS = "limited_candidate_latents"
 
 
-def get_candidate_latents(split, latents):
+def get_all_candidate_latents(split, latents):
     if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED,
                  SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
         all_candidate_latents = np.concatenate(
@@ -149,7 +149,7 @@ def get_candidate_latents(split, latents):
     return all_candidate_latents
 
 
-def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", standardize_latents=False):
+def calc_all_pairwise_accuracy_scores(latents, predictions, standardize_predictions_conds, metric="cosine", standardize_latents=False):
     results = []
 
     for split in TEST_SPLITS:
@@ -157,9 +157,9 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
             if latents_mode == LIMITED_CANDIDATE_LATENTS:
                 candidate_latents = latents[split]
             else:
-                candidate_latents = get_candidate_latents(split, latents)
+                candidate_latents = get_all_candidate_latents(split, latents)
 
-            for standardize_predictions in [False, True]:
+            for standardize_predictions in standardize_predictions_conds:
                 acc = pairwise_accuracy(
                     candidate_latents, predictions[split], metric, standardize_predictions=standardize_predictions,
                     standardize_latents=standardize_latents
@@ -173,7 +173,7 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
         if latents_mode == LIMITED_CANDIDATE_LATENTS:
             candidate_latents = latents[SPLIT_IMAGERY]
         else:
-            candidate_latents = get_candidate_latents(SPLIT_IMAGERY, latents)
+            candidate_latents = get_all_candidate_latents(SPLIT_IMAGERY, latents)
 
         acc = pairwise_accuracy(
             candidate_latents, imagery_preds_restandardized, metric, standardize_predictions=False,
@@ -183,30 +183,6 @@ def calc_all_pairwise_accuracy_scores(latents, predictions, metric="cosine", sta
                         "latents": latents_mode})
 
     results = pd.DataFrame(results)
-    return results
-
-
-def calc_imagery_pairwise_accuracy_scores(imagery_latents, imagery_predictions, additional_latents, metric="cosine",
-                                          standardize_predictions=False, standardize_latents=False,
-                                          test_set_preds=None):
-    results = dict()
-
-    if test_set_preds is not None:
-        all_preds = np.concatenate((imagery_predictions, test_set_preds))
-        scaler = StandardScaler().fit(all_preds)
-        imagery_predictions = scaler.transform(imagery_predictions)
-
-        standardize_predictions = False  # Do not standardize again
-
-    results[ACC_IMAGERY] = pairwise_accuracy(
-        imagery_latents, imagery_predictions, metric, standardize_predictions, standardize_latents
-    )
-
-    target_latents = np.concatenate((imagery_latents, additional_latents))
-    results[ACC_IMAGERY_WHOLE_TEST] = pairwise_accuracy(
-        target_latents, imagery_predictions, metric, standardize_predictions, standardize_latents
-    )
-
     return results
 
 

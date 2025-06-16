@@ -18,12 +18,12 @@ from sklearn.linear_model import Ridge
 from tqdm import tqdm
 
 from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
-    get_latent_features, calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, ACC_IMAGERY, \
-    ACC_IMAGERY_WHOLE_TEST, standardize_latents
-from data import TEST_STIM_TYPES, get_fmri_surface_data, SELECT_DEFAULT, LatentFeatsConfig, \
-    create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, SPLIT_TEST, \
-    SPLIT_IMAGERY, TRAINING_MODES
-from eval import ACC_CAPTIONS, ACC_IMAGES, calc_imagery_pairwise_accuracy_scores
+    calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, standardize_latents, \
+    get_fmri_data_for_splits
+from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
+    create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, \
+    TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES
+from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 from utils import SUBJECTS, DATA_DIR, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL
 
@@ -32,60 +32,34 @@ DEFAULT_N_JOBS = 10
 SEARCHLIGHT_OUT_DIR = os.path.join(DATA_DIR, "searchlight")
 SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_OUT_DIR, "permutation_testing_results")
 
-DERANGEMENTS_THREE_DIMS = [[1, 2, 0], [2, 0, 1]]
-
 
 def train_and_test(
         estimator,
-        X,
-        y=None,
+        fmri_betas_searchlight,
+        latents=None,
         *,
-        train_ids,
-        test_ids,
-        imagery_ids,
         null_distr_dir=None,
         shuffled_indices=None,
         list_i=None,
 ):
-    X_train = X[train_ids]
-    X_test = X[test_ids]
-    X_imagery = X[imagery_ids]
-    y_train = y[train_ids]
-    y_test = y[test_ids]
-    y_imagery = y[imagery_ids]
-    estimator.fit(X_train, y_train)
-
-    y_pred_test = estimator.predict(X_test)
-    y_pred_imagery = estimator.predict(X_imagery)
+    estimator.fit(fmri_betas_searchlight[SPLIT_TRAIN], latents[SPLIT_TRAIN])
+    predicted_latents = {split: estimator.predict(fmri_betas_searchlight[split]) for split in TEST_SPLITS}
 
     if null_distr_dir is not None:
         scores_null_distr = []
-        for indices in shuffled_indices:
-            y_test_shuffled = y_test[indices]
-            shuffled_indices_imagery = DERANGEMENTS_THREE_DIMS[np.random.choice(len(DERANGEMENTS_THREE_DIMS))]
-            y_imagery_shuffled = y_imagery[shuffled_indices_imagery]
+        for shuffle_iter in range(len(shuffled_indices[NUM_STIMULI[SPLIT_TEST_IMAGES]])):
+            latents_shuffled = {split: latents_split[shuffled_indices[NUM_STIMULI[split]][shuffle_iter]] for split, latents_split in latents}
 
-            scores = calc_all_pairwise_accuracy_scores(
-                y_test_shuffled, y_pred_test, y_imagery_shuffled, y_pred_imagery,
-                standardize_predictions=True, comp_cross_decoding_scores=False
+            scores_df = calc_all_pairwise_accuracy_scores(
+                latents_shuffled, predicted_latents, standardize_predictions_conds=[True]
             )
-            imagery_no_std = calc_imagery_pairwise_accuracy_scores(
-                y_imagery_shuffled, y_pred_imagery, y_test_shuffled, standardize_predictions=False,
-            )
-            imagery_no_std = {key + "_no_std": value for key, value in imagery_no_std.items()}
-            scores.update(imagery_no_std)
-            scores_null_distr.append(scores)
+            scores_null_distr.append(scores_df)
 
         pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
 
     scores = calc_all_pairwise_accuracy_scores(
-        y_test, y_pred_test, y_imagery, y_pred_imagery, standardize_predictions=True
+        latents, predicted_latents, standardize_predictions_conds=[True]
     )
-    imagery_no_std = calc_imagery_pairwise_accuracy_scores(
-        y_imagery, y_pred_imagery, y_test, standardize_predictions=False,
-    )
-    imagery_no_std = {key + "_no_std": value for key, value in imagery_no_std.items()}
-    scores.update(imagery_no_std)
 
     return scores
 
@@ -94,11 +68,8 @@ def custom_group_iter_search_light(
         list_rows,
         list_indices,
         estimator,
-        X,
-        y,
-        train_ids,
-        test_ids,
-        imagery_ids,
+        fmri_betas,
+        latents,
         thread_id,
         null_distr_dir=None,
         shuffled_indices=None,
@@ -106,8 +77,9 @@ def custom_group_iter_search_light(
     results = []
     iterator = tqdm(enumerate(list_rows), total=len(list_rows)) if thread_id == 0 else enumerate(list_rows)
     for i, list_row in iterator:
+        fmri_betas_searchlight = {split: betas[:, list_row] for split, betas in fmri_betas.items()}
         scores = train_and_test(
-            estimator, X[:, list_row], y, train_ids=train_ids, test_ids=test_ids, imagery_ids=imagery_ids,
+            estimator, fmri_betas_searchlight, latents,
             null_distr_dir=null_distr_dir, shuffled_indices=shuffled_indices, list_i=list_indices[i]
         )
         results.append(scores)
@@ -115,13 +87,10 @@ def custom_group_iter_search_light(
 
 
 def custom_search_light(
-        X,
-        y,
+        fmri_betas,
+        latents,
         estimator,
         A,
-        train_ids,
-        test_ids,
-        imagery_ids,
         n_jobs=-1,
         verbose=0,
         null_distr_dir=None,
@@ -135,21 +104,18 @@ def custom_search_light(
                 [A[i] for i in list_i],
                 list_i,
                 estimator,
-                X,
-                y,
-                train_ids,
-                test_ids,
-                imagery_ids,
+                fmri_betas,
+                latents,
                 thread_id,
                 null_distr_dir,
                 shuffled_indices if shuffled_indices is not None else None,
             )
             for thread_id, list_i in enumerate(group_iter)
         )
-    return np.concatenate(scores)
+    return scores
 
 
-def get_adjacency_matrix(hemi, resolution, nan_locations=None, radius=None, num_neighbors=None):
+def get_adjacency_matrix(hemi, resolution=DEFAULT_RESOLUTION, nan_locations=None, radius=None, num_neighbors=None):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=resolution)
 
     infl_mesh = fsaverage[f"infl_{hemi}"]
@@ -186,17 +152,12 @@ def run(args):
     for subject in args.subjects:
         for training_mode in args.training_modes:
             for hemi in args.hemis:
-                train_fmri, train_stim_ids, train_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_TRAIN, training_mode, hemi
+                fmri_betas, stim_ids, stim_types = get_fmri_data_for_splits(
+                    subject, ALL_SPLITS, training_mode, args.betas_dir, surface=True, hemis=[hemi]
                 )
-                test_fmri, test_stim_ids, test_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_TEST, hemi=hemi
-                )
-                imagery_fmri, imagery_stim_ids, imagery_stim_types = get_fmri_surface_data(
-                    args.betas_dir, subject, SPLIT_IMAGERY, hemi=hemi
-                )
-                nan_locations = np.isnan(train_fmri[0])
-                train_fmri, test_fmri, imagery_fmri = standardize_fmri_betas(train_fmri, test_fmri, imagery_fmri)
+                fmri_betas = standardize_fmri_betas(fmri_betas)
+                for split in fmri_betas.keys():
+                    print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
 
                 feats_config = LatentFeatsConfig(
                     args.model, args.features, args.test_features, args.vision_features, args.lang_features
@@ -205,36 +166,17 @@ def run(args):
                 print(f"\nTRAIN MODE: {training_mode} | SUBJECT: {subject} | "
                       f"MODEL: {feats_config.model} | FEATURES: {feats_config.features}")
 
-                train_latents = get_latent_features(
-                    feats_config, subject, SPLIT_TRAIN, training_mode
-                )
-                test_latents = get_latent_features(feats_config, subject, SPLIT_TEST)
-                imagery_latents = get_latent_features(feats_config, subject, SPLIT_IMAGERY)
-                train_latents, test_latents, imagery_latents = standardize_latents(
-                    train_latents, test_latents, imagery_latents
-                )
-
-                latents = np.concatenate((train_latents, test_latents, imagery_latents))
+                latents = get_latents_for_splits(subject, feats_config, ALL_SPLITS, training_mode)
+                latents = standardize_latents(latents)
+                print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
 
                 results_dir = get_results_dir(
-                    feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args)
+                    feats_config, hemi, subject, training_mode, searchlight_mode_from_args(args)
                 )
                 os.makedirs(results_dir, exist_ok=True)
 
-                print("Hemisphere: ", hemi)
-                print(f"train_fmri shape: {train_fmri.shape}")
-                print(f"test_fmri shape: {test_fmri.shape}")
-                print(f"imagery_fmri shape: {imagery_fmri.shape}")
-
-                train_ids = list(range(len(train_fmri)))
-                test_ids = list(range(len(train_fmri), len(train_fmri) + len(test_fmri)))
-                imagery_ids = list(range(len(train_ids) + len(test_ids),
-                                         len(train_ids) + len(test_ids) + len(imagery_fmri)))
-
-                X = np.concatenate((train_fmri, test_fmri, imagery_fmri))
-
                 adjacency, n_neighbors, distances = get_adjacency_matrix(
-                    hemi, args.resolution, nan_locations, args.radius, args.n_neighbors
+                    hemi, args.resolution, radius=args.radius, num_neighbors=args.n_neighbors
                 )
 
                 model = Ridge(alpha=args.l2_regularization_alpha, fit_intercept=False)
@@ -244,17 +186,16 @@ def run(args):
                     null_distr_dir = os.path.join(results_dir, "null_distr")
                     os.makedirs(null_distr_dir, exist_ok=True)
 
-                X = X.astype(np.float16)
-                latents = latents.astype(np.float16)
-
                 start = time.time()
                 scores = custom_search_light(
-                    X, latents, estimator=model, A=adjacency, train_ids=train_ids, test_ids=test_ids,
-                    imagery_ids=imagery_ids, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
+                    fmri_betas, latents, estimator=model, A=adjacency, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
                     shuffled_indices=shuffled_indices
                 )
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
+
+                print(scores)
+
                 test_scores_caps = [score[ACC_CAPTIONS] for score in scores]
                 print(
                     f"Mean score (captions): {np.mean(test_scores_caps):.2f} | "
@@ -280,20 +221,18 @@ def run(args):
                 )
 
                 results_dict = {
-                    "nan_locations": nan_locations,
                     "adjacency": adjacency,
                     "n_neighbors": n_neighbors,
                     "distances": distances,
                     "scores": scores,
                 }
                 results_file_path = get_results_file_path(
-                    feats_config, hemi, subject, training_mode, args.resolution, searchlight_mode_from_args(args),
+                    feats_config, hemi, subject, training_mode, searchlight_mode_from_args(args),
                     args.l2_regularization_alpha
                 )
                 pickle.dump(results_dict, open(results_file_path, 'wb'))
 
-                del X, latents, train_fmri
-                gc.collect()
+
 
 
 def searchlight_mode_from_args(args):
@@ -305,16 +244,16 @@ def searchlight_mode_from_args(args):
         raise RuntimeError("Need to set either radius or n_neighbors arg!")
 
 
-def get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode):
+def get_results_dir(feats_config, hemi, subject, training_mode, mode):
     results_dir = os.path.join(
         SEARCHLIGHT_OUT_DIR, training_mode, feats_config.model, feats_config.combined_feats,
-        feats_config.vision_features, feats_config.lang_features, subject, resolution, hemi, mode
+        feats_config.vision_features, feats_config.lang_features, subject, hemi, mode
     )
     return results_dir
 
 
-def get_results_file_path(feats_config, hemi, subject, training_mode, resolution, mode, l2_regularization_alpha):
-    results_dir = get_results_dir(feats_config, hemi, subject, training_mode, resolution, mode)
+def get_results_file_path(feats_config, hemi, subject, training_mode, mode, l2_regularization_alpha):
+    results_dir = get_results_dir(feats_config, hemi, subject, training_mode, mode)
     return os.path.join(results_dir, f"alpha_{str(l2_regularization_alpha)}.p")
 
 
@@ -337,8 +276,6 @@ def get_args():
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
-
-    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 

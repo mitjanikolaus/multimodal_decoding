@@ -10,8 +10,8 @@ from sklearn.preprocessing import StandardScaler
 import nibabel as nib
 from tqdm import trange
 
-from utils import model_features_file_path, HEMIS, DEFAULT_RESOLUTION, FMRI_STIM_INFO_DIR, FMRI_BETAS_DIR, \
-    FS_HEMI_NAMES, FREESURFER_HOME_DIR
+from utils import model_features_file_path, HEMIS, FMRI_STIM_INFO_DIR, \
+    FS_HEMI_NAMES, FREESURFER_HOME_DIR, SUBJECTS
 
 MODALITY_SPECIFIC_IMAGES = "images"
 MODALITY_SPECIFIC_CAPTIONS = "captions"
@@ -19,8 +19,6 @@ MODALITY_AGNOSTIC = "agnostic"
 TRAINING_MODES = [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]
 
 SPLIT_TRAIN = "train"
-SPLIT_TEST = "test"
-SPLIT_IMAGERY = "imagery"
 
 SPLIT_TEST_IMAGES = "test_image"
 SPLIT_TEST_CAPTIONS = "test_caption"
@@ -29,6 +27,8 @@ SPLIT_TEST_IMAGE_ATTENDED = "test_image_attended"
 SPLIT_TEST_CAPTION_ATTENDED = "test_caption_attended"
 SPLIT_TEST_IMAGE_UNATTENDED = "test_image_unattended"
 SPLIT_TEST_CAPTION_UNATTENDED = "test_caption_unattended"
+
+SPLIT_IMAGERY = "imagery"
 SPLIT_IMAGERY_WEAK = "imagery_weak"
 
 TEST_SPLITS = [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED,
@@ -473,6 +473,14 @@ def get_stim_info(subject, split):
     return stim_ids, stim_types
 
 
+def get_latents_for_splits(subject, feats_config, splits, training_mode):
+    latents = dict()
+    for split in splits:
+        mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
+        latents[split] = get_latent_features(feats_config, subject, split, mode)
+    return latents
+
+
 def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
     latent_vectors_file = model_features_file_path(feats_config.model)
     latent_vectors = pickle.load(open(latent_vectors_file, 'rb'))
@@ -486,7 +494,7 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
         stim_ids = stim_ids[stim_types == IMAGE]
         stim_types = stim_types[stim_types == IMAGE]
 
-    features = feats_config.test_features if split in [SPLIT_TEST, SPLIT_IMAGERY] else feats_config.features
+    features = feats_config.test_features if split in TEST_SPLITS else feats_config.features
     nn_latent_vectors = []
     for i, stim_id in enumerate(stim_ids):
         if features == VISION_FEATS_ONLY:
@@ -521,7 +529,8 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
 
 
 def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=HEMIS[0]):
-    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, file_suffix='.gii')
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi,
+                                                                 file_suffix='.gii')
 
     fmri_betas = []
     for idx in trange(len(fmri_betas_paths), desc=f"loading {subject} {mode} {hemi} hemi {split} fmri data"):
@@ -553,13 +562,15 @@ def get_lang_feats(latent_vectors, stim_id, lang_features_mode):
     return lang_feats
 
 
-def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, resolution=DEFAULT_RESOLUTION):
+def get_fmri_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, surface=False, hemis=HEMIS):
     if surface:
         betas_dir = os.path.join(betas_dir, "surface")
-        betas_left_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, "left")
-        betas_right_hemi, _, _ = get_fmri_surface_data(betas_dir, subject, split, mode, "right")
+        betas = []
+        for hemi in hemis:
+            betas_hemi, stim_ids, stim_types = get_fmri_surface_data(betas_dir, subject, split, mode, hemi)
+            betas.append(betas_hemi)
 
-        betas = np.hstack((betas_left_hemi, betas_right_hemi))
+        betas = np.hstack(betas)
         return betas, stim_ids, stim_types
     else:
         return get_fmri_voxel_data(betas_dir, subject, split, mode)
@@ -597,28 +608,35 @@ def standardize_fmri_betas(fmri_betas):
     return fmri_betas
 
 
+NUM_STIMULI = {
+    SPLIT_TEST_IMAGES: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_CAPTIONS: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_IMAGE_ATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_CAPTION_ATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_IMAGE_UNATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_CAPTION_UNATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_IMAGERY: len(IMAGERY_SCENES[SUBJECTS[0]]),
+    SPLIT_IMAGERY_WEAK: len(IDS_IMAGES_IMAGERY_WEAK),
+}
+
+
 def create_null_distr_shuffled_indices(n_permutations_per_subject):
-    shuffled_indices = []
-    seed = 0
-    for _ in range(n_permutations_per_subject):
-        # shuffle indices for captions and images separately until all indices have changed
-        indices = create_shuffled_indices(seed)
-        while any(indices == np.arange(NUM_TEST_STIMULI)):
+    shuffled_indices_all_lengths = dict()
+    for num_stimuli in set(NUM_STIMULI.values()):
+        shuffled_indices = []
+        seed = 0
+        for _ in range(n_permutations_per_subject):
+            # shuffle indices until all indices have changed
+            np.random.seed(seed)
+            indices = np.random.choice(range(num_stimuli), size=num_stimuli, replace=False)
+            while any(indices == np.arange(num_stimuli)):
+                seed += 1
+                np.random.seed(seed)
+                indices = np.random.choice(range(num_stimuli), size=num_stimuli, replace=False)
+            shuffled_indices.append(indices)
             seed += 1
-            indices = create_shuffled_indices(seed)
-        shuffled_indices.append(indices)
-        seed += 1
-    return shuffled_indices
-
-
-def create_shuffled_indices(seed):
-    np.random.seed(seed)
-    num_stim_one_mod = NUM_TEST_STIMULI // 2
-    shuffleidx_mod_1 = np.random.choice(range(num_stim_one_mod), size=num_stim_one_mod,
-                                        replace=False)
-    shuffleidx_mod_2 = np.random.choice(range(num_stim_one_mod, NUM_TEST_STIMULI),
-                                        size=num_stim_one_mod, replace=False)
-    return np.concatenate((shuffleidx_mod_1, shuffleidx_mod_2))
+        shuffled_indices_all_lengths[num_stimuli] = shuffled_indices
+    return shuffled_indices_all_lengths
 
 
 def apply_mask(mask, fmri_betas, args):

@@ -13,16 +13,17 @@ from tqdm import tqdm
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
-    ALL_SPLITS, TEST_SPLITS
+    ALL_SPLITS, TEST_SPLITS, get_latents_for_splits
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
-    RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE
+    RIDGE_DECODER_ATTN_MOD_OUT_DIR, PREDICTIONS_FILE, HEMIS
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
-def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DEFAULT_RESOLUTION, training_splits=[SPLIT_TRAIN]):
+def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DEFAULT_RESOLUTION,
+                training_splits=[SPLIT_TRAIN]):
     run_str = f"{feats_config.model}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
@@ -46,8 +47,7 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
     return run_str
 
 
-def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, surface=False,
-                             resolution=DEFAULT_RESOLUTION):
+def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, surface=False, hemis=HEMIS):
     fmri_betas, stim_ids, stim_types = dict(), dict(), dict()
     for split in splits:
         mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
@@ -57,18 +57,10 @@ def get_fmri_data_for_splits(subject, splits, training_mode, betas_dir, surface=
             split,
             mode,
             surface=surface,
-            resolution=resolution,
+            hemis=hemis,
         )
 
     return fmri_betas, stim_ids, stim_types
-
-
-def get_latents_for_splits(subject, feats_config, splits, training_mode):
-    latents = dict()
-    for split in splits:
-        mode = training_mode if split == SPLIT_TRAIN else MODALITY_AGNOSTIC
-        latents[split] = get_latent_features(feats_config, subject, split, mode)
-    return latents
 
 
 def run(args):
@@ -96,7 +88,8 @@ def run(args):
                     if mask is not None:
                         print("Mask: ", os.path.basename(mask))
 
-                    run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution, args.training_splits)
+                    run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution,
+                                          args.training_splits)
                     results_file_path = os.path.join(
                         RIDGE_DECODER_ATTN_MOD_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
@@ -130,7 +123,8 @@ def run(args):
 
                     predicted_latents = {split: best_model.predict(fmri_betas[split]) for split in TEST_SPLITS}
 
-                    scores_df = calc_all_pairwise_accuracy_scores(latents, predicted_latents)
+                    scores_df = calc_all_pairwise_accuracy_scores(latents, predicted_latents,
+                                                                  standardize_predictions_conds=[True, False])
                     scores_df["model"] = model
                     scores_df["subject"] = subject
                     scores_df["features"] = feats_config.features
