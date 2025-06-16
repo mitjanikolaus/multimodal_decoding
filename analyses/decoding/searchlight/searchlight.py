@@ -24,7 +24,7 @@ from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
     TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
-from utils import SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_SURFACE_DIR, DEFAULT_MODEL, \
+from utils import SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, \
     ADDITIONAL_TEST_DATA_DIR
 
 DEFAULT_N_JOBS = 10
@@ -260,7 +260,7 @@ def get_results_file_path(feats_config, hemi, subject, training_mode, mode, l2_r
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_SURFACE_DIR)
+    parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
