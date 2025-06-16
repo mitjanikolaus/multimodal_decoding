@@ -176,7 +176,7 @@ def run(args):
                 os.makedirs(results_dir, exist_ok=True)
 
                 adjacency, n_neighbors, distances = get_adjacency_matrix(
-                    hemi, args.resolution, radius=args.radius, num_neighbors=args.n_neighbors
+                    hemi, radius=args.radius, num_neighbors=args.n_neighbors
                 )
 
                 model = Ridge(alpha=args.l2_regularization_alpha, fit_intercept=False)
