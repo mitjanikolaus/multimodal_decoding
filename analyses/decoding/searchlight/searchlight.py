@@ -203,15 +203,15 @@ def run(args):
 
                 print(
                     f"Mean score (captions): {scores_df[scores_df.metric==SPLIT_TEST_CAPTIONS].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric==ACC_CAPTIONS].value.max():.2f}"
+                    f"Max score: {scores_df[scores_df.metric==SPLIT_TEST_CAPTIONS].value.max():.2f}"
                 )
                 print(
                     f"Mean score (images): {scores_df[scores_df.metric==SPLIT_TEST_IMAGES].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric==ACC_IMAGES].value.max():.2f}"
+                    f"Max score: {scores_df[scores_df.metric==SPLIT_TEST_IMAGES].value.max():.2f}"
                 )
                 print(
                     f"Mean score (imagery): {scores_df[scores_df.metric==SPLIT_IMAGERY].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric==ACC_IMAGERY].value.max():.2f}"
+                    f"Max score: {scores_df[scores_df.metric==SPLIT_IMAGERY].value.max():.2f}"
                 )
 
                 results_file_path = get_results_file_path(
