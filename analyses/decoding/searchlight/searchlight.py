@@ -23,7 +23,7 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     get_fmri_data_for_splits
 from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, \
-    TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES
+    TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY
 from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
 from utils import SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, \
@@ -202,15 +202,15 @@ def run(args):
                 print(len(scores_df))
 
                 print(
-                    f"Mean score (captions): {scores_df[scores_df.metric==ACC_CAPTIONS].value.mean():.2f} | "
+                    f"Mean score (captions): {scores_df[scores_df.metric==SPLIT_TEST_CAPTIONS].value.mean():.2f} | "
                     f"Max score: {scores_df[scores_df.metric==ACC_CAPTIONS].value.max():.2f}"
                 )
                 print(
-                    f"Mean score (images): {scores_df[scores_df.metric==ACC_IMAGES].value.mean():.2f} | "
+                    f"Mean score (images): {scores_df[scores_df.metric==SPLIT_TEST_IMAGES].value.mean():.2f} | "
                     f"Max score: {scores_df[scores_df.metric==ACC_IMAGES].value.max():.2f}"
                 )
                 print(
-                    f"Mean score (imagery): {scores_df[scores_df.metric==ACC_IMAGERY].value.mean():.2f} | "
+                    f"Mean score (imagery): {scores_df[scores_df.metric==SPLIT_IMAGERY].value.mean():.2f} | "
                     f"Max score: {scores_df[scores_df.metric==ACC_IMAGERY].value.max():.2f}"
                 )
 
