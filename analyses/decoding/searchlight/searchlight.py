@@ -42,7 +42,7 @@ def train_and_test(
         *,
         null_distr_dir=None,
         shuffled_indices=None,
-        list_i=None,
+        vertex_idx=None,
 ):
     estimator.fit(fmri_betas_searchlight[SPLIT_TRAIN], latents[SPLIT_TRAIN])
     predicted_latents = {split: estimator.predict(fmri_betas_searchlight[split]) for split in TEST_SPLITS}
@@ -57,7 +57,7 @@ def train_and_test(
             )
             scores_null_distr.append(scores_df)
 
-        pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{list_i:010d}.p"), "wb"))
+        pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{vertex_idx:010d}.p"), "wb"))
 
     scores = calc_all_pairwise_accuracy_scores(
         latents, predicted_latents, standardize_predictions_conds=[True]
@@ -68,23 +68,23 @@ def train_and_test(
 
 def custom_group_iter_search_light(
         list_rows,
-        list_indices,
+        vertex_indices,
         estimator,
         fmri_betas,
         latents,
-        vertex_id,
+        job_id,
         null_distr_dir=None,
         shuffled_indices=None,
 ):
     results = []
-    iterator = tqdm(enumerate(list_rows), total=len(list_rows)) if vertex_id == 0 else enumerate(list_rows)
+    iterator = tqdm(enumerate(list_rows), total=len(list_rows)) if job_id == 0 else enumerate(list_rows)
     for i, list_row in iterator:
         fmri_betas_searchlight = {split: betas[:, list_row] for split, betas in fmri_betas.items()}
         scores = train_and_test(
             estimator, fmri_betas_searchlight, latents,
-            null_distr_dir=null_distr_dir, shuffled_indices=shuffled_indices, list_i=list_indices[i]
+            null_distr_dir=null_distr_dir, shuffled_indices=shuffled_indices, vertex_idx=vertex_indices[i]
         )
-        scores['vertex'] = vertex_id
+        scores['vertex'] = vertex_indices[i]
         results.append(scores)
     return results
 
@@ -104,18 +104,19 @@ def custom_search_light(
         warnings.simplefilter("ignore", ConvergenceWarning)
         scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
             delayed(custom_group_iter_search_light)(
-                [A[i] for i in list_i],
-                list_i,
+                [A[i] for i in vertex_indices],
+                vertex_indices,
                 estimator,
                 fmri_betas,
                 latents,
-                vertex_id,
+                job_id,
                 null_distr_dir,
                 shuffled_indices if shuffled_indices is not None else None,
             )
-            for vertex_id, list_i in enumerate(group_iter)
+            for job_id, vertex_indices in enumerate(group_iter)
         )
     scores = list(itertools.chain(*scores))
+    print(f'got results for {len(scores)} vertices')
     return pd.concat(scores, ignore_index=True)
 
 
@@ -199,7 +200,6 @@ def run(args):
                 print(f"Searchlight time: {int(end - start)}s")
 
                 print(scores_df)
-                print(len(scores_df))
 
                 print(
                     f"Mean score (captions): {scores_df[scores_df.metric==SPLIT_TEST_CAPTIONS].value.mean():.2f} | "
