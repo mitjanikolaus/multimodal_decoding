@@ -8,7 +8,7 @@ import seaborn as sns
 from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
-    permutation_results_dir, add_searchlight_permutation_args, T_VAL_METRICS
+    permutation_results_dir, add_searchlight_permutation_args
 from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
     ACC_IMAGERY_MOD_SPECIFIC_IMAGES, \
@@ -80,14 +80,12 @@ def create_gifti_results_maps(args):
     os.makedirs(results_dir, exist_ok=True)
 
     print("Creating gifti results maps")
-    subject_scores, nan_locations, n_neighbors = load_per_subject_scores(
+    subject_scores = load_per_subject_scores(
         args,
-        return_nan_locations_and_n_neighbors=True,
-        additional_imagery_scores=True
     )
-    if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
-        create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)
-        plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
+    # if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
+    #     create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)
+    #     plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
     subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
     for metric in METRICS:

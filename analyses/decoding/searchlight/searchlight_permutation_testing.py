@@ -5,6 +5,7 @@ import warnings
 
 import h5py
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from nilearn import datasets
 import os
@@ -17,7 +18,6 @@ from tqdm import tqdm, trange
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, \
     calc_significance_cutoff, create_masks
-from analyses.decoding.ridge_regression_decoding import ACC_CAPTIONS, ACC_IMAGES
 from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, \
     searchlight_mode_from_args, get_results_file_path
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
@@ -48,59 +48,54 @@ T_VAL_METRICS = [
 MIN_NUM_DATAPOINTS = 4
 
 
-def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images, nan_locations,
-                   additional_imagery_scores=False):
-    scores = dict()
-
-    metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
-    metric_names = [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-                    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
-    # if additional_imagery_scores:
-    #     metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-    #     metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
-    for metric_agnostic_name, metric in zip(metric_names, metrics):
-        scores[metric_agnostic_name] = np.repeat(np.nan, nan_locations.shape)
-        scores[metric_agnostic_name][~nan_locations] = np.array([score[metric] for score in scores_agnostic])
-
-    if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
-        metric_names = [ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
-        metrics = [ACC_CAPTIONS, ACC_IMAGES]
-        if additional_imagery_scores:
-            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
-                        ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS,
-                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
-                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
-        for metric_specific_name, metric in zip(metric_names, metrics):
-            scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
-            scores[metric_specific_name][~nan_locations] = np.array(
-                [score[metric] for score in scores_mod_specific_captions])
-
-        metric_names = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
-        metrics = [ACC_IMAGES, ACC_CAPTIONS]
-        if additional_imagery_scores:
-            metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
-                        ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-            metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
-                             ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
-                             ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
-        for metric_specific_name, metric in zip(metric_names, metrics):
-            scores[metric_specific_name] = np.repeat(np.nan, nan_locations.shape)
-            scores[metric_specific_name][~nan_locations] = np.array(
-                [score[metric] for score in scores_mod_specific_images])
-
-        scores[METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
-            [ai - si for ai, si in zip(scores[ACC_IMAGES_MOD_AGNOSTIC], scores[ACC_IMAGES_MOD_SPECIFIC_IMAGES])]
-        )
-        scores[METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
-            [ac - sc for ac, sc in zip(scores[ACC_CAPTIONS_MOD_AGNOSTIC], scores[ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS])]
-        )
-
-    return scores
+# def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images):
+#     scores = dict()
+#
+#     metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
+#     metric_names = [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
+#                     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
+#     # if additional_imagery_scores:
+#     #     metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+#     #     metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
+#     for metric_agnostic_name, metric in zip(metric_names, metrics):
+#         scores[metric_agnostic_name] = np.array([score[metric] for score in scores_agnostic])
+#
+#     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
+#         metric_names = [ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
+#         metrics = [ACC_CAPTIONS, ACC_IMAGES]
+#         if additional_imagery_scores:
+#             metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
+#                         ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+#             metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS,
+#                              ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
+#                              ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
+#         for metric_specific_name, metric in zip(metric_names, metrics):
+#             scores[metric_specific_name] = np.array(
+#                 [score[metric] for score in scores_mod_specific_captions])
+#
+#         metric_names = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
+#         metrics = [ACC_IMAGES, ACC_CAPTIONS]
+#         if additional_imagery_scores:
+#             metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
+#                         ACC_IMAGERY_WHOLE_TEST + "_no_std"]
+#             metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
+#                              ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
+#                              ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
+#         for metric_specific_name, metric in zip(metric_names, metrics):
+#             scores[metric_specific_name] = np.array(
+#                 [score[metric] for score in scores_mod_specific_images])
+#
+#         scores[METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
+#             [ai - si for ai, si in zip(scores[ACC_IMAGES_MOD_AGNOSTIC], scores[ACC_IMAGES_MOD_SPECIFIC_IMAGES])]
+#         )
+#         scores[METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
+#             [ac - sc for ac, sc in zip(scores[ACC_CAPTIONS_MOD_AGNOSTIC], scores[ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS])]
+#         )
+#
+#     return scores
 
 
-def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, hemis=HEMIS,
-                            additional_imagery_scores=False):
+def load_per_subject_scores(args, hemis=HEMIS):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -117,15 +112,16 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 args.lang_features,
             )
             results_mod_agnostic_file = get_results_file_path(
-                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
+                feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC,
                 searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
-            results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
-            scores_agnostic = results_agnostic['scores']
-            nan_locations = results_agnostic['nan_locations']
-            n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
-            per_subject_n_neighbors[subject][hemi] = n_neighbors
-            per_subject_nan_locations[subject][hemi] = nan_locations
+            scores_agnostic = pd.read_csv(results_mod_agnostic_file)
+
+            # scores_agnostic = results_agnostic['scores']
+            # nan_locations = results_agnostic['nan_locations']
+            # n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
+            # per_subject_n_neighbors[subject][hemi] = n_neighbors
+            # per_subject_nan_locations[subject][hemi] = nan_locations
 
             feats_config_mod_specific_images = LatentFeatsConfig(
                 args.mod_specific_images_model,
@@ -136,11 +132,11 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 logging=False
             )
             results_mod_specific_images_file = get_results_file_path(
-                feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
+                feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES,
                 searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
             if os.path.isfile(results_mod_specific_images_file):
-                scores_images = pickle.load(open(results_mod_specific_images_file, 'rb'))['scores']
+                scores_images = pd.read_csv(results_mod_specific_images_file)
             else:
                 print(f"Missing modality-specific results: {results_mod_specific_images_file}")
                 scores_images = None
@@ -154,17 +150,16 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
                 logging=False
             )
             results_mod_specific_captions_file = get_results_file_path(
-                feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
+                feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS,
                 searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
             if os.path.isfile(results_mod_specific_captions_file):
-                scores_captions = pickle.load(open(results_mod_specific_captions_file, 'rb'))['scores']
+                scores_captions = pd.read_csv(results_mod_specific_captions_file)
             else:
                 print(f"Missing modality-specific results: {results_mod_specific_captions_file}")
-                scores_captions = None
+                scores_captions = pd.DataFrame()
 
-            scores = process_scores(scores_agnostic, scores_captions, scores_images, nan_locations,
-                                    additional_imagery_scores)
+            scores = pd.concat([scores_agnostic, scores_captions, scores_images], ignore_index=True)
 
             # print({n: round(np.nanmean(score), 4) for n, score in scores.items()})
             # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
@@ -172,10 +167,7 @@ def load_per_subject_scores(args, return_nan_locations_and_n_neighbors=False, he
 
             per_subject_scores[subject][hemi] = scores
 
-    if return_nan_locations_and_n_neighbors:
-        return per_subject_scores, per_subject_nan_locations, per_subject_n_neighbors
-    else:
-        return per_subject_scores
+    return per_subject_scores
 
 
 def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
