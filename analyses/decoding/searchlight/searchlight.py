@@ -4,6 +4,7 @@ import time
 import warnings
 
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from nilearn import datasets
 from nilearn.decoding.searchlight import GroupIterator
@@ -71,18 +72,19 @@ def custom_group_iter_search_light(
         estimator,
         fmri_betas,
         latents,
-        thread_id,
+        vertex_id,
         null_distr_dir=None,
         shuffled_indices=None,
 ):
     results = []
-    iterator = tqdm(enumerate(list_rows), total=len(list_rows)) if thread_id == 0 else enumerate(list_rows)
+    iterator = tqdm(enumerate(list_rows), total=len(list_rows)) if vertex_id == 0 else enumerate(list_rows)
     for i, list_row in iterator:
         fmri_betas_searchlight = {split: betas[:, list_row] for split, betas in fmri_betas.items()}
         scores = train_and_test(
             estimator, fmri_betas_searchlight, latents,
             null_distr_dir=null_distr_dir, shuffled_indices=shuffled_indices, list_i=list_indices[i]
         )
+        scores['vertex'] = vertex_id
         results.append(scores)
     return results
 
@@ -107,13 +109,14 @@ def custom_search_light(
                 estimator,
                 fmri_betas,
                 latents,
-                thread_id,
+                vertex_id,
                 null_distr_dir,
                 shuffled_indices if shuffled_indices is not None else None,
             )
-            for thread_id, list_i in enumerate(group_iter)
+            for vertex_id, list_i in enumerate(group_iter)
         )
-    return list(itertools.chain(*scores))
+    scores = list(itertools.chain(*scores))
+    return pd.concat(scores, ignore_index=True)
 
 
 def get_adjacency_matrix(hemi, resolution=DEFAULT_RESOLUTION, nan_locations=None, radius=None, num_neighbors=None):
@@ -188,53 +191,34 @@ def run(args):
                     os.makedirs(null_distr_dir, exist_ok=True)
 
                 start = time.time()
-                scores = custom_search_light(
+                scores_df = custom_search_light(
                     fmri_betas, latents, estimator=model, A=adjacency, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
                     shuffled_indices=shuffled_indices
                 )
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
 
-                print(scores)
-                print(len(scores))
+                print(scores_df)
+                print(len(scores_df))
 
-                test_scores_caps = [score[ACC_CAPTIONS] for score in scores]
                 print(
-                    f"Mean score (captions): {np.mean(test_scores_caps):.2f} | "
-                    f"Max score: {np.max(test_scores_caps):.2f}"
+                    f"Mean score (captions): {scores_df[scores_df.metric==ACC_CAPTIONS].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric==ACC_CAPTIONS].value.max():.2f}"
+                )
+                print(
+                    f"Mean score (images): {scores_df[scores_df.metric==ACC_IMAGES].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric==ACC_IMAGES].value.max():.2f}"
+                )
+                print(
+                    f"Mean score (imagery): {scores_df[scores_df.metric==ACC_IMAGERY].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric==ACC_IMAGERY].value.max():.2f}"
                 )
 
-                test_scores_imgs = [score[ACC_IMAGES] for score in scores]
-                print(
-                    f"Mean score (images): {np.mean(test_scores_imgs):.2f} | "
-                    f"Max score: {np.max(test_scores_imgs):.2f}"
-                )
-
-                imagery_scores = [score[ACC_IMAGERY] for score in scores]
-                print(
-                    f"Mean score ({ACC_IMAGERY}): {np.mean(imagery_scores):.2f} | "
-                    f"Max score: {np.max(imagery_scores):.2f}"
-                )
-
-                imagery_whole_test_set_scores = [score[ACC_IMAGERY_WHOLE_TEST] for score in scores]
-                print(
-                    f"Mean score ({ACC_IMAGERY_WHOLE_TEST}): {np.mean(imagery_whole_test_set_scores):.2f} | "
-                    f"Max score: {np.max(imagery_whole_test_set_scores):.2f}"
-                )
-
-                results_dict = {
-                    "adjacency": adjacency,
-                    "n_neighbors": n_neighbors,
-                    "distances": distances,
-                    "scores": scores,
-                }
                 results_file_path = get_results_file_path(
                     feats_config, hemi, subject, training_mode, searchlight_mode_from_args(args),
                     args.l2_regularization_alpha
                 )
-                pickle.dump(results_dict, open(results_file_path, 'wb'))
-
-
+                scores_df.to_csv(results_file_path)
 
 
 def searchlight_mode_from_args(args):
