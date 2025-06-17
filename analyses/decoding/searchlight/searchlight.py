@@ -240,7 +240,7 @@ def get_results_dir(feats_config, hemi, subject, training_mode, mode):
 
 def get_results_file_path(feats_config, hemi, subject, training_mode, mode, l2_regularization_alpha):
     results_dir = get_results_dir(feats_config, hemi, subject, training_mode, mode)
-    return os.path.join(results_dir, f"alpha_{str(l2_regularization_alpha)}.p")
+    return os.path.join(results_dir, f"alpha_{str(l2_regularization_alpha)}.csv")
 
 
 def get_args():
