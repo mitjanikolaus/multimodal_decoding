@@ -196,6 +196,7 @@ def run(args):
                 print(f"Searchlight time: {int(end - start)}s")
 
                 print(scores)
+                print(len(scores))
 
                 test_scores_caps = [score[ACC_CAPTIONS] for score in scores]
                 print(
