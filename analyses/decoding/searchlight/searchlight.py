@@ -199,6 +199,7 @@ def run(args):
                 end = time.time()
                 print(f"Searchlight time: {int(end - start)}s")
 
+                scores_df['training_mode'] = training_mode
                 print(scores_df)
 
                 print(
