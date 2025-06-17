@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import time
 import warnings
 
@@ -112,7 +113,7 @@ def custom_search_light(
             )
             for thread_id, list_i in enumerate(group_iter)
         )
-    return scores
+    return list(itertools.chain(*scores))
 
 
 def get_adjacency_matrix(hemi, resolution=DEFAULT_RESOLUTION, nan_locations=None, radius=None, num_neighbors=None):
