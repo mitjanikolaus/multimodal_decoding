@@ -94,20 +94,19 @@ def create_gifti_results_maps(args):
             for subj in args.subjects:
                 score_hemi = subject_scores[subj][hemi]
                 score_hemi_metric = score_hemi[score_hemi.metric == metric].value.values
+                print(score_hemi[score_hemi.metric == metric])
                 path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 os.makedirs(os.path.dirname(path_out), exist_ok=True)
                 print(f'saving {path_out}')
-                print(score_hemi_metric)
+                print(len(score_hemi_metric))
                 export_to_gifti(score_hemi_metric, path_out)
 
-            if metric in subject_scores[args.subjects[-1]][hemi]:
-                subject_scores_avgd[hemi][metric] = np.nanmean(  # TODO at least 3 datapoints?
-                    [subject_scores[subj][hemi][metric] for subj in args.subjects], axis=0)
-                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(subject_scores_avgd[hemi][metric])}")
-                path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                export_to_gifti(subject_scores_avgd[hemi][metric], path_out)
-            else:
-                print(f"missing metric: {args.subjects[-1]} {metric} {hemi}")
+            subject_scores_avgd[hemi][metric] = np.nanmean(
+                [subject_scores[subj][hemi][subject_scores[subj][hemi].metric == metric].value.values for subj in
+                 args.subjects], axis=0)
+            print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(subject_scores_avgd[hemi][metric])}")
+            path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+            export_to_gifti(subject_scores_avgd[hemi][metric], path_out)
 
     for hemi in HEMIS:
         for subj in args.subjects:
