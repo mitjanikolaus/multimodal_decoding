@@ -9,6 +9,8 @@ from scipy.stats import pearsonr
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir, add_searchlight_permutation_args
+from data import TRAINING_MODES, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
+    MODALITY_SPECIFIC_CAPTIONS
 from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
     ACC_IMAGERY_MOD_SPECIFIC_IMAGES, \
@@ -91,61 +93,52 @@ def create_gifti_results_maps(args):
     print("Metrics: ", metrics)
     for metric in metrics:
         for hemi in HEMIS:
-            for subj in args.subjects:
-                score_hemi_metric = scores[(scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric)]
-                path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                print(f'saving {path_out} ({len(score_hemi_metric)} vertices)')
-                export_to_gifti(score_hemi_metric.value.values, path_out)
+            for training_mode in TRAINING_MODES:
+                for subj in args.subjects:
+                    score_hemi_metric = scores[
+                        (scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric) & (
+                                scores.training_mode == training_mode)
+                        ]
+                    path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+                    print(f'saving {path_out} ({len(score_hemi_metric)} vertices)')
+                    export_to_gifti(score_hemi_metric.value.values, path_out)
 
-            score_hemi_metric_avgd = scores[(scores.hemi == hemi) & (scores.metric == metric)]
-            score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('subject').aggregate({'value': 'mean'})
-            print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd)}")
-            path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
-            export_to_gifti(subject_scores_avgd[hemi][metric], path_out)
+                score_hemi_metric_avgd = scores[
+                    (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
+                    ]
+                score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('subject').aggregate({'value': 'mean'})
+                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd)}")
+                path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
+                export_to_gifti(subject_scores_avgd[hemi][metric], path_out)
 
     for hemi in HEMIS:
         for subj in args.subjects:
-            scores[subj][hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
-                (scores[subj][hemi][ACC_IMAGES_MOD_AGNOSTIC],
-                 scores[subj][hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                 scores[subj][hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
-                 scores[subj][hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
+            sc = scores[(scores.subject == subj) & (scores.hemi == hemi)]
+
+            mod_agnostic_and_cross = np.nanmin(
+                (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
+                 sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
+                 sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
+                 sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == SPLIT_TEST_IMAGES)].value.values),
                 axis=0
             )
             path_out = os.path.join(results_dir, subj, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
-            export_to_gifti(scores[subj][hemi][METRIC_MOD_AGNOSTIC_AND_CROSS], path_out)
+            print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
+            export_to_gifti(mod_agnostic_and_cross, path_out)
 
-            scores[subj][hemi][METRIC_CROSS_DECODING] = np.nanmin(
-                (scores[subj][hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
-                 scores[subj][hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                 scores[subj][hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS],
-                 scores[subj][hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
-                axis=0
-            )
-            path_out = os.path.join(results_dir, subj, f"{METRIC_CROSS_DECODING}_{FS_HEMI_NAMES[hemi]}.gii")
-            export_to_gifti(scores[subj][hemi][METRIC_CROSS_DECODING], path_out)
 
-        subject_scores_avgd[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
-            (
-                subject_scores_avgd[hemi][ACC_IMAGES_MOD_AGNOSTIC],
-                subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
-                subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
-            axis=0)
-        path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(subject_scores_avgd[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS], path_out)
-
-        subject_scores_avgd[hemi][METRIC_CROSS_DECODING] = np.nanmin(
-            (subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_IMAGES],
-             subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-             subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS],
-             subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
-            axis=0
-        )
-        path_out = os.path.join(results_dir, f"{METRIC_CROSS_DECODING}_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(subject_scores_avgd[hemi][METRIC_CROSS_DECODING], path_out)
+        # subject_scores_avgd[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
+        #     (
+        #         subject_scores_avgd[hemi][ACC_IMAGES_MOD_AGNOSTIC],
+        #         subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
+        #         subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
+        #         subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
+        #     axis=0)
+        # path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
+        # print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
+        # export_to_gifti(subject_scores_avgd[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS], path_out)
 
 
 def get_args():
