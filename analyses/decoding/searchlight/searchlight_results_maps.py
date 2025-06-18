@@ -92,14 +92,13 @@ def create_gifti_results_maps(args):
     for metric in metrics:
         for hemi in HEMIS:
             for subj in args.subjects:
-                if metric in subject_scores[subj][hemi]:
-                    score_hemi = subject_scores[subj][hemi][metric]
-                    path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                    os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                    print(f'saving {path_out}')
-                    export_to_gifti(score_hemi, path_out)
-                else:
-                    print(f"missing metric: {subj} {metric} {hemi}")
+                score_hemi = subject_scores[subj][hemi]
+                score_hemi_metric = score_hemi[score_hemi.metric == metric].value.values
+                path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                os.makedirs(os.path.dirname(path_out), exist_ok=True)
+                print(f'saving {path_out}')
+                print(score_hemi_metric)
+                export_to_gifti(score_hemi_metric, path_out)
 
             if metric in subject_scores[args.subjects[-1]][hemi]:
                 subject_scores_avgd[hemi][metric] = np.nanmean(  # TODO at least 3 datapoints?
