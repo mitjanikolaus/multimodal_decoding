@@ -88,7 +88,6 @@ def create_gifti_results_maps(args):
     #     create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)
     #     plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
-    subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
     metrics = scores.metric.unique()
     print("Metrics: ", metrics)
     for metric in metrics:
@@ -110,6 +109,7 @@ def create_gifti_results_maps(args):
                 score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('subject').aggregate({'value': 'mean'}).value.values
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd)}")
                 path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                print(score_hemi_metric_avgd)
                 print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
                 export_to_gifti(score_hemi_metric_avgd, path_out)
 
