@@ -30,7 +30,7 @@ from eval import ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGES_MOD_SPECIFIC_IM
     ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, \
     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, \
     ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGERY_MOD_SPECIFIC_IMAGES, CHANCE_VALUES
+    ACC_IMAGERY_MOD_SPECIFIC_IMAGES, CHANCE_VALUES, LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
     DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS
@@ -95,7 +95,7 @@ MIN_NUM_DATAPOINTS = 4
 #     return scores
 
 
-def load_per_subject_scores(args, hemis=HEMIS):
+def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS):
     print("loading per-subject scores")
 
     per_subject_scores = {subj: dict() for subj in args.subjects}
@@ -165,6 +165,7 @@ def load_per_subject_scores(args, hemis=HEMIS):
             # print({f"{n}_max": round(np.nanmax(score), 2) for n, score in scores.items()})
             # print("")
 
+            scores = scores[scores.latents == latents]
             per_subject_scores[subject][hemi] = scores
 
     return per_subject_scores
