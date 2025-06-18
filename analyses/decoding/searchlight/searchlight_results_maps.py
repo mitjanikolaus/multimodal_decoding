@@ -98,7 +98,7 @@ def create_gifti_results_maps(args):
                         (scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric) & (
                                 scores.training_mode == training_mode)
                         ]
-                    path_out = os.path.join(results_dir, subj, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                    path_out = os.path.join(results_dir, subj, f"{training_mode}_decoder{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                     os.makedirs(os.path.dirname(path_out), exist_ok=True)
                     print(f'saving {path_out} ({len(score_hemi_metric)} vertices)')
                     export_to_gifti(score_hemi_metric.value.values, path_out)
@@ -108,8 +108,7 @@ def create_gifti_results_maps(args):
                     ]
                 score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('vertex').aggregate({'value': 'mean'}).value.values
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd)}")
-                path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                print(score_hemi_metric_avgd)
+                path_out = os.path.join(results_dir, f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
                 export_to_gifti(score_hemi_metric_avgd, path_out)
 
