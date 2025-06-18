@@ -201,6 +201,9 @@ def run(args):
                 print(f"Searchlight time: {int(end - start)}s")
 
                 scores_df['training_mode'] = training_mode
+                scores_df['subject'] = subject
+                scores_df['hemi'] = hemi
+
                 print(scores_df)
 
                 print(

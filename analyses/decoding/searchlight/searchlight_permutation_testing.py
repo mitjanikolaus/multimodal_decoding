@@ -98,9 +98,7 @@ MIN_NUM_DATAPOINTS = 4
 def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS):
     print("loading per-subject scores")
 
-    per_subject_scores = {subj: dict() for subj in args.subjects}
-    per_subject_n_neighbors = {subj: dict() for subj in args.subjects}
-    per_subject_nan_locations = {subj: dict() for subj in args.subjects}
+    all_scores = []
 
     for subject in tqdm(args.subjects):
         for hemi in hemis:
@@ -116,6 +114,8 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
                 searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
             scores_agnostic = pd.read_csv(results_mod_agnostic_file)
+            scores_agnostic['subject'] = subject #TODO temp
+            scores_agnostic['hemi'] = hemi  # TODO temp
 
             # scores_agnostic = results_agnostic['scores']
             # nan_locations = results_agnostic['nan_locations']
@@ -137,6 +137,8 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
             )
             if os.path.isfile(results_mod_specific_images_file):
                 scores_images = pd.read_csv(results_mod_specific_images_file)
+                scores_images['subject'] = subject #TODO temp
+                scores_images['hemi'] = hemi #TODO temp
             else:
                 print(f"Missing modality-specific results: {results_mod_specific_images_file}")
                 scores_images = None
@@ -155,6 +157,8 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
             )
             if os.path.isfile(results_mod_specific_captions_file):
                 scores_captions = pd.read_csv(results_mod_specific_captions_file)
+                scores_captions['subject'] = subject #TODO temp
+                scores_captions['hemi'] = hemi #TODO temp
             else:
                 print(f"Missing modality-specific results: {results_mod_specific_captions_file}")
                 scores_captions = pd.DataFrame()
@@ -166,9 +170,11 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
             # print("")
 
             scores = scores[scores.latents == latents]
-            per_subject_scores[subject][hemi] = scores
+            all_scores.append(scores)
 
-    return per_subject_scores
+    all_scores = pd.concat(all_scores, ignore_index=True)
+
+    return all_scores
 
 
 def get_edge_lengths_dicts_based_on_coord_dist(resolution, max_dist="max"):
