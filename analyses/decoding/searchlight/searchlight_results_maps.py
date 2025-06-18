@@ -106,7 +106,7 @@ def create_gifti_results_maps(args):
                 score_hemi_metric_avgd = scores[
                     (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
                     ]
-                score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('subject').aggregate({'value': 'mean'}).value.values
+                score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('vertex').aggregate({'value': 'mean'}).value.values
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd)}")
                 path_out = os.path.join(results_dir, f"{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 print(score_hemi_metric_avgd)
