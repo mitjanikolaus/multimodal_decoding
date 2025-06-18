@@ -19,16 +19,17 @@ from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_
     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_CROSS_DECODING, METRIC_MOD_AGNOSTIC_AND_CROSS
 
-METRICS = [
-    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS,
-    ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES,
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_MOD_SPECIFIC_IMAGES,
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
-    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS,
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
-    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS
-]
+
+# METRICS = [
+#     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS,
+#     ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
+#     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES,
+#     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_MOD_SPECIFIC_IMAGES,
+#     ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
+#     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS,
+#     ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
+#     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS
+# ]
 
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
@@ -80,15 +81,15 @@ def create_gifti_results_maps(args):
     os.makedirs(results_dir, exist_ok=True)
 
     print("Creating gifti results maps")
-    subject_scores = load_per_subject_scores(
-        args,
-    )
+    subject_scores = load_per_subject_scores(args)
     # if n_neighbors[args.subjects[0]][HEMIS[0]] is not None:
     #     create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)
     #     plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
     subject_scores_avgd = {hemi: dict() for hemi in HEMIS}
-    for metric in METRICS:
+    metrics = subject_scores[args.subjects[0]][HEMIS[0]].metric.unique()
+    print("Metrics: ", metrics)
+    for metric in metrics:
         for hemi in HEMIS:
             for subj in args.subjects:
                 if metric in subject_scores[subj][hemi]:
