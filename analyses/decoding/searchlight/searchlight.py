@@ -24,15 +24,14 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
 from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, \
     TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY
-from eval import ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST
 
-from utils import SUBJECTS, DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, \
-    ADDITIONAL_TEST_DATA_DIR
+from utils import DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, ADDITIONAL_TEST_DATA_DIR, SUBJECTS_ADDITIONAL_TEST
 
 DEFAULT_N_JOBS = 10
 
 SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "searchlight")
-SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR, "permutation_testing_results")
+SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_ADDITIONAL_TEST_OUT_DIR,
+                                                           "permutation_testing_results")
 
 
 def train_and_test(
@@ -50,7 +49,8 @@ def train_and_test(
     if null_distr_dir is not None:
         scores_null_distr = []
         for shuffle_iter in range(len(shuffled_indices[NUM_STIMULI[SPLIT_TEST_IMAGES]])):
-            latents_shuffled = {split: latents_split[shuffled_indices[NUM_STIMULI[split]][shuffle_iter]] for split, latents_split in latents}
+            latents_shuffled = {split: latents_split[shuffled_indices[NUM_STIMULI[split]][shuffle_iter]] for
+                                split, latents_split in latents}
 
             scores_df = calc_all_pairwise_accuracy_scores(
                 latents_shuffled, predicted_latents, standardize_predictions_conds=[True]
@@ -193,7 +193,8 @@ def run(args):
 
                 start = time.time()
                 scores_df = custom_search_light(
-                    fmri_betas, latents, estimator=model, A=adjacency, n_jobs=args.n_jobs, verbose=1, null_distr_dir=null_distr_dir,
+                    fmri_betas, latents, estimator=model, A=adjacency, n_jobs=args.n_jobs, verbose=1,
+                    null_distr_dir=null_distr_dir,
                     shuffled_indices=shuffled_indices
                 )
                 end = time.time()
@@ -203,16 +204,16 @@ def run(args):
                 print(scores_df)
 
                 print(
-                    f"Mean score (captions): {scores_df[scores_df.metric==SPLIT_TEST_CAPTIONS].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric==SPLIT_TEST_CAPTIONS].value.max():.2f}"
+                    f"Mean score (captions): {scores_df[scores_df.metric == SPLIT_TEST_CAPTIONS].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric == SPLIT_TEST_CAPTIONS].value.max():.2f}"
                 )
                 print(
-                    f"Mean score (images): {scores_df[scores_df.metric==SPLIT_TEST_IMAGES].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric==SPLIT_TEST_IMAGES].value.max():.2f}"
+                    f"Mean score (images): {scores_df[scores_df.metric == SPLIT_TEST_IMAGES].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric == SPLIT_TEST_IMAGES].value.max():.2f}"
                 )
                 print(
-                    f"Mean score (imagery): {scores_df[scores_df.metric==SPLIT_IMAGERY].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric==SPLIT_IMAGERY].value.max():.2f}"
+                    f"Mean score (imagery): {scores_df[scores_df.metric == SPLIT_IMAGERY].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric == SPLIT_IMAGERY].value.max():.2f}"
                 )
 
                 results_file_path = get_results_file_path(
@@ -262,7 +263,7 @@ def get_args():
     parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS_ADDITIONAL_TEST)
 
     parser.add_argument("--hemis", type=str, nargs="+", default=["left", "right"])
 

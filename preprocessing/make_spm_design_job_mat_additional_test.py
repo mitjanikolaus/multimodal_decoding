@@ -7,7 +7,7 @@ import os
 from data import IMAGERY, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, \
     SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_IMAGERY
 from preprocessing.make_spm_design_job_mat import define_fmri_betas_jobs
-from utils import ADDITIONAL_TEST_SUBJECTS, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
+from utils import SUBJECTS_ADDITIONAL_TEST, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
     ADDITIONAL_TEST_FMRI_PREPROCESSED_DATASINK_DIR, FMRI_BETAS_DIR, ADDITIONAL_TEST_UNSTRUCTURED_DIR_NAME
 
 FIXATION = "fixation"
@@ -139,7 +139,7 @@ def run(args):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=ADDITIONAL_TEST_SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS_ADDITIONAL_TEST)
     parser.add_argument("--sessions", type=str, nargs='+', default=None, help="Default value of None uses all sessions")
 
     parser.add_argument("--raw-data-dir", type=str, default=ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
