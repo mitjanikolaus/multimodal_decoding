@@ -24,7 +24,7 @@ DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
 def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DEFAULT_RESOLUTION,
-                training_splits=[SPLIT_TRAIN]):
+                training_splits=[SPLIT_TRAIN], imagery_samples_weight=None):
     run_str = f"{feats_config.model}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
@@ -44,6 +44,9 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
 
     if (len(training_splits) > 1) or (training_splits[0] != SPLIT_TRAIN):
         run_str += f"_train_splits_{'_'.join(training_splits)}"
+
+    if imagery_samples_weight is not None:
+        run_str += f"_imagery_samples_weight_{imagery_samples_weight}"
 
     return run_str
 
@@ -146,6 +149,8 @@ def run(args):
                     scores_df["num_voxels"] = fmri_betas[SPLIT_TRAIN].shape[1]
                     scores_df["surface"] = args.surface
                     scores_df["resolution"] = args.resolution
+                    scores_df["imagery_samples_weight"] = args.imagery_samples_weight
+
                     print(
                         f"Best alpha: {best_alpha}"
                     )
