@@ -92,7 +92,7 @@ def run(args):
                         print("Mask: ", os.path.basename(mask))
 
                     run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution,
-                                          args.training_splits)
+                                          args.training_splits, args.imagery_samples_weight)
                     results_file_path = os.path.join(
                         DECODER_ADDITIONAL_TEST_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
