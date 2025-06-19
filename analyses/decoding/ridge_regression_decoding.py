@@ -68,7 +68,6 @@ def run(args):
         for subject in args.subjects:
             fmri_betas_full, stim_ids, stim_types = get_fmri_data_for_splits(
                 subject, ALL_SPLITS, training_mode, args.betas_dir, args.surface,
-                args.resolution
             )
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
