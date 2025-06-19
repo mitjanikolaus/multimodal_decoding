@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import time
 
 import numpy as np
@@ -13,7 +14,7 @@ from tqdm import tqdm
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
-    ALL_SPLITS, TEST_SPLITS, get_latents_for_splits
+    ALL_SPLITS, TEST_SPLITS, get_latents_for_splits, SPLIT_IMAGERY_WEAK
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
 from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
     DECODER_ADDITIONAL_TEST_OUT_DIR, PREDICTIONS_FILE, HEMIS
@@ -101,18 +102,27 @@ def run(args):
                     print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
 
                     pairwise_acc_scorer = make_scorer(pairwise_accuracy, greater_is_better=True)
+
                     clf = GridSearchCV(
                         estimator=Ridge(fit_intercept=False),
                         param_grid=dict(alpha=args.l2_regularization_alphas),
                         scoring=pairwise_acc_scorer, cv=NUM_CV_SPLITS, n_jobs=args.n_jobs,
-                        pre_dispatch=args.n_pre_dispatch, refit=True, verbose=3
+                        pre_dispatch=args.n_pre_dispatch, refit=True, verbose=3,
                     )
 
                     start = time.time()
                     fmri_betas_train = np.concatenate([fmri_betas[split] for split in args.training_splits])
+
                     latents_train = np.concatenate([latents[split] for split in args.training_splits])
                     print(f"Training set size: {len(fmri_betas_train)} (splits: {args.training_splits})")
-                    clf.fit(fmri_betas_train, latents_train)
+
+                    fit_params = dict()
+                    if args.imagery_samples_weight is not None:
+                        fit_params['sample_weight'] = list(itertools.chain(*[
+                            [args.imagery_samples_weight] * len(split) if split == SPLIT_IMAGERY_WEAK else [1] * len(
+                                split) for split in args.training_splits]))
+                        print('applying sample weights: ', fit_params['sample_weight'])
+                    clf.fit(fmri_betas_train, latents_train, **fit_params)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
 
@@ -160,6 +170,7 @@ def get_args():
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-splits", type=str, nargs="+", default=[SPLIT_TRAIN])
+    parser.add_argument("--imagery-samples-weight", type=int, default=None)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
                         choices=TRAINING_MODES)
