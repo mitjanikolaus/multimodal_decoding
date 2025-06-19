@@ -124,7 +124,7 @@ def run(args):
                         fit_params['sample_weight'] = list(itertools.chain(*[
                             [args.imagery_samples_weight] * len(fmri_betas[split]) if split == SPLIT_IMAGERY_WEAK else [1] * len(
                                 fmri_betas[split]) for split in args.training_splits]))
-                        print('applying sample weights: ', fit_params['sample_weight'])
+                        print(f'applying sample weight of {args.imagery_samples_weight} on imagery samples')
                     clf.fit(fmri_betas_train, latents_train, **fit_params)
                     end = time.time()
                     print(f"Elapsed time: {int(end - start)}s")
