@@ -207,9 +207,6 @@ def get_args():
 
     parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
 
-    parser.add_argument("--out-data-dir", type=str, default=FMRI_PREPROCESSED_DATA_DIR)
-
-
     parser.add_argument("--sessions", type=str, nargs='+', default=None,
                         help="Default value of None uses all sessions")
 
