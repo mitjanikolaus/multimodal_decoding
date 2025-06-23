@@ -9,10 +9,9 @@ import pickle
 from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
-from tqdm import tqdm
 
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
-    LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, get_latent_features, \
+    LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, \
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
     ALL_SPLITS, TEST_SPLITS, get_latents_for_splits, SPLIT_IMAGERY_WEAK
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores

@@ -598,6 +598,9 @@ def standardize_latents(latents):
 
 def standardize_fmri_betas(fmri_betas):
     nan_locations = np.isnan(fmri_betas[SPLIT_TRAIN][0])
+    if SPLIT_TEST_IMAGE_ATTENDED in fmri_betas.keys():
+        add_nan_locations = np.isnan(fmri_betas[SPLIT_TEST_IMAGE_ATTENDED][0])
+        nan_locations = np.logical_or(nan_locations, add_nan_locations)
     print(f"Ignoring data from {np.sum(nan_locations)} nan locations.")
     fmri_betas = {split: betas[:, ~nan_locations] for split, betas in fmri_betas.items()}
 
