@@ -23,16 +23,16 @@ SPLIT_TRAIN = "train"
 SPLIT_TEST_IMAGES = "test_image"
 SPLIT_TEST_CAPTIONS = "test_caption"
 
-SPLIT_TEST_IMAGE_ATTENDED = "test_image_attended"
-SPLIT_TEST_CAPTION_ATTENDED = "test_caption_attended"
-SPLIT_TEST_IMAGE_UNATTENDED = "test_image_unattended"
-SPLIT_TEST_CAPTION_UNATTENDED = "test_caption_unattended"
+SPLIT_TEST_IMAGES_ATTENDED = "test_image_attended"
+SPLIT_TEST_CAPTIONS_ATTENDED = "test_caption_attended"
+SPLIT_TEST_IMAGES_UNATTENDED = "test_image_unattended"
+SPLIT_TEST_CAPTIONS_UNATTENDED = "test_caption_unattended"
 
 SPLIT_IMAGERY = "imagery"
 SPLIT_IMAGERY_WEAK = "imagery_weak"
 
-TEST_SPLITS = [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED,
-               SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK]
+TEST_SPLITS = [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED,
+               SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK]
 ALL_SPLITS = [SPLIT_TRAIN] + TEST_SPLITS
 ALL_SPLITS_BASE_DATA = [SPLIT_TRAIN, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY]
 
@@ -463,9 +463,9 @@ def get_stim_info(subject, split):
         stim_ids, stim_types = IMAGERY_STIMS_IDS[subject], IMAGERY_STIMS_TYPES[subject]
     elif split == SPLIT_IMAGERY_WEAK:
         stim_ids, stim_types = IDS_IMAGES_IMAGERY_WEAK, [IMAGERY for _ in IDS_IMAGES_IMAGERY_WEAK]
-    elif split in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED]:
+    elif split in [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]:
         stim_ids, stim_types = IDS_IMAGES_TEST, [IMAGE for _ in IDS_IMAGES_TEST]
-    elif split in [SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_CAPTION_UNATTENDED]:
+    elif split in [SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]:
         stim_ids, stim_types = IDS_IMAGES_TEST, [CAPTION for _ in IDS_IMAGES_TEST]
     else:
         raise RuntimeError(f"Unknown split name: {split}")
@@ -598,8 +598,8 @@ def standardize_latents(latents):
 
 def standardize_fmri_betas(fmri_betas):
     nan_locations = np.isnan(fmri_betas[SPLIT_TRAIN][0])
-    if SPLIT_TEST_IMAGE_ATTENDED in fmri_betas.keys():
-        add_nan_locations = np.isnan(fmri_betas[SPLIT_TEST_IMAGE_ATTENDED][0])
+    if SPLIT_TEST_IMAGES_ATTENDED in fmri_betas.keys():
+        add_nan_locations = np.isnan(fmri_betas[SPLIT_TEST_IMAGES_ATTENDED][0])
         nan_locations = np.logical_or(nan_locations, add_nan_locations)
     print(f"Ignoring data from {np.sum(nan_locations)} nan locations.")
     fmri_betas = {split: betas[:, ~nan_locations] for split, betas in fmri_betas.items()}
@@ -614,10 +614,10 @@ def standardize_fmri_betas(fmri_betas):
 NUM_STIMULI = {
     SPLIT_TEST_IMAGES: len(IDS_IMAGES_TEST),
     SPLIT_TEST_CAPTIONS: len(IDS_IMAGES_TEST),
-    SPLIT_TEST_IMAGE_ATTENDED: len(IDS_IMAGES_TEST),
-    SPLIT_TEST_CAPTION_ATTENDED: len(IDS_IMAGES_TEST),
-    SPLIT_TEST_IMAGE_UNATTENDED: len(IDS_IMAGES_TEST),
-    SPLIT_TEST_CAPTION_UNATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_IMAGES_ATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_CAPTIONS_ATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_IMAGES_UNATTENDED: len(IDS_IMAGES_TEST),
+    SPLIT_TEST_CAPTIONS_UNATTENDED: len(IDS_IMAGES_TEST),
     SPLIT_IMAGERY: len(IMAGERY_SCENES[SUBJECTS[0]]),
     SPLIT_IMAGERY_WEAK: len(IDS_IMAGES_IMAGERY_WEAK),
 }

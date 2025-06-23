@@ -10,28 +10,10 @@ from scipy.stats import pearsonr
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir, add_searchlight_permutation_args
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
-    MODALITY_SPECIFIC_CAPTIONS
-from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, \
-    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGERY_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES, \
-    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, \
-    ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, \
-    ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_MOD_AGNOSTIC, \
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
-from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_CROSS_DECODING, METRIC_MOD_AGNOSTIC_AND_CROSS
-
-
-# METRICS = [
-#     ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS,
-#     ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-#     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES,
-#     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_MOD_SPECIFIC_IMAGES,
-#     ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
-#     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS,
-#     ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
-#     ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS
-# ]
+    MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, \
+    SPLIT_TEST_CAPTIONS_UNATTENDED
+from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC
+from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS
 
 
 def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
@@ -98,7 +80,8 @@ def create_gifti_results_maps(args):
                         (scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric) & (
                                 scores.training_mode == training_mode)
                         ]
-                    path_out = os.path.join(results_dir, subj, f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                    path_out = os.path.join(results_dir, subj,
+                                            f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                     os.makedirs(os.path.dirname(path_out), exist_ok=True)
                     print(f'saving {path_out} ({len(score_hemi_metric)} vertices)')
                     export_to_gifti(score_hemi_metric.value.values, path_out)
@@ -106,7 +89,8 @@ def create_gifti_results_maps(args):
                 score_hemi_metric_avgd = scores[
                     (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
                     ]
-                score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('vertex').aggregate({'value': 'mean'}).value.values
+                score_hemi_metric_avgd = score_hemi_metric_avgd.groupby('vertex').aggregate(
+                    {'value': 'mean'}).value.values
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd)}")
                 path_out = os.path.join(results_dir, f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
@@ -127,17 +111,46 @@ def create_gifti_results_maps(args):
             print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
             export_to_gifti(mod_agnostic_and_cross, path_out)
 
+            attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+            unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+            diff_attended_unattended_images = attended.value.values - unattended.value.values
+            path_out = os.path.join(results_dir, subj, f"diff_attended_unattended_images_{FS_HEMI_NAMES[hemi]}.gii")
+            print(f'saving {path_out} ({len(diff_attended_unattended_images)} vertices)')
+            export_to_gifti(diff_attended_unattended_images, path_out)
 
-        # subject_scores_avgd[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
-        #     (
-        #         subject_scores_avgd[hemi][ACC_IMAGES_MOD_AGNOSTIC],
-        #         subject_scores_avgd[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-        #         subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
-        #         subject_scores_avgd[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
-        #     axis=0)
-        # path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
-        # print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
-        # export_to_gifti(subject_scores_avgd[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS], path_out)
+            attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+            unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+            diff_attended_unattended_captions = attended.value.values - unattended.value.values
+            path_out = os.path.join(results_dir, subj, f"diff_attended_unattended_captions_{FS_HEMI_NAMES[hemi]}.gii")
+            print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
+            export_to_gifti(diff_attended_unattended_captions, path_out)
+
+        sc = scores[(scores.hemi == hemi)]
+
+        mod_agnostic_and_cross = np.nanmin(
+            (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
+             sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
+             sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
+             sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == SPLIT_TEST_IMAGES)].value.values),
+            axis=0
+        )
+        path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
+        export_to_gifti(mod_agnostic_and_cross, path_out)
+
+        attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+        unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+        diff_attended_unattended_images = attended.value.values - unattended.value.values
+        path_out = os.path.join(results_dir, f"diff_attended_unattended_images_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(diff_attended_unattended_images)} vertices)')
+        export_to_gifti(diff_attended_unattended_images, path_out)
+
+        attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+        unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+        diff_attended_unattended_captions = attended.value.values - unattended.value.values
+        path_out = os.path.join(results_dir, f"diff_attended_unattended_captions_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
+        export_to_gifti(diff_attended_unattended_captions, path_out)
 
 
 def get_args():

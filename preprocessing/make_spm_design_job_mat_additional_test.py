@@ -4,8 +4,8 @@ import pandas as pd
 from scipy.io import savemat
 import os
 
-from data import IMAGERY, SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, \
-    SPLIT_TEST_IMAGE_UNATTENDED, SPLIT_TEST_CAPTION_UNATTENDED, SPLIT_IMAGERY
+from data import IMAGERY, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, \
+    SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY
 from preprocessing.make_spm_design_job_mat import define_fmri_betas_jobs
 from utils import SUBJECTS_ADDITIONAL_TEST, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
     ADDITIONAL_TEST_FMRI_PREPROCESSED_DATASINK_DIR, FMRI_BETAS_DIR, ADDITIONAL_TEST_UNSTRUCTURED_DIR_NAME
@@ -19,10 +19,10 @@ ID_TO_TRIAL_TYPE = {
     0: FIXATION,
     10: SPLIT_IMAGERY,
     11: IMAGERY_INSTRUCTION,
-    4: SPLIT_TEST_IMAGE_ATTENDED,
-    5: SPLIT_TEST_CAPTION_ATTENDED,
-    40: SPLIT_TEST_IMAGE_UNATTENDED,
-    50: SPLIT_TEST_CAPTION_UNATTENDED
+    4: SPLIT_TEST_IMAGES_ATTENDED,
+    5: SPLIT_TEST_CAPTIONS_ATTENDED,
+    40: SPLIT_TEST_IMAGES_UNATTENDED,
+    50: SPLIT_TEST_CAPTIONS_UNATTENDED
 }
 
 TRIAL_TYPE_TO_ID = {
@@ -53,8 +53,8 @@ def get_attention_mod_condition_names(trial):
     else:
         assert trial['condition_name'] != 0
         stim_id = trial['condition_name']
-        assert trial_type in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED,
-                              SPLIT_TEST_CAPTION_UNATTENDED]
+        assert trial_type in [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
+                              SPLIT_TEST_CAPTIONS_UNATTENDED]
 
         conditions.append(f"{trial_type}_{stim_id}")
 
@@ -73,8 +73,8 @@ def preprocess_additional_test_event_files(event_files):
         df = pd.read_csv(event_file, sep='\t')
         df['onset'] += onset_shift
         trial_types = df.trial_type.unique()
-        if (TRIAL_TYPE_TO_ID[SPLIT_TEST_IMAGE_ATTENDED] in trial_types) and (
-                TRIAL_TYPE_TO_ID[SPLIT_TEST_CAPTION_ATTENDED] in trial_types):
+        if (TRIAL_TYPE_TO_ID[SPLIT_TEST_IMAGES_ATTENDED] in trial_types) and (
+                TRIAL_TYPE_TO_ID[SPLIT_TEST_CAPTIONS_ATTENDED] in trial_types):
             raise RuntimeError(f"block with attention to both modalities: {trial_types}")
 
         df['glm_conditions'] = df.apply(get_attention_mod_condition_names, axis=1)
@@ -117,8 +117,8 @@ def run(args):
         print("Number of conditions: ", len(conditions))
 
         for cond in [
-            SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED,
-            SPLIT_TEST_CAPTION_UNATTENDED, IMAGERY_INSTRUCTION
+            SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
+            SPLIT_TEST_CAPTIONS_UNATTENDED, IMAGERY_INSTRUCTION
         ]:
             print(f"Number of {cond} conditions: {len([c for c in conditions if cond in c])}")
 
@@ -127,8 +127,8 @@ def run(args):
 
         print("")
         unique_conds = set(conditions)
-        for cond in [SPLIT_TEST_IMAGE_ATTENDED, SPLIT_TEST_CAPTION_ATTENDED, SPLIT_TEST_IMAGE_UNATTENDED,
-                     SPLIT_TEST_CAPTION_UNATTENDED]:
+        for cond in [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
+                     SPLIT_TEST_CAPTIONS_UNATTENDED]:
             print(f"Number of unique {cond} conditions: {len([c for c in unique_conds if cond in c])}")
         print(
             f"Number of unique imagery conditions: {len([c for c in unique_conds if (IMAGERY in c) and not (IMAGERY_INSTRUCTION in c)])}")
