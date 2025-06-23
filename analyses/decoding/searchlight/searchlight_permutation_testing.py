@@ -91,7 +91,7 @@ MIN_NUM_DATAPOINTS = 4
 #     return scores
 
 
-def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS):
+def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions=True):
     print("loading per-subject scores")
 
     all_scores = []
@@ -166,6 +166,7 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
             # print("")
 
             scores = scores[scores.latents == latents]
+            scores = scores[scores.standardized_predictions == standardized_predictions]
             all_scores.append(scores)
 
     all_scores = pd.concat(all_scores, ignore_index=True)

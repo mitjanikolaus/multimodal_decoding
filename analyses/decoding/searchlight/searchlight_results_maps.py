@@ -84,7 +84,7 @@ def create_gifti_results_maps(args):
                                             f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                     os.makedirs(os.path.dirname(path_out), exist_ok=True)
                     print(f'saving {path_out} ({len(score_hemi_metric_subject)} vertices)')
-                    if len(score_hemi_metric_subject) != 163842:
+                    if len(score_hemi_metric_subject) != 163842: #TODO debugging
                         print(score_hemi_metric_subject)
                     export_to_gifti(score_hemi_metric_subject.value.values, path_out)
 
@@ -99,7 +99,7 @@ def create_gifti_results_maps(args):
                 export_to_gifti(score_hemi_metric_avgd, path_out)
 
     for hemi in HEMIS:
-        sc = scores[(scores.hemi == hemi)].copy().groupby('vertex', 'training_mode', 'metric').aggregate({'value': 'mean'})
+        sc = scores[(scores.hemi == hemi)].copy().groupby(['vertex', 'training_mode', 'metric']).aggregate({'value': 'mean'})
 
         mod_agnostic_and_cross = np.nanmin(
             (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
