@@ -76,21 +76,21 @@ def create_gifti_results_maps(args):
         for hemi in HEMIS:
             for training_mode in TRAINING_MODES:
                 for subj in args.subjects:
-                    score_hemi_metric = scores[
+                    score_hemi_metric_subject = scores[
                         (scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric) & (
                                 scores.training_mode == training_mode)
                         ]
                     path_out = os.path.join(results_dir, subj,
                                             f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                     os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                    print(f'saving {path_out} ({len(score_hemi_metric)} vertices)')
-                    if len(score_hemi_metric) != 163842:
-                        print(score_hemi_metric)
-                    export_to_gifti(score_hemi_metric.value.values, path_out)
+                    print(f'saving {path_out} ({len(score_hemi_metric_subject)} vertices)')
+                    if len(score_hemi_metric_subject) != 163842:
+                        print(score_hemi_metric_subject)
+                    export_to_gifti(score_hemi_metric_subject.value.values, path_out)
 
                 score_hemi_metric = scores[
                     (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
-                    ]
+                    ].copy()
                 score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
                     {'value': 'mean'}).value.values
                 print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
