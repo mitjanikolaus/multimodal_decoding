@@ -125,7 +125,8 @@ def create_gifti_results_maps(args):
             print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
             export_to_gifti(diff_attended_unattended_captions, path_out)
 
-        sc = scores[(scores.hemi == hemi)]
+        sc = scores[(scores.hemi == hemi)].score_hemi_metric.groupby('vertex', 'training_mode', 'metric').aggregate(
+                    {'value': 'mean'})
 
         mod_agnostic_and_cross = np.nanmin(
             (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
