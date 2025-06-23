@@ -130,7 +130,7 @@ pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # fMRI preprocessing for additional test set
 
 ```
-python preprocessing/fmri_preprocessing.py --subjects sub-01 --fmri-bids-dir ~/data/multimodal_decoding/additional_test/fmri/bids/ --out-data-dir ~/data/multimodal_decoding/additional_test/fmri/preprocessed
+python preprocessing/fmri_preprocessing.py --subjects sub-01 --bids-data-dir ~/data/multimodal_decoding/additional_test/fmri/bids/ --out-data-dir ~/data/multimodal_decoding/additional_test/fmri/preprocessed
 python preprocessing/make_spm_design_job_mat_additional_test.py --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01 unstructured_additional_test;exit;"  -logfile matlab_output.txt && cd -
 
