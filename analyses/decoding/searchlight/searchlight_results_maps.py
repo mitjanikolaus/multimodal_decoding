@@ -99,7 +99,7 @@ def create_gifti_results_maps(args):
                 export_to_gifti(score_hemi_metric_avgd, path_out)
 
     for hemi in HEMIS:
-        sc = scores[(scores.hemi == hemi)].groupby('vertex', 'training_mode', 'metric').aggregate({'value': 'mean'})
+        sc = scores[(scores.hemi == hemi)].copy().groupby('vertex', 'training_mode', 'metric').aggregate({'value': 'mean'})
 
         mod_agnostic_and_cross = np.nanmin(
             (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
@@ -127,7 +127,7 @@ def create_gifti_results_maps(args):
         export_to_gifti(diff_attended_unattended_captions, path_out)
 
         for subj in args.subjects:
-            sc = scores[(scores.subject == subj) & (scores.hemi == hemi)]
+            sc = scores[(scores.subject == subj) & (scores.hemi == hemi)].copy()
 
             mod_agnostic_and_cross = np.nanmin(
                 (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
