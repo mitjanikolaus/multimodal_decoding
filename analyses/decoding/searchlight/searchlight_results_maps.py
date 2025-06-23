@@ -97,34 +97,6 @@ def create_gifti_results_maps(args):
                 export_to_gifti(score_hemi_metric_avgd, path_out)
 
     for hemi in HEMIS:
-        for subj in args.subjects:
-            sc = scores[(scores.subject == subj) & (scores.hemi == hemi)]
-
-            mod_agnostic_and_cross = np.nanmin(
-                (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
-                 sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
-                 sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
-                 sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == SPLIT_TEST_IMAGES)].value.values),
-                axis=0
-            )
-            path_out = os.path.join(results_dir, subj, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
-            export_to_gifti(mod_agnostic_and_cross, path_out)
-
-            attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
-            unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
-            diff_attended_unattended_images = attended.value.values - unattended.value.values
-            path_out = os.path.join(results_dir, subj, f"diff_attended_unattended_images_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f'saving {path_out} ({len(diff_attended_unattended_images)} vertices)')
-            export_to_gifti(diff_attended_unattended_images, path_out)
-
-            attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
-            unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
-            diff_attended_unattended_captions = attended.value.values - unattended.value.values
-            path_out = os.path.join(results_dir, subj, f"diff_attended_unattended_captions_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
-            export_to_gifti(diff_attended_unattended_captions, path_out)
-
         sc = scores[(scores.hemi == hemi)].score_hemi_metric.groupby('vertex', 'training_mode', 'metric').aggregate(
                     {'value': 'mean'})
 
@@ -152,6 +124,34 @@ def create_gifti_results_maps(args):
         path_out = os.path.join(results_dir, f"diff_attended_unattended_captions_{FS_HEMI_NAMES[hemi]}.gii")
         print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
         export_to_gifti(diff_attended_unattended_captions, path_out)
+
+        for subj in args.subjects:
+            sc = scores[(scores.subject == subj) & (scores.hemi == hemi)]
+
+            mod_agnostic_and_cross = np.nanmin(
+                (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES)].value.values,
+                 sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
+                 sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS)].value.values,
+                 sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == SPLIT_TEST_IMAGES)].value.values),
+                axis=0
+            )
+            path_out = os.path.join(results_dir, subj, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
+            print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
+            export_to_gifti(mod_agnostic_and_cross, path_out)
+
+            attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+            unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+            diff_attended_unattended_images = attended.value.values - unattended.value.values
+            path_out = os.path.join(results_dir, subj, f"diff_attended_unattended_images_{FS_HEMI_NAMES[hemi]}.gii")
+            print(f'saving {path_out} ({len(diff_attended_unattended_images)} vertices)')
+            export_to_gifti(diff_attended_unattended_images, path_out)
+
+            attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+            unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+            diff_attended_unattended_captions = attended.value.values - unattended.value.values
+            path_out = os.path.join(results_dir, subj, f"diff_attended_unattended_captions_{FS_HEMI_NAMES[hemi]}.gii")
+            print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
+            export_to_gifti(diff_attended_unattended_captions, path_out)
 
 
 def get_args():
