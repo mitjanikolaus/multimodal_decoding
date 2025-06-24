@@ -84,8 +84,6 @@ def create_gifti_results_maps(args):
                                             f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                     os.makedirs(os.path.dirname(path_out), exist_ok=True)
                     print(f'saving {path_out} ({len(score_hemi_metric_subject)} vertices)')
-                    if len(score_hemi_metric_subject) != 163842: #TODO debugging
-                        print(score_hemi_metric_subject)
                     export_to_gifti(score_hemi_metric_subject.value.values, path_out)
 
                 score_hemi_metric = scores[
