@@ -91,7 +91,7 @@ MIN_NUM_DATAPOINTS = 4
 #     return scores
 
 
-def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions=True):
+def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions='True'):
     print("loading per-subject scores")
 
     all_scores = []
