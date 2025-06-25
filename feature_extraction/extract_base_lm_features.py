@@ -75,7 +75,7 @@ if __name__ == "__main__":
     extractor = LanguageModelFeatureExtractor(model, tokenizer, model_name, batch_size=BATCH_SIZE, device=device)
     extractor.extract_features()
 
-    model_name = 'gpt2-small'
+    model_name = 'gpt2'
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
     model = GPT2Model.from_pretrained(model_name)
     extractor = LanguageModelFeatureExtractor(model, tokenizer, "gpt2-small", batch_size=BATCH_SIZE, device=device)
