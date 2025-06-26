@@ -50,7 +50,7 @@ def train_and_test(
         scores_null_distr = []
         for shuffle_iter in range(len(shuffled_indices[NUM_STIMULI[SPLIT_TEST_IMAGES]])):
             latents_shuffled = {split: latents_split[shuffled_indices[NUM_STIMULI[split]][shuffle_iter]] for
-                                split, latents_split in latents}
+                                split, latents_split in latents.items()}
 
             scores_df = calc_all_pairwise_accuracy_scores(
                 latents_shuffled, predicted_latents, standardize_predictions_conds=[True]
