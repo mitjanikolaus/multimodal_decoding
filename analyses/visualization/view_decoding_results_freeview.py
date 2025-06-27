@@ -38,8 +38,20 @@ def run(args):
 
         maps_paths = glob.glob(os.path.join(results_dir, "acc_results_maps", f"*_{hemi_fs}.gii"))
         for maps_path in maps_paths:
-            low = 0.55 if not 'diff' in maps_path else 0.02
-            high = 0.7 if not 'diff' in maps_path else 0.1
+            if 'diff' in maps_path:
+                low = 0.05
+                high = 0.1
+            else:
+                if 'test_caption' in maps_path:
+                    low = 0.55
+                    high = 0.65
+                elif 'test_image' in maps_path:
+                    low = 0.55
+                    high = 0.8
+                else:
+                    low = 0.55
+                    high = 0.7
+
             cmd += f":overlay={maps_path}:overlay_zorder=2:overlay_threshold={low},{high}"
 
         annot_paths = [os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.{atlas_name}") for
