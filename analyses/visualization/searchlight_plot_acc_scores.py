@@ -114,12 +114,6 @@ def create_composite_image(args, results_path):
         title_img = Image.new('RGB', (200, imgs_views[0].size[1]))
         draw = ImageDraw.Draw(title_img)
 
-        font_size = 16
-        font = ImageFont.truetype(size=font_size)
-        # textheight = font_size
-        # textwidth = draw.textlength(text, font)
-        # ImageFont.load_default(size=24)
-
         draw.text((0, 0), metric, (255, 255, 255), font_size=25)
 
         imgs_views = [title_img] + imgs_views
