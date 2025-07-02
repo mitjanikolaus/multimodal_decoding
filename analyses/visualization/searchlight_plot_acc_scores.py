@@ -117,7 +117,7 @@ def create_composite_image(args, results_path):
         # draw.text((0, 100), metric, (0, 0, 0), font=font)
 
         fig = Figure(facecolor="none")
-        fig.text(0, 0, metric, fontsize=30)
+        fig.text(0, 0, metric, fontsize=50)
         fig.savefig(results_path+'tmptitle.png')
         title_img = Image.open(results_path+'tmptitle.png')
 
