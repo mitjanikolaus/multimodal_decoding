@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 from PIL import Image
+from matplotlib.figure import Figure
 from nilearn import datasets, plotting
 import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
@@ -102,13 +103,17 @@ def create_composite_image(args, results_path):
 
     imgs_metrics = []
     for metric in TEST_SPLITS:
-        imgs_views = []
+        title_fig = Figure(facecolor="none")
+        title_fig.text(0, 0, metric)
+
+        imgs_views = [title_fig]
         for view in args.views:
             imgs_hemis = []
             for hemi in HEMIS:
                 imgs_hemis.append(Image.open(os.path.join(acc_scores_pngs_dir, f"{training_mode}_decoder_{metric}_{view}_{hemi}.png")))
-            img_hemi = append_images(images=imgs_hemis, padding=100, horizontally=False if view == 'ventral' else True)
+            img_hemi = append_images(images=imgs_hemis, padding=10, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
+
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
 
