@@ -47,7 +47,9 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
 
     for metric in metrics:
         threshold = COLORBAR_THRESHOLD_MIN
-        if CHANCE_VALUES.get(metric,0.5) == 0:
+        chance_value = CHANCE_VALUES.get(metric,0.5)
+        print(f"{metric}: {chance_value}")
+        if chance_value == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
 
         score_hemi_metric_avgd = None
@@ -61,7 +63,6 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
                     {'value': 'mean'}).value.values
                 print(
                     f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
-
 
                 print(
                     f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_metric_avgd):.2f} | "
@@ -78,9 +79,9 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
                         colorbar=False,
                         threshold=threshold,
                         vmax=ACC_COLORBAR_MAX,
-                        vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
-                        cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
-                        symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                        vmin=0.5 if chance_value == 0.5 else None,
+                        cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
+                        symmetric_cbar=False if chance_value == 0.5 else True,
                     )
                     title = f"{metric}_{view}_{hemi}"
                     save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"{title}.png"))
@@ -95,10 +96,10 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
                 bg_on_data=True,
                 colorbar=True,
                 threshold=threshold,
-                vmax=ACC_COLORBAR_MAX if CHANCE_VALUES[metric] == 0.5 else COLORBAR_DIFFERENCE_MAX,
-                vmin=0.5 if CHANCE_VALUES[metric] == 0.5 else None,
-                cmap=CMAP_POS_ONLY if CHANCE_VALUES[metric] == 0.5 else CMAP,
-                symmetric_cbar=False if CHANCE_VALUES[metric] == 0.5 else True,
+                vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                vmin=0.5 if chance_value == 0.5 else None,
+                cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
+                symmetric_cbar=False if chance_value == 0.5 else True,
             )
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
