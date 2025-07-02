@@ -107,7 +107,7 @@ def create_composite_image(args, results_path):
             imgs_hemis = []
             for hemi in HEMIS:
                 imgs_hemis.append(Image.open(os.path.join(acc_scores_pngs_dir, f"{training_mode}_decoder_{metric}_{view}_{hemi}.png")))
-            img_hemi = append_images(images=imgs_hemis, padding=100)
+            img_hemi = append_images(images=imgs_hemis, padding=100, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
@@ -118,7 +118,9 @@ def create_composite_image(args, results_path):
         path = os.path.join(results_path, f"{training_mode}_{metric}.png")
         img_views.save(path, transparent=True)
 
-    # imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
+    imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
+    path = os.path.join(results_path, f"{training_mode}.png")
+    imgs_metrics.save(path, transparent=True)
     print("done")
 
 
