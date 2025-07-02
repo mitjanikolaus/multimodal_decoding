@@ -118,10 +118,11 @@ def create_composite_image(args, results_path):
         font = ImageFont.truetype(size=font_size)
         # textheight = font_size
         # textwidth = draw.textlength(text, font)
+        # ImageFont.load_default(size=24)
 
-        draw.text((0, 0), metric, (255, 255, 255), font=font)
+        draw.text((0, 0), metric, (255, 255, 255), font_size=25)
 
-        img_views = [title_img] + imgs_views
+        imgs_views = [title_img] + imgs_views
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
 
