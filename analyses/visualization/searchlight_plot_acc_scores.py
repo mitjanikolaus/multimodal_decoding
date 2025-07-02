@@ -1,6 +1,7 @@
 import argparse
 
 import numpy as np
+from IPython.core.pylabtools import figsize
 from PIL import Image, ImageDraw, ImageFont
 from matplotlib.figure import Figure
 from nilearn import datasets, plotting
@@ -116,7 +117,7 @@ def create_composite_image(args, results_path):
         # font = ImageFont.load_default(size=24)
         # draw.text((0, 100), metric, (0, 0, 0), font=font)
 
-        fig = Figure(facecolor="none")
+        fig = Figure(facecolor="none", figsize=(30, 20))
         fig.text(0, 0, metric, fontsize=50, fontweight='bold')
         fig.savefig(results_path+'tmptitle.png')
         title_img = Image.open(results_path+'tmptitle.png')
