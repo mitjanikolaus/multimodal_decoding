@@ -114,7 +114,7 @@ def create_composite_image(metrics, args, results_path):
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
 
-        cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metrics}.png"))
+        cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
         img_views = append_images(images=[img_views, cbar], padding=200)
 
         path = os.path.join(results_path, f"{training_mode}_{metric}.png")
@@ -129,9 +129,8 @@ def run(args):
     os.makedirs(results_dir, exist_ok=True)
 
     scores = load_per_subject_scores(args)
-    plot_acc_scores(scores, args, results_dir)
-
     metrics = scores.metric.unique()
+    # plot_acc_scores(scores, args, results_dir)
 
     create_composite_image(metrics, args, results_dir)
 
