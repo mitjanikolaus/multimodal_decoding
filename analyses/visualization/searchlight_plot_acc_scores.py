@@ -125,6 +125,7 @@ def create_composite_image(args, results_path):
 
         path = os.path.join(results_path, f"{training_mode}_{metric}.png")
         img_views.save(path, transparent=True)
+        print(f'saved {path}')
 
     imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
     path = os.path.join(results_path, f"{training_mode}.png")
