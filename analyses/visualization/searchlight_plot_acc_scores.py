@@ -111,11 +111,15 @@ def create_composite_image(args, results_path):
             img_hemi = append_images(images=imgs_hemis, padding=10, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
 
-        title_img = Image.new('RGB', (200, imgs_views[0].size[1]), color='white')
-        draw = ImageDraw.Draw(title_img)
+        # title_img = Image.new('RGB', (200, imgs_views[0].size[1]), color='white')
+        # draw = ImageDraw.Draw(title_img)
+        # font = ImageFont.load_default(size=24)
+        # draw.text((0, 100), metric, (0, 0, 0), font=font)
 
-        font = ImageFont.load_default(size=24)
-        draw.text((0, 100), metric, (0, 0, 0), font=font)
+        fig = Figure(facecolor="none")
+        fig.text(0, 0, metric, fontsize=30)
+        fig.savefig(results_path+'tmptitle.png')
+        title_img = Image.open(results_path+'tmptitle.png')
 
         imgs_views = [title_img] + imgs_views
         img_views = append_images(images=imgs_views, padding=200)
