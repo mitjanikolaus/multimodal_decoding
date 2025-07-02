@@ -103,13 +103,7 @@ def create_composite_image(args, results_path):
 
     imgs_metrics = []
     for metric in TEST_SPLITS:
-        # title_fig = Figure(facecolor="none")
-        # title_fig.text(0, 0, metric)
-        title_img = Image.new('RGB', (200, 100))
-        draw = ImageDraw.Draw(title_img)
-        draw.text((0, 0), "Sample Text", (255, 255, 255))
-
-        imgs_views = [title_img]
+        imgs_views = []
         for view in args.views:
             imgs_hemis = []
             for hemi in HEMIS:
@@ -117,6 +111,17 @@ def create_composite_image(args, results_path):
             img_hemi = append_images(images=imgs_hemis, padding=10, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
 
+        title_img = Image.new('RGB', (200, imgs_views[0].size[1]))
+        draw = ImageDraw.Draw(title_img)
+
+        font_size = 16
+        font = ImageFont.truetype(size=font_size)
+        # textheight = font_size
+        # textwidth = draw.textlength(text, font)
+
+        draw.text((0, 0), metric, (255, 255, 255), font=font)
+
+        img_views = [title_img] + imgs_views
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
 
