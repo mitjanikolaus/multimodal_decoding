@@ -2,8 +2,11 @@ import argparse
 import glob
 import os
 
+from scipy.stats import pearsonr
+import nibabel as nib
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     add_searchlight_permutation_args
+from data import IMAGE, CAPTION
 from eval import ACC_IMAGERY,ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_CROSS_DECODING, \
     METRIC_MOD_AGNOSTIC_AND_CROSS
@@ -59,6 +62,26 @@ def run(args):
         annot_paths += [os.path.join(ROOT_DIR, f"atlas_data/hcp_surface/{hemi_fs}.HCP-MMP1.annot")]
         for annot_path in annot_paths:
             cmd += f":annot={annot_path}:annot_zorder=1"
+
+        results = {}
+        for modality in [IMAGE, CAPTION]:
+            for attention in ["attended", "unattended"]:
+                path = os.path.join(results_dir, "acc_results_maps", f'agnostic_decoder_test_{modality}_{attention}_{hemi_fs}.gii')
+                data = nib.load(path)
+                results[f"test_{modality}_{attention}"] = data.darrays[0].data
+
+        corr_attended = pearsonr(results['test_image_attended'], results['test_caption_attended'])
+        print(f'{hemi_fs} corr_attended: {corr_attended[0]:.2f}')
+        corr_unattended = pearsonr(results['test_image_unattended'], results['test_caption_unattended'])
+        print(f'{hemi_fs} corr_unattended: {corr_unattended[0]:.2f}')
+
+        corr_image = pearsonr(results['test_image_attended'], results['test_image_unattended'])
+        print(f'{hemi_fs} corr_image: {corr_image[0]:.2f}')
+
+        corr_caption = pearsonr(results['test_caption_attended'], results['test_caption_unattended'])
+        print(f'{hemi_fs} corr_caption: {corr_caption[0]:.2f}')
+
+
 
     result_code = os.system(cmd)
     if result_code != 0:
