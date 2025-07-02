@@ -8,7 +8,7 @@ import os
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
     add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
-from data import TRAINING_MODES
+from data import TRAINING_MODES, MODALITY_AGNOSTIC
 from eval import ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, \
     ACC_CAPTIONS_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
@@ -47,44 +47,44 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
 
     for metric in metrics:
         threshold = COLORBAR_THRESHOLD_MIN
-        chance_value = CHANCE_VALUES.get(metric,0.5)
-        print(f"{metric}: {chance_value}")
+        chance_value = CHANCE_VALUES.get(metric, 0.5)
+        print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
 
         score_hemi_metric_avgd = None
 
         for j, hemi in enumerate(HEMIS):
-            for training_mode in TRAINING_MODES:
-                score_hemi_metric = scores[
-                    (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
-                    ].copy()
-                score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
-                    {'value': 'mean'}).value.values
-                print(
-                    f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
+            training_mode = MODALITY_AGNOSTIC
+            score_hemi_metric = scores[
+                (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
+                ].copy()
+            score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
+                {'value': 'mean'}).value.values
+            print(
+                f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
 
-                print(
-                    f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_metric_avgd):.2f} | "
-                    f"max: {np.nanmax(score_hemi_metric_avgd):.2f}")
+            print(
+                f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_metric_avgd):.2f} | "
+                f"max: {np.nanmax(score_hemi_metric_avgd):.2f}")
 
-                for i, view in enumerate(args.views):
-                    plotting.plot_surf_stat_map(
-                        fsaverage[f"infl_{hemi}"],
-                        score_hemi_metric_avgd,
-                        hemi=hemi,
-                        view=view,
-                        bg_map=fsaverage[f"sulc_{hemi}"],
-                        bg_on_data=True,
-                        colorbar=False,
-                        threshold=threshold,
-                        vmax=ACC_COLORBAR_MAX,
-                        vmin=0.5 if chance_value == 0.5 else None,
-                        cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
-                        symmetric_cbar=False if chance_value == 0.5 else True,
-                    )
-                    title = f"{metric}_{view}_{hemi}"
-                    save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"{title}.png"))
+            for i, view in enumerate(args.views):
+                plotting.plot_surf_stat_map(
+                    fsaverage[f"infl_{hemi}"],
+                    score_hemi_metric_avgd,
+                    hemi=hemi,
+                    view=view,
+                    bg_map=fsaverage[f"sulc_{hemi}"],
+                    bg_on_data=True,
+                    colorbar=False,
+                    threshold=threshold,
+                    vmax=ACC_COLORBAR_MAX,
+                    vmin=0.5 if chance_value == 0.5 else None,
+                    cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
+                    symmetric_cbar=False if chance_value == 0.5 else True,
+                )
+                title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
+                save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"{title}.png"))
 
         if score_hemi_metric_avgd is not None:
             plotting.plot_surf_stat_map(
