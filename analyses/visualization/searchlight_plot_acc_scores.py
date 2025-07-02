@@ -1,16 +1,12 @@
 import argparse
-import warnings
 
 import numpy as np
 from PIL import Image
 from nilearn import datasets, plotting
 import os
-from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
     add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
-from data import TRAINING_MODES, MODALITY_AGNOSTIC
-from eval import ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, ACC_IMAGES_MOD_AGNOSTIC, \
-    ACC_CAPTIONS_MOD_AGNOSTIC
+from data import TRAINING_MODES, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -28,9 +24,6 @@ DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
 
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
-
-METRICS = [ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_AGNOSTIC,
-           ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
 
 
 def plot_acc_scores(scores, args, results_path, subfolder=""):
@@ -104,41 +97,30 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
 
-def create_composite_image(args):
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
-                                    searchlight_mode_from_args(args)))
+def create_composite_image(metrics, args, results_path):
+    acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
 
-    tfce_values_img_dir = str(os.path.join(results_path, "tmp", "tfce-values"))
-    tfce_val_img = Image.open(os.path.join(tfce_values_img_dir, f"{args.metric}_lateral_left.png"))
-    # offset_size = (int(p_val_img.size[0]/10), p_val_img.size[1])
-    # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
-    cbar = Image.open(os.path.join(tfce_values_img_dir, f"colorbar_{args.metric}.png"))
-    cbar = cbar.resize((int(cbar.size[0] / 1.2), int(cbar.size[1] / 1.2)))
-    tfce_val_img = tfce_val_img.resize((int(tfce_val_img.size[0] * 1.1), int(tfce_val_img.size[1] * 1.1)))
-    tfce_val_img = append_images([cbar, tfce_val_img], padding=150)  # image_whitespace
+    training_mode = MODALITY_AGNOSTIC
 
-    acc_scores_imgs_dir = str(os.path.join(results_path, "tmp", "acc_scores"))
-    acc_scores_imgs = []
-    for metric in METRICS:
-        acc_scores_img = Image.open(os.path.join(acc_scores_imgs_dir, f"{metric}_lateral_left.png"))
-        # if metric in [ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]:
-        #     acc_scores_img = append_images([cbar, img], padding=50)
-        # else:
-        #     acc_scores_img = append_images([img, cbar], padding=50)
-        acc_scores_img = acc_scores_img.resize((int(acc_scores_img.size[0] / 1.2), int(acc_scores_img.size[1] / 1.2)))
-        acc_scores_imgs.append(acc_scores_img)
+    imgs_metrics = []
+    for metric in metrics:
+        imgs_views = []
+        for view in args.views:
+            imgs_hemis = []
+            for hemi in HEMIS:
+                imgs_hemis.append(Image.open(os.path.join(acc_scores_pngs_dir, f"{training_mode}_decoder_{metric}_{view}_{hemi}.png")))
+            img_hemi = append_images(images=imgs_hemis, padding=100)
+            imgs_views.append(img_hemi)
+        img_views = append_images(images=imgs_views, padding=200)
+        imgs_metrics.append(img_views)
 
-    # cbar = Image.open(os.path.join(acc_scores_imgs_dir, f"colorbar_{ACC_IMAGES_MOD_AGNOSTIC}.png"))
+        cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metrics}.png"))
+        img_views = append_images(images=[img_views, cbar], padding=200)
 
-    acc_scores_imgs_column_1 = append_images(acc_scores_imgs[:2], horizontally=False, padding=400)
-    acc_scores_imgs_column_2 = append_images(acc_scores_imgs[2:], horizontally=False, padding=400)
+        path = os.path.join(results_path, f"{training_mode}_{metric}.png")
+        img_views.save(path, transparent=True)
 
-    acc_imgs = append_images([acc_scores_imgs_column_1, acc_scores_imgs_column_2], padding=400)
-
-    full_img = append_images([acc_imgs, tfce_val_img], horizontally=False, padding=300)
-
-    path = os.path.join(results_path, "searchlight_methods.png")
-    full_img.save(path, transparent=True)
+    # imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
     print("done")
 
 
@@ -149,7 +131,9 @@ def run(args):
     scores = load_per_subject_scores(args)
     plot_acc_scores(scores, args, results_dir)
 
-    # create_composite_image(args)
+    metrics = scores.metric.unique()
+
+    create_composite_image(metrics, args, results_dir)
 
 
 def get_args():
