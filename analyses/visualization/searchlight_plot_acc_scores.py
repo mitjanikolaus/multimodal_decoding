@@ -109,7 +109,7 @@ def create_composite_image(args, results_path):
         draw = ImageDraw.Draw(title_img)
         draw.text((0, 0), "Sample Text", (255, 255, 255))
 
-        imgs_views = [title_fig]
+        imgs_views = [title_img]
         for view in args.views:
             imgs_hemis = []
             for hemi in HEMIS:
