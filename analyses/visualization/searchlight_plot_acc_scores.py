@@ -107,10 +107,7 @@ def create_composite_image(args, results_path):
         # title_fig.text(0, 0, metric)
         title_img = Image.new('RGB', (200, 100))
         draw = ImageDraw.Draw(title_img)
-        # font = ImageFont.truetype(<font-file>, <font-size>)
-        font = ImageFont.truetype("sans-serif.ttf", 16)
-        # draw.text((x, y),"Sample Text",(r,g,b))
-        draw.text((0, 0), "Sample Text", (255, 255, 255), font=font)
+        draw.text((0, 0), "Sample Text", (255, 255, 255))
 
         imgs_views = [title_fig]
         for view in args.views:
