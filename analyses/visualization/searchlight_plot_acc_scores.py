@@ -6,8 +6,8 @@ from nilearn import datasets, plotting
 import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
     add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
-from data import TRAINING_MODES, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES
-from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images
+from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS
+from utils import HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 ACC_COLORBAR_MAX = 0.8
@@ -35,10 +35,8 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
     os.makedirs(acc_scores_pngs_dir, exist_ok=True)
 
     print(f"plotting acc scores. {subfolder}")
-    metrics = scores.metric.unique()
-    print("Metrics: ", metrics)
 
-    for metric in metrics:
+    for metric in TEST_SPLITS:
         threshold = COLORBAR_THRESHOLD_MIN
         chance_value = CHANCE_VALUES.get(metric, 0.5)
         print(f"{metric} | chance value: {chance_value}")
@@ -97,13 +95,13 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
 
-def create_composite_image(metrics, args, results_path):
+def create_composite_image(args, results_path):
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
 
     training_mode = MODALITY_AGNOSTIC
 
     imgs_metrics = []
-    for metric in metrics:
+    for metric in TEST_SPLITS:
         imgs_views = []
         for view in args.views:
             imgs_hemis = []
@@ -129,10 +127,9 @@ def run(args):
     os.makedirs(results_dir, exist_ok=True)
 
     scores = load_per_subject_scores(args)
-    metrics = scores.metric.unique()
     # plot_acc_scores(scores, args, results_dir)
 
-    create_composite_image(metrics, args, results_dir)
+    create_composite_image(args, results_dir)
 
 
 def get_args():
