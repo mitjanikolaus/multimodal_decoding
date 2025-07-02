@@ -122,12 +122,13 @@ def create_composite_image(args, results_path):
         fig.savefig(results_path+'tmptitle.png')
         title_img = Image.open(results_path+'tmptitle.png')
 
-        imgs_views = [title_img] + imgs_views
+        cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
+
+        imgs_views = [title_img] + imgs_views + [cbar]
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
 
-        cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
-        img_views = append_images(images=[img_views, cbar], padding=200)
+        # img_views = append_images(images=[img_views, cbar], padding=100)
 
         path = os.path.join(results_path, f"{training_mode}_{metric}.png")
         img_views.save(path, transparent=True)
