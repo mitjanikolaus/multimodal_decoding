@@ -114,7 +114,7 @@ def create_composite_image(args, results_path):
         title_img = Image.new('RGB', (200, imgs_views[0].size[1]), color='white')
         draw = ImageDraw.Draw(title_img)
 
-        draw.text((0, 0), metric, (0, 0, 0), font_size=50)
+        draw.text((100, 0), metric, (0, 0, 0), font_size=100)
 
         imgs_views = [title_img] + imgs_views
         img_views = append_images(images=imgs_views, padding=200)
