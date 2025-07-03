@@ -62,6 +62,8 @@ METRIC_CROSS_ENCODING = "cross_encoding"
 DISTANCE_METRIC_COSINE = "cosine"
 
 
+DIFF_METRICS = ['diff_attended_unattended_images', 'diff_attended_unattended_captions', 'diff_images_captions_attended', 'diff_images_captions_unattended']
+
 CHANCE_VALUES = {
     SPLIT_TEST_IMAGES: 0.5,
     SPLIT_TEST_IMAGES_ATTENDED: 0.5,
@@ -72,6 +74,8 @@ CHANCE_VALUES = {
     SPLIT_IMAGERY: 0.5,
     SPLIT_IMAGERY_WEAK: 0.5,
 }
+for metric in DIFF_METRICS:
+    CHANCE_VALUES[metric] = 0
 
 
 def get_distance_matrix_csls(predictions, latents, knn=100, metric=DISTANCE_METRIC_COSINE):

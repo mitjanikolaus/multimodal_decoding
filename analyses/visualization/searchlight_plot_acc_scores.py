@@ -10,6 +10,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE
     add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir, add_diff_metrics
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, SPLIT_TEST_IMAGES_ATTENDED, \
     SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED
+from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -28,8 +29,6 @@ DEFAULT_TFCE_VAL_THRESH = 10
 
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
-
-DIFF_METRICS = ['diff_attended_unattended_images', 'diff_attended_unattended_captions', 'diff_images_captions_attended', 'diff_images_captions_unattended']
 
 
 def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC):
@@ -74,7 +73,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     bg_on_data=True,
                     colorbar=False,
                     threshold=threshold,
-                    vmax=ACC_COLORBAR_MAX,
+                    vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
                     vmin=0.5 if chance_value == 0.5 else None,
                     cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
