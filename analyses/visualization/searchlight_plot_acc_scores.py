@@ -103,7 +103,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 score_hemi_metric = None
                 for hemi in HEMIS:
                     score_hemi_metric = scores[
-                        (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
+                        (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode) & (scores.subject == subject)
                         ].copy()
                     score_hemi_metric = score_hemi_metric.value.values
                     assert len(score_hemi_metric) == FS_NUM_VERTICES
