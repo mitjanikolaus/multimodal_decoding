@@ -99,7 +99,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
         if make_per_subject_plots:
-            for subject in args.subject:
+            for subject in args.subjects:
                 score_hemi_metric = None
                 for hemi in HEMIS:
                     score_hemi_metric = scores[
