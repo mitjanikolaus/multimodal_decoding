@@ -21,15 +21,18 @@ from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, cal
 from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, \
     searchlight_mode_from_args, get_results_file_path
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
-    FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES
+    FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
+    TRAINING_MODES, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, \
+    SPLIT_TEST_CAPTIONS_ATTENDED
 from eval import ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
     ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_AGNOSTIC, \
     ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, \
     ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
     CHANCE_VALUES, LIMITED_CANDIDATE_LATENTS
-from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
+from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, \
+    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS
+    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS, FS_NUM_VERTICES
 
 DEFAULT_N_JOBS = 10
 
@@ -90,6 +93,56 @@ MIN_NUM_DATAPOINTS = 4
 #
 #     return scores
 
+def add_diff_metrics(sc):
+    dfs_to_add = []
+    for training_mode in TRAINING_MODES:
+        for subject in SUBJECTS_ADDITIONAL_TEST:
+            for hemi in HEMIS:
+                attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+                unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+                assert len(attended) == len(unattended) == FS_NUM_VERTICES
+                diff_imgs = attended.copy()
+                diff_imgs['value'] = (attended.value.values - unattended.value.values)
+                diff_imgs['metric'] = 'diff_attended_unattended_images'
+                dfs_to_add.append(diff_imgs)
+
+                attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+                unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+                assert len(attended) == len(unattended) == FS_NUM_VERTICES
+                diff_caps = attended.copy()
+                diff_caps['value'] = (attended.value.values - unattended.value.values)
+                diff_caps['metric'] = 'diff_attended_unattended_captions'
+                dfs_to_add.append(diff_caps)
+
+                imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+                caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+                assert len(imgs) == len(caps) == FS_NUM_VERTICES
+                diff_attended = imgs.copy()
+                diff_attended['value'] = (imgs.value.values - caps.value.values)
+                diff_attended['metric'] = 'diff_images_captions_attended'
+                dfs_to_add.append(diff_attended)
+
+                imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+                caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+                            sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+                assert len(imgs) == len(caps) == FS_NUM_VERTICES
+                diff_attended = imgs.copy()
+                diff_attended['value'] = (imgs.value.values - caps.value.values)
+                diff_attended['metric'] = 'diff_images_captions_unattended'
+                dfs_to_add.append(diff_attended)
+            break
+        break
+
+    sc = pd.concat([sc] + dfs_to_add, ignore_index=True)
+
+    return sc
 
 def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions='True'):
     print("loading per-subject scores")
@@ -109,7 +162,7 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
                 feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC,
                 searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
-            scores_agnostic = pd.read_csv(results_mod_agnostic_file)
+            scores_agnostic = pd.read_csv(results_mod_agnostic_file, index_col=0)
             scores_agnostic['subject'] = subject #TODO temp
             scores_agnostic['hemi'] = hemi  # TODO temp
 

@@ -7,8 +7,9 @@ from matplotlib.figure import Figure
 from nilearn import datasets, plotting
 import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
-    add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
-from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS
+    add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir, add_diff_metrics
+from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, SPLIT_TEST_IMAGES_ATTENDED, \
+    SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED
 from utils import HEMIS, save_plot_and_crop_img, append_images
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
@@ -28,7 +29,10 @@ DEFAULT_TFCE_VAL_THRESH = 10
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 
-def plot_acc_scores(scores, args, results_path, subfolder=""):
+DIFF_METRICS = ['diff_attended_unattended_images', 'diff_attended_unattended_captions', 'diff_images_captions_attended', 'diff_images_captions_unattended']
+
+
+def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
@@ -38,7 +42,7 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
 
     print(f"plotting acc scores. {subfolder}")
 
-    for metric in TEST_SPLITS:
+    for metric in TEST_SPLITS + DIFF_METRICS:
         threshold = COLORBAR_THRESHOLD_MIN
         chance_value = CHANCE_VALUES.get(metric, 0.5)
         print(f"{metric} | chance value: {chance_value}")
@@ -47,8 +51,7 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
 
         score_hemi_metric_avgd = None
 
-        for j, hemi in enumerate(HEMIS):
-            training_mode = MODALITY_AGNOSTIC
+        for hemi in HEMIS:
             score_hemi_metric = scores[
                 (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
                 ].copy()
@@ -97,13 +100,11 @@ def plot_acc_scores(scores, args, results_path, subfolder=""):
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
 
-def create_composite_image(args, results_path):
+def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix=""):
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
 
-    training_mode = MODALITY_AGNOSTIC
-
     imgs_metrics = []
-    for metric in TEST_SPLITS:
+    for metric in metrics:
         imgs_views = []
         for view in args.views:
             imgs_hemis = []
@@ -112,15 +113,11 @@ def create_composite_image(args, results_path):
             img_hemi = append_images(images=imgs_hemis, padding=10, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
 
-        # title_img = Image.new('RGB', (200, imgs_views[0].size[1]), color='white')
-        # draw = ImageDraw.Draw(title_img)
-        # font = ImageFont.load_default(size=24)
-        # draw.text((0, 100), metric, (0, 0, 0), font=font)
-
         fig = Figure(facecolor="none", figsize=(10, 6))
         fig.text(0, 0.9, metric, fontsize=50, fontweight='bold')
         fig.savefig(results_path+'tmptitle.png')
         title_img = Image.open(results_path+'tmptitle.png')
+        os.remove(results_path+'tmptitle.png')
 
         cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
 
@@ -144,8 +141,12 @@ def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    # scores = load_per_subject_scores(args)
-    # plot_acc_scores(scores, args, results_dir)
+    scores = load_per_subject_scores(args)
+    scores = add_diff_metrics(scores)
+
+    plot_acc_scores(scores, args, results_dir)
+
+    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED], file_suffix="attention_mod")
 
     create_composite_image(args, results_dir)
 

@@ -46,6 +46,7 @@ HEMIS = ['left', 'right']
 HEMIS_FS = ['lh', 'rh']
 
 FS_HEMI_NAMES = {'left': 'lh', 'right': 'rh'}
+FS_NUM_VERTICES = 163842
 
 DEFAULT_MODEL = "imagebind"
 DEFAULT_RESOLUTION = "fsaverage7"
