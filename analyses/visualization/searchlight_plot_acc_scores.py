@@ -11,7 +11,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, SPLIT_TEST_IMAGES_ATTENDED, \
     SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED
 from eval import DIFF_METRICS
-from utils import HEMIS, save_plot_and_crop_img, append_images
+from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 ACC_COLORBAR_MAX = 0.8
@@ -31,7 +31,7 @@ PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 
 
-def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC):
+def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC, make_per_subject_plots=True):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
@@ -98,7 +98,54 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
             )
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
-        # TODO per-subject plots
+        if make_per_subject_plots:
+            for subject in args.subject:
+                score_hemi_metric = None
+                for hemi in HEMIS:
+                    score_hemi_metric = scores[
+                        (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
+                        ].copy()
+                    score_hemi_metric = score_hemi_metric.value.values
+                    assert len(score_hemi_metric) == FS_NUM_VERTICES
+                    print(
+                        f"{metric} ({hemi} hemi) mean for {subject}: {np.nanmean(score_hemi_metric):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
+
+                    for i, view in enumerate(args.views):
+                        plotting.plot_surf_stat_map(
+                            fsaverage[f"infl_{hemi}"],
+                            score_hemi_metric,
+                            hemi=hemi,
+                            view=view,
+                            bg_map=fsaverage[f"sulc_{hemi}"],
+                            bg_on_data=True,
+                            colorbar=False,
+                            threshold=threshold,
+                            vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                            vmin=0.5 if chance_value == 0.5 else None,
+                            cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
+                            symmetric_cbar=False if chance_value == 0.5 else True,
+                        )
+                        title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
+                        out_path = os.path.join(acc_scores_pngs_dir, subject, f"{title}.png")
+                        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+                        save_plot_and_crop_img(out_path)
+
+                if score_hemi_metric is not None:
+                    plotting.plot_surf_stat_map(
+                        fsaverage[f"infl_{HEMIS[0]}"],
+                        score_hemi_metric,
+                        hemi=HEMIS[0],
+                        view=args.views[0],
+                        bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+                        bg_on_data=True,
+                        colorbar=True,
+                        threshold=threshold,
+                        vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                        vmin=0.5 if chance_value == 0.5 else None,
+                        cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
+                        symmetric_cbar=False if chance_value == 0.5 else True,
+                    )
+                    save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, subject, f"colorbar_{metric}.png"), crop_cbar=True)
 
 
 def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix=""):
