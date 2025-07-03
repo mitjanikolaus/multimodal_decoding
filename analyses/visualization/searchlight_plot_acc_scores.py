@@ -117,8 +117,8 @@ def create_composite_image(args, results_path):
         # font = ImageFont.load_default(size=24)
         # draw.text((0, 100), metric, (0, 0, 0), font=font)
 
-        fig = Figure(facecolor="none", figsize=(9, 6))
-        fig.text(0, 0.5, metric, fontsize=50, fontweight='bold')
+        fig = Figure(facecolor="none", figsize=(10, 6))
+        fig.text(0, 0.9, metric, fontsize=50, fontweight='bold')
         fig.savefig(results_path+'tmptitle.png')
         title_img = Image.open(results_path+'tmptitle.png')
 
