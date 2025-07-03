@@ -99,6 +99,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
             )
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
 
+        # TODO per-subject plots
+
 
 def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix=""):
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
@@ -132,7 +134,7 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
         print(f'saved {path}')
 
     imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
-    path = os.path.join(results_path, f"{training_mode}.png")
+    path = os.path.join(results_path, f"{training_mode}{file_suffix}.png")
     imgs_metrics.save(path, transparent=True)
     print("done")
 
@@ -141,12 +143,12 @@ def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    scores = load_per_subject_scores(args)
-    scores = add_diff_metrics(scores)
+    # scores = load_per_subject_scores(args)
+    # scores = add_diff_metrics(scores)
+    #
+    # plot_acc_scores(scores, args, results_dir)
 
-    plot_acc_scores(scores, args, results_dir)
-
-    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]+DIFF_METRICS, file_suffix="attention_mod")
+    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]+DIFF_METRICS, file_suffix="_attention_mod")
 
     create_composite_image(args, results_dir)
 
