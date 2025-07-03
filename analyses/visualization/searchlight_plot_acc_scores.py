@@ -146,7 +146,7 @@ def run(args):
 
     plot_acc_scores(scores, args, results_dir)
 
-    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED], file_suffix="attention_mod")
+    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]+DIFF_METRICS, file_suffix="attention_mod")
 
     create_composite_image(args, results_dir)
 
