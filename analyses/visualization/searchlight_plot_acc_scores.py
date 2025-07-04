@@ -108,7 +108,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     score_hemi_metric = score_hemi_metric.value.values
                     assert len(score_hemi_metric) == FS_NUM_VERTICES
                     print(
-                        f"{metric} ({hemi} hemi) mean for {subject}: {np.nanmean(score_hemi_metric):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
+                        f"{metric} ({hemi} hemi) mean for {subject}: {np.nanmean(score_hemi_metric):.3f} | max: {np.nanmax(score_hemi_metric):.3f}")
 
                     for i, view in enumerate(args.views):
                         plotting.plot_surf_stat_map(
