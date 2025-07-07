@@ -129,26 +129,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                         os.makedirs(os.path.dirname(out_path), exist_ok=True)
                         save_plot_and_crop_img(out_path)
 
-                if score_hemi_metric is not None:
-                    plotting.plot_surf_stat_map(
-                        fsaverage[f"infl_{HEMIS[0]}"],
-                        score_hemi_metric,
-                        hemi=HEMIS[0],
-                        view=args.views[0],
-                        bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
-                        bg_on_data=True,
-                        colorbar=True,
-                        threshold=threshold,
-                        vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
-                        vmin=0.5 if chance_value == 0.5 else None,
-                        cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
-                        symmetric_cbar=False if chance_value == 0.5 else True,
-                    )
-                    save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, subject, f"colorbar_{metric}.png"),
-                                           crop_cbar=True)
 
-
-def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix=""):
+def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix="", make_per_subject_plots=True):
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
 
     imgs_metrics = []
@@ -174,8 +156,6 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
         img_views = append_images(images=imgs_views, padding=200)
         imgs_metrics.append(img_views)
 
-        # img_views = append_images(images=[img_views, cbar], padding=100)
-
         path = os.path.join(results_path, f"{training_mode}_{metric}.png")
         img_views.save(path, transparent=True)
         print(f'saved {path}')
@@ -183,7 +163,40 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
     imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
     path = os.path.join(results_path, f"{training_mode}{file_suffix}.png")
     imgs_metrics.save(path, transparent=True)
-    print("done")
+
+    if make_per_subject_plots:
+        for subject in args.subjects:
+            imgs_metrics = []
+            for metric in metrics:
+                imgs_views = []
+                for view in args.views:
+                    imgs_hemis = []
+                    for hemi in HEMIS:
+                        imgs_hemis.append(Image.open(
+                            os.path.join(acc_scores_pngs_dir, subject, f"{training_mode}_decoder_{metric}_{view}_{hemi}.png")))
+                    img_hemi = append_images(images=imgs_hemis, padding=10,
+                                             horizontally=False if view == 'ventral' else True)
+                    imgs_views.append(img_hemi)
+
+                fig = Figure(facecolor="none", figsize=(10, 6))
+                fig.text(0, 0.9, metric, fontsize=50, fontweight='bold')
+                fig.savefig(results_path + 'tmptitle.png')
+                title_img = Image.open(results_path + 'tmptitle.png')
+                os.remove(results_path + 'tmptitle.png')
+
+                cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
+
+                imgs_views = [title_img] + imgs_views + [cbar]
+                img_views = append_images(images=imgs_views, padding=200)
+                imgs_metrics.append(img_views)
+
+                path = os.path.join(results_path, f"{training_mode}_{metric}.png")
+                img_views.save(path, transparent=True)
+                print(f'saved {path}')
+
+            imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
+            path = os.path.join(results_path, subject, f"{training_mode}{file_suffix}.png")
+            imgs_metrics.save(path, transparent=True)
 
 
 def run(args):
@@ -201,6 +214,7 @@ def run(args):
                            file_suffix="_attention_mod")
 
     create_composite_image(args, results_dir)
+    print("done")
 
 
 def get_args():
