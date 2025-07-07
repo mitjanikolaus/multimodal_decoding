@@ -195,6 +195,7 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
                 print(f'saved {path}')
 
             imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
+            os.makedirs(os.path.join(results_path, subject), exist_ok=True)
             path = os.path.join(results_path, subject, f"{training_mode}{file_suffix}.png")
             imgs_metrics.save(path, transparent=True)
 
