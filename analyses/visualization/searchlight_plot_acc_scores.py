@@ -9,7 +9,8 @@ import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
     add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir, add_diff_metrics
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, SPLIT_TEST_IMAGES_ATTENDED, \
-    SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED
+    SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, \
+    MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES
 
@@ -208,14 +209,15 @@ def run(args):
     scores = load_per_subject_scores(args)
     scores = add_diff_metrics(scores)
 
-    plot_acc_scores(scores, args, results_dir)
+    for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
+        plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
 
-    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
-                                                       SPLIT_TEST_CAPTIONS_ATTENDED,
-                                                       SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
-                           file_suffix="_attention_mod")
+        create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
+                                                           SPLIT_TEST_CAPTIONS_ATTENDED,
+                                                           SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
+                               file_suffix="_attention_mod", training_mode=training_mode)
 
-    create_composite_image(args, results_dir)
+        create_composite_image(args, results_dir, training_mode=training_mode)
     print("done")
 
 
