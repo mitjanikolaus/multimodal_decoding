@@ -96,7 +96,7 @@ MIN_NUM_DATAPOINTS = 4
 def add_diff_metrics(sc):
     dfs_to_add = []
     for training_mode in TRAINING_MODES:
-        for subject in SUBJECTS_ADDITIONAL_TEST:
+        for subject in tqdm(SUBJECTS_ADDITIONAL_TEST, desc=f'Adding diff metrics for {subject} {training_mode}'):
             for hemi in HEMIS:
                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
                             sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
