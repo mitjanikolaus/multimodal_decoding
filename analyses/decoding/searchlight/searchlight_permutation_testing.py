@@ -137,8 +137,6 @@ def add_diff_metrics(sc):
                 diff_unattended['value'] = (imgs.value.values - caps.value.values)
                 diff_unattended['metric'] = 'diff_images_captions_unattended'
                 dfs_to_add.append(diff_unattended)
-            break
-        break
 
     sc = pd.concat([sc] + dfs_to_add, ignore_index=True)
 
