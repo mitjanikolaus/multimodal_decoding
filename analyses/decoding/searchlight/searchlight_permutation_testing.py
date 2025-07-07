@@ -133,10 +133,10 @@ def add_diff_metrics(sc):
                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
                             sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
-                diff_attended = imgs.copy()
-                diff_attended['value'] = (imgs.value.values - caps.value.values)
-                diff_attended['metric'] = 'diff_images_captions_unattended'
-                dfs_to_add.append(diff_attended)
+                diff_unattended = imgs.copy()
+                diff_unattended['value'] = (imgs.value.values - caps.value.values)
+                diff_unattended['metric'] = 'diff_images_captions_unattended'
+                dfs_to_add.append(diff_unattended)
             break
         break
 
