@@ -30,8 +30,8 @@ DEFAULT_TFCE_VAL_THRESH = 10
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
 
 
-
-def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC, make_per_subject_plots=True):
+def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC,
+                    make_per_subject_plots=True):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
     acc_scores_pngs_dir = str(os.path.join(results_path, "acc_scores"))
@@ -57,11 +57,9 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
             score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
                 {'value': 'mean'}).value.values
             print(
-                f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
-
-            print(
-                f"metric: {metric} {hemi} hemi mean: {np.nanmean(score_hemi_metric_avgd):.2f} | "
-                f"max: {np.nanmax(score_hemi_metric_avgd):.2f}")
+                f"metric: {metric} {hemi} hemi mean over subjects: {np.nanmean(score_hemi_metric_avgd):.2f} | "
+                f"max: {np.nanmax(score_hemi_metric_avgd):.2f}"
+            )
 
             for i, view in enumerate(args.views):
                 plotting.plot_surf_stat_map(
@@ -103,7 +101,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 score_hemi_metric = None
                 for hemi in HEMIS:
                     score_hemi_metric = scores[
-                        (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode) & (scores.subject == subject)
+                        (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode) & (
+                                    scores.subject == subject)
                         ].copy()
                     score_hemi_metric = score_hemi_metric.value.values
                     print(
@@ -145,7 +144,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                         cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                         symmetric_cbar=False if chance_value == 0.5 else True,
                     )
-                    save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, subject, f"colorbar_{metric}.png"), crop_cbar=True)
+                    save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, subject, f"colorbar_{metric}.png"),
+                                           crop_cbar=True)
 
 
 def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix=""):
@@ -157,15 +157,16 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
         for view in args.views:
             imgs_hemis = []
             for hemi in HEMIS:
-                imgs_hemis.append(Image.open(os.path.join(acc_scores_pngs_dir, f"{training_mode}_decoder_{metric}_{view}_{hemi}.png")))
+                imgs_hemis.append(Image.open(
+                    os.path.join(acc_scores_pngs_dir, f"{training_mode}_decoder_{metric}_{view}_{hemi}.png")))
             img_hemi = append_images(images=imgs_hemis, padding=10, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
 
         fig = Figure(facecolor="none", figsize=(10, 6))
         fig.text(0, 0.9, metric, fontsize=50, fontweight='bold')
-        fig.savefig(results_path+'tmptitle.png')
-        title_img = Image.open(results_path+'tmptitle.png')
-        os.remove(results_path+'tmptitle.png')
+        fig.savefig(results_path + 'tmptitle.png')
+        title_img = Image.open(results_path + 'tmptitle.png')
+        os.remove(results_path + 'tmptitle.png')
 
         cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
 
@@ -194,7 +195,10 @@ def run(args):
 
     plot_acc_scores(scores, args, results_dir)
 
-    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]+DIFF_METRICS, file_suffix="_attention_mod")
+    create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
+                                                       SPLIT_TEST_CAPTIONS_ATTENDED,
+                                                       SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
+                           file_suffix="_attention_mod")
 
     create_composite_image(args, results_dir)
 
