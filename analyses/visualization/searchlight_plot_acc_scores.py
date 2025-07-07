@@ -166,6 +166,8 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
 
     if make_per_subject_plots:
         for subject in args.subjects:
+            os.makedirs(os.path.join(results_path, subject), exist_ok=True)
+
             imgs_metrics = []
             for metric in metrics:
                 imgs_views = []
@@ -190,12 +192,11 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
                 img_views = append_images(images=imgs_views, padding=200)
                 imgs_metrics.append(img_views)
 
-                path = os.path.join(results_path, f"{training_mode}_{metric}.png")
+                path = os.path.join(results_path, subject, f"{training_mode}_{metric}.png")
                 img_views.save(path, transparent=True)
                 print(f'saved {path}')
 
             imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
-            os.makedirs(os.path.join(results_path, subject), exist_ok=True)
             path = os.path.join(results_path, subject, f"{training_mode}{file_suffix}.png")
             imgs_metrics.save(path, transparent=True)
 
