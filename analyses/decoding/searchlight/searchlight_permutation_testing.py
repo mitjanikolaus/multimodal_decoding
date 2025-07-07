@@ -47,52 +47,6 @@ T_VAL_METRICS = [
 MIN_NUM_DATAPOINTS = 4
 
 
-# def process_scores(scores_agnostic, scores_mod_specific_captions, scores_mod_specific_images):
-#     scores = dict()
-#
-#     metrics = [ACC_CAPTIONS, ACC_IMAGES, ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST]
-#     metric_names = [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-#                     ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
-#     # if additional_imagery_scores:
-#     #     metrics += [ACC_IMAGERY + "_no_std", ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-#     #     metric_names += [ACC_IMAGERY_NO_STD_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_AGNOSTIC]
-#     for metric_agnostic_name, metric in zip(metric_names, metrics):
-#         scores[metric_agnostic_name] = np.array([score[metric] for score in scores_agnostic])
-#
-#     if scores_mod_specific_captions is not None and scores_mod_specific_images is not None:
-#         metric_names = [ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]
-#         metrics = [ACC_CAPTIONS, ACC_IMAGES]
-#         if additional_imagery_scores:
-#             metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
-#                         ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-#             metric_names += [ACC_IMAGERY_MOD_SPECIFIC_CAPTIONS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_CAPTIONS,
-#                              ACC_IMAGERY_NO_STD_MOD_SPECIFIC_CAPTIONS,
-#                              ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_CAPTIONS]
-#         for metric_specific_name, metric in zip(metric_names, metrics):
-#             scores[metric_specific_name] = np.array(
-#                 [score[metric] for score in scores_mod_specific_captions])
-#
-#         metric_names = [ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]
-#         metrics = [ACC_IMAGES, ACC_CAPTIONS]
-#         if additional_imagery_scores:
-#             metrics += [ACC_IMAGERY, ACC_IMAGERY_WHOLE_TEST, ACC_IMAGERY + "_no_std",
-#                         ACC_IMAGERY_WHOLE_TEST + "_no_std"]
-#             metric_names += [ACC_IMAGERY_MOD_SPECIFIC_IMAGES, ACC_IMAGERY_WHOLE_TEST_SET_MOD_SPECIFIC_IMAGES,
-#                              ACC_IMAGERY_NO_STD_MOD_SPECIFIC_IMAGES,
-#                              ACC_IMAGERY_WHOLE_TEST_SET_NO_STD_MOD_SPECIFIC_IMAGES]
-#         for metric_specific_name, metric in zip(metric_names, metrics):
-#             scores[metric_specific_name] = np.array(
-#                 [score[metric] for score in scores_mod_specific_images])
-#
-#         scores[METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
-#             [ai - si for ai, si in zip(scores[ACC_IMAGES_MOD_AGNOSTIC], scores[ACC_IMAGES_MOD_SPECIFIC_IMAGES])]
-#         )
-#         scores[METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC] = np.array(
-#             [ac - sc for ac, sc in zip(scores[ACC_CAPTIONS_MOD_AGNOSTIC], scores[ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS])]
-#         )
-#
-#     return scores
-
 def add_diff_metrics(sc):
     dfs_to_add = []
     for training_mode in TRAINING_MODES:
