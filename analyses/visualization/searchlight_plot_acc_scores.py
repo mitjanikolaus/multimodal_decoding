@@ -203,10 +203,10 @@ def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    scores = load_per_subject_scores(args)
-    scores = add_diff_metrics(scores)
-
-    plot_acc_scores(scores, args, results_dir)
+    # scores = load_per_subject_scores(args)
+    # scores = add_diff_metrics(scores)
+    #
+    # plot_acc_scores(scores, args, results_dir)
 
     create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
                                                        SPLIT_TEST_CAPTIONS_ATTENDED,
