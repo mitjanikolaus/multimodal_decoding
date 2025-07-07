@@ -41,7 +41,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     print(f"plotting acc scores. {subfolder}")
 
-    for metric in TEST_SPLITS + DIFF_METRICS:
+    for metric in DIFF_METRICS + TEST_SPLITS:
         threshold = COLORBAR_THRESHOLD_MIN
         chance_value = CHANCE_VALUES.get(metric, 0.5)
         print(f"{metric} | chance value: {chance_value}")
