@@ -200,6 +200,7 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
             imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
             path = os.path.join(results_path, subject, f"{training_mode}{file_suffix}.png")
             imgs_metrics.save(path, transparent=True)
+            print(f'saved {path}')
 
 
 def run(args):
@@ -220,11 +221,11 @@ def run(args):
     #     create_composite_image(args, results_dir, training_mode=training_mode)
 
 
-    metrics = [SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]
+    metrics = [SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
     create_composite_image(args, results_dir, metrics=metrics,
                            file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_IMAGES)
 
-    metrics = [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]
+    metrics = [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, 'diff_attended_unattended_images']
     create_composite_image(args, results_dir, metrics=metrics,
                            file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_CAPTIONS)
 
