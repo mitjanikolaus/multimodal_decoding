@@ -145,7 +145,7 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
             img_hemi = append_images(images=imgs_hemis, padding=10, horizontally=False if view == 'ventral' else True)
             imgs_views.append(img_hemi)
 
-        fig = Figure(facecolor="none", figsize=(13, 6))
+        fig = Figure(facecolor="none", figsize=(14, 6))
         fig.text(0, 0.9, metric, fontsize=50, fontweight='bold')
         fig.savefig(results_path + 'tmptitle.png')
         title_img = Image.open(results_path + 'tmptitle.png')
