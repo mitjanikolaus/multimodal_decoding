@@ -88,7 +88,7 @@ def run(args):
                           f"MODEL: {model} | FEATURES: {feats_config.features} {feats_config.vision_features} "
                           f"{feats_config.lang_features} | TEST FEATURES: {feats_config.test_features}")
                     if mask is not None:
-                        print("Mask: ", os.path.basename(mask))
+                        print(f"Mask: {os.path.basename(mask)}")
 
                     run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution,
                                           args.training_splits, args.imagery_samples_weight)
