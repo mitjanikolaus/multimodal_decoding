@@ -220,13 +220,13 @@ def run(args):
     #     create_composite_image(args, results_dir, training_mode=training_mode)
 
 
-    metrics = [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]
-    create_composite_image(args, results_dir, metrics=metrics,
-                           file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_CAPTIONS)
-
     metrics = [SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]
     create_composite_image(args, results_dir, metrics=metrics,
                            file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_IMAGES)
+
+    metrics = [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]
+    create_composite_image(args, results_dir, metrics=metrics,
+                           file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_CAPTIONS)
 
     print("done")
 
