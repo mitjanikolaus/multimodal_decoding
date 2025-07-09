@@ -15,8 +15,8 @@ from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES,
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
     ALL_SPLITS, TEST_SPLITS, get_latents_for_splits, SPLIT_IMAGERY_WEAK
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
-from utils import FMRI_BETAS_DIR, SUBJECTS, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
-    DECODER_ADDITIONAL_TEST_OUT_DIR, PREDICTIONS_FILE, HEMIS
+from utils import FMRI_BETAS_DIR, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
+    DECODER_ADDITIONAL_TEST_OUT_DIR, PREDICTIONS_FILE, HEMIS, SUBJECTS_ADDITIONAL_TEST
 
 NUM_CV_SPLITS = 5
 DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
@@ -190,7 +190,7 @@ def get_args():
     parser.add_argument("--lang-features", type=str, default=SELECT_DEFAULT,
                         choices=LANG_FEAT_COMBINATION_CHOICES)
 
-    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS)
+    parser.add_argument("--subjects", type=str, nargs='+', default=SUBJECTS_ADDITIONAL_TEST)
 
     parser.add_argument("--l2-regularization-alphas", type=float, nargs='+', default=DEFAULT_ALPHAS)
 
