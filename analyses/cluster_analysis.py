@@ -90,6 +90,9 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
     masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{hparam_suffix}")
     os.makedirs(masks_path, exist_ok=True)
 
+    path_out = os.path.join(results_maps_path, f"{metric}_threshold_{threshold}.p")
+    pickle.dump(values, open(path_out, "wb"))
+
     clusters_df = []
     for hemi in HEMIS:
         print(f"\nclusters for {hemi} hemi")
