@@ -29,6 +29,7 @@ class CoCoDataset(Dataset):
 
         self.img_paths = data.img_path.to_dict()
         self.captions = data.caption.to_dict()
+        self.stimuli_ids = list(self.img_paths.keys())
         self.root = coco_root
         self.mode = mode
 
