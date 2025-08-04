@@ -14,7 +14,6 @@ from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
-from analyses.visualization.searchlight_plot_method import DEFAULT_VIEWS
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
     save_plot_and_crop_img, append_images, METRIC_CROSS_DECODING
@@ -32,6 +31,8 @@ CBAR_TFCE_MAX_VALUE = 400000
 METRICS = [METRIC_MOD_AGNOSTIC_AND_CROSS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
 
 CONTOUR_COLOR = 'lightseagreen'
+
+DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 
 
 def plot(args):
