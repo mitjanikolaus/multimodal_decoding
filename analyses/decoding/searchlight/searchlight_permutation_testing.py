@@ -361,7 +361,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
             logging=False
         )
         results_mod_agnostic_file = get_results_file_path(
-            feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC, args.resolution,
+            feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC,
             searchlight_mode_from_args(args), args.l2_regularization_alpha,
         )
         results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
@@ -376,7 +376,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
             logging=False
         )
         results_mod_specific_images_file = get_results_file_path(
-            feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES, args.resolution,
+            feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES,
             searchlight_mode_from_args(args), args.l2_regularization_alpha,
         )
 
@@ -389,7 +389,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
             logging=False
         )
         results_mod_specific_captions_file = get_results_file_path(
-            feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS, args.resolution,
+            feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS,
             searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
         )
 
