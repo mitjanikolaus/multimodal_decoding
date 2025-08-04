@@ -364,8 +364,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
             feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC,
             searchlight_mode_from_args(args), args.l2_regularization_alpha,
         )
-        results_agnostic = pickle.load(open(results_mod_agnostic_file, 'rb'))
-        nan_locations = results_agnostic['nan_locations']
+        # results_agnostic = pd.read_csv(results_mod_agnostic_file, index_col=0)
 
         feats_config_mod_specific_images = LatentFeatsConfig(
             args.mod_specific_images_model,
@@ -432,7 +431,9 @@ def assemble_null_distr_per_subject_scores(subject, args):
             distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
             if len(subject_scores_null_distr) <= i:
                 subject_scores_null_distr.append(dict())
-            scores = process_scores(distr, distr_caps, distr_imgs, nan_locations)
+            print(distr)
+            print(distr_caps)
+            scores = process_scores(distr, distr_caps, distr_imgs)
             subject_scores_null_distr[i][hemi] = scores
 
     subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
