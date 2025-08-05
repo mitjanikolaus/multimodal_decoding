@@ -392,8 +392,8 @@ def assemble_null_distr_per_subject_scores(subject, args):
             searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
         )
 
-        def load_null_distr_scores(base_path):
-            scores_dir = os.path.join(base_path, "null_distr")
+        def load_null_distr_scores(base_path, training_mode):
+            scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
             print(f'loading scores from {scores_dir}')
             score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
             if len(score_paths) == 0:
@@ -406,6 +406,11 @@ def assemble_null_distr_per_subject_scores(subject, args):
                 iterator = tqdm(paths) if proc_id == 0 else paths
                 for path in iterator:
                     scores = pickle.load(open(path, "rb"))
+                    for scores_perm in scores:
+                        scores_perm['vertex'] = int(os.path.basename(path)[:-2])
+                        scores_perm['training_mode'] = training_mode
+                        scores_perm['subject'] = subject
+                        scores_perm['hemi'] = hemi
                     job_scores.append(scores)
                 return job_scores
 
@@ -417,23 +422,25 @@ def assemble_null_distr_per_subject_scores(subject, args):
                 )
                 for id in range(args.n_jobs)
             )
-            return np.concatenate(all_scores)
 
-        null_distribution_agnostic = load_null_distr_scores(os.path.dirname(results_mod_agnostic_file))
-        null_distribution_images = load_null_distr_scores(os.path.dirname(results_mod_specific_images_file))
-        null_distribution_captions = load_null_distr_scores(os.path.dirname(results_mod_specific_captions_file))
+            return all_scores
+
+        null_distribution_agnostic = load_null_distr_scores(results_mod_agnostic_file, MODALITY_AGNOSTIC)
+        null_distribution_images = load_null_distr_scores(results_mod_specific_images_file, MODALITY_SPECIFIC_IMAGES)
+        null_distribution_captions = load_null_distr_scores(results_mod_specific_captions_file, MODALITY_SPECIFIC_CAPTIONS)
 
         num_permutations = len(null_distribution_agnostic[0])
         print('final per subject scores null distribution dict creation:')
         for i in tqdm(range(num_permutations)):
-            distr = [null_distr[i] for null_distr in null_distribution_agnostic]
-            distr_caps = [null_distr[i] for null_distr in null_distribution_captions]
-            distr_imgs = [null_distr[i] for null_distr in null_distribution_images]
+            distr = pd.concat([null_distr[i] for null_distr in null_distribution_agnostic], ignore_index=True)
+            distr_caps = pd.concat([null_distr[i] for null_distr in null_distribution_captions], ignore_index=True)
+            distr_imgs = pd.concat([null_distr[i] for null_distr in null_distribution_images], ignore_index=True)
             if len(subject_scores_null_distr) <= i:
                 subject_scores_null_distr.append(dict())
+
             print(distr)
-            print(distr_caps)
-            scores = process_scores(distr, distr_caps, distr_imgs)
+            print(distr_caps['vertex'])
+            scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
             subject_scores_null_distr[i][hemi] = scores
 
     subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
