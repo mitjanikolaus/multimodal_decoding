@@ -409,8 +409,8 @@ def assemble_null_distr_per_subject_scores(subject, args):
                     for scores_perm in scores:
                         scores_perm['vertex'] = int(os.path.basename(path)[:-2])
                         scores_perm['training_mode'] = training_mode
-                        scores_perm['subject'] = subject
-                        scores_perm['hemi'] = hemi
+                        # scores_perm['subject'] = subject #not necessary
+                        # scores_perm['hemi'] = hemi #not necessary
                     job_scores.append(scores)
                 return job_scores
 
