@@ -506,11 +506,9 @@ def calc_t_values_null_distr(args, out_path):
     #                                               f"{args.subjects[0]}_scores_null_distr_{HEMIS[0]}_hemi_0.p")
     # sample_null_distr = pickle.load(open(subject_scores_null_distr_path, 'rb'))
 
-    n_permutations = len(glob(os.path.join(subject_scores_null_distr_dir,
-                                                  f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{HEMIS[0]}_hemi_**.p")))
-    print('n_permutations: ', n_permutations)
-    permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
-    permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
+    # n_permutations = len(glob(os.path.join(subject_scores_null_distr_dir,
+    #                                               f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{HEMIS[0]}_hemi_**.p")))
+
 
     #             if training_mode == MODALITY_AGNOSTIC:
     #                 feats_config = LatentFeatsConfig(
@@ -562,7 +560,15 @@ def calc_t_values_null_distr(args, out_path):
                             searchlight_mode_from_args(args), args.l2_regularization_alpha,
                         )
         scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
-        n_vertices[hemi] = len(list(glob(os.path.join(scores_dir, "*.p"))))
+        null_distr_filepaths = list(glob(os.path.join(scores_dir, "*.p")))
+        n_vertices[hemi] = len(null_distr_filepaths)
+
+    n_permutations = pickle.load(open(null_distr_filepaths[0], "rb"))
+    print(n_permutations)
+    n_permutations = len(n_permutations)
+    print('n_permutations: ', n_permutations)
+    permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
+    permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     # n_vertices = {
     #     hemi: pickle.load(open(os.path.join(subject_scores_null_distr_dir, f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
