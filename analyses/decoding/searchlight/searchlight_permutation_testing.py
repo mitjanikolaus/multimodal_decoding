@@ -424,33 +424,31 @@ def assemble_null_distr_per_subject_scores(subject, args):
                 for id in range(args.n_jobs)
             )
 
-            return all_scores
+            return np.concatenate(all_scores)
 
-        null_distribution_agnostic = load_null_distr_scores(results_mod_agnostic_file)
-        null_distribution_images = load_null_distr_scores(results_mod_specific_images_file)
-        null_distribution_captions = load_null_distr_scores(results_mod_specific_captions_file)
+        for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
+            null_distribution = load_null_distr_scores(results_mod_agnostic_file)
+            # null_distribution_images = load_null_distr_scores(results_mod_specific_images_file)
+            # null_distribution_captions = load_null_distr_scores(results_mod_specific_captions_file)
 
-        num_permutations = len(null_distribution_agnostic[0])
-        print('final per subject scores null distribution dict creation:')
-        for perm_id in tqdm(range(num_permutations)):
-            distr = pd.concat([null_distr[perm_id] for null_distr in null_distribution_agnostic], ignore_index=True)
-            distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions],
-                                   ignore_index=True)
-            distr_imgs = pd.concat([null_distr[perm_id] for null_distr in null_distribution_images], ignore_index=True)
-            distr['training_mode'] = MODALITY_AGNOSTIC
-            distr_caps['training_mode'] = MODALITY_SPECIFIC_CAPTIONS
-            distr_imgs['training_mode'] = MODALITY_SPECIFIC_IMAGES
-            scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
-            subject_scores_null_distr_path = os.path.join(null_distr_dir,
-                                                          f"{subject}_scores_null_distr_{hemi}_hemi_{perm_id}.p")
-            pickle.dump(scores, open(subject_scores_null_distr_path, 'wb'))
+            num_permutations = len(null_distribution[0])
+            print(f'final per subject scores null distribution dict creation for {training_mode} decoder:')
+            for perm_id in tqdm(range(num_permutations)):
+                scores = pd.concat([null_distr[perm_id] for null_distr in null_distribution], ignore_index=True)
+                # distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions],
+                #                        ignore_index=True)
+                # distr_imgs = pd.concat([null_distr[perm_id] for null_distr in null_distribution_images], ignore_index=True)
+                # scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
+                subject_scores_null_distr_path = os.path.join(null_distr_dir,
+                                                              f"{subject}_scores_null_distr_{training_mode}_{hemi}_hemi_{perm_id}.p")
+                pickle.dump(scores, open(subject_scores_null_distr_path, 'wb'))
 
 
 def calc_t_values_null_distr(args, out_path):
     # per_subject_scores_null_distr = dict()
     for subject in tqdm(args.subjects):
-        subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
-        if not os.path.isfile(subject_scores_null_distr_path):
+        subject_scores_null_distr_dir = os.path.join(permutation_results_dir(args), f"null_distr_assembled")
+        if not os.path.isdir(subject_scores_null_distr_dir):
             assemble_null_distr_per_subject_scores(subject, args)
         # else:
         #     print(f"loading assembled null distr scores for {subject}")
@@ -512,14 +510,14 @@ def calc_t_values_null_distr(args, out_path):
     #                                               f"{args.subjects[0]}_scores_null_distr_{HEMIS[0]}_hemi_0.p")
     # sample_null_distr = pickle.load(open(subject_scores_null_distr_path, 'rb'))
 
-    n_permutations = len(glob(os.path.join(permutation_results_dir(args), 'null_distr_assembled',
-                                                  f"{args.subjects[0]}_scores_null_distr_{HEMIS[0]}_hemi_**.p")))
+    n_permutations = len(glob(os.path.join(subject_scores_null_distr_dir,
+                                                  f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{HEMIS[0]}_hemi_**.p")))
     print('n_permutations: ', n_permutations)
     permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     n_vertices = {
-        hemi: pickle.load(open(os.path.join(permutation_results_dir(args), 'null_distr_assembled', f"{args.subjects[0]}_scores_null_distr_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
+        hemi: pickle.load(open(os.path.join(subject_scores_null_distr_dir, f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
         HEMIS
     }
     print('n_vertices: ', n_vertices)
@@ -533,8 +531,8 @@ def calc_t_values_null_distr(args, out_path):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
             for hemi in HEMIS:
-                subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), 'null_distr_assembled',
-                                                              f"{subj}_scores_null_distr_{hemi}_hemi_{perm_id}.p")
+                subject_scores_null_distr_path = os.path.join(subject_scores_null_distr_dir,
+                                                              f"{subj}_scores_null_distr_{training_mode}_{hemi}_hemi_{perm_id}.p")
                 sample_null_distr = pickle.load(open(subject_scores_null_distr_path, 'rb'))
                 for metric in sample_null_distr.metric.unique(): #TODO load data within job only!
                     for job_id in range(args.n_jobs):
