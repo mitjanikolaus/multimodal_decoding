@@ -563,6 +563,12 @@ def calc_t_values_null_distr(args, out_path):
         null_distr_filepaths = list(glob(os.path.join(scores_dir, "*.p")))
         n_vertices[hemi] = len(null_distr_filepaths)
 
+    print('n_vertices: ', n_vertices)
+
+    n_per_job = {hemi: math.ceil(n_vertices[hemi] / args.n_jobs) for hemi in HEMIS}
+    print(f"n vertices per job: {n_per_job}")
+
+
     n_permutations = pickle.load(open(null_distr_filepaths[0], "rb"))
     print(n_permutations)
     n_permutations = len(n_permutations)
@@ -574,10 +580,6 @@ def calc_t_values_null_distr(args, out_path):
     #     hemi: pickle.load(open(os.path.join(subject_scores_null_distr_dir, f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
     #     HEMIS
     # }
-    print('n_vertices: ', n_vertices)
-
-    n_per_job = {hemi: math.ceil(n_vertices[hemi] / args.n_jobs) for hemi in HEMIS}
-    print(f"n vertices per job: {n_per_job}")
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
 
