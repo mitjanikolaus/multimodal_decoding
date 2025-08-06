@@ -440,12 +440,11 @@ def calc_t_values_null_distr(args, out_path):
     # per_subject_scores_null_distr = dict()
     # for subject in tqdm(args.subjects):
     #     subject_scores_null_distr_dir = os.path.join(permutation_results_dir(args), f"null_distr_assembled")
-        # if not os.path.isdir(subject_scores_null_distr_dir):
-        #     assemble_null_distr_per_subject_scores(subject, args)
-        # else:
-        #     print(f"loading assembled null distr scores for {subject}")
-        #     per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
-
+    # if not os.path.isdir(subject_scores_null_distr_dir):
+    #     assemble_null_distr_per_subject_scores(subject, args)
+    # else:
+    #     print(f"loading assembled null distr scores for {subject}")
+    #     per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
 
     # subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), 'null_distr_assembled',
     #                                               f"{args.subjects[0]}_scores_null_distr_{HEMIS[0]}_hemi_0.p")
@@ -453,7 +452,6 @@ def calc_t_values_null_distr(args, out_path):
 
     # n_permutations = len(glob(os.path.join(subject_scores_null_distr_dir,
     #                                               f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{HEMIS[0]}_hemi_**.p")))
-
 
     def calc_permutation_t_values(vertex_range, permutations, proc_id, tmp_file_path, subjects):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
@@ -465,10 +463,10 @@ def calc_t_values_null_distr(args, out_path):
                 for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING,
                                                METRIC_MOD_AGNOSTIC_AND_CROSS]:
                     tvals_shape = (
-                        len(permutations), vertex_range[1]-vertex_range[0])
+                        len(permutations), vertex_range[1] - vertex_range[0])
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
-            if proc_id == args.n_jobs-1:
+            if proc_id == args.n_jobs - 1:
                 iterator = tqdm(enumerate(permutations), total=len(permutations), desc="calculating null distr t-vals")
             else:
                 iterator = enumerate(permutations)
@@ -481,13 +479,13 @@ def calc_t_values_null_distr(args, out_path):
                         null_distr_scores = []
                         for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
                             if training_mode == MODALITY_AGNOSTIC:
-                                            feats_config = LatentFeatsConfig(
-                                                args.model,
-                                                args.features,
-                                                args.test_features,
-                                                args.vision_features,
-                                                args.lang_features,
-                                                logging=False
+                                feats_config = LatentFeatsConfig(
+                                    args.model,
+                                    args.features,
+                                    args.test_features,
+                                    args.vision_features,
+                                    args.lang_features,
+                                    logging=False
                                 )
                             elif training_mode == MODALITY_SPECIFIC_IMAGES:
                                 feats_config = LatentFeatsConfig(
@@ -515,7 +513,8 @@ def calc_t_values_null_distr(args, out_path):
                                 searchlight_mode_from_args(args), args.l2_regularization_alpha,
                             )
                             for vertex_id in range(vertex_range[0], vertex_range[1]):
-                                scores_path = os.path.join(os.path.dirname(base_path), "null_distr", f"{vertex_id:010d}.p")
+                                scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
+                                                           f"{vertex_id:010d}.p")
                                 scores_vertex = pickle.load(open(scores_path, "rb"))[perm_idx]
                                 scores_vertex['vertex'] = vertex_id
                                 scores_vertex['training_mode'] = training_mode
@@ -524,7 +523,8 @@ def calc_t_values_null_distr(args, out_path):
                         assembled.append(null_distr_scores)
                     # assembled = np.array(assembled)
                     for metric in T_VAL_METRICS:
-                        data = np.array([assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
+                        data = np.array(
+                            [assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
                         print(data.shape)
                         print(data)
                         # data = np.array(
@@ -557,19 +557,18 @@ def calc_t_values_null_distr(args, out_path):
                             axis=0
                         )
 
-
     feats_config = LatentFeatsConfig(
-                        args.model,
-                        args.features,
-                        args.test_features,
-                        args.vision_features,
-                        args.lang_features,
-                        logging=False
-                    )
+        args.model,
+        args.features,
+        args.test_features,
+        args.vision_features,
+        args.lang_features,
+        logging=False
+    )
     base_path = get_results_file_path(
-                        feats_config, HEMIS[0], args.subjects[0], MODALITY_AGNOSTIC,
-                        searchlight_mode_from_args(args), args.l2_regularization_alpha,
-                    )
+        feats_config, HEMIS[0], args.subjects[0], MODALITY_AGNOSTIC,
+        searchlight_mode_from_args(args), args.l2_regularization_alpha,
+    )
     scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
     null_distr_filepaths = list(glob(os.path.join(scores_dir, "*.p")))
     n_vertices = len(null_distr_filepaths)
@@ -611,17 +610,20 @@ def calc_t_values_null_distr(args, out_path):
 
     tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
                      range(args.n_jobs)}
-    Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-        delayed(calc_permutation_t_values)(
-            vertex_ranges[id],
-            # scores_jobs[id],
-            permutations,
-            id,
-            tmp_filenames[id],
-            args.subjects,
-        )
-        for id in range(args.n_jobs)
-    )
+
+    calc_permutation_t_values(vertex_ranges[0], permutations, id, tmp_filenames[0], args.subjects)
+    #TODO commented out parallelization for debugging
+    # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+    #     delayed(calc_permutation_t_values)(
+    #         vertex_ranges[id],
+    #         # scores_jobs[id],
+    #         permutations,
+    #         id,
+    #         tmp_filenames[id],
+    #         args.subjects,
+    #     )
+    #     for id in range(args.n_jobs)
+    # )
 
     tmp_files = dict()
     for job_id in range(args.n_jobs):
