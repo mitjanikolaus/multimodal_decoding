@@ -348,100 +348,100 @@ def calc_test_statistics(args):
     pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
-def assemble_null_distr_per_subject_scores(subject, args):
-    print(f"assembling {subject} null distr scores")
-    null_distr_dir = os.path.join(permutation_results_dir(args), 'null_distr_assembled')
-    os.makedirs(null_distr_dir, exist_ok=True)
-
-    for hemi in HEMIS:
-        def load_null_distr_scores(base_path):
-            scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
-            print(f'loading scores from {scores_dir}')
-            score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
-            if len(score_paths) == 0:
-                raise RuntimeError(f"No null distribution scores found: {scores_dir}")
-            last_idx = int(os.path.basename(score_paths[-1])[:-2])
-            assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
-
-            def load_scores_from_pickle(paths, proc_id):
-                job_scores = []
-                iterator = tqdm(paths) if proc_id == args.n_jobs-1 else paths
-                for path in iterator:
-                    scores = pickle.load(open(path, "rb"))
-                    for scores_perm in scores:
-                        scores_perm['vertex'] = int(os.path.basename(path)[:-2])
-                        # scores_perm['subject'] = subject #not necessary
-                        # scores_perm['hemi'] = hemi #not necessary
-                    job_scores.append(scores)
-                return job_scores
-
-            n_per_job = math.ceil(len(score_paths) / args.n_jobs)
-            all_scores = Parallel(n_jobs=args.n_jobs)(
-                delayed(load_scores_from_pickle)(
-                    score_paths[id * n_per_job:(id + 1) * n_per_job],
-                    id,
-                )
-                for id in range(args.n_jobs)
-            )
-
-            return np.concatenate(all_scores)
-
-        for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
-            if training_mode == MODALITY_AGNOSTIC:
-                feats_config = LatentFeatsConfig(
-                    args.model,
-                    args.features,
-                    args.test_features,
-                    args.vision_features,
-                    args.lang_features,
-                    logging=False
-                )
-            elif training_mode == MODALITY_SPECIFIC_IMAGES:
-                feats_config = LatentFeatsConfig(
-                    args.mod_specific_images_model,
-                    args.mod_specific_images_features,
-                    args.mod_specific_images_test_features,
-                    args.vision_features,
-                    args.lang_features,
-                    logging=False
-                )
-            elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
-                feats_config = LatentFeatsConfig(
-                    args.mod_specific_captions_model,
-                    args.mod_specific_captions_features,
-                    args.mod_specific_captions_test_features,
-                    args.vision_features,
-                    args.lang_features,
-                    logging=False
-                )
-            else:
-                raise RuntimeError(f"Unknown training mode: {training_mode}")
-
-            results_file = get_results_file_path(
-                feats_config, hemi, subject, training_mode,
-                searchlight_mode_from_args(args), args.l2_regularization_alpha,
-            )
-            null_distribution = load_null_distr_scores(results_file)
-
-            num_permutations = len(null_distribution[0])
-            print(f'final per subject scores null distribution dict creation for {training_mode} decoder:')
-            for perm_id in tqdm(range(num_permutations)):
-                scores = pd.concat([null_distr[perm_id] for null_distr in null_distribution], ignore_index=True)
-                # distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions],
-                #                        ignore_index=True)
-                # distr_imgs = pd.concat([null_distr[perm_id] for null_distr in null_distribution_images], ignore_index=True)
-                # scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
-                subject_scores_null_distr_path = os.path.join(null_distr_dir,
-                                                              f"{subject}_scores_null_distr_{training_mode}_{hemi}_hemi_{perm_id}.p")
-                pickle.dump(scores, open(subject_scores_null_distr_path, 'wb'))
+# def assemble_null_distr_per_subject_scores(subject, args):
+#     print(f"assembling {subject} null distr scores")
+#     null_distr_dir = os.path.join(permutation_results_dir(args), 'null_distr_assembled')
+#     os.makedirs(null_distr_dir, exist_ok=True)
+#
+#     for hemi in HEMIS:
+#         def load_null_distr_scores(base_path):
+#             scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
+#             print(f'loading scores from {scores_dir}')
+#             score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
+#             if len(score_paths) == 0:
+#                 raise RuntimeError(f"No null distribution scores found: {scores_dir}")
+#             last_idx = int(os.path.basename(score_paths[-1])[:-2])
+#             assert last_idx == len(score_paths) - 1, f"{last_idx} vs. {len(score_paths)}"
+#
+#             def load_scores_from_pickle(paths, proc_id):
+#                 job_scores = []
+#                 iterator = tqdm(paths) if proc_id == args.n_jobs-1 else paths
+#                 for path in iterator:
+#                     scores = pickle.load(open(path, "rb"))
+#                     for scores_perm in scores:
+#                         scores_perm['vertex'] = int(os.path.basename(path)[:-2])
+#                         # scores_perm['subject'] = subject #not necessary
+#                         # scores_perm['hemi'] = hemi #not necessary
+#                     job_scores.append(scores)
+#                 return job_scores
+#
+#             n_per_job = math.ceil(len(score_paths) / args.n_jobs)
+#             all_scores = Parallel(n_jobs=args.n_jobs)(
+#                 delayed(load_scores_from_pickle)(
+#                     score_paths[id * n_per_job:(id + 1) * n_per_job],
+#                     id,
+#                 )
+#                 for id in range(args.n_jobs)
+#             )
+#
+#             return np.concatenate(all_scores)
+#
+#         for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
+#             if training_mode == MODALITY_AGNOSTIC:
+#                 feats_config = LatentFeatsConfig(
+#                     args.model,
+#                     args.features,
+#                     args.test_features,
+#                     args.vision_features,
+#                     args.lang_features,
+#                     logging=False
+#                 )
+#             elif training_mode == MODALITY_SPECIFIC_IMAGES:
+#                 feats_config = LatentFeatsConfig(
+#                     args.mod_specific_images_model,
+#                     args.mod_specific_images_features,
+#                     args.mod_specific_images_test_features,
+#                     args.vision_features,
+#                     args.lang_features,
+#                     logging=False
+#                 )
+#             elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
+#                 feats_config = LatentFeatsConfig(
+#                     args.mod_specific_captions_model,
+#                     args.mod_specific_captions_features,
+#                     args.mod_specific_captions_test_features,
+#                     args.vision_features,
+#                     args.lang_features,
+#                     logging=False
+#                 )
+#             else:
+#                 raise RuntimeError(f"Unknown training mode: {training_mode}")
+#
+#             results_file = get_results_file_path(
+#                 feats_config, hemi, subject, training_mode,
+#                 searchlight_mode_from_args(args), args.l2_regularization_alpha,
+#             )
+#             null_distribution = load_null_distr_scores(results_file)
+#
+#             num_permutations = len(null_distribution[0])
+#             print(f'final per subject scores null distribution dict creation for {training_mode} decoder:')
+#             for perm_id in tqdm(range(num_permutations)):
+#                 scores = pd.concat([null_distr[perm_id] for null_distr in null_distribution], ignore_index=True)
+#                 # distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions],
+#                 #                        ignore_index=True)
+#                 # distr_imgs = pd.concat([null_distr[perm_id] for null_distr in null_distribution_images], ignore_index=True)
+#                 # scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
+#                 subject_scores_null_distr_path = os.path.join(null_distr_dir,
+#                                                               f"{subject}_scores_null_distr_{training_mode}_{hemi}_hemi_{perm_id}.p")
+#                 pickle.dump(scores, open(subject_scores_null_distr_path, 'wb'))
 
 
 def calc_t_values_null_distr(args, out_path):
     # per_subject_scores_null_distr = dict()
     for subject in tqdm(args.subjects):
         subject_scores_null_distr_dir = os.path.join(permutation_results_dir(args), f"null_distr_assembled")
-        if not os.path.isdir(subject_scores_null_distr_dir):
-            assemble_null_distr_per_subject_scores(subject, args)
+        # if not os.path.isdir(subject_scores_null_distr_dir):
+        #     assemble_null_distr_per_subject_scores(subject, args)
         # else:
         #     print(f"loading assembled null distr scores for {subject}")
         #     per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
@@ -467,6 +467,10 @@ def calc_t_values_null_distr(args, out_path):
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
+                    scores = []
+                    for idx, subj in zip(permutation, args.subjects):
+                        scores.append(...)
+                    scores = np.array(scores)
                     for metric in T_VAL_METRICS:
                         data = np.array(
                             [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
@@ -508,16 +512,73 @@ def calc_t_values_null_distr(args, out_path):
     permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
-    n_vertices = {
-        hemi: pickle.load(open(os.path.join(subject_scores_null_distr_dir, f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
-        HEMIS
-    }
+    #             if training_mode == MODALITY_AGNOSTIC:
+    #                 feats_config = LatentFeatsConfig(
+    #                     args.model,
+    #                     args.features,
+    #                     args.test_features,
+    #                     args.vision_features,
+    #                     args.lang_features,
+    #                     logging=False
+    #                 )
+    #             elif training_mode == MODALITY_SPECIFIC_IMAGES:
+    #                 feats_config = LatentFeatsConfig(
+    #                     args.mod_specific_images_model,
+    #                     args.mod_specific_images_features,
+    #                     args.mod_specific_images_test_features,
+    #                     args.vision_features,
+    #                     args.lang_features,
+    #                     logging=False
+    #                 )
+    #             elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
+    #                 feats_config = LatentFeatsConfig(
+    #                     args.mod_specific_captions_model,
+    #                     args.mod_specific_captions_features,
+    #                     args.mod_specific_captions_test_features,
+    #                     args.vision_features,
+    #                     args.lang_features,
+    #                     logging=False
+    #                 )
+    #             else:
+    #                 raise RuntimeError(f"Unknown training mode: {training_mode}")
+    #
+    #             results_file = get_results_file_path(
+    #                 feats_config, hemi, subject, training_mode,
+    #                 searchlight_mode_from_args(args), args.l2_regularization_alpha,
+    #             )
+
+    n_vertices = dict()
+    for hemi in HEMIS:
+        feats_config = LatentFeatsConfig(
+                            args.model,
+                            args.features,
+                            args.test_features,
+                            args.vision_features,
+                            args.lang_features,
+                            logging=False
+                        )
+        base_path = get_results_file_path(
+                            feats_config, hemi, args.subjects[0], MODALITY_AGNOSTIC,
+                            searchlight_mode_from_args(args), args.l2_regularization_alpha,
+                        )
+        scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
+        n_vertices[hemi] = len(list(glob(os.path.join(scores_dir, "*.p"))))
+
+    # n_vertices = {
+    #     hemi: pickle.load(open(os.path.join(subject_scores_null_distr_dir, f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
+    #     HEMIS
+    # }
     print('n_vertices: ', n_vertices)
 
     n_per_job = {hemi: math.ceil(n_vertices[hemi] / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
+
+    vertex_ranges = {hemi: [(job_id * n_per_job[hemi], (job_id + 1) * n_per_job[hemi]) for job_id in range(args.n_jobs)] for hemi in HEMIS}
+    print('left hemi vertex ranges: ', vertex_ranges['left'])
+    return
+
     for perm_id in trange(n_permutations, desc="splitting up for jobs"):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
@@ -537,7 +598,8 @@ def calc_t_values_null_distr(args, out_path):
                      range(args.n_jobs)}
     Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
         delayed(calc_permutation_t_values)(
-            scores_jobs[id],
+            vertex_ranges,
+            # scores_jobs[id],
             permutations,
             id,
             tmp_filenames[id],
