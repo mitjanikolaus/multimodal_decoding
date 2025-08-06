@@ -405,7 +405,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
 
             def load_scores_from_pickle(paths, proc_id):
                 job_scores = []
-                iterator = tqdm(paths) if proc_id == len(args.n_jobs)-1 else paths
+                iterator = tqdm(paths) if proc_id == args.n_jobs-1 else paths
                 for path in iterator:
                     scores = pickle.load(open(path, "rb"))
                     for scores_perm in scores:
