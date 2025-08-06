@@ -354,46 +354,6 @@ def assemble_null_distr_per_subject_scores(subject, args):
     os.makedirs(null_distr_dir, exist_ok=True)
 
     for hemi in HEMIS:
-        feats_config_mod_agnostic = LatentFeatsConfig(
-            args.model,
-            args.features,
-            args.test_features,
-            args.vision_features,
-            args.lang_features,
-            logging=False
-        )
-        results_mod_agnostic_file = get_results_file_path(
-            feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC,
-            searchlight_mode_from_args(args), args.l2_regularization_alpha,
-        )
-        # results_agnostic = pd.read_csv(results_mod_agnostic_file, index_col=0)
-
-        feats_config_mod_specific_images = LatentFeatsConfig(
-            args.mod_specific_images_model,
-            args.mod_specific_images_features,
-            args.mod_specific_images_test_features,
-            args.vision_features,
-            args.lang_features,
-            logging=False
-        )
-        results_mod_specific_images_file = get_results_file_path(
-            feats_config_mod_specific_images, hemi, subject, MODALITY_SPECIFIC_IMAGES,
-            searchlight_mode_from_args(args), args.l2_regularization_alpha,
-        )
-
-        feats_config_mod_specific_captions = LatentFeatsConfig(
-            args.mod_specific_captions_model,
-            args.mod_specific_captions_features,
-            args.mod_specific_captions_test_features,
-            args.vision_features,
-            args.lang_features,
-            logging=False
-        )
-        results_mod_specific_captions_file = get_results_file_path(
-            feats_config_mod_specific_captions, hemi, subject, MODALITY_SPECIFIC_CAPTIONS,
-            searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
-        )
-
         def load_null_distr_scores(base_path):
             scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
             print(f'loading scores from {scores_dir}')
@@ -427,9 +387,41 @@ def assemble_null_distr_per_subject_scores(subject, args):
             return np.concatenate(all_scores)
 
         for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
-            null_distribution = load_null_distr_scores(results_mod_agnostic_file)
-            # null_distribution_images = load_null_distr_scores(results_mod_specific_images_file)
-            # null_distribution_captions = load_null_distr_scores(results_mod_specific_captions_file)
+            if training_mode == MODALITY_AGNOSTIC:
+                feats_config = LatentFeatsConfig(
+                    args.model,
+                    args.features,
+                    args.test_features,
+                    args.vision_features,
+                    args.lang_features,
+                    logging=False
+                )
+            elif training_mode == MODALITY_SPECIFIC_IMAGES:
+                feats_config = LatentFeatsConfig(
+                    args.mod_specific_images_model,
+                    args.mod_specific_images_features,
+                    args.mod_specific_images_test_features,
+                    args.vision_features,
+                    args.lang_features,
+                    logging=False
+                )
+            elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
+                feats_config = LatentFeatsConfig(
+                    args.mod_specific_captions_model,
+                    args.mod_specific_captions_features,
+                    args.mod_specific_captions_test_features,
+                    args.vision_features,
+                    args.lang_features,
+                    logging=False
+                )
+            else:
+                raise RuntimeError(f"Unknown training mode: {training_mode}")
+
+            results_file = get_results_file_path(
+                feats_config, hemi, subject, training_mode,
+                searchlight_mode_from_args(args), args.l2_regularization_alpha,
+            )
+            null_distribution = load_null_distr_scores(results_file)
 
             num_permutations = len(null_distribution[0])
             print(f'final per subject scores null distribution dict creation for {training_mode} decoder:')
