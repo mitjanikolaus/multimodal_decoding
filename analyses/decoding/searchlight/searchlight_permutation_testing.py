@@ -53,9 +53,9 @@ def add_diff_metrics(sc):
         for subject in tqdm(SUBJECTS_ADDITIONAL_TEST, desc=f'Adding {training_mode} decoder diff metrics'):
             for hemi in HEMIS:
                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+                        sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
                 unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+                        sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
                 assert len(attended) == len(unattended) == FS_NUM_VERTICES
                 diff_imgs = attended.copy()
                 diff_imgs['value'] = (attended.value.values - unattended.value.values)
@@ -63,9 +63,9 @@ def add_diff_metrics(sc):
                 dfs_to_add.append(diff_imgs)
 
                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+                        sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
                 unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+                        sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
                 assert len(attended) == len(unattended) == FS_NUM_VERTICES
                 diff_caps = attended.copy()
                 diff_caps['value'] = (attended.value.values - unattended.value.values)
@@ -73,9 +73,9 @@ def add_diff_metrics(sc):
                 dfs_to_add.append(diff_caps)
 
                 imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+                        sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+                        sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
                 diff_attended = imgs.copy()
                 diff_attended['value'] = (imgs.value.values - caps.value.values)
@@ -83,9 +83,9 @@ def add_diff_metrics(sc):
                 dfs_to_add.append(diff_attended)
 
                 imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+                        sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                            sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+                        sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
                 diff_unattended = imgs.copy()
                 diff_unattended['value'] = (imgs.value.values - caps.value.values)
@@ -95,6 +95,7 @@ def add_diff_metrics(sc):
     sc = pd.concat([sc] + dfs_to_add, ignore_index=True)
 
     return sc
+
 
 def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions='True'):
     print("loading per-subject scores")
@@ -404,7 +405,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
 
             def load_scores_from_pickle(paths, proc_id):
                 job_scores = []
-                iterator = tqdm(paths) if proc_id == 0 else paths
+                iterator = tqdm(paths) if proc_id == len(args.n_jobs)-1 else paths
                 for path in iterator:
                     scores = pickle.load(open(path, "rb"))
                     for scores_perm in scores:
@@ -433,25 +434,27 @@ def assemble_null_distr_per_subject_scores(subject, args):
         print('final per subject scores null distribution dict creation:')
         for perm_id in tqdm(range(num_permutations)):
             distr = pd.concat([null_distr[perm_id] for null_distr in null_distribution_agnostic], ignore_index=True)
-            distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions], ignore_index=True)
+            distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions],
+                                   ignore_index=True)
             distr_imgs = pd.concat([null_distr[perm_id] for null_distr in null_distribution_images], ignore_index=True)
             distr['training_mode'] = MODALITY_AGNOSTIC
             distr_caps['training_mode'] = MODALITY_SPECIFIC_CAPTIONS
             distr_imgs['training_mode'] = MODALITY_SPECIFIC_IMAGES
             scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
-            subject_scores_null_distr_path = os.path.join(null_distr_dir, f"{subject}_scores_null_distr_{hemi}_hemi_{perm_id}.p")
+            subject_scores_null_distr_path = os.path.join(null_distr_dir,
+                                                          f"{subject}_scores_null_distr_{hemi}_hemi_{perm_id}.p")
             pickle.dump(scores, open(subject_scores_null_distr_path, 'wb'))
 
 
 def calc_t_values_null_distr(args, out_path):
-    per_subject_scores_null_distr = dict()
+    # per_subject_scores_null_distr = dict()
     for subject in tqdm(args.subjects):
         subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
         if not os.path.isfile(subject_scores_null_distr_path):
-            per_subject_scores_null_distr[subject] = assemble_null_distr_per_subject_scores(subject, args)
-        else:
-            print(f"loading assembled null distr scores for {subject}")
-            per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
+            assemble_null_distr_per_subject_scores(subject, args)
+        # else:
+        #     print(f"loading assembled null distr scores for {subject}")
+        #     per_subject_scores_null_distr[subject] = pickle.load(open(subject_scores_null_distr_path, 'rb'))
 
     def calc_permutation_t_values(per_subject_scores, permutations, proc_id, tmp_file_path, subjects):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
@@ -505,26 +508,37 @@ def calc_t_values_null_distr(args, out_path):
                             axis=0
                         )
 
-    permutations_iter = itertools.permutations(range(len(per_subject_scores_null_distr[args.subjects[0]])),
-                                               len(args.subjects))
+    # subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), 'null_distr_assembled',
+    #                                               f"{args.subjects[0]}_scores_null_distr_{HEMIS[0]}_hemi_0.p")
+    # sample_null_distr = pickle.load(open(subject_scores_null_distr_path, 'rb'))
+
+    n_permutations = len(glob(os.path.join(permutation_results_dir(args), 'null_distr_assembled',
+                                                  f"{args.subjects[0]}_scores_null_distr_{HEMIS[0]}_hemi_**.p")))
+    print('n_permutations: ', n_permutations)
+    permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     n_vertices = {
-        hemi: per_subject_scores_null_distr[args.subjects[0]][0][hemi][ACC_IMAGES_MOD_AGNOSTIC].shape[0] for hemi in
+        hemi: pickle.load(open(os.path.join(permutation_results_dir(args), 'null_distr_assembled', f"{args.subjects[0]}_scores_null_distr_{hemi}_hemi_0.p"), 'rb'))['vertex'].max()+1 for hemi in
         HEMIS
     }
+    print('n_vertices: ', n_vertices)
 
     n_per_job = {hemi: math.ceil(n_vertices[hemi] / args.n_jobs) for hemi in HEMIS}
     print(f"n vertices per job: {n_per_job}")
 
     scores_jobs = {job_id: [] for job_id in range(args.n_jobs)}
-    for perm_id in trange(len(per_subject_scores_null_distr[args.subjects[0]]), desc="splitting up for jobs"):
+    for perm_id in trange(n_permutations, desc="splitting up for jobs"):
         for job_id in range(args.n_jobs):
             scores_jobs[job_id].append({s: {hemi: dict() for hemi in HEMIS} for s in args.subjects})
         for subj in args.subjects:
             for hemi in HEMIS:
-                for metric in per_subject_scores_null_distr[subj][perm_id][hemi].keys():
+                subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), 'null_distr_assembled',
+                                                              f"{subj}_scores_null_distr_{hemi}_hemi_{perm_id}.p")
+                sample_null_distr = pickle.load(open(subject_scores_null_distr_path, 'rb'))
+                for metric in sample_null_distr.metric.unique(): #TODO load data within job only!
                     for job_id in range(args.n_jobs):
+                        # TODO
                         scores_job = per_subject_scores_null_distr[subj][perm_id][hemi][metric]
                         filtered = scores_job[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
                         scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered
