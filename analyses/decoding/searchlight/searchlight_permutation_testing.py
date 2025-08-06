@@ -455,42 +455,6 @@ def calc_t_values_null_distr(args, out_path):
     #                                               f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{HEMIS[0]}_hemi_**.p")))
 
 
-    #             if training_mode == MODALITY_AGNOSTIC:
-    #                 feats_config = LatentFeatsConfig(
-    #                     args.model,
-    #                     args.features,
-    #                     args.test_features,
-    #                     args.vision_features,
-    #                     args.lang_features,
-    #                     logging=False
-    #                 )
-    #             elif training_mode == MODALITY_SPECIFIC_IMAGES:
-    #                 feats_config = LatentFeatsConfig(
-    #                     args.mod_specific_images_model,
-    #                     args.mod_specific_images_features,
-    #                     args.mod_specific_images_test_features,
-    #                     args.vision_features,
-    #                     args.lang_features,
-    #                     logging=False
-    #                 )
-    #             elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
-    #                 feats_config = LatentFeatsConfig(
-    #                     args.mod_specific_captions_model,
-    #                     args.mod_specific_captions_features,
-    #                     args.mod_specific_captions_test_features,
-    #                     args.vision_features,
-    #                     args.lang_features,
-    #                     logging=False
-    #                 )
-    #             else:
-    #                 raise RuntimeError(f"Unknown training mode: {training_mode}")
-    #
-    #             results_file = get_results_file_path(
-    #                 feats_config, hemi, subject, training_mode,
-    #                 searchlight_mode_from_args(args), args.l2_regularization_alpha,
-    #             )
-
-
     def calc_permutation_t_values(vertex_range, permutations, proc_id, tmp_file_path, subjects):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
 
@@ -504,7 +468,7 @@ def calc_t_values_null_distr(args, out_path):
                         len(permutations), vertex_range[1]-vertex_range[0])
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
-            if proc_id == 0:
+            if proc_id == args.n_jobs-1:
                 iterator = tqdm(enumerate(permutations), total=len(permutations), desc="calculating null distr t-vals")
             else:
                 iterator = enumerate(permutations)
@@ -512,14 +476,60 @@ def calc_t_values_null_distr(args, out_path):
             for iteration, permutation in iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
-                    scores = []
-                    for idx, subj in zip(permutation, args.subjects):
-                        scores.append(...)
-                    scores = np.array(scores)
+                    assembled = []
+                    for perm_idx, subj in zip(permutation, args.subjects):
+                        null_distr_scores = []
+                        for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
+                            if training_mode == MODALITY_AGNOSTIC:
+                                            feats_config = LatentFeatsConfig(
+                                                args.model,
+                                                args.features,
+                                                args.test_features,
+                                                args.vision_features,
+                                                args.lang_features,
+                                                logging=False
+                                )
+                            elif training_mode == MODALITY_SPECIFIC_IMAGES:
+                                feats_config = LatentFeatsConfig(
+                                    args.mod_specific_images_model,
+                                    args.mod_specific_images_features,
+                                    args.mod_specific_images_test_features,
+                                    args.vision_features,
+                                    args.lang_features,
+                                    logging=False
+                                )
+                            elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
+                                feats_config = LatentFeatsConfig(
+                                    args.mod_specific_captions_model,
+                                    args.mod_specific_captions_features,
+                                    args.mod_specific_captions_test_features,
+                                    args.vision_features,
+                                    args.lang_features,
+                                    logging=False
+                                )
+                            else:
+                                raise RuntimeError(f"Unknown training mode: {training_mode}")
+
+                            base_path = get_results_file_path(
+                                feats_config, hemi, subj, training_mode,
+                                searchlight_mode_from_args(args), args.l2_regularization_alpha,
+                            )
+                            for vertex_id in range(vertex_range[0], vertex_range[1]):
+                                scores_path = os.path.join(os.path.dirname(base_path), "null_distr", f"{vertex_id:010d}.p")
+                                scores_vertex = pickle.load(open(scores_path, "rb"))[perm_idx]
+                                scores_vertex['vertex'] = vertex_id
+                                scores_vertex['training_mode'] = training_mode
+                                null_distr_scores.append(scores_vertex)
+                        null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
+                        assembled.append(null_distr_scores)
+                    # assembled = np.array(assembled)
                     for metric in T_VAL_METRICS:
-                        data = np.array(
-                            [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                             zip(permutation, args.subjects)])
+                        data = np.array([assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
+                        print(data.shape)
+                        print(data)
+                        # data = np.array(
+                        #     [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                        #      zip(permutation, args.subjects)])
                         popmean = CHANCE_VALUES[metric]
                         t_values[hemi][metric] = calc_image_t_values(data, popmean)
                         dsets[hemi][metric][iteration] = t_values[hemi][metric]
