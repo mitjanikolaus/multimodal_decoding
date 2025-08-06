@@ -349,8 +349,9 @@ def calc_test_statistics(args):
 
 def assemble_null_distr_per_subject_scores(subject, args):
     print(f"assembling {subject} null distr scores")
+    null_distr_dir = os.path.join(permutation_results_dir(args), 'null_distr_assembled')
+    os.makedirs(null_distr_dir, exist_ok=True)
 
-    subject_scores_null_distr = []
     for hemi in HEMIS:
         feats_config_mod_agnostic = LatentFeatsConfig(
             args.model,
@@ -392,7 +393,7 @@ def assemble_null_distr_per_subject_scores(subject, args):
             searchlight_mode_from_args(args), f'alpha_{str(args.l2_regularization_alpha)}.p'
         )
 
-        def load_null_distr_scores(base_path, training_mode):
+        def load_null_distr_scores(base_path):
             scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
             print(f'loading scores from {scores_dir}')
             score_paths = sorted(list(glob(os.path.join(scores_dir, "*.p"))))
@@ -408,7 +409,6 @@ def assemble_null_distr_per_subject_scores(subject, args):
                     scores = pickle.load(open(path, "rb"))
                     for scores_perm in scores:
                         scores_perm['vertex'] = int(os.path.basename(path)[:-2])
-                        scores_perm['training_mode'] = training_mode
                         # scores_perm['subject'] = subject #not necessary
                         # scores_perm['hemi'] = hemi #not necessary
                     job_scores.append(scores)
@@ -425,27 +425,22 @@ def assemble_null_distr_per_subject_scores(subject, args):
 
             return all_scores
 
-        null_distribution_agnostic = load_null_distr_scores(results_mod_agnostic_file, MODALITY_AGNOSTIC)
-        null_distribution_images = load_null_distr_scores(results_mod_specific_images_file, MODALITY_SPECIFIC_IMAGES)
-        null_distribution_captions = load_null_distr_scores(results_mod_specific_captions_file, MODALITY_SPECIFIC_CAPTIONS)
+        null_distribution_agnostic = load_null_distr_scores(results_mod_agnostic_file)
+        null_distribution_images = load_null_distr_scores(results_mod_specific_images_file)
+        null_distribution_captions = load_null_distr_scores(results_mod_specific_captions_file)
 
         num_permutations = len(null_distribution_agnostic[0])
         print('final per subject scores null distribution dict creation:')
-        for i in tqdm(range(num_permutations)):
-            distr = pd.concat([null_distr[i] for null_distr in null_distribution_agnostic], ignore_index=True)
-            distr_caps = pd.concat([null_distr[i] for null_distr in null_distribution_captions], ignore_index=True)
-            distr_imgs = pd.concat([null_distr[i] for null_distr in null_distribution_images], ignore_index=True)
-            if len(subject_scores_null_distr) <= i:
-                subject_scores_null_distr.append(dict())
-
-            print(distr)
-            print(distr_caps['vertex'])
+        for perm_id in tqdm(range(num_permutations)):
+            distr = pd.concat([null_distr[perm_id] for null_distr in null_distribution_agnostic], ignore_index=True)
+            distr_caps = pd.concat([null_distr[perm_id] for null_distr in null_distribution_captions], ignore_index=True)
+            distr_imgs = pd.concat([null_distr[perm_id] for null_distr in null_distribution_images], ignore_index=True)
+            distr['training_mode'] = MODALITY_AGNOSTIC
+            distr_caps['training_mode'] = MODALITY_SPECIFIC_CAPTIONS
+            distr_imgs['training_mode'] = MODALITY_SPECIFIC_IMAGES
             scores = pd.concat([distr, distr_caps, distr_imgs], ignore_index=True)
-            subject_scores_null_distr[i][hemi] = scores
-
-    subject_scores_null_distr_path = os.path.join(permutation_results_dir(args), f"{subject}_scores_null_distr.p")
-    pickle.dump(subject_scores_null_distr, open(subject_scores_null_distr_path, 'wb'))
-    return subject_scores_null_distr
+            subject_scores_null_distr_path = os.path.join(null_distr_dir, f"{subject}_scores_null_distr_{hemi}_hemi_{perm_id}.p")
+            pickle.dump(scores, open(subject_scores_null_distr_path, 'wb'))
 
 
 def calc_t_values_null_distr(args, out_path):
