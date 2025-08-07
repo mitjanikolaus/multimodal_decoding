@@ -386,7 +386,7 @@ def calc_test_statistics(args):
 #
 #             return np.concatenate(all_scores)
 #
-#         for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
+#         for training_mode in TRAINING_MODES:
 #             if training_mode == MODALITY_AGNOSTIC:
 #                 feats_config = LatentFeatsConfig(
 #                     args.model,
@@ -466,73 +466,142 @@ def calc_t_values_null_distr(args, out_path):
                         len(permutations), vertex_range[1] - vertex_range[0])
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
 
-            if proc_id == args.n_jobs - 1:
-                iterator = tqdm(enumerate(permutations), total=len(permutations), desc="calculating null distr t-vals")
-            else:
-                iterator = enumerate(permutations)
 
-            for iteration, permutation in iterator:
+            if proc_id == args.n_jobs - 1:
+                permutations_iterator = tqdm(enumerate(permutations), total=len(permutations), desc="calculating null distr t-vals")
+                print('preloading null distr scores')
+            else:
+                permutations_iterator = enumerate(permutations)
+
+            preloaded_scores = dict()
+            for subj in args.subject:
+                preloaded_scores[subj] = dict()
+                for hemi in HEMIS:
+                    preloaded_scores[subj][hemi] = dict()
+                    # null_distr_scores = []
+                    for training_mode in TRAINING_MODES:
+                        preloaded_scores[subj][hemi][training_mode] = dict()
+
+                        if training_mode == MODALITY_AGNOSTIC:
+                            feats_config = LatentFeatsConfig(
+                                args.model,
+                                args.features,
+                                args.test_features,
+                                args.vision_features,
+                                args.lang_features,
+                                logging=False
+                            )
+                        elif training_mode == MODALITY_SPECIFIC_IMAGES:
+                            feats_config = LatentFeatsConfig(
+                                args.mod_specific_images_model,
+                                args.mod_specific_images_features,
+                                args.mod_specific_images_test_features,
+                                args.vision_features,
+                                args.lang_features,
+                                logging=False
+                            )
+                        elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
+                            feats_config = LatentFeatsConfig(
+                                args.mod_specific_captions_model,
+                                args.mod_specific_captions_features,
+                                args.mod_specific_captions_test_features,
+                                args.vision_features,
+                                args.lang_features,
+                                logging=False
+                            )
+                        else:
+                            raise RuntimeError(f"Unknown training mode: {training_mode}")
+
+                        base_path = get_results_file_path(
+                            feats_config, hemi, subj, training_mode,
+                            searchlight_mode_from_args(args), args.l2_regularization_alpha,
+                        )
+                        if proc_id == args.n_jobs - 1:
+                            vertex_iter = trange(vertex_range[0], vertex_range[1], desc=f"{subj}_{hemi}_{training_mode}")
+                        else:
+                            vertex_iter = range(vertex_range[0], vertex_range[1])
+                        scores_vertices = []
+                        for vertex_id in vertex_iter:
+                            scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
+                                                       f"{vertex_id:010d}.p")
+                            scores_vertex = pickle.load(open(scores_path, "rb"))
+                            # scores_vertex['vertex'] = vertex_id
+                            # scores_vertex['training_mode'] = training_mode
+                            # null_distr_scores.append(scores_vertex)
+                            scores_vertices.append(scores_vertex)
+
+                        preloaded_scores[subj][hemi][training_mode] = scores_vertices
+                    # null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
+            print('finished preloading null distr scores')
+
+            for iteration, permutation in permutations_iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
                     assembled = []
-                    for perm_idx, subj in zip(permutation, args.subjects):
-                        null_distr_scores = []
-                        for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES]:
-                            if training_mode == MODALITY_AGNOSTIC:
-                                feats_config = LatentFeatsConfig(
-                                    args.model,
-                                    args.features,
-                                    args.test_features,
-                                    args.vision_features,
-                                    args.lang_features,
-                                    logging=False
-                                )
-                            elif training_mode == MODALITY_SPECIFIC_IMAGES:
-                                feats_config = LatentFeatsConfig(
-                                    args.mod_specific_images_model,
-                                    args.mod_specific_images_features,
-                                    args.mod_specific_images_test_features,
-                                    args.vision_features,
-                                    args.lang_features,
-                                    logging=False
-                                )
-                            elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
-                                feats_config = LatentFeatsConfig(
-                                    args.mod_specific_captions_model,
-                                    args.mod_specific_captions_features,
-                                    args.mod_specific_captions_test_features,
-                                    args.vision_features,
-                                    args.lang_features,
-                                    logging=False
-                                )
-                            else:
-                                raise RuntimeError(f"Unknown training mode: {training_mode}")
-
-                            base_path = get_results_file_path(
-                                feats_config, hemi, subj, training_mode,
-                                searchlight_mode_from_args(args), args.l2_regularization_alpha,
-                            )
-                            for vertex_id in range(vertex_range[0], vertex_range[1]):
-                                scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
-                                                           f"{vertex_id:010d}.p")
-                                scores_vertex = pickle.load(open(scores_path, "rb"))[perm_idx]
-                                scores_vertex['vertex'] = vertex_id
-                                scores_vertex['training_mode'] = training_mode
-                                null_distr_scores.append(scores_vertex)
-                        null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
-                        assembled.append(null_distr_scores)
+                    # for perm_idx, subj in zip(permutation, args.subjects):
+                        # null_distr_scores = []
+                        # for training_mode in TRAINING_MODES:
+                        #     if training_mode == MODALITY_AGNOSTIC:
+                        #         feats_config = LatentFeatsConfig(
+                        #             args.model,
+                        #             args.features,
+                        #             args.test_features,
+                        #             args.vision_features,
+                        #             args.lang_features,
+                        #             logging=False
+                        #         )
+                        #     elif training_mode == MODALITY_SPECIFIC_IMAGES:
+                        #         feats_config = LatentFeatsConfig(
+                        #             args.mod_specific_images_model,
+                        #             args.mod_specific_images_features,
+                        #             args.mod_specific_images_test_features,
+                        #             args.vision_features,
+                        #             args.lang_features,
+                        #             logging=False
+                        #         )
+                        #     elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
+                        #         feats_config = LatentFeatsConfig(
+                        #             args.mod_specific_captions_model,
+                        #             args.mod_specific_captions_features,
+                        #             args.mod_specific_captions_test_features,
+                        #             args.vision_features,
+                        #             args.lang_features,
+                        #             logging=False
+                        #         )
+                        #     else:
+                        #         raise RuntimeError(f"Unknown training mode: {training_mode}")
+                        #
+                        #     base_path = get_results_file_path(
+                        #         feats_config, hemi, subj, training_mode,
+                        #         searchlight_mode_from_args(args), args.l2_regularization_alpha,
+                        #     )
+                        #     for vertex_id in range(vertex_range[0], vertex_range[1]):
+                        #         scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
+                        #                                    f"{vertex_id:010d}.p")
+                        #         scores_vertex = pickle.load(open(scores_path, "rb"))[perm_idx]
+                        #         scores_vertex['vertex'] = vertex_id
+                        #         scores_vertex['training_mode'] = training_mode
+                        #         null_distr_scores.append(scores_vertex)
+                        # null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
+                        # assembled.append(null_distr_scores)
                     # assembled = np.array(assembled)
-                    for metric in T_VAL_METRICS:
-                        data = np.array(
-                            [assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
-                        print(data.shape)
-                        print(data)
-                        # data = np.array(
-                        #     [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                        #      zip(permutation, args.subjects)])
-                        popmean = CHANCE_VALUES[metric]
-                        t_values[hemi][metric] = calc_image_t_values(data, popmean)
-                        dsets[hemi][metric][iteration] = t_values[hemi][metric]
+                    for training_mode in TRAINING_MODES:
+                        t_values[hemi][training_mode] = dict()
+                        for metric in T_VAL_METRICS:
+                            # data = np.array(
+                            #     [assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
+                            # print(data.shape)
+                            # print(data)
+                            #TODO training_mode!!?
+                            data = np.array(
+                                [preloaded_scores[subj][hemi][training_mode][vertex_id][idx][metric] for idx, subj in
+                                 zip(permutation, args.subjects)])
+                            # data = np.array(
+                            #     [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                            #      zip(permutation, args.subjects)])
+                            popmean = CHANCE_VALUES[metric]
+                            t_values[hemi][training_mode][metric] = calc_image_t_values(data, popmean)
+                            dsets[hemi][training_mode][metric][iteration] = t_values[hemi][metric]
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
