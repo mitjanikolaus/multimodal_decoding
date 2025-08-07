@@ -635,9 +635,9 @@ def calc_t_values_null_distr(args, out_path):
         tmp_filenames[hemi] = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}_{hemi}.hdf5") for job_id in
                          range(args.n_jobs)}
 
-        # # TODO single iter for debugging
-        # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[args.n_jobs - 1],
-        #                           args.subjects)
+        # TODO single iter for debugging
+        # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
+        #                           args.subjects, hemi)
         Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
             delayed(calc_permutation_t_values)(
                 vertex_ranges[id],
