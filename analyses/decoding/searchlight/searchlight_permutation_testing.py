@@ -649,23 +649,23 @@ def calc_t_values_null_distr(args, out_path):
             )
             for id in range(args.n_jobs)
         )
-        print('finished calculating null distr t-vals')
+        print(f'finished calculating null distr t-vals for {hemi} hemi')
 
-        with h5py.File(out_path, 'w') as all_t_vals_file:
-            for hemi in HEMIS:
-                tmp_files = {job_id: h5py.File(tmp_filenames[hemi][job_id], 'r') for job_id in range(args.n_jobs)}
+    with h5py.File(out_path, 'w') as all_t_vals_file:
+        for hemi in HEMIS:
+            tmp_files = {job_id: h5py.File(tmp_filenames[hemi][job_id], 'r') for job_id in range(args.n_jobs)}
 
+            for metric in tmp_files[0].keys():
+                # hemi = hemi_metric.split('__')[0]
+                tvals_shape = (args.n_permutations_group_level, n_vertices)
+                all_t_vals_file.create_dataset(f'{hemi}__{metric}', tvals_shape, dtype='float32', fillvalue=np.nan)
+
+            for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
                 for metric in tmp_files[0].keys():
-                    # hemi = hemi_metric.split('__')[0]
-                    tvals_shape = (args.n_permutations_group_level, n_vertices)
-                    all_t_vals_file.create_dataset(f'{hemi}__{metric}', tvals_shape, dtype='float32', fillvalue=np.nan)
+                    data_tvals = np.concatenate([tmp_files[job_id][metric][i] for job_id in range(args.n_jobs)])
+                    all_t_vals_file[f'{hemi}__{metric}'][i] = data_tvals
 
-                for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
-                    for metric in tmp_files[0].keys():
-                        data_tvals = np.concatenate([tmp_files[job_id][metric][i] for job_id in range(args.n_jobs)])
-                        all_t_vals_file[f'{hemi}__{metric}'][i] = data_tvals
-
-        print("finished assemble")
+    print("finished assemble")
 
 
 def permutation_results_dir(args):
