@@ -56,6 +56,7 @@ METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_imgs_agno_imgs_specific'
 METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
 METRIC_CROSS_DECODING = 'cross_decoding'
 METRIC_MOD_AGNOSTIC_AND_CROSS = 'mod_agnostic_and_cross'
+METRIC_DIFF_ATTENTION = 'diff_attention'
 
 ADDITIONAL_TEST_DATA_DIR = os.path.join(DATA_DIR, "additional_test")
 ADDITIONAL_TEST_FMRI_DATA_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "fmri")

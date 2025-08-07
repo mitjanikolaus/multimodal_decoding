@@ -23,78 +23,90 @@ from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TE
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
     TRAINING_MODES, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, \
-    SPLIT_TEST_CAPTIONS_ATTENDED
-from eval import ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
-    ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_AGNOSTIC, \
-    ACC_IMAGERY_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, \
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES, \
-    CHANCE_VALUES, LIMITED_CANDIDATE_LATENTS
+    SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK
+from eval import CHANCE_VALUES, LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, \
     METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
     METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS, FS_NUM_VERTICES
+    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS, FS_NUM_VERTICES, METRIC_DIFF_ATTENTION
 
 DEFAULT_N_JOBS = 10
 
+DIFF = "diff"
+
 T_VAL_METRICS = [
-    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC,
-    ACC_IMAGES_MOD_SPECIFIC_IMAGES, ACC_CAPTIONS_MOD_SPECIFIC_CAPTIONS,
-    ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC,
-    ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_SPECIFIC_IMAGES,
-    ACC_IMAGES_MOD_SPECIFIC_CAPTIONS
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS]),  # cross-modal decoding
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES]),  # cross-modal decoding
+    # MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_ATTENDED,  # cross-modal decoding
+    # MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED,  # cross-modal decoding
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_UNATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]),
+    # TODO: mod-agnostic or specific decoder?
+    '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]),
+    # TODO: mod-agnostic or specific decoder?
+    # DIFF+MODALITY_SPECIFIC_IMAGES+SPLIT_TEST_CAPTIONS_ATTENDED+SPLIT_TEST_CAPTIONS_UNATTENDED #TODO
+
+    # DIFF+SPLIT_TEST_IMAGES+MODALITY_AGNOSTIC+MODALITY_SPECIFIC_IMAGES,
+    # DIFF, SPLIT_TEST_CAPTIONS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS,
 ]
+TFCE_VAL_METRICS = [METRIC_CROSS_DECODING, METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_DIFF_ATTENTION]
 
-MIN_NUM_DATAPOINTS = 4
 
-
-def add_diff_metrics(sc):
-    dfs_to_add = []
-    for training_mode in TRAINING_MODES:
-        for subject in tqdm(SUBJECTS_ADDITIONAL_TEST, desc=f'Adding {training_mode} decoder diff metrics'):
-            for hemi in HEMIS:
-                attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
-                unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
-                assert len(attended) == len(unattended) == FS_NUM_VERTICES
-                diff_imgs = attended.copy()
-                diff_imgs['value'] = (attended.value.values - unattended.value.values)
-                diff_imgs['metric'] = 'diff_attended_unattended_images'
-                dfs_to_add.append(diff_imgs)
-
-                attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
-                unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
-                assert len(attended) == len(unattended) == FS_NUM_VERTICES
-                diff_caps = attended.copy()
-                diff_caps['value'] = (attended.value.values - unattended.value.values)
-                diff_caps['metric'] = 'diff_attended_unattended_captions'
-                dfs_to_add.append(diff_caps)
-
-                imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
-                caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
-                assert len(imgs) == len(caps) == FS_NUM_VERTICES
-                diff_attended = imgs.copy()
-                diff_attended['value'] = (imgs.value.values - caps.value.values)
-                diff_attended['metric'] = 'diff_images_captions_attended'
-                dfs_to_add.append(diff_attended)
-
-                imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
-                caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-                        sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
-                assert len(imgs) == len(caps) == FS_NUM_VERTICES
-                diff_unattended = imgs.copy()
-                diff_unattended['value'] = (imgs.value.values - caps.value.values)
-                diff_unattended['metric'] = 'diff_images_captions_unattended'
-                dfs_to_add.append(diff_unattended)
-
-    sc = pd.concat([sc] + dfs_to_add, ignore_index=True)
-
-    return sc
+# def add_diff_metrics(sc):
+#     dfs_to_add = []
+#     for training_mode in TRAINING_MODES:
+#         for subject in tqdm(SUBJECTS_ADDITIONAL_TEST, desc=f'Adding {training_mode} decoder diff metrics'):
+#             for hemi in HEMIS:
+#                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+#                 unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+#                 assert len(attended) == len(unattended) == FS_NUM_VERTICES
+#                 diff_imgs = attended.copy()
+#                 diff_imgs['value'] = (attended.value.values - unattended.value.values)
+#                 diff_imgs['metric'] = 'diff_attended_unattended_images'
+#                 dfs_to_add.append(diff_imgs)
+#
+#                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+#                 unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+#                 assert len(attended) == len(unattended) == FS_NUM_VERTICES
+#                 diff_caps = attended.copy()
+#                 diff_caps['value'] = (attended.value.values - unattended.value.values)
+#                 diff_caps['metric'] = 'diff_attended_unattended_captions'
+#                 dfs_to_add.append(diff_caps)
+#
+#                 imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
+#                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
+#                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
+#                 diff_attended = imgs.copy()
+#                 diff_attended['value'] = (imgs.value.values - caps.value.values)
+#                 diff_attended['metric'] = 'diff_images_captions_attended'
+#                 dfs_to_add.append(diff_attended)
+#
+#                 imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
+#                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
+#                         sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
+#                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
+#                 diff_unattended = imgs.copy()
+#                 diff_unattended['value'] = (imgs.value.values - caps.value.values)
+#                 diff_unattended['metric'] = 'diff_images_captions_unattended'
+#                 dfs_to_add.append(diff_unattended)
+#
+#     sc = pd.concat([sc] + dfs_to_add, ignore_index=True)
+#
+#     return sc
 
 
 def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions='True'):
@@ -453,32 +465,30 @@ def calc_t_values_null_distr(args, out_path):
     # n_permutations = len(glob(os.path.join(subject_scores_null_distr_dir,
     #                                               f"{args.subjects[0]}_scores_null_distr_{MODALITY_AGNOSTIC}_{HEMIS[0]}_hemi_**.p")))
 
-    def calc_permutation_t_values(vertex_range, permutations, proc_id, tmp_file_path, subjects):
+    def calc_permutation_t_values(vertex_range, permutations, proc_id, tmp_file_path, subjects,
+                                  latents_mode='limited_candidate_latents', standardized_predictions=True):
         os.makedirs(os.path.dirname(tmp_file_path), exist_ok=True)
 
         with h5py.File(tmp_file_path, 'w') as f:
             dsets = dict()
             for hemi in HEMIS:
                 dsets[hemi] = dict()
-                for metric in T_VAL_METRICS + [METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING,
-                                               METRIC_MOD_AGNOSTIC_AND_CROSS]:
-                    tvals_shape = (
-                        len(permutations), vertex_range[1] - vertex_range[0])
-                    dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float32')
-
+                for metric in T_VAL_METRICS + TFCE_VAL_METRICS:
+                    tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
+                    dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
             if proc_id == args.n_jobs - 1:
-                permutations_iterator = tqdm(enumerate(permutations), total=len(permutations), desc="calculating null distr t-vals")
+                permutations_iterator = tqdm(enumerate(permutations), total=len(permutations),
+                                             desc="calculating null distr t-vals")
                 print('preloading null distr scores')
             else:
                 permutations_iterator = enumerate(permutations)
 
             preloaded_scores = dict()
-            for subj in args.subject:
+            for subj in subjects:
                 preloaded_scores[subj] = dict()
                 for hemi in HEMIS:
                     preloaded_scores[subj][hemi] = dict()
-                    # null_distr_scores = []
                     for training_mode in TRAINING_MODES:
                         preloaded_scores[subj][hemi][training_mode] = dict()
 
@@ -517,114 +527,89 @@ def calc_t_values_null_distr(args, out_path):
                             searchlight_mode_from_args(args), args.l2_regularization_alpha,
                         )
                         if proc_id == args.n_jobs - 1:
-                            vertex_iter = trange(vertex_range[0], vertex_range[1], desc=f"{subj}_{hemi}_{training_mode}")
+                            vertex_iter = trange(vertex_range[0], vertex_range[1],
+                                                 desc=f"loading scores for {subj} {hemi} hemi {training_mode} decoder")
                         else:
                             vertex_iter = range(vertex_range[0], vertex_range[1])
-                        scores_vertices = []
+                        preloaded_scores[subj][hemi][training_mode] = []
+
+                        gathered_over_vertices = dict()
+
                         for vertex_id in vertex_iter:
+                            gathered_over_vertices[vertex_id] = []
                             scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
                                                        f"{vertex_id:010d}.p")
                             scores_vertex = pickle.load(open(scores_path, "rb"))
                             # scores_vertex['vertex'] = vertex_id
                             # scores_vertex['training_mode'] = training_mode
                             # null_distr_scores.append(scores_vertex)
-                            scores_vertices.append(scores_vertex)
+                            # preloaded_scores[subj][hemi][training_mode][vertex_id] = []
+                            for scores_perm in scores_vertex:
+                                scores_perm = scores_perm[(scores_perm.latents == latents_mode) & (
+                                        scores_perm.standardized_predictions == standardized_predictions)]
+                                metrics = scores_perm[['metric', 'value']].set_index('metric').value.to_dict()
 
-                        preloaded_scores[subj][hemi][training_mode] = scores_vertices
+                                gathered_over_vertices[vertex_id].append(metrics)
+                                # saving in format [subj][hemi][training_mode][perm_id][metric]
+                        for perm_id in range(len(gathered_over_vertices[vertex_range[0]])):
+                            gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in range(vertex_range[0], vertex_range[1])]) for metric in gathered_over_vertices[vertex_range[0]][perm_id].keys()}
+                            preloaded_scores[subj][hemi][training_mode].append(gathered)
+
                     # null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
-            print('finished preloading null distr scores')
 
             for iteration, permutation in permutations_iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
                 for hemi in HEMIS:
-                    assembled = []
-                    # for perm_idx, subj in zip(permutation, args.subjects):
-                        # null_distr_scores = []
-                        # for training_mode in TRAINING_MODES:
-                        #     if training_mode == MODALITY_AGNOSTIC:
-                        #         feats_config = LatentFeatsConfig(
-                        #             args.model,
-                        #             args.features,
-                        #             args.test_features,
-                        #             args.vision_features,
-                        #             args.lang_features,
-                        #             logging=False
-                        #         )
-                        #     elif training_mode == MODALITY_SPECIFIC_IMAGES:
-                        #         feats_config = LatentFeatsConfig(
-                        #             args.mod_specific_images_model,
-                        #             args.mod_specific_images_features,
-                        #             args.mod_specific_images_test_features,
-                        #             args.vision_features,
-                        #             args.lang_features,
-                        #             logging=False
-                        #         )
-                        #     elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
-                        #         feats_config = LatentFeatsConfig(
-                        #             args.mod_specific_captions_model,
-                        #             args.mod_specific_captions_features,
-                        #             args.mod_specific_captions_test_features,
-                        #             args.vision_features,
-                        #             args.lang_features,
-                        #             logging=False
-                        #         )
-                        #     else:
-                        #         raise RuntimeError(f"Unknown training mode: {training_mode}")
-                        #
-                        #     base_path = get_results_file_path(
-                        #         feats_config, hemi, subj, training_mode,
-                        #         searchlight_mode_from_args(args), args.l2_regularization_alpha,
-                        #     )
-                        #     for vertex_id in range(vertex_range[0], vertex_range[1]):
-                        #         scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
-                        #                                    f"{vertex_id:010d}.p")
-                        #         scores_vertex = pickle.load(open(scores_path, "rb"))[perm_idx]
-                        #         scores_vertex['vertex'] = vertex_id
-                        #         scores_vertex['training_mode'] = training_mode
-                        #         null_distr_scores.append(scores_vertex)
-                        # null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
-                        # assembled.append(null_distr_scores)
-                    # assembled = np.array(assembled)
-                    for training_mode in TRAINING_MODES:
-                        t_values[hemi][training_mode] = dict()
-                        for metric in T_VAL_METRICS:
-                            # data = np.array(
-                            #     [assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
-                            # print(data.shape)
-                            # print(data)
-                            #TODO training_mode!!?
-                            data = np.array(
-                                [preloaded_scores[subj][hemi][training_mode][vertex_id][idx][metric] for idx, subj in
-                                 zip(permutation, args.subjects)])
-                            # data = np.array(
-                            #     [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
-                            #      zip(permutation, args.subjects)])
-                            popmean = CHANCE_VALUES[metric]
-                            t_values[hemi][training_mode][metric] = calc_image_t_values(data, popmean)
-                            dsets[hemi][training_mode][metric][iteration] = t_values[hemi][metric]
+                    for metric in T_VAL_METRICS:
+                        data = np.zeros((len(args.subjects), vertex_range[1] - vertex_range[0]))
+                        for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
+                            if metric.startswith(DIFF):
+                                training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
+                                data[i] = preloaded_scores[subj][hemi][training_mode][idx][metric_name_1] - \
+                                          preloaded_scores[subj][hemi][training_mode][idx][metric_name_2]
+                            else:
+                                training_mode, metric_name = metric.split('$')
+                                data[i] = preloaded_scores[subj][hemi][training_mode][idx][metric_name]
 
+                        popmean = 0 if metric.startswith(DIFF) else 0.5
+                        t_values[hemi][metric] = calc_image_t_values(data, popmean)
+                        dsets[hemi][metric][iteration] = t_values[hemi][metric].astype(np.float16)
+                        #
+                        # for training_mode in TRAINING_MODES:
+                        #     t_values[hemi][training_mode] = dict()
+                        #     for metric in T_VAL_METRICS:
+                        #         # data = np.array(
+                        #         #     [assembled[i][assembled[i].metric == metric].value.values for i in range(len(assembled))])
+                        #         # print(data.shape)
+                        #         # print(data)
+                        #         data = np.array(
+                        #             [preloaded_scores[subj][hemi][vertex_id][idx][metric] for idx, subj in
+                        #              zip(permutation, args.subjects)])
+                        #         # data = np.array(
+                        #     [per_subject_scores[idx][subj][hemi][metric] for idx, subj in
+                        #      zip(permutation, args.subjects)])
+                        # popmean = CHANCE_VALUES[metric]
+                        # t_values[hemi][training_mode][metric] = calc_image_t_values(data, popmean).astype(
+                        #     np.float16)
+                        # dsets[hemi][training_mode][metric][iteration] = t_values[hemi][metric]
+
+
+                    #TODO: revise complex metrics
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore", category=RuntimeWarning)
                         dsets[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS][iteration] = np.nanmin(
                             (
-                                t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
-                                t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES],
-                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS]),
+                                t_values[hemi]['$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES])],
+                                t_values[hemi]['$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS])],
+                                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS])],
+                                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES])]),
                             axis=0)
-                        dsets[hemi][METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC][iteration] = np.nanmin(
+                        dsets[hemi][METRIC_DIFF_ATTENTION][iteration] = np.nanmin(
                             (
-                                t_values[hemi][METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                                t_values[hemi][METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC],
-                                t_values[hemi][ACC_IMAGES_MOD_AGNOSTIC],
-                                t_values[hemi][ACC_CAPTIONS_MOD_AGNOSTIC]),
+                                 t_values[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
+                                 t_values[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED,SPLIT_TEST_CAPTIONS_UNATTENDED])]),
                             axis=0)
-                        dsets[hemi][METRIC_CROSS_DECODING][iteration] = np.nanmin(
-                            (
-                                t_values[hemi][ACC_IMAGES_MOD_SPECIFIC_CAPTIONS],
-                                t_values[hemi][ACC_CAPTIONS_MOD_SPECIFIC_IMAGES]),
-                            axis=0
-                        )
+
 
     feats_config = LatentFeatsConfig(
         args.model,
@@ -677,22 +662,23 @@ def calc_t_values_null_distr(args, out_path):
     #                     filtered = scores_job[job_id * n_per_job[hemi]:(job_id + 1) * n_per_job[hemi]]
     #                     scores_jobs[job_id][perm_id][subj][hemi][metric] = filtered
 
-    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), "temp_t_vals", f"{job_id}.hdf5") for job_id in
+    tmp_filenames = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}.hdf5") for job_id in
                      range(args.n_jobs)}
 
-    calc_permutation_t_values(vertex_ranges[0], permutations, id, tmp_filenames[0], args.subjects)
-    #TODO commented out parallelization for debugging
-    # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-    #     delayed(calc_permutation_t_values)(
-    #         vertex_ranges[id],
-    #         # scores_jobs[id],
-    #         permutations,
-    #         id,
-    #         tmp_filenames[id],
-    #         args.subjects,
-    #     )
-    #     for id in range(args.n_jobs)
-    # )
+    # # TODO single iter for debugging
+    # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[args.n_jobs - 1],
+    #                           args.subjects)
+    Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+        delayed(calc_permutation_t_values)(
+            vertex_ranges[id],
+            permutations,
+            id,
+            tmp_filenames[id],
+            args.subjects,
+        )
+        for id in range(args.n_jobs)
+    )
+    print('finished calculating null distr t-vals')
 
     tmp_files = dict()
     for job_id in range(args.n_jobs):
@@ -700,8 +686,8 @@ def calc_t_values_null_distr(args, out_path):
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
         for hemi_metric in tmp_files[0].keys():
-            hemi = hemi_metric.split('__')[0]
-            tvals_shape = (args.n_permutations_group_level, n_vertices[hemi])
+            # hemi = hemi_metric.split('__')[0]
+            tvals_shape = (args.n_permutations_group_level, n_vertices)
             all_t_vals_file.create_dataset(hemi_metric, tvals_shape, dtype='float32', fillvalue=np.nan)
 
         for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
@@ -811,7 +797,7 @@ def get_args():
     parser = add_searchlight_permutation_args(parser)
 
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
-    parser.add_argument("--n-permutations-group-level", type=int, default=10000)
+    parser.add_argument("--n-permutations-group-level", type=int, default=1000)
 
     parser.add_argument("--p-value-threshold", type=float, default=1e-4)
     parser.add_argument("--tfce-value-threshold", type=float, default=None)

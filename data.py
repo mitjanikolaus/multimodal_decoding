@@ -401,7 +401,7 @@ class LatentFeatsConfig:
             self.vision_features = DEFAULT_VISION_FEATURES[self.model]
         if self.lang_features == SELECT_DEFAULT:
             self.lang_features = DEFAULT_LANG_FEATURES[self.model]
-        if logging:
+        if self.logging:
             print(f"Selected features for {self.model}: {self.features} {self.test_features} "
                   f"{self.vision_features} {self.lang_features}")
         self.combined_feats = f"{self.features}_test_{self.test_features}"
