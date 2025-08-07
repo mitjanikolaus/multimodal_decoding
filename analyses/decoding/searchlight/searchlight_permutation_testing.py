@@ -477,13 +477,6 @@ def calc_t_values_null_distr(args, out_path):
                     tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
                     dsets[hemi][metric] = f.create_dataset(f"{hemi}__{metric}", tvals_shape, dtype='float16')
 
-            if proc_id == args.n_jobs - 1:
-                permutations_iterator = tqdm(enumerate(permutations), total=len(permutations),
-                                             desc="calculating null distr t-vals")
-                print('preloading null distr scores')
-            else:
-                permutations_iterator = enumerate(permutations)
-
             preloaded_scores = dict()
             for subj in subjects:
                 preloaded_scores[subj] = dict()
@@ -555,7 +548,11 @@ def calc_t_values_null_distr(args, out_path):
                             gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in range(vertex_range[0], vertex_range[1])]) for metric in gathered_over_vertices[vertex_range[0]][perm_id].keys()}
                             preloaded_scores[subj][hemi][training_mode].append(gathered)
 
-                    # null_distr_scores = pd.concat(null_distr_scores, ignore_index=True)
+            if proc_id == args.n_jobs - 1:
+                permutations_iterator = tqdm(enumerate(permutations), total=len(permutations),
+                                             desc="calculating null distr t-vals")
+            else:
+                permutations_iterator = enumerate(permutations)
 
             for iteration, permutation in permutations_iterator:
                 t_values = {hemi: dict() for hemi in HEMIS}
