@@ -288,7 +288,7 @@ def calc_t_values(scores):
                 training_mode, metric_name = metric.split('$')
                 scores_filtered = scores[
                     (scores.hemi == hemi) & (scores.metric == metric_name) & (scores.training_mode == training_mode)]
-                data = np.array([scores_filtered[(scores.subject == subj)].value for subj in args.subjects])
+                data = np.array([scores_filtered[(scores_filtered.subject == subj)].value for subj in args.subjects])
 
             popmean = 0 if metric.startswith(DIFF) else 0.5
             t_values[hemi][metric] = calc_image_t_values(data, popmean, use_tqdm=True, metric=metric)
