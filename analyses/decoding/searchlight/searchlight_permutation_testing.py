@@ -276,13 +276,15 @@ def calc_image_t_values(data, popmean, use_tqdm=False, metric=None, sigma=0):
 def calc_t_values(scores):
     t_values = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
-        for metric in T_VAL_METRICS:
+        for metric in tqdm(T_VAL_METRICS, desc=f'calculating {hemi} hemi t vals'):
             if metric.startswith(DIFF):
                 training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
                 scores_filtered = scores[
                     (scores.hemi == hemi) & (scores.training_mode == training_mode)]
-                data_1 = np.array([scores_filtered[(scores_filtered.subject == subj) & (scores_filtered.metric == metric_name_1)].value for subj in args.subjects])
-                data_2 = np.array([scores_filtered[(scores_filtered.subject == subj) & (scores_filtered.metric == metric_name_2)].value for subj in args.subjects])
+                data_1 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
+                            scores_filtered.metric == metric_name_1)].value for subj in args.subjects])
+                data_2 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
+                            scores_filtered.metric == metric_name_2)].value for subj in args.subjects])
                 data = data_1 - data_2
             else:
                 training_mode, metric_name = metric.split('$')
@@ -291,7 +293,7 @@ def calc_t_values(scores):
                 data = np.array([scores_filtered[(scores_filtered.subject == subj)].value for subj in args.subjects])
 
             popmean = 0 if metric.startswith(DIFF) else 0.5
-            t_values[hemi][metric] = calc_image_t_values(data, popmean, use_tqdm=True, metric=metric)
+            t_values[hemi][metric] = calc_image_t_values(data, popmean)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -305,9 +307,11 @@ def calc_t_values(scores):
                 axis=0)
             t_values[hemi][METRIC_DIFF_ATTENTION] = np.nanmin(
                 (
-                    t_values[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
                     t_values[hemi][
-                        '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED])]),
+                        '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
+                    t_values[hemi][
+                        '$'.join(
+                            [DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED])]),
                 axis=0)
 
     return t_values
@@ -347,23 +351,22 @@ def calc_test_statistics(args):
 
     p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
-        print(f"{hemi} hemi largest test statistic values: ",
-              sorted([t for t in tfce_values[hemi][args.metric]], reverse=True)[:10])
-        print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-10:])
+        print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi][args.metric])[-5:])
+        print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-5:])
         print("calculating p values..")
         for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
             test_stat = tfce_values[hemi][args.metric][vertex]
-            value_index = np.searchsorted(max_test_statistic_distr, test_stat)
-            if value_index >= len(max_test_statistic_distr):
-                p_value = 1 - (len(max_test_statistic_distr) - 1) / (len(max_test_statistic_distr))
-            else:
-                p_value = 1 - value_index / len(max_test_statistic_distr)
-            p_values[hemi][vertex] = p_value
+        value_index = np.searchsorted(max_test_statistic_distr, test_stat)
+        if value_index >= len(max_test_statistic_distr):
+            p_value = 1 - (len(max_test_statistic_distr) - 1) / (len(max_test_statistic_distr))
+        else:
+            p_value = 1 - value_index / len(max_test_statistic_distr)
+        p_values[hemi][vertex] = p_value
 
         print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
 
-    p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
-    pickle.dump(p_values, open(p_values_path, mode='wb'))
+        p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+        pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
 def calc_t_values_null_distr(args, out_path):
@@ -437,7 +440,9 @@ def calc_t_values_null_distr(args, out_path):
                             metrics = scores_perm[['metric', 'value']].set_index('metric').value.to_dict()
                             gathered_over_vertices[vertex_id].append(metrics)
                     for perm_id in range(len(gathered_over_vertices[vertex_range[0]])):
-                        gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in range(vertex_range[0], vertex_range[1])]) for metric in gathered_over_vertices[vertex_range[0]][perm_id].keys()}
+                        gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in
+                                                      range(vertex_range[0], vertex_range[1])]) for metric in
+                                    gathered_over_vertices[vertex_range[0]][perm_id].keys()}
                         # saving in format [subj][training_mode][perm_id][metric]
                         preloaded_scores[subj][training_mode].append(gathered)
 
@@ -464,7 +469,7 @@ def calc_t_values_null_distr(args, out_path):
                     t_values[metric] = calc_image_t_values(data, popmean)
                     dsets[metric][iteration] = t_values[metric].astype(np.float16)
 
-                #TODO: revise complex metrics
+                # TODO: revise complex metrics
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     dsets[METRIC_MOD_AGNOSTIC_AND_CROSS][iteration] = np.nanmin(
@@ -476,10 +481,11 @@ def calc_t_values_null_distr(args, out_path):
                         axis=0)
                     dsets[METRIC_DIFF_ATTENTION][iteration] = np.nanmin(
                         (
-                             t_values['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
-                             t_values['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED,SPLIT_TEST_CAPTIONS_UNATTENDED])]),
+                            t_values['$'.join(
+                                [DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
+                            t_values['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED,
+                                               SPLIT_TEST_CAPTIONS_UNATTENDED])]),
                         axis=0)
-
 
     feats_config = LatentFeatsConfig(
         args.model,
@@ -512,8 +518,9 @@ def calc_t_values_null_distr(args, out_path):
 
     tmp_filenames = dict()
     for hemi in HEMIS:
-        tmp_filenames[hemi] = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}_{hemi}.hdf5") for job_id in
-                         range(args.n_jobs)}
+        tmp_filenames[hemi] = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}_{hemi}.hdf5")
+                               for job_id in
+                               range(args.n_jobs)}
 
         # TODO single iter for debugging
         # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
@@ -577,7 +584,8 @@ def create_null_distribution(args):
         def tfce_values_job(n_per_job, edge_lengths, proc_id, t_vals_null_distr_path):
             with h5py.File(t_vals_null_distr_path, 'r') as t_vals:
                 indices = range(proc_id * n_per_job, min((proc_id + 1) * n_per_job, args.n_permutations_group_level))
-                iterator = tqdm(indices, desc="Calculating tfce values for null distribution") if proc_id == args.n_jobs-1 else indices
+                iterator = tqdm(indices,
+                                desc="Calculating tfce values for null distribution") if proc_id == args.n_jobs - 1 else indices
                 tfce_values = []
                 for iteration in iterator:
                     vals = {hemi: {args.metric: t_vals[f"{hemi}__{args.metric}"][iteration]} for hemi in HEMIS}
