@@ -9,7 +9,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
 from data import IMAGE, CAPTION
 from eval import ACC_IMAGERY
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_CROSS_DECODING, \
-    METRIC_MOD_AGNOSTIC_AND_CROSS
+    METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_DIFF_ATTENTION
 
 
 def run(args):
@@ -22,7 +22,7 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in [METRIC_MOD_AGNOSTIC_AND_CROSS]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
+        for metric in [METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_DIFF_ATTENTION]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
             args.metric = metric
             mask_paths.append(
                 os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
