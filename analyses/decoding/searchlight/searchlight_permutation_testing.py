@@ -22,13 +22,11 @@ from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TE
     searchlight_mode_from_args, get_results_file_path
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
-    TRAINING_MODES, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, \
-    SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK
-from eval import CHANCE_VALUES, LIMITED_CANDIDATE_LATENTS
-from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, \
-    METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC, \
-    METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC_AND_CROSS, FS_NUM_VERTICES, METRIC_DIFF_ATTENTION
+    TRAINING_MODES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED, \
+    TEST_CAPTIONS_ATTENDED, TEST_IMAGES, TEST_CAPTIONS, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK
+from eval import LIMITED_CANDIDATE_LATENTS
+from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CROSS_DECODING, \
+    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION
 
 DEFAULT_N_JOBS = 10
 
@@ -37,26 +35,31 @@ DIFF = "diff"
 T_VAL_METRICS = [
     '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY]),
     '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES]),
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS]),  # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES]),  # cross-modal decoding
-    # MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_ATTENDED,  # cross-modal decoding
-    # MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED,  # cross-modal decoding
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_UNATTENDED]),
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),  # cross-modal decoding
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),  # cross-modal decoding
+    # (present modality A, read-out modality B)
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
+    # attention to A should be sufficient for cross-decoding
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
+    # attention to A should be sufficient for cross-decoding
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),  # w/o attention decoding should not work
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),  # w/o attention decoding should not work
+    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES_UNATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
     # TODO: mod-agnostic or specific decoder?
-    '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
     # TODO: mod-agnostic or specific decoder?
     # DIFF+MODALITY_SPECIFIC_IMAGES+SPLIT_TEST_CAPTIONS_ATTENDED+SPLIT_TEST_CAPTIONS_UNATTENDED #TODO
 
     # DIFF+SPLIT_TEST_IMAGES+MODALITY_AGNOSTIC+MODALITY_SPECIFIC_IMAGES,
     # DIFF, SPLIT_TEST_CAPTIONS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS,
 ]
-TFCE_VAL_METRICS = [METRIC_CROSS_DECODING, METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_DIFF_ATTENTION]
+TFCE_VAL_METRICS = [METRIC_CROSS_DECODING, METRIC_DIFF_ATTENTION, METRIC_MOD_AGNOSTIC]
 
 
 # def add_diff_metrics(sc):
@@ -274,7 +277,7 @@ def calc_image_t_values(data, popmean, use_tqdm=False, metric=None, sigma=0):
 
 
 def calc_t_values(scores):
-    t_values = {hemi: dict() for hemi in HEMIS}
+    tvals = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
         for metric in tqdm(T_VAL_METRICS, desc=f'calculating {hemi} hemi t vals'):
             if metric.startswith(DIFF):
@@ -282,9 +285,9 @@ def calc_t_values(scores):
                 scores_filtered = scores[
                     (scores.hemi == hemi) & (scores.training_mode == training_mode)]
                 data_1 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
-                            scores_filtered.metric == metric_name_1)].value for subj in args.subjects])
+                        scores_filtered.metric == metric_name_1)].value for subj in args.subjects])
                 data_2 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
-                            scores_filtered.metric == metric_name_2)].value for subj in args.subjects])
+                        scores_filtered.metric == metric_name_2)].value for subj in args.subjects])
                 data = data_1 - data_2
             else:
                 training_mode, metric_name = metric.split('$')
@@ -293,28 +296,32 @@ def calc_t_values(scores):
                 data = np.array([scores_filtered[(scores_filtered.subject == subj)].value for subj in args.subjects])
 
             popmean = 0 if metric.startswith(DIFF) else 0.5
-            t_values[hemi][metric] = calc_image_t_values(data, popmean)
+            tvals[hemi][metric] = calc_image_t_values(data, popmean)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            # # TODO: revise complex metrics
-            t_values[hemi][METRIC_MOD_AGNOSTIC_AND_CROSS] = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES])],
-                    t_values[hemi]['$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES])]),
-                axis=0)
-            t_values[hemi][METRIC_DIFF_ATTENTION] = np.nanmin(
-                (
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join(
-                            [DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED])]),
-                axis=0)
-
-    return t_values
+        tvals[hemi][METRIC_CROSS_DECODING] = np.nanmin(
+            (
+                tvals[hemi]['$'.join([MODALITY_AGNOSTIC, TEST_IMAGES])],
+                tvals[hemi]['$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]),
+            axis=0)
+        tvals[hemi][METRIC_DIFF_ATTENTION] = np.nanmin(
+            (
+                tvals[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                tvals[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]),
+            axis=0)
+        tvals[hemi][METRIC_MOD_AGNOSTIC] = np.nanmin(
+            (
+                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
+                #TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
+            ),
+            axis=0)
+    return tvals
 
 
 def calc_test_statistics(args):
@@ -469,22 +476,31 @@ def calc_t_values_null_distr(args, out_path):
                     t_values[metric] = calc_image_t_values(data, popmean)
                     dsets[metric][iteration] = t_values[metric].astype(np.float16)
 
-                # TODO: revise complex metrics
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
-                    dsets[METRIC_MOD_AGNOSTIC_AND_CROSS][iteration] = np.nanmin(
+                    dsets[METRIC_CROSS_DECODING][iteration] = np.nanmin(
                         (
-                            t_values['$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES])],
-                            t_values['$'.join([MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS])],
-                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS])],
-                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES])]),
+                            t_values['$'.join([MODALITY_AGNOSTIC, TEST_IMAGES])],
+                            t_values['$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS])],
+                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]),
                         axis=0)
                     dsets[METRIC_DIFF_ATTENTION][iteration] = np.nanmin(
                         (
-                            t_values['$'.join(
-                                [DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED])],
-                            t_values['$'.join([DIFF, MODALITY_AGNOSTIC, SPLIT_TEST_CAPTIONS_ATTENDED,
-                                               SPLIT_TEST_CAPTIONS_UNATTENDED])]),
+                            t_values['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                            t_values['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]),
+                        axis=0)
+
+                    dsets[METRIC_MOD_AGNOSTIC] = np.nanmin(
+                        (
+                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
+                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
+                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
+                            # TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
+                        ),
                         axis=0)
 
     feats_config = LatentFeatsConfig(
@@ -645,7 +661,7 @@ def add_searchlight_permutation_args(parser):
     parser.add_argument("--tfce-e", type=float, default=1.0)
     parser.add_argument("--tfce-dh", type=float, default=0.1)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MOD_AGNOSTIC_AND_CROSS)
+    parser.add_argument("--metric", type=str, default=METRIC_MOD_AGNOSTIC)
 
     return parser
 

@@ -4,9 +4,9 @@ from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr, pearsonr
 from sklearn.preprocessing import StandardScaler
 
-from data import CAPTION, IMAGE, SPLIT_IMAGERY, TEST_SPLITS, SPLIT_TEST_IMAGES, SPLIT_IMAGERY_WEAK, \
-    SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, \
-    SPLIT_TEST_CAPTIONS_UNATTENDED
+from data import CAPTION, IMAGE, SPLIT_IMAGERY, TEST_SPLITS, TEST_IMAGES, SPLIT_IMAGERY_WEAK, \
+    TEST_IMAGES_ATTENDED, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_UNATTENDED, \
+    TEST_CAPTIONS_UNATTENDED
 from utils import METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC, METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
@@ -65,12 +65,12 @@ DISTANCE_METRIC_COSINE = "cosine"
 DIFF_METRICS = ['diff_attended_unattended_images', 'diff_attended_unattended_captions', 'diff_images_captions_attended', 'diff_images_captions_unattended']
 
 CHANCE_VALUES = {
-    SPLIT_TEST_IMAGES: 0.5,
-    SPLIT_TEST_IMAGES_ATTENDED: 0.5,
-    SPLIT_TEST_IMAGES_UNATTENDED: 0.5,
-    SPLIT_TEST_CAPTIONS: 0.5,
-    SPLIT_TEST_CAPTIONS_ATTENDED: 0.5,
-    SPLIT_TEST_CAPTIONS_UNATTENDED: 0.5,
+    TEST_IMAGES: 0.5,
+    TEST_IMAGES_ATTENDED: 0.5,
+    TEST_IMAGES_UNATTENDED: 0.5,
+    TEST_CAPTIONS: 0.5,
+    TEST_CAPTIONS_ATTENDED: 0.5,
+    TEST_CAPTIONS_UNATTENDED: 0.5,
     SPLIT_IMAGERY: 0.5,
     SPLIT_IMAGERY_WEAK: 0.5,
 }
@@ -127,18 +127,18 @@ LIMITED_CANDIDATE_LATENTS = "limited_candidate_latents"
 
 
 def get_all_candidate_latents(split, latents):
-    if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED,
-                 SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]:
+    if split in [TEST_IMAGES, TEST_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_CAPTIONS_ATTENDED,
+                 TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED]:
         all_candidate_latents = np.concatenate(
-            (latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_IMAGERY_WEAK])
+            (latents[TEST_IMAGES], latents[SPLIT_IMAGERY], latents[SPLIT_IMAGERY_WEAK])
         )
     elif split in [SPLIT_IMAGERY]:
         all_candidate_latents = np.concatenate(
-            (latents[SPLIT_IMAGERY], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY_WEAK])
+            (latents[SPLIT_IMAGERY], latents[TEST_IMAGES], latents[SPLIT_IMAGERY_WEAK])
         )
     elif split in [SPLIT_IMAGERY_WEAK]:
         all_candidate_latents = np.concatenate(
-            (latents[SPLIT_IMAGERY_WEAK], latents[SPLIT_TEST_IMAGES], latents[SPLIT_IMAGERY])
+            (latents[SPLIT_IMAGERY_WEAK], latents[TEST_IMAGES], latents[SPLIT_IMAGERY])
         )
     else:
         raise RuntimeError("Unknown split: ", split)

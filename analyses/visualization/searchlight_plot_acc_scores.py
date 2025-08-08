@@ -8,8 +8,8 @@ from nilearn import datasets, plotting
 import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
     add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir, add_diff_metrics
-from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, SPLIT_TEST_IMAGES_ATTENDED, \
-    SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, \
+from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, TEST_IMAGES_ATTENDED, \
+    TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, \
     MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES
@@ -221,11 +221,11 @@ def run(args):
     #     create_composite_image(args, results_dir, training_mode=training_mode)
 
 
-    metrics = [SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
+    metrics = [TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
     create_composite_image(args, results_dir, metrics=metrics,
                            file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_IMAGES)
 
-    metrics = [SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED, 'diff_attended_unattended_images']
+    metrics = [TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, 'diff_attended_unattended_images']
     create_composite_image(args, results_dir, metrics=metrics,
                            file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_CAPTIONS)
 

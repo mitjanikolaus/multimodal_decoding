@@ -23,7 +23,7 @@ from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOI
     get_fmri_data_for_splits
 from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
     create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, \
-    TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, SPLIT_IMAGERY
+    TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, TEST_IMAGES, TEST_CAPTIONS, SPLIT_IMAGERY
 
 from utils import DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, ADDITIONAL_TEST_DATA_DIR, SUBJECTS_ADDITIONAL_TEST
 
@@ -48,7 +48,7 @@ def train_and_test(
 
     if null_distr_dir is not None:
         scores_null_distr = []
-        for shuffle_iter in range(len(shuffled_indices[NUM_STIMULI[SPLIT_TEST_IMAGES]])):
+        for shuffle_iter in range(len(shuffled_indices[NUM_STIMULI[TEST_IMAGES]])):
             latents_shuffled = {split: latents[split][shuffled_indices[NUM_STIMULI[split]][shuffle_iter]] for
                                 split in TEST_SPLITS}
 
@@ -207,12 +207,12 @@ def run(args):
                 print(scores_df)
 
                 print(
-                    f"Mean score (captions): {scores_df[scores_df.metric == SPLIT_TEST_CAPTIONS].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric == SPLIT_TEST_CAPTIONS].value.max():.2f}"
+                    f"Mean score (captions): {scores_df[scores_df.metric == TEST_CAPTIONS].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric == TEST_CAPTIONS].value.max():.2f}"
                 )
                 print(
-                    f"Mean score (images): {scores_df[scores_df.metric == SPLIT_TEST_IMAGES].value.mean():.2f} | "
-                    f"Max score: {scores_df[scores_df.metric == SPLIT_TEST_IMAGES].value.max():.2f}"
+                    f"Mean score (images): {scores_df[scores_df.metric == TEST_IMAGES].value.mean():.2f} | "
+                    f"Max score: {scores_df[scores_df.metric == TEST_IMAGES].value.max():.2f}"
                 )
                 print(
                     f"Mean score (imagery): {scores_df[scores_df.metric == SPLIT_IMAGERY].value.mean():.2f} | "

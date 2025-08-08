@@ -9,9 +9,9 @@ import os
 from tqdm import tqdm
 
 from data import get_fmri_data_paths, IMAGERY_SCENES, SPLIT_IMAGERY, IMAGERY_STIMS_IDS, IMAGERY_STIMS_TYPES, \
-    IMAGE, CAPTION, SPLIT_TEST_IMAGES, SPLIT_TEST_CAPTIONS, \
-    IDS_IMAGES_TEST, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED, SPLIT_TEST_CAPTIONS_ATTENDED, \
-    SPLIT_TEST_IMAGES_UNATTENDED, SPLIT_IMAGERY_WEAK, IDS_IMAGES_IMAGERY_WEAK, ALL_SPLITS
+    IMAGE, CAPTION, TEST_IMAGES, TEST_CAPTIONS, \
+    IDS_IMAGES_TEST, TEST_IMAGES_ATTENDED, TEST_CAPTIONS_UNATTENDED, TEST_CAPTIONS_ATTENDED, \
+    TEST_IMAGES_UNATTENDED, SPLIT_IMAGERY_WEAK, IDS_IMAGES_IMAGERY_WEAK, ALL_SPLITS
 from utils import SUBJECTS, FMRI_BETAS_DIR, FS_HEMI_NAMES, FREESURFER_SUBJECTS_DIR, HEMIS
 import nibabel as nib
 
@@ -23,11 +23,11 @@ def to_surface(args):
         for split in args.splits:
             fmri_data_paths, stim_ids, stim_types = get_fmri_data_paths(args.betas_dir, subject, split)
 
-            if split in [SPLIT_TEST_IMAGES, SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED]:
+            if split in [TEST_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]:
                 assert np.all(stim_types == IMAGE)
                 assert np.all(stim_ids == IDS_IMAGES_TEST)
 
-            if split == [SPLIT_TEST_CAPTIONS, SPLIT_TEST_CAPTIONS_ATTENDED, SPLIT_TEST_CAPTIONS_UNATTENDED]:
+            if split == [TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]:
                 assert np.all(stim_types == CAPTION)
                 assert np.all(stim_ids == IDS_IMAGES_TEST)
 
