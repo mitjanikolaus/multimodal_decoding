@@ -107,7 +107,7 @@ def run(args):
     # Realignment
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
-    tsnr_node = TSNR()
+    tsnr_node = Node(TSNR(), name='tsnr')
 
     # Info source (to provide input information to the pipeline)
     # to iterate over subjects
