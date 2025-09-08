@@ -165,7 +165,7 @@ def run(args):
     # preproc.connect([(stc_node, realign_node, [('timecorrected_files', 'in_files')])])
 
     # preproc.connect([(realign_node, tsnr_node, [('realigned_files', 'in_file')])])
-    preproc.connect([(realign_node, tsnr_node, [('timecorrected_files', 'in_file')])])
+    preproc.connect([(stc_node, tsnr_node, [('timecorrected_files', 'in_file')])])
 
 
     # # keeping realignment params
