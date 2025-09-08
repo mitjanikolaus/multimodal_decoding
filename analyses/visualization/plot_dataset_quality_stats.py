@@ -132,56 +132,9 @@ def plot_head_motion_metrics():
     # plt.savefig(os.path.join(RESULTS_DIR, 'framewise_displacement.png'), dpi=300)
 
 
-def plot_tsnr():
-    tsnr_all_data = []
-    tsnr_all_images = dict()
-    for subject in SUBJECTS:
-        print(subject)
-        tsnr_subject_images = []
-        preprocessed_tsnr_data_dir = os.path.join(FMRI_PREPROCESSED_DATA_DIR, 'preprocess_workflow',
-                                                  f"_subject_id_{subject}")
-
-        session_dirs = sorted(glob(os.path.join(preprocessed_tsnr_data_dir, '_session_id_*')))
-        sessions = [path.split(os.sep)[-1] for path in session_dirs]
-        for session, session_dir in tqdm(zip(sessions, session_dirs)):
-            tsnr_dir = os.path.join(session_dir, 'tsnr')
-            tsnr = nib.load(os.path.join(tsnr_dir, f"tsnr.nii.gz"))
-            tsnr_subject_images.append(tsnr)
-
-            mask = nib.load(get_gray_matter_mask_path(subject, mni=False))
-            mask_resampled = resample_to_img(mask, tsnr, interpolation='nearest')
-
-            tsnr_masked = tsnr.get_fdata()[mask_resampled.get_fdata() > 0]
-
-            tsnr_mean = tsnr_masked.mean()
-
-            tsnr_all_data.append(
-                {
-                    'subject': subject,
-                    'session': session.replace('_session_id_ses-', ''),
-                    'mean_tsnr': tsnr_mean,
-                }
-            )
-
-            if session == sessions[0]:
-                plot_img(tsnr, colorbar=True, draw_cross=False, cut_coords=[0, 0, 0], vmin=0,                        cmap='jet')
-                # plt.show()
-                plt.savefig(os.path.join(RESULTS_DIR, f'tsnr_{subject}_{session}.png'), dpi=300)
-
-        tsnr_subject_avg = np.mean([img.get_fdata() for img in tsnr_subject_images], axis=0)
-        tsnr_all_images[subject] = nib.Nifti1Image(tsnr_subject_avg, affine=tsnr.affine)
-        # plot_img(tsnr_all_images[subject], colorbar=True, draw_cross=False, cut_coords=[0, 0, 0], vmin=0, cmap='jet')
-        # plt.show()
-
-    tsnr_all_data = pd.DataFrame(tsnr_all_data)
-    tsnr_all_data.to_csv('tsnr_data.csv')
-
-    sns.lineplot(data=tsnr_all_data, x='session', y='mean_tsnr', hue='subject')
-    plt.savefig(os.path.join(RESULTS_DIR, 'tsnr.png'), dpi=300)
 
 def run():
-    # plot_head_motion_metrics()
-    plot_tsnr()
+    plot_head_motion_metrics()
 
 
 if __name__ == "__main__":
