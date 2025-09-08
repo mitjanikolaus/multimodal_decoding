@@ -162,19 +162,17 @@ def run(args):
     preproc.connect([(gunzip_func_node, stc_node, [('out_file', 'in_files')])])
 
     # connect STC to realign
-    # preproc.connect([(stc_node, realign_node, [('timecorrected_files', 'in_files')])])
+    preproc.connect([(stc_node, realign_node, [('timecorrected_files', 'in_files')])])
 
-    # preproc.connect([(realign_node, tsnr_node, [('realigned_files', 'in_file')])])
-    preproc.connect([(stc_node, tsnr_node, [('timecorrected_files', 'in_file')])])
-
+    preproc.connect([(realign_node, tsnr_node, [('realigned_files', 'in_file')])])
 
     # # keeping realignment params
-    # preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
+    preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
     #
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
 
-    # run thef pipeline
+    # run the pipeline
     preproc.run('MultiProc', plugin_args={'n_procs': 15})
 
 
