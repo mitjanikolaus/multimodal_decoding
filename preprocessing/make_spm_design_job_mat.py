@@ -76,13 +76,13 @@ def preprocess_event_files(event_files):
     return pd.concat(data, ignore_index=True)
 
 
-def get_sessions(preprocessed_functional_data_dir, sessions_subsample):
-    if sessions_subsample:
+def get_sessions(preprocessed_functional_data_dir, sessions_subsample = None):
+    if sessions_subsample is not None:
         sessions = [f'ses-{ses_idx}' for ses_idx in sessions_subsample]
         session_dirs = [os.path.join(preprocessed_functional_data_dir, session) for session in sessions]
     else:
         print(f"Scanning for sessions in {preprocessed_functional_data_dir}")
-        session_dirs = glob(os.path.join(preprocessed_functional_data_dir, 'ses-*'))
+        session_dirs = sorted(glob(os.path.join(preprocessed_functional_data_dir, 'ses-*')))
         sessions = [path.split(os.sep)[-1] for path in session_dirs]
     print(f"Sessions: {sessions}")
     return sessions, session_dirs
