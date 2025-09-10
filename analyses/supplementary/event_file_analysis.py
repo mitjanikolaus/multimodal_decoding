@@ -5,11 +5,11 @@ import os
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR
+from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR
 
 
 def subject_performance(subj):
-    path = os.path.join(FMRI_DATA_DIR, f'fmri_data/bids/{subj}/')
+    path = os.path.join(FMRI_BIDS_DATA_DIR, subj)
     sess = sorted(list(glob(os.path.join(path, 'ses-*'))))
     print(f"Subject: {subj}\nNumber of sessions: {len(sess)}")
 
