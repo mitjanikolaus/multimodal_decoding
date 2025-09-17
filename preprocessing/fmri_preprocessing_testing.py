@@ -106,7 +106,7 @@ def run(args):
     realign_node = Node(Realign(register_to_mean=True), name='realign')
 
     # Coregistration (coregistration of functional scans to anatomical scan)
-    coregister_node = Node(Coregister(jobtype='estimate'), name='coregister')
+    coregister_node = Node(Coregister(jobtype='estwrite'), name='coregister')
 
     tpm_img = os.path.join(SPM_PATH, "tpm/TPM.nii")
     tissue1 = ((tpm_img, 1), 2, (True, False), (False, False))
@@ -178,6 +178,10 @@ def run(args):
     preproc.connect([(realign_node, coregister_node, [('realigned_files', 'apply_to_files')])])
 
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
+
+    # keeping coregistered mean source file
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_source', 'coregistered.@files')])])
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
 
     # draw graph of the pipeline
     preproc.write_graph(graph2use='flat', format='png', simple_form=True)
