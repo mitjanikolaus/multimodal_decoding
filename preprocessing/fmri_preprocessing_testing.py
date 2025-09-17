@@ -180,7 +180,7 @@ def run(args):
     preproc.connect([(selectfiles_anat, coregister_node, [('anat', 'target')])])
 
     # keeping coregistered mean source file
-    preproc.connect([(coregister_node, datasink_node, [('coregistered_source', 'coregistered.@files')])])
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_source', 'coregistered_source.@files')])])
     preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
 
     # draw graph of the pipeline
