@@ -36,23 +36,24 @@ def run(args):
             else:
                 print(f"missing mask: {mask_path}")
 
-        maps_paths = glob.glob(os.path.join(results_dir, "acc_results_maps", f"*_{hemi_fs}.gii"))
-        for maps_path in maps_paths:
-            if 'diff' in maps_path:
-                low = 0.05
-                high = 0.1
-            else:
-                if 'test_caption' in maps_path:
-                    low = 0.55
-                    high = 0.65
-                elif 'test_image' in maps_path:
-                    low = 0.55
-                    high = 0.8
+        if args.show_acc_maps:
+            maps_paths = glob.glob(os.path.join(results_dir, "acc_results_maps", f"*_{hemi_fs}.gii"))
+            for maps_path in maps_paths:
+                if 'diff' in maps_path:
+                    low = 0.05
+                    high = 0.1
                 else:
-                    low = 0.55
-                    high = 0.7
+                    if 'test_caption' in maps_path:
+                        low = 0.55
+                        high = 0.65
+                    elif 'test_image' in maps_path:
+                        low = 0.55
+                        high = 0.8
+                    else:
+                        low = 0.55
+                        high = 0.7
 
-            cmd += f":overlay={maps_path}:overlay_zorder=2:overlay_threshold={low},{high}"
+                cmd += f":overlay={maps_path}:overlay_zorder=2:overlay_threshold={low},{high}"
 
         annot_paths = [os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.{atlas_name}") for
                        atlas_name in ["aparc.annot", "aparc.a2009s.annot"]]
@@ -79,7 +80,6 @@ def run(args):
         print(f'{hemi_fs} corr_caption: {corr_caption[0]:.2f}')
 
 
-
     result_code = os.system(cmd)
     if result_code != 0:
         raise RuntimeError(f"failed to start freeview with error code {result_code}")
@@ -92,6 +92,8 @@ def get_args():
     parser.add_argument("--p-values-threshold", type=float, default=0.05)
 
     parser.add_argument("--n-clusters", type=int, default=10)
+
+    parser.add_argument("--show-acc-maps", action="store_true", default=False)
 
     return parser.parse_args()
 
