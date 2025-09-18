@@ -7,9 +7,7 @@ import nibabel as nib
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
     add_searchlight_permutation_args
 from data import IMAGE, CAPTION
-from eval import ACC_IMAGERY
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_CROSS_DECODING, \
-    METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_DIFF_ATTENTION
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION
 
 
 def run(args):
@@ -22,12 +20,12 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in [METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_DIFF_ATTENTION]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
+        for metric in [METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
             args.metric = metric
             mask_paths.append(
                 os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
 
-            if metric == METRIC_MOD_AGNOSTIC_AND_CROSS:
+            if metric == METRIC_MOD_AGNOSTIC:
                 clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
                 for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
                     mask_paths.append(file)

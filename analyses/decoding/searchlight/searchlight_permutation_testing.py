@@ -311,16 +311,23 @@ def calc_t_values(scores):
                 tvals[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
                 tvals[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]),
             axis=0)
+
         tvals[hemi][METRIC_MOD_AGNOSTIC] = np.nanmin(
             (
-                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                # within-modality decoding is above chance
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
+                # cross-modality decoding is above chance
                 tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
                 tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
+                # decoding acc should increase with attention (diff attended vs. unattended > 0)
+                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                # attention to mod_A should be sufficient for cross-decoding (test_images_attended > 0.5 w/ mod-specific captions)
                 tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
-                #TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
+                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
             ),
+        # TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
             axis=0)
     return tvals
 
@@ -494,10 +501,16 @@ def calc_t_values_null_distr(args, out_path):
 
                     dsets[METRIC_MOD_AGNOSTIC] = np.nanmin(
                         (
-                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                            # within-modality decoding is above chance
+                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
+                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
+                            # cross-modality decoding is above chance
                             t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
                             t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
+                            # decoding acc should increase with attention (diff attended vs. unattended > 0)
+                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                            # attention to mod_A should be sufficient for cross-decoding (test_images_attended > 0.5 w/ mod-specific captions)
                             t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
                             t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
                             # TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
