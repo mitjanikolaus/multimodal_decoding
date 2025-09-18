@@ -37,6 +37,8 @@ T_VAL_METRICS = [
     '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
     '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES]),
     '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),  # within-modal decoding
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),  # within-modal decoding
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),  # cross-modal decoding
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),  # cross-modal decoding
     # (present modality A, read-out modality B)
@@ -365,12 +367,12 @@ def calc_test_statistics(args):
         print("calculating p values..")
         for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
             test_stat = tfce_values[hemi][args.metric][vertex]
-        value_index = np.searchsorted(max_test_statistic_distr, test_stat)
-        if value_index >= len(max_test_statistic_distr):
-            p_value = 1 - (len(max_test_statistic_distr) - 1) / (len(max_test_statistic_distr))
-        else:
-            p_value = 1 - value_index / len(max_test_statistic_distr)
-        p_values[hemi][vertex] = p_value
+            value_index = np.searchsorted(max_test_statistic_distr, test_stat)
+            if value_index >= len(max_test_statistic_distr):
+                p_value = 1 - (len(max_test_statistic_distr) - 1) / (len(max_test_statistic_distr))
+            else:
+                p_value = 1 - value_index / len(max_test_statistic_distr)
+            p_values[hemi][vertex] = p_value
 
         print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
 
