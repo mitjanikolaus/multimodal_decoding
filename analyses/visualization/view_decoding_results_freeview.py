@@ -20,7 +20,7 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in [METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
+        for metric in [METRIC_MOD_AGNOSTIC]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
             args.metric = metric
             mask_paths.append(
                 os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
