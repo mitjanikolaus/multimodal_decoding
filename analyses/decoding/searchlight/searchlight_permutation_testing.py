@@ -1,7 +1,6 @@
 import argparse
 import itertools
 import math
-import warnings
 
 import h5py
 import numpy as np
@@ -17,102 +16,19 @@ from scipy.spatial.distance import cdist
 from tqdm import tqdm, trange
 
 from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values, \
-    calc_significance_cutoff, create_masks
+    calc_significance_cutoff, create_masks, T_VAL_METRICS
 from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TESTING_RESULTS_DIR, \
     searchlight_mode_from_args, get_results_file_path
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
-    TRAINING_MODES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED, \
-    TEST_CAPTIONS_ATTENDED, TEST_IMAGES, TEST_CAPTIONS, SPLIT_IMAGERY, SPLIT_IMAGERY_WEAK
+    TRAINING_MODES
 from eval import LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION
+    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION, DIFF
 
 DEFAULT_N_JOBS = 10
 
-DIFF = "diff"
-
-T_VAL_METRICS = [
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY]),
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
-    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES]),
-    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),  # within-modal decoding
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),  # within-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),  # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),  # cross-modal decoding
-    # (present modality A, read-out modality B)
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    # attention to A should be sufficient for cross-decoding
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    # attention to A should be sufficient for cross-decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),  # w/o attention decoding should not work
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),  # w/o attention decoding should not work
-    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES_UNATTENDED]),
-    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    # TODO: mod-agnostic or specific decoder?
-    '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # DIFF+MODALITY_SPECIFIC_IMAGES+SPLIT_TEST_CAPTIONS_ATTENDED+SPLIT_TEST_CAPTIONS_UNATTENDED #TODO
-
-    # DIFF+SPLIT_TEST_IMAGES+MODALITY_AGNOSTIC+MODALITY_SPECIFIC_IMAGES,
-    # DIFF, SPLIT_TEST_CAPTIONS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS,
-]
 TFCE_VAL_METRICS = [METRIC_CROSS_DECODING, METRIC_DIFF_ATTENTION, METRIC_MOD_AGNOSTIC]
-
-
-# def add_diff_metrics(sc):
-#     dfs_to_add = []
-#     for training_mode in TRAINING_MODES:
-#         for subject in tqdm(SUBJECTS_ADDITIONAL_TEST, desc=f'Adding {training_mode} decoder diff metrics'):
-#             for hemi in HEMIS:
-#                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
-#                 unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
-#                 assert len(attended) == len(unattended) == FS_NUM_VERTICES
-#                 diff_imgs = attended.copy()
-#                 diff_imgs['value'] = (attended.value.values - unattended.value.values)
-#                 diff_imgs['metric'] = 'diff_attended_unattended_images'
-#                 dfs_to_add.append(diff_imgs)
-#
-#                 attended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
-#                 unattended = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
-#                 assert len(attended) == len(unattended) == FS_NUM_VERTICES
-#                 diff_caps = attended.copy()
-#                 diff_caps['value'] = (attended.value.values - unattended.value.values)
-#                 diff_caps['metric'] = 'diff_attended_unattended_captions'
-#                 dfs_to_add.append(diff_caps)
-#
-#                 imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_IMAGES_ATTENDED)]
-#                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_CAPTIONS_ATTENDED)]
-#                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
-#                 diff_attended = imgs.copy()
-#                 diff_attended['value'] = (imgs.value.values - caps.value.values)
-#                 diff_attended['metric'] = 'diff_images_captions_attended'
-#                 dfs_to_add.append(diff_attended)
-#
-#                 imgs = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_IMAGES_UNATTENDED)]
-#                 caps = sc[(sc.training_mode == training_mode) & (sc.subject == subject) & (sc.hemi == hemi) & (
-#                         sc.metric == SPLIT_TEST_CAPTIONS_UNATTENDED)]
-#                 assert len(imgs) == len(caps) == FS_NUM_VERTICES
-#                 diff_unattended = imgs.copy()
-#                 diff_unattended['value'] = (imgs.value.values - caps.value.values)
-#                 diff_unattended['metric'] = 'diff_images_captions_unattended'
-#                 dfs_to_add.append(diff_unattended)
-#
-#     sc = pd.concat([sc] + dfs_to_add, ignore_index=True)
-#
-#     return sc
 
 
 def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions='True'):
@@ -295,36 +211,6 @@ def calc_t_values(scores):
             popmean = 0 if metric.startswith(DIFF) else 0.5
             tvals[hemi][metric] = calc_image_t_values(data, popmean)
 
-        tvals[hemi][METRIC_CROSS_DECODING] = np.nanmin(
-            (
-                tvals[hemi]['$'.join([MODALITY_AGNOSTIC, TEST_IMAGES])],
-                tvals[hemi]['$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS])],
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]),
-            axis=0)
-        tvals[hemi][METRIC_DIFF_ATTENTION] = np.nanmin(
-            (
-                tvals[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                tvals[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]),
-            axis=0)
-
-        tvals[hemi][METRIC_MOD_AGNOSTIC] = np.nanmin(
-            (
-                # within-modality decoding is above chance
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
-                # cross-modality decoding is above chance
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
-                # decoding acc should increase with attention (diff attended vs. unattended > 0)
-                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                tvals[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
-                # attention to mod_A should be sufficient for cross-decoding (test_images_attended > 0.5 w/ mod-specific captions)
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                tvals[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
-            ),
-        # TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
-            axis=0)
     return tvals
 
 
@@ -360,7 +246,7 @@ def calc_test_statistics(args):
     significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                                              args.p_value_threshold)
 
-    p_values = {hemi: np.repeat(np.nan, t_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
+    p_values = {hemi: np.repeat(np.nan, tfce_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
         print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi][args.metric])[-5:])
         print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-5:])
@@ -480,39 +366,6 @@ def calc_t_values_null_distr(args, out_path):
                     t_values[metric] = calc_image_t_values(data, popmean)
                     dsets[metric][iteration] = t_values[metric].astype(np.float16)
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
-                    dsets[METRIC_CROSS_DECODING][iteration] = np.nanmin(
-                        (
-                            t_values['$'.join([MODALITY_AGNOSTIC, TEST_IMAGES])],
-                            t_values['$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS])],
-                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]),
-                        axis=0)
-                    dsets[METRIC_DIFF_ATTENTION][iteration] = np.nanmin(
-                        (
-                            t_values['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                            t_values['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]),
-                        axis=0)
-
-                    dsets[METRIC_MOD_AGNOSTIC] = np.nanmin(
-                        (
-                            # within-modality decoding is above chance
-                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
-                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
-                            # cross-modality decoding is above chance
-                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
-                            # decoding acc should increase with attention (diff attended vs. unattended > 0)
-                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                            t_values['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
-                            # attention to mod_A should be sufficient for cross-decoding (test_images_attended > 0.5 w/ mod-specific captions)
-                            t_values['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                            t_values['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
-                            # TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
-                        ),
-                        axis=0)
-
     feats_config = LatentFeatsConfig(
         args.model,
         args.features,
@@ -614,7 +467,7 @@ def create_null_distribution(args):
                                 desc="Calculating tfce values for null distribution") if proc_id == args.n_jobs - 1 else indices
                 tfce_values = []
                 for iteration in iterator:
-                    vals = {hemi: {args.metric: t_vals[f"{hemi}__{args.metric}"][iteration]} for hemi in HEMIS}
+                    vals = {hemi: {metric: t_vals[f"{hemi}__{metric}"][iteration] for metric in T_VAL_METRICS} for hemi in HEMIS}
                     tfce_values.append(
                         calc_tfce_values(
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,

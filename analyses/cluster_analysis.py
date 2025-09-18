@@ -9,7 +9,36 @@ from nilearn.surface import surface
 from tqdm import tqdm
 
 from analyses.decoding.searchlight.searchlight import get_adjacency_matrix
-from utils import export_to_gifti, HEMIS, FS_HEMI_NAMES
+from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_CAPTIONS, MODALITY_SPECIFIC_CAPTIONS, \
+    TEST_CAPTIONS_ATTENDED, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY, \
+    SPLIT_IMAGERY_WEAK
+from utils import export_to_gifti, HEMIS, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC, DIFF, METRIC_CROSS_DECODING, \
+    METRIC_DIFF_ATTENTION
+
+
+T_VAL_METRICS = [
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY]),
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS]),
+    # '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),  # within-modal decoding #TODO add
+    # '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),  # within-modal decoding
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),  # cross-modal decoding
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),  # cross-modal decoding
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),   # attention to A should be sufficient for cross-decoding using decoder trained on mod B
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),    # attention to B should be sufficient for cross-decoding using decoder trained on mod A
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),  # w/o attention decoding should not work
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),  # w/o attention decoding should not work
+    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_IMAGES_UNATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+]
+
 
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
@@ -77,8 +106,8 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
 
 def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors,
                                  threshold):
-    t_values_path = os.path.join(results_dir, "t_values.p")
-    t_values = pickle.load(open(t_values_path, "rb"))
+    tfce_values_path = os.path.join(results_dir, f"tfce_values{hparam_suffix}.p")
+    tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
     p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
@@ -105,15 +134,15 @@ def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, res
         for i, cluster in enumerate(clusters[:10]):
             cluster = list(cluster)
             print(f"Cluster {i}: {len(cluster)} vertices", end=" | ")
-            vertex_max_t_value = cluster[np.nanargmax(t_values[hemi][metric][cluster])]
-            max_t_value = t_values[hemi][metric][vertex_max_t_value]
-            print(f"Max t-value: {max_t_value:.2f}", end=" | ")
-            coords = mesh.coordinates[vertex_max_t_value]
+            vertex_max_tfce_value = cluster[np.nanargmax(tfce_values[hemi][metric][cluster])]
+            max_tfce_value = tfce_values[hemi][metric][vertex_max_tfce_value]
+            print(f"Max tfce-value: {max_tfce_value:.2f}", end=" | ")
+            coords = mesh.coordinates[vertex_max_tfce_value]
             print(f"Coordinates (max t-value): {coords}")
             clusters_df.append({
                 "hemi": hemi, "id": i, "location": "", "size": len(cluster),
-                "max t-value": max_t_value,
-                "p-value": '{:.0e}'.format(p_values[hemi][vertex_max_t_value]),
+                "max tfce-value": vertex_max_tfce_value,
+                "p-value": '{:.0e}'.format(p_values[hemi][vertex_max_tfce_value]),
                 "peak coordinates": np.round(coords, 1),
                 "references": ""
             })
@@ -216,7 +245,8 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
         # p value masks
         masks = copy.deepcopy(p_values)
         for hemi in HEMIS:
-            print(f'{hemi} hemi mask size for threshold {p_value_threshold}: {np.mean(p_values[hemi] <= p_value_threshold):.2f}')
+            print(
+                f'{hemi} hemi mask size for threshold {p_value_threshold}: {np.mean(p_values[hemi] <= p_value_threshold):.2f}')
             masks[hemi][p_values[hemi] <= p_value_threshold] = 1
             masks[hemi][p_values[hemi] > p_value_threshold] = 0
             masks[hemi][np.isnan(p_values[hemi])] = 0
@@ -247,7 +277,46 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
     tfce_values = dict()
 
     for hemi in HEMIS:
-        values = t_values[hemi][metric]
+        if metric in T_VAL_METRICS:
+            values = t_values[hemi][metric]
+        elif metric == METRIC_MOD_AGNOSTIC:
+            values = np.nanmin(
+                (
+                    # # within-modality decoding is above chance
+                    # t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
+                    # t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
+                    # cross-modality decoding is above chance
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
+                    # decoding acc should increase with attention (diff attended vs. unattended > 0)
+                    t_values[hemi][
+                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                    t_values[hemi][
+                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
+                    # attention to mod_A should be sufficient for cross-decoding (test_images_attended > 0.5 w/ mod-specific captions)
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
+                ), axis=0)
+        # TODO: conds: w/o attention decoding should not work '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_TEST_CAPTIONS_UNATTENDED]) $'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_TEST_IMAGES_UNATTENDED]),
+        elif metric == METRIC_CROSS_DECODING:
+            values = np.nanmin(
+                (
+                    t_values[hemi]['$'.join([MODALITY_AGNOSTIC, TEST_IMAGES])],
+                    t_values[hemi]['$'.join([MODALITY_AGNOSTIC, TEST_CAPTIONS])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]),
+                axis=0)
+
+        elif metric == METRIC_DIFF_ATTENTION:
+            values = np.nanmin(
+                (
+                    t_values[hemi]['$'.join([DIFF, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                    t_values[hemi][
+                        '$'.join([DIFF, MODALITY_AGNOSTIC, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]),
+                axis=0)
+
+        else:
+            raise RuntimeError("Unknown metric: ", metric)
 
         max_score = np.nanmax(values)
         if np.isnan(max_score):

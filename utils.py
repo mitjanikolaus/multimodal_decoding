@@ -58,6 +58,8 @@ METRIC_CROSS_DECODING = 'cross_decoding'
 METRIC_MOD_AGNOSTIC = 'mod_agnostic'
 METRIC_DIFF_ATTENTION = 'diff_attention'
 
+DIFF = "diff"
+
 ADDITIONAL_TEST_DATA_DIR = os.path.join(DATA_DIR, "additional_test")
 ADDITIONAL_TEST_FMRI_DATA_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "fmri")
 ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR = os.path.join(ADDITIONAL_TEST_FMRI_DATA_DIR, "bids")
