@@ -185,7 +185,7 @@ def run(args):
     # keeping realignment params
     preproc.connect([(realign_node, datasink_node, [('realignment_parameters', 'realignment.@par')])])
 
-    # preproc.connect([(normalize, datasink_node, [('normalized_files', 'normalized.@files')])])
+    preproc.connect([(coregister_node, datasink_node, [('coregistered_source', 'coregistered_source.@files')])])
     preproc.connect([(coregister_node, datasink_node, [('coregistered_files', 'coregistered.@files')])])
 
     preproc.connect([(segment_node, datasink_node, [('native_class_images', 'segmented.@image')])])
