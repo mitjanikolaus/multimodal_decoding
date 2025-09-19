@@ -24,11 +24,11 @@ from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_
     TRAINING_MODES
 from eval import LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL, METRIC_MOD_AGNOSTIC, METRIC_DIFF_ATTENTION, DIFF
+    DEFAULT_MODEL, METRIC_MOD_INVARIANT, METRIC_DIFF_ATTENTION, DIFF
 
 DEFAULT_N_JOBS = 10
 
-TFCE_VAL_METRICS = [METRIC_CROSS_DECODING, METRIC_DIFF_ATTENTION, METRIC_MOD_AGNOSTIC]
+TFCE_VAL_METRICS = [METRIC_CROSS_DECODING, METRIC_DIFF_ATTENTION, METRIC_MOD_INVARIANT]
 
 
 def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS, standardized_predictions='True'):
@@ -524,7 +524,7 @@ def add_searchlight_permutation_args(parser):
     parser.add_argument("--tfce-e", type=float, default=1.0)
     parser.add_argument("--tfce-dh", type=float, default=0.1)
 
-    parser.add_argument("--metric", type=str, default=METRIC_MOD_AGNOSTIC)
+    parser.add_argument("--metric", type=str, default=METRIC_MOD_INVARIANT)
 
     return parser
 

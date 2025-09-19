@@ -9,10 +9,10 @@ from nilearn.surface import surface
 from tqdm import tqdm
 
 from analyses.decoding.searchlight.searchlight import get_adjacency_matrix
-from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_CAPTIONS, MODALITY_SPECIFIC_CAPTIONS, \
+from data import MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_CAPTIONS, MODALITY_SPECIFIC_CAPTIONS, \
     TEST_CAPTIONS_ATTENDED, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY, \
     SPLIT_IMAGERY_WEAK
-from utils import export_to_gifti, HEMIS, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC, DIFF, METRIC_CROSS_DECODING, \
+from utils import export_to_gifti, HEMIS, FS_HEMI_NAMES, METRIC_MOD_INVARIANT, DIFF, METRIC_CROSS_DECODING, \
     METRIC_DIFF_ATTENTION
 
 
@@ -287,7 +287,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
     for hemi in HEMIS:
         if metric in T_VAL_METRICS:
             values = t_values[hemi][metric]
-        elif metric == METRIC_MOD_AGNOSTIC:
+        elif metric == METRIC_MOD_INVARIANT:
             values = np.nanmin(
                 (
                     # # within-modality decoding is above chance
