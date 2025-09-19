@@ -536,7 +536,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=1000)
 
-    parser.add_argument("--p-value-threshold", type=float, default=1e-4)
+    parser.add_argument("--p-value-threshold", type=float, default=1e-2)
     parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()
