@@ -138,7 +138,7 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                         legend_title="Legend", palette=sns.color_palette('Set2'), dodge=False, noise_ceilings=None,
                         plot_modality_specific=True,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
-                        legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
+                        legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4, row_title_loc='center',
                         verify_num_datapoints=True, plot_legend=True, shorten_label_texts=True):
 
     training_modes_to_check = TRAINING_MODES if plot_modality_specific else [MODALITY_AGNOSTIC]
@@ -168,7 +168,9 @@ def create_result_graph(data, x_variable="model_feat", order=None,
 
     for m, metric in enumerate(metrics):
         new_title = metrics[m].replace("pairwise_acc_mean", "").replace("pairwise_acc_", "Decoding of ").replace("_", "-")
-        catplot_g.axes[m, 0].set_title(new_title, fontsize=35, y=row_title_height)
+        catplot_g.axes[m, 0].set_title(new_title, fontsize=35, y=row_title_height, loc=row_title_loc)
+        if row_title_loc != 'center':
+            catplot_g.axes[m, 0].set_title("", loc='center')
         catplot_g.axes[m, 0].set_ylabel('pairwise accuracy')
 
     plt.subplots_adjust(hspace=0.15)
