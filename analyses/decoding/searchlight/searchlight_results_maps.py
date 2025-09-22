@@ -12,39 +12,38 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import load_p
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_IMAGES, TEST_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
     MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, \
     TEST_CAPTIONS_UNATTENDED
-from eval import ACC_IMAGES_MOD_AGNOSTIC, ACC_CAPTIONS_MOD_AGNOSTIC
-from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS
+from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
-def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
-    all_scores = []
-    all_neighbors = []
-    for subject in args.subjects:
-        for hemi in HEMIS:
-            for metric in [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC]:
-                nans = nan_locations[subject][hemi]
-                all_scores.extend(scores[subject][hemi][metric][~nans])
-                all_neighbors.extend(n_neighbors[subject][hemi])
-
-    corr = pearsonr(all_neighbors, all_scores)
-
-    df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
-    df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(125, 1750, 250), labels=list(range(250, 1550, 250)))
-
-    plt.figure()
-    sns.barplot(data=df, x="n_neighbors_binned", y="scores")
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.savefig(os.path.join(results_dir, "searchlight_correlation_num_voxels_acc.png"),
-                dpi=300)
-    print(df.groupby('n_neighbors_binned').aggregate({"scores": "mean"}))
-
-    sns.histplot(x=all_neighbors, y=all_scores)
-    plt.xlabel("number of voxels")
-    plt.ylabel("pairwise accuracy (mean)")
-    plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
-    plt.savefig(os.path.join(results_dir, "searchlight_correlation_num_voxels_acc_hist.png"),
-                dpi=300)
+# def plot_correlation_num_voxels_acc(scores, nan_locations, n_neighbors, results_dir, args):
+#     all_scores = []
+#     all_neighbors = []
+#     for subject in args.subjects:
+#         for hemi in HEMIS:
+#             for metric in [ACC_CAPTIONS_MOD_AGNOSTIC, ACC_IMAGES_MOD_AGNOSTIC]:
+#                 nans = nan_locations[subject][hemi]
+#                 all_scores.extend(scores[subject][hemi][metric][~nans])
+#                 all_neighbors.extend(n_neighbors[subject][hemi])
+#
+#     corr = pearsonr(all_neighbors, all_scores)
+#
+#     df = pd.DataFrame({'n_neighbors': all_neighbors, 'scores': all_scores})
+#     df['n_neighbors_binned'] = pd.cut(df['n_neighbors'], bins=range(125, 1750, 250), labels=list(range(250, 1550, 250)))
+#
+#     plt.figure()
+#     sns.barplot(data=df, x="n_neighbors_binned", y="scores")
+#     plt.xlabel("number of voxels")
+#     plt.ylabel("pairwise accuracy (mean)")
+#     plt.savefig(os.path.join(results_dir, "searchlight_correlation_num_voxels_acc.png"),
+#                 dpi=300)
+#     print(df.groupby('n_neighbors_binned').aggregate({"scores": "mean"}))
+#
+#     sns.histplot(x=all_neighbors, y=all_scores)
+#     plt.xlabel("number of voxels")
+#     plt.ylabel("pairwise accuracy (mean)")
+#     plt.title(f"pearson r: {corr[0]:.2f} | p = {corr[1]}")
+#     plt.savefig(os.path.join(results_dir, "searchlight_correlation_num_voxels_acc_hist.png"),
+#                 dpi=300)
 
 
 def create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args):
@@ -99,16 +98,16 @@ def create_gifti_results_maps(args):
     for hemi in HEMIS:
         sc = scores[(scores.hemi == hemi)].copy().groupby(['vertex', 'training_mode', 'metric'], as_index=False).aggregate({'value': 'mean'})
 
-        mod_agnostic_and_cross = np.nanmin(
-            (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES)].value.values,
-             sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == TEST_CAPTIONS)].value.values,
-             sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_CAPTIONS)].value.values,
-             sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == TEST_IMAGES)].value.values),
-            axis=0
-        )
-        path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
-        print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
-        export_to_gifti(mod_agnostic_and_cross, path_out)
+        # mod_agnostic_and_cross = np.nanmin(
+        #     (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES)].value.values,
+        #      sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == TEST_CAPTIONS)].value.values,
+        #      sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_CAPTIONS)].value.values,
+        #      sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == TEST_IMAGES)].value.values),
+        #     axis=0
+        # )
+        # path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
+        # print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
+        # export_to_gifti(mod_agnostic_and_cross, path_out)
 
         attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_ATTENDED)]
         unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_UNATTENDED)]
@@ -127,16 +126,16 @@ def create_gifti_results_maps(args):
         for subj in args.subjects:
             sc = scores[(scores.subject == subj) & (scores.hemi == hemi)].copy()
 
-            mod_agnostic_and_cross = np.nanmin(
-                (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES)].value.values,
-                 sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == TEST_CAPTIONS)].value.values,
-                 sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_CAPTIONS)].value.values,
-                 sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == TEST_IMAGES)].value.values),
-                axis=0
-            )
-            path_out = os.path.join(results_dir, subj, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
-            print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
-            export_to_gifti(mod_agnostic_and_cross, path_out)
+            # mod_agnostic_and_cross = np.nanmin(
+            #     (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES)].value.values,
+            #      sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == TEST_CAPTIONS)].value.values,
+            #      sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_CAPTIONS)].value.values,
+            #      sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == TEST_IMAGES)].value.values),
+            #     axis=0
+            # )
+            # path_out = os.path.join(results_dir, subj, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
+            # print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
+            # export_to_gifti(mod_agnostic_and_cross, path_out)
 
             attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_ATTENDED)]
             unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_UNATTENDED)]
