@@ -90,10 +90,10 @@ def get_short_label_text(label, cut_labels=True):
 
 
 def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, row_variable="subject", row_order=None,
-                        col_variable=None, hue_variable="model_feat", hue_order=None, metrics=["pairwise_acc_mean"],
+                        col_variable=None, hue_variable=None, hue_order=None, metrics=["pairwise_acc_mean"],
                         ylim=(0.5, 1),
                         plot_legend=True, palette=None, noise_ceilings=None, hatches=None,
-                        legend_title="Model features modality", height=4, aspect=4, legend_bbox=(0.05, 1), rotation=80,
+                        legend_title="Model features modality", height=4, aspect=4, legend_bbox=(0.05, 1), rotation=90,
                         cut_labels=True, shorten_label_texts=True):
     data_filtered = data[data.metric.isin(metrics)]
 
@@ -110,8 +110,12 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     lgd = None
     if plot_legend:
         # lgd = g.fig.legend(loc='upper left', title="", bbox_to_anchor=(1, 0.9), ncol=2)
-        lgd = g.fig.legend(ncol=3, title=legend_title, loc="upper left",
-                           bbox_to_anchor=legend_bbox)  # , bbox_to_anchor=(0.02, 0.95), ncol=9)
+        handles, labels = g.fig.axes[-1].get_legend_handles_labels()
+        labels = [f'Modality-{x} decoder' if x == 'agnostic' else f'Modality-specific decoder ({x})' for x in labels]
+        # print(labels)
+        names = hue_order
+        lgd = g.fig.legend(handles=handles, labels=labels, ncol=1, title=legend_title, loc="upper left",
+                           bbox_to_anchor=legend_bbox)
         bbox_extra_artists = (lgd,)
 
     for i in range(len(g.axes[-1])):
@@ -120,7 +124,6 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
             last_axis.set_xticklabels(
                 [get_short_label_text(label, cut_labels) for label in last_axis.get_xticklabels()])
         last_axis.tick_params(axis='x', rotation=rotation)
-
     g.set(ylim=ylim, ylabel="pairwise_acc_mean", xlabel='')
 
     plt.tight_layout()
@@ -128,15 +131,11 @@ def plot_metric_catplot(data, kind="bar", x_variable="model_feat", order=None, r
     return g, data_filtered, lgd
 
 
-FEAT_ORDER = ["vision", "lang", "vision+lang", "matched"]
-FEAT_PALETTE = sns.color_palette('Set2')
-PALETTE_BLACK_ONLY = [(0, 0, 0)] * 10
-
 
 def create_result_graph(data, x_variable="model_feat", order=None,
                         metrics=["pairwise_acc_captions", "pairwise_acc_images"],
-                        hue_variable="features", hue_order=FEAT_ORDER, ylim=None,
-                        legend_title="Legend", palette=FEAT_PALETTE, dodge=False, noise_ceilings=None,
+                        hue_variable="training_mode", hue_order=None, ylim=None,
+                        legend_title="Legend", palette=sns.color_palette('Set2'), dodge=False, noise_ceilings=None,
                         plot_modality_specific=True,
                         row_variable="metric", row_order=None, col_variable=None, legend_bbox=(0.06, 0.97),
                         legend_2_bbox=(0.99, 0.97), height=4.5, row_title_height=0.85, aspect=4,
@@ -148,8 +147,8 @@ def create_result_graph(data, x_variable="model_feat", order=None,
         for x_variable_value in order:
             length = len(data_mode[(data_mode[x_variable] == x_variable_value) & (data_mode.metric == metrics[0])])
             expected_num_datapoints = len(SUBJECTS)
-            if hue_variable != "features":
-                expected_num_datapoints *= len(data[hue_variable].unique())
+            # if hue_variable != "features":
+            #     expected_num_datapoints *= len(data[hue_variable].unique())
             if (length > 0) and (length != expected_num_datapoints):
                 message = f"{mode} unexpected number of datapoints: {length} (expected: {expected_num_datapoints}) ({x_variable}: {x_variable_value}) "
                 if verify_num_datapoints:
@@ -157,11 +156,8 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                 else:
                     print(f"Warning: {message}")
 
-    data_training_mode_full = data[data.training_mode == MODALITY_AGNOSTIC]
-    data_training_mode_captions = data[data.training_mode == MODALITY_SPECIFIC_CAPTIONS]
-    data_training_mode_images = data[data.training_mode == MODALITY_SPECIFIC_IMAGES]
 
-    catplot_g, data_plotted, lgd = plot_metric_catplot(data_training_mode_full, order=order, metrics=metrics,
+    catplot_g, data_plotted, lgd = plot_metric_catplot(data, order=order, metrics=metrics,
                                                        x_variable=x_variable, legend_title=legend_title,
                                                        legend_bbox=legend_bbox, height=height, aspect=aspect,
                                                        hue_variable=hue_variable, row_variable=row_variable,
@@ -170,45 +166,16 @@ def create_result_graph(data, x_variable="model_feat", order=None,
                                                        noise_ceilings=noise_ceilings, plot_legend=plot_legend,
                                                        shorten_label_texts=shorten_label_texts)
 
-    if plot_modality_specific:
-        first_metric_graph_mod_specific_1 = None
-
-        for m, metric in enumerate(metrics):
-            g1, _ = plot_metric(data_training_mode_captions, kind="point", order=order, metric=metrics[m],
-                                x_variable="model_feat", dodge=dodge,
-                                hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
-                                axis=catplot_g.axes[m, 0], marker="o", plot_legend=False, ylim=ylim)
-            g2, _ = plot_metric(data_training_mode_images, kind="point", order=order, metric=metrics[m],
-                                x_variable="model_feat", dodge=dodge,
-                                hue_variable=hue_variable, hue_order=hue_order, palette=PALETTE_BLACK_ONLY,
-                                axis=catplot_g.axes[m, 0], marker="x", plot_legend=False, ylim=ylim)
-            if m == 0:
-                first_metric_graph_mod_specific_1 = g1
-
-        handles, labels = first_metric_graph_mod_specific_1.get_legend_handles_labels()
-
-        if len(handles) > 0:
-            new_labels = ["captions", "images"]
-            new_handles = [handles[-4], handles[-1]]
-            catplot_g.fig.legend(handles=new_handles, labels=new_labels, ncol=2,
-                                 title="Modality-specific decoders trained on", loc='upper right',
-                                 bbox_to_anchor=legend_2_bbox)
-
     for m, metric in enumerate(metrics):
-        catplot_g.axes[m, 0].set_title(
-            metrics[m].replace("pairwise_acc_mean", "").replace("pairwise_acc_", "").replace("_", "-"),
-            fontsize=35,
-            y=row_title_height)
+        new_title = metrics[m].replace("pairwise_acc_mean", "").replace("pairwise_acc_", "Decoding of ").replace("_", "-")
+        catplot_g.axes[m, 0].set_title(new_title, fontsize=35, y=row_title_height)
         catplot_g.axes[m, 0].set_ylabel('pairwise accuracy')
 
     plt.subplots_adjust(hspace=0.15)
     return catplot_g, lgd
 
 
-def add_avg_subject(df):
-    df_mean = df.copy()
-    df_mean["subject"] = "average"
-    return pd.concat((df.copy(), df_mean))
+
 
 
 METRICS_BASE = [ACC_MODALITY_AGNOSTIC, ACC_CAPTIONS, ACC_IMAGES, ACC_CROSS_IMAGES_TO_CAPTIONS,
