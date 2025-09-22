@@ -258,14 +258,19 @@ def run(args):
         for session, session_dir in zip(sessions, session_dirs):
             print(f"Scanning for runs in {session_dir}")
             n_runs = len(glob(os.path.join(session_dir, 'rrasub*run*_bold.nii')))
-            runs = [f'run-{id:02d}' for id in range(1, n_runs + 1)]
-            print(f"Runs: {runs}")
-            for run in runs:
+            print(f"n runs: {n_runs}")
+            run_ids = range(1, n_runs + 1)
+            for run_id in run_ids:
+                run = f'run-{run_id:02d}'
                 event_file = os.path.join(
                     raw_fmri_subj_data_dir, session, "func",
                     f"{subject}_{session}_task-coco_{run}_events.tsv"
                 )
                 event_files.append(event_file)
+                if args.shift_runs:
+                    run_id = run_id - 1 if run_id > 1 else run_ids[-1]
+                    run = f'run-{run_id:02d}'
+
                 realign_file = os.path.join(
                     args.preprocessing_datasink_dir, 'realignment', subject, session,
                     f'rp_a{subject}_{session}_task-coco_{run}_bold.txt'
@@ -315,6 +320,8 @@ def get_args():
     parser.add_argument("--preprocessing-datasink-dir", type=str, default=FMRI_PREPROCESSING_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
+
+    parser.add_argument("--shift-runs", default=False, action="store_true")
 
     return parser.parse_args()
 
