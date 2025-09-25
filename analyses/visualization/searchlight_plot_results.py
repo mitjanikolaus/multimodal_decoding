@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 
-from analyses.cluster_analysis import calc_significance_cutoff
+from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     get_hparam_suffix, add_searchlight_permutation_args

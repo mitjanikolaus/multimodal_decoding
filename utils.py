@@ -51,12 +51,19 @@ FS_NUM_VERTICES = 163842
 DEFAULT_MODEL = "imagebind"
 DEFAULT_RESOLUTION = "fsaverage7"
 
-METRIC_CAPTIONS_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_captions_agno_captions_specific'
-METRIC_IMAGES_DIFF_MOD_AGNO_MOD_SPECIFIC = 'diff_imgs_agno_imgs_specific'
-METRIC_DIFF_MOD_AGNOSTIC_MOD_SPECIFIC = 'diff_mod_agno_mod_specific'
-METRIC_CROSS_DECODING = 'cross_decoding'
+METRIC_WITHIN_MODALITY_DECODING = 'within'
+METRIC_CROSS_DECODING = 'cross'
+
+METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD = 'cross_with_attention_to_stimulus_mod'
+METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD = 'cross_with_attention_to_other_mod'
+
+METRIC_DIFF_ATTENTION_WITHIN_MODALITY = 'diff_attention_cross'
+METRIC_DIFF_ATTENTION_CROSS_MODALITY = 'diff_attention_within'
+
+METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY = 'diff_attend_both_vs_other_cross'
+METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY = 'diff_attend_both_vs_other_within'
+
 METRIC_MOD_INVARIANT = 'mod_invariant'
-METRIC_DIFF_ATTENTION = 'diff_attention'
 
 DIFF = "diff"
 

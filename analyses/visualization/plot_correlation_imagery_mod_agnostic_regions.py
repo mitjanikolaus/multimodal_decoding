@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
-from analyses.cluster_analysis import get_edge_lengths_dicts_based_on_edges, calc_tfce_values
+from analyses.decoding.searchlight.searchlight_permutation_testing import get_edge_lengths_dicts_based_on_edges, calc_tfce_values
 from analyses.decoding.searchlight.searchlight_permutation_testing import add_searchlight_permutation_args, \
     permutation_results_dir, get_hparam_suffix
 from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGES_MOD_SPECIFIC_IMAGES, \
