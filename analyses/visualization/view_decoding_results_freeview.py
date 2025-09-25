@@ -5,9 +5,9 @@ import os
 from scipy.stats import pearsonr
 import nibabel as nib
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, get_hparam_suffix, \
-    add_searchlight_permutation_args
+    add_searchlight_permutation_args, TFCE_VAL_METRICS
 from data import IMAGE, CAPTION
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_MOD_INVARIANT, METRIC_DIFF_ATTENTION
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_MOD_INVARIANT
 
 
 def run(args):
@@ -20,15 +20,15 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in [METRIC_MOD_INVARIANT]: #, METRIC_CROSS_DECODING, ACC_IMAGERY]:
+        for metric in [TFCE_VAL_METRICS]:
             args.metric = metric
             mask_paths.append(
                 os.path.join(results_dir, "results_maps", f"tfce_values{get_hparam_suffix(args)}_{hemi_fs}.gii"))
 
-            if metric == METRIC_MOD_INVARIANT:
-                clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
-                for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
-                    mask_paths.append(file)
+            # if metric == METRIC_MOD_INVARIANT:
+            #     clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
+            #     for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
+            #         mask_paths.append(file)
 
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
