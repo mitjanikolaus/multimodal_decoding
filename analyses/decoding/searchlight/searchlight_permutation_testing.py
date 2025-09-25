@@ -27,7 +27,10 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
     DEFAULT_MODEL, METRIC_MOD_INVARIANT, METRIC_DIFF_ATTENTION_WITHIN_MODALITY, DIFF, METRIC_WITHIN_MODALITY_DECODING, \
     METRIC_DIFF_ATTENTION_CROSS_MODALITY, METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD, \
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY, \
-    METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti
+    METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti, \
+    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD, \
+    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_CAPTIONS, \
+    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_IMAGES
 
 DEFAULT_N_JOBS = 10
 
@@ -358,7 +361,25 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
                     t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]
                 ),
                 axis=0)
-
+        elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
+            values = np.nanmin(
+                (
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
+                ),
+                axis=0)
+        elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_IMAGES:
+            values = np.nanmin(
+                (
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])],
+                ),
+                axis=0)
+        elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_CAPTIONS:
+            values = np.nanmin(
+                (
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
+                ),
+                axis=0)
         elif metric == METRIC_DIFF_ATTENTION_WITHIN_MODALITY:
             values = np.nanmin(
                 (

@@ -54,6 +54,10 @@ DEFAULT_RESOLUTION = "fsaverage7"
 METRIC_WITHIN_MODALITY_DECODING = 'within'
 METRIC_CROSS_DECODING = 'cross'
 
+METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD = 'within_with_attention_to_other_mod'
+METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_IMAGES = 'within_with_attention_to_other_mod_images'
+METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_CAPTIONS = 'within_with_attention_to_other_mod_captions'
+
 METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD = 'cross_with_attention_to_stimulus_mod'
 METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD = 'cross_with_attention_to_other_mod'
 
