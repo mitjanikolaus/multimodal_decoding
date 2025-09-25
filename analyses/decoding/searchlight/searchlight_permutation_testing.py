@@ -969,7 +969,7 @@ def add_searchlight_permutation_args(parser):
     parser.add_argument("--tfce-e", type=float, default=1.0)
     parser.add_argument("--tfce-dh", type=float, default=0.1)
 
-    parser.add_argument("--metrics", type=str, nargs="+", default=[METRIC_MOD_INVARIANT])
+    parser.add_argument("--metrics", type=str, nargs="+", default=TFCE_VAL_METRICS)
 
     return parser
 
