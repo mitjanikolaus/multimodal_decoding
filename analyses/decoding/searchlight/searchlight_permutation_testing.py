@@ -35,10 +35,10 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
 DEFAULT_N_JOBS = 10
 
 TFCE_VAL_METRICS = [
+    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_CAPTIONS,
     METRIC_WITHIN_MODALITY_DECODING,
     METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD,
     METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_IMAGES,
-    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_CAPTIONS,
     METRIC_CROSS_DECODING,
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD,
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD,
@@ -376,17 +376,9 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
                 ),
                 axis=0)
         elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_IMAGES:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])],
-                ),
-                axis=0)
+            values = t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])]
         elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD_CAPTIONS:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-                ),
-                axis=0)
+            values = t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
         elif metric == METRIC_DIFF_ATTENTION_WITHIN_MODALITY:
             values = np.nanmin(
                 (
