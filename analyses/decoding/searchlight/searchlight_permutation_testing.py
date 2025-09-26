@@ -144,19 +144,19 @@ def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
     return result_dict
 
 
-def create_results_cluster_masks(values, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors,
+def create_results_cluster_masks(values, results_dir, metric, resolution, radius, n_neighbors,
                                  threshold):
-    tfce_values_path = os.path.join(results_dir, f"tfce_values{hparam_suffix}.p")
+    tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
-    p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
+    p_values_path = os.path.join(results_dir, f"p_values_{metric}.p")
     p_values = pickle.load(open(p_values_path, "rb"))
 
     edge_lengths = get_edge_lengths_dicts_based_on_edges(resolution)
     fsaverage = datasets.fetch_surf_fsaverage(mesh="fsaverage")
 
     results_maps_path = os.path.join(results_dir, f"results_maps")
-    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks{hparam_suffix}")
+    masks_path = os.path.join(os.path.dirname(p_values_path), f"masks_{metric}")
     os.makedirs(masks_path, exist_ok=True)
 
     clusters_df = []
@@ -244,10 +244,10 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
     return significance_cutoff, null_distr
 
 
-def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, hparam_suffix, resolution, radius=None,
+def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, resolution, radius=None,
                  n_neighbors=None):
     print("Creating gifti results masks")
-    p_values_path = os.path.join(results_dir, f"p_values{hparam_suffix}.p")
+    p_values_path = os.path.join(results_dir, f"p_values_{metric}.p")
 
     results_maps_path = os.path.join(results_dir, "results_maps")
     os.makedirs(results_maps_path, exist_ok=True)
@@ -260,16 +260,12 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
     log_10_p_values['right'][~np.isnan(p_values['right'])] = - np.log10(p_values['right'][~np.isnan(p_values['right'])])
 
     for hemi in HEMIS:
-        path_out = os.path.join(results_maps_path, f"p_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
+        path_out = os.path.join(results_maps_path, f"p_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(log_10_p_values[hemi], path_out)
 
     # tfce values
-    tfce_values_path = os.path.join(results_dir, f"tfce_values{hparam_suffix}.p")
+    tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
-
-    for hemi in HEMIS:
-        path_out = os.path.join(results_maps_path, f"tfce_values{hparam_suffix}_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(tfce_values[hemi][metric], path_out)
 
     threshold = p_value_threshold
     if tfce_value_threshold is not None:
@@ -281,6 +277,10 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
             masks[hemi][tfce_values[hemi][metric] <= tfce_value_threshold] = 0
             masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
             masks[hemi] = masks[hemi].astype(np.uint8)
+
+            path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+            tfce_values[hemi][metric][tfce_values[hemi][metric] <= tfce_value_threshold] = 0
+            export_to_gifti(tfce_values[hemi][metric], path_out)
     else:
         # p value masks
         masks = copy.deepcopy(p_values)
@@ -292,7 +292,11 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, h
             masks[hemi][np.isnan(p_values[hemi])] = 0
             masks[hemi] = masks[hemi].astype(np.uint8)
 
-    create_results_cluster_masks(masks, results_dir, hparam_suffix, metric, resolution, radius, n_neighbors, threshold)
+            path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+            tfce_values[hemi][metric][p_values[hemi] > p_value_threshold] = 0
+            export_to_gifti(tfce_values[hemi][metric], path_out)
+
+    create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
 
 
 def get_edge_lengths_dicts_based_on_edges(resolution):
@@ -692,7 +696,7 @@ def calc_test_statistics(args):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{args.metric}.p")
     if not os.path.isfile(tfce_values_path):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
@@ -708,7 +712,7 @@ def calc_test_statistics(args):
 
     null_distribution_tfce_values_file = os.path.join(
         permutation_results_dir(args),
-        f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+        f"tfce_values_null_distribution_{args.metric}.p"
     )
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
     significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
@@ -730,7 +734,7 @@ def calc_test_statistics(args):
 
         print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
 
-        p_values_path = os.path.join(permutation_results_dir(args), f"p_values{get_hparam_suffix(args)}.p")
+        p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{args.metric}.p")
         pickle.dump(p_values, open(p_values_path, mode='wb'))
 
 
@@ -909,13 +913,9 @@ def permutation_results_dir(args):
     ))
 
 
-def get_hparam_suffix(args):
-    return f"_{args.metric}_h_{args.tfce_h}_e_{args.tfce_e}_dh_{args.tfce_dh}"
-
-
 def create_null_distribution(args):
     tfce_values_null_distribution_path = os.path.join(
-        permutation_results_dir(args), f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
+        permutation_results_dir(args), f"tfce_values_null_distribution_{args.metric}.p"
     )
     if not os.path.isfile(tfce_values_null_distribution_path):
         t_values_null_distribution_path = os.path.join(
@@ -1021,5 +1021,4 @@ if __name__ == "__main__":
         create_null_distribution(args)
         calc_test_statistics(args)
         create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, args.tfce_value_threshold,
-                     get_hparam_suffix(args),
                      args.resolution, args.radius, args.n_neighbors)
