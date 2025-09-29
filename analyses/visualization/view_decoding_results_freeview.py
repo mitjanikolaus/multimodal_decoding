@@ -7,7 +7,7 @@ import nibabel as nib
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args, TFCE_VAL_METRICS
 from data import IMAGE, CAPTION
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_MOD_INVARIANT
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
 
 
 def run(args):
