@@ -12,14 +12,13 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import os
 
+from nilearn.plotting._utils import get_colorbar_and_data_ranges
 from nilearn.plotting.cm import mix_colormaps
-from nilearn.plotting.img_plotting import get_colorbar_and_data_ranges
-from nilearn.plotting.surf_plotting import _get_cmap_matplotlib, \
-    _get_ticks_matplotlib, _threshold_and_rescale, _compute_surf_map_faces_matplotlib, _get_view_plot_surf_matplotlib, \
-    _compute_facecolors_matplotlib, _get_faces_on_edge
+from nilearn.plotting.surface._matplotlib_backend import _get_view_plot_surf, _compute_facecolors, \
+    _compute_surf_map_faces, _threshold_and_rescale, _get_ticks, _get_cmap
+from nilearn.plotting.surface._utils import get_faces_on_edge
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
-
 
 CBAR_T_VAL_MAX = 15
 
@@ -68,7 +67,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
     limits = [coords.min(), coords.max()]
 
     # Get elevation and azimut from view
-    elev, azim = _get_view_plot_surf_matplotlib(hemi, view)
+    elev, azim = _get_view_plot_surf(hemi, view)
 
     # if no cmap is given, set to matplotlib default
     if cmap is None:
@@ -106,11 +105,11 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
     if keep_bg:
         bg_face_colors = figure.axes[0].collections[0]._facecolor3d
     else:
-        bg_face_colors = _compute_facecolors_matplotlib(
+        bg_face_colors = _compute_facecolors(
             bg_map, faces, coords.shape[0], darkness, alpha
         )
     if surf_map is not None:
-        surf_map_faces = _compute_surf_map_faces_matplotlib(
+        surf_map_faces = _compute_surf_map_faces(
             surf_map, faces, avg_method, coords.shape[0],
             bg_face_colors.shape[0]
         )
@@ -141,26 +140,29 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
 
         if colorbar:
             cbar_vmax = cbar_vmax if cbar_vmax is not None else vmax
-            ticks = _get_ticks_matplotlib(cbar_vmin, cbar_vmax,
-                                          cbar_tick_format, threshold)
-            our_cmap, norm = _get_cmap_matplotlib(cmap,
-                                                  threshold,
-                                                  vmax,
-                                                  cbar_tick_format,
-                                                  threshold)
-
-            if metric.startswith("pairwise_acc"):
-                # ticks = [0.5, 0.55, 0.6, 0.7, 0.8, 0.9]
-                # cbar_vmin = 0.5
-                cbar_vmin = 0
-                # cbar_vmax = CBAR_T_VAL_MAX
+            ticks = _get_ticks(cbar_vmin, cbar_vmax,
+                               cbar_tick_format, threshold)
+            our_cmap, norm = _get_cmap(cmap,
+                                       threshold,
+                                       vmax,
+                                       cbar_tick_format,
+                                       threshold)
+            if '$' in metric:
+                label = metric.replace('$', '_')
                 ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
-                label = metric.replace("pairwise_acc_", "")
+
+            # elif metric.startswith("pairwise_acc"):
+            #     # ticks = [0.5, 0.55, 0.6, 0.7, 0.8, 0.9]
+            #     # cbar_vmin = 0.5
+            #     cbar_vmin = 0
+            #     # cbar_vmax = CBAR_T_VAL_MAX
+            #     ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
+            #     label = metric.replace("pairwise_acc_", "")
             else:
-                ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks)/1000)*1000]
+                ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks) / 1000) * 1000]
                 # ticks = [threshold, np.mean([threshold, np.max(ticks)]), np.max(ticks)]
-                label = "TFCE"
-                cbar_vmin = 0
+                label = f"{metric} (TFCE)"
+                # cbar_vmin = 0
 
             bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)
             # we need to create a proxy mappable
@@ -168,7 +170,6 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             proxy_mappable.set_array(surf_map_faces)
             cax, _ = make_axes(axes, location='bottom', fraction=.15,
                                shrink=.5, pad=.0, aspect=10.)
-
 
             # else:
             #     ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
@@ -290,8 +291,8 @@ def plot_surf_stat_map_custom(
 
 
 def plot_surf_contours_custom(surf_mesh, roi_map, axes=None, figure=None, levels=None,
-                       labels=None, colors=None, legend=False, cmap='tab20',
-                       title=None, output_file=None, **kwargs):
+                              labels=None, colors=None, legend=False, cmap='tab20',
+                              title=None, output_file=None, **kwargs):
     """Plot contours of ROIs on a surface, \
     optionally over a statistical map.
 
@@ -401,7 +402,7 @@ def plot_surf_contours_custom(surf_mesh, roi_map, axes=None, figure=None, levels
     patch_list = []
     for level, color, label in zip(levels, colors, labels):
         roi_indices = np.where(roi == level)[0]
-        faces_outside = _get_faces_on_edge(faces, roi_indices)
+        faces_outside = get_faces_on_edge(faces, roi_indices)
         axes.collections[0]._facecolor3d[faces_outside] = color
         if axes.collections[0]._edgecolor3d.size == 0:
             axes.collections[0].set_edgecolor(
@@ -424,6 +425,7 @@ def plot_surf_contours_custom(surf_mesh, roi_map, axes=None, figure=None, levels
         plt.close(figure)
     else:
         return figure
+
 
 def plot_surf_roi_custom(surf_mesh,
                          roi_map,

@@ -2,16 +2,10 @@ import argparse
 import numpy as np
 import os
 
-import pandas as pd
-from matplotlib import pyplot as plt
-import seaborn as sns
-from scipy.stats import pearsonr
-
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir, add_searchlight_permutation_args
-from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_IMAGES, TEST_CAPTIONS, MODALITY_SPECIFIC_IMAGES, \
-    MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, \
-    TEST_CAPTIONS_UNATTENDED
+from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, \
+    TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
@@ -69,6 +63,9 @@ def create_gifti_results_maps(args):
     #     create_n_vertices_gifti(nan_locations, n_neighbors, results_dir, args)
     #     plot_correlation_num_voxels_acc(subject_scores, nan_locations, n_neighbors, results_dir, args)
 
+    n_vertices = len(scores.vertex.unique())
+    print(f'n vertices: {n_vertices}')
+
     metrics = scores.metric.unique()
     print("Metrics: ", metrics)
     for metric in metrics:
@@ -88,15 +85,18 @@ def create_gifti_results_maps(args):
                 score_hemi_metric = scores[
                     (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
                     ].copy()
+                assert len(score_hemi_metric) == len(args.subjects) * n_vertices
                 score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
                     {'value': 'mean'}).value.values
-                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | max: {np.nanmax(score_hemi_metric.value):.3f}")
+                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | "
+                      f"max: {np.nanmax(score_hemi_metric.value):.3f}")
                 path_out = os.path.join(results_dir, f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
                 export_to_gifti(score_hemi_metric_avgd, path_out)
 
     for hemi in HEMIS:
-        sc = scores[(scores.hemi == hemi)].copy().groupby(['vertex', 'training_mode', 'metric'], as_index=False).aggregate({'value': 'mean'})
+        sc = scores[(scores.hemi == hemi)].copy().groupby(['vertex', 'training_mode', 'metric'],
+                                                          as_index=False).aggregate({'value': 'mean'})
 
         # mod_agnostic_and_cross = np.nanmin(
         #     (sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES)].value.values,

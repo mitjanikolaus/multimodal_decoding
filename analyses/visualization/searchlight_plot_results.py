@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 
-from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff
+from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, TFCE_VAL_METRICS, \
+    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
-    get_hparam_suffix, add_searchlight_permutation_args
+    add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
-from eval import ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC, ACC_IMAGERY_MOD_AGNOSTIC
-from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, METRIC_MOD_AGNOSTIC_AND_CROSS, \
-    save_plot_and_crop_img, append_images, METRIC_CROSS_DECODING
+from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
+    save_plot_and_crop_img, append_images, METRIC_MOD_INVARIANT, DIFF
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -28,15 +28,15 @@ ACC_COLORBAR_THRESHOLD = 0.52
 
 CBAR_TFCE_MAX_VALUE = 400000
 
-METRICS = [METRIC_MOD_AGNOSTIC_AND_CROSS, ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC]
-
 CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 
 
 def plot(args):
-    for result_metric in METRICS:
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+
+    for result_metric in T_VAL_METRICS + [METRIC_MOD_INVARIANT]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
@@ -45,10 +45,8 @@ def plot(args):
 
         args.metric = result_metric
 
-        fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
-
         rois_for_view = {
-            METRIC_MOD_AGNOSTIC_AND_CROSS: {
+            METRIC_MOD_INVARIANT: {
                 "left": {
                     "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
                     "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
@@ -60,60 +58,37 @@ def plot(args):
                     "ventral": [],
                 }
             },
-            METRIC_CROSS_DECODING: {
-                "left": {
-                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
-                    "ventral": ['inferiortemporal', 'fusiform'],
-                },
-                "right": {
-                    "medial": [],
-                    "lateral": [],
-                    "ventral": [],
-                }
-            },
-            ACC_IMAGERY_WHOLE_TEST_SET_MOD_AGNOSTIC: {
-                "left": {
-                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
-                    "ventral": ['inferiortemporal', 'fusiform'],
-                },
-                "right": {
-                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                    "lateral": ['inferiorparietal', 'middletemporal', 'bankssts'],
-                    "ventral": ['inferiortemporal', 'fusiform'],
-                },
-            },
-            ACC_IMAGERY_MOD_AGNOSTIC: {
-                "left": {
-                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                    "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
-                    "ventral": ['inferiortemporal', 'fusiform'],
-                },
-                "right": {
-                    "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-                    "lateral": ['inferiorparietal', 'middletemporal', 'bankssts'],
-                    "ventral": ['inferiortemporal', 'fusiform'],
-                },
-            }
+            # ACC_IMAGERY_MOD_AGNOSTIC: {
+            #     "left": {
+            #         "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+            #         "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
+            #         "ventral": ['inferiortemporal', 'fusiform'],
+            #     },
+            #     "right": {
+            #         "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
+            #         "lateral": ['inferiorparietal', 'middletemporal', 'bankssts'],
+            #         "ventral": ['inferiortemporal', 'fusiform'],
+            #     },
+            # }
         }
 
         result_values = dict()
 
-        if result_metric in [METRIC_MOD_AGNOSTIC_AND_CROSS, METRIC_CROSS_DECODING]:
-            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
+        if result_metric in [METRIC_MOD_INVARIANT]:
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
 
-            null_distribution_tfce_values_file = os.path.join(
-                permutation_results_dir(args),
-                f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-            )
-            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              args.p_value_threshold)
-            # significance_cutoff = 2333.16
+            #TODO
+            # null_distribution_tfce_values_file = os.path.join(
+            #     permutation_results_dir(args),
+            #     f"tfce_values_null_distribution_{result_metric}.p"
+            # )
+            # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   args.p_value_threshold)
+            significance_cutoff = 6.72
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
@@ -121,65 +96,87 @@ def plot(args):
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             # print(f"{result_metric} max tfce value across hemis: {cbar_max}")
 
-        elif result_metric.startswith("pairwise_acc"):
-            # cbar_min = ACC_COLORBAR_MIN
-            # cbar_max = COLORBAR_MAX
-            # threshold = ACC_COLORBAR_THRESHOLD
-            # subject_scores = load_per_subject_scores(args)
-            # for hemi in HEMIS:
-            #     score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
-            #                                  axis=0)
-            #     result_values[hemi] = score_hemi_avgd
+        # elif result_metric.startswith("pairwise_acc"):
+        #     # cbar_min = ACC_COLORBAR_MIN
+        #     # cbar_max = COLORBAR_MAX
+        #     # threshold = ACC_COLORBAR_THRESHOLD
+        #     # subject_scores = load_per_subject_scores(args)
+        #     # for hemi in HEMIS:
+        #     #     score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
+        #     #                                  axis=0)
+        #     #     result_values[hemi] = score_hemi_avgd
+        #
+        #     # t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
+        #     # for hemi in HEMIS:
+        #     #     result_values[hemi] = t_values[hemi][args.metric]
+        #     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
+        #     orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+        #     for hemi in HEMIS:
+        #         result_values[hemi] = orig_result_values[hemi][args.metric]
+        #
+        #     null_distribution_tfce_values_file = os.path.join(
+        #         permutation_results_dir(args),
+        #         f"tfce_values_null_distribution_{result_metric}.p"
+        #     )
+        #     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+        #     significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+        #                                                       args.p_value_threshold)
+        #     threshold = significance_cutoff
+        #     cbar_min = 0
+        #     cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+        #     # print(f"{result_metric} max tfce value across hemis: {np.nanmax(np.concatenate((result_values['left'], result_values['right'])))}")
+        #
+        #     # for hemi in HEMIS:
+        #     #     print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
+        #     #     result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
+        #     #     print([round(val) for val in result_values[hemi][result_values[hemi] > 2000][:20]])
+        #     # threshold = 1
+        #
+        #     # from t-val table:
+        #     # for p<0.05: 2.015
+        #     # for p<0.01: 3.365
+        #     # for p<0.001: 5.893
+        #
+        #     # from permutation testing:
+        #     # test statistic significance cutoff for p<0.05: 2.06
+        #     # min mean acc:
+        #     # 0.5308641975308642
+        #     # test statistic significance cutoff for p<0.01: 3.44
+        #     # min mean acc:
+        #     # 0.5740740740740741
+        #     # test statistic significance cutoff for p<0.001: 6.03
+        #     # min mean acc: 0.5902777777777778
+        #     # threshold = 2.015
+        #     # cbar_min = 0
+        #     # cbar_max = CBAR_T_VAL_MAX
 
-            # t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
-            # for hemi in HEMIS:
-            #     result_values[hemi] = t_values[hemi][args.metric]
-            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values{get_hparam_suffix(args)}.p")
-            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+        elif result_metric.startswith(DIFF):
+            _, training_mode, metric_1, metric_2 = result_metric.split('$')
+
             for hemi in HEMIS:
-                result_values[hemi] = orig_result_values[hemi][args.metric]
+                path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+                                                      f"{training_mode}_decoder_{metric_1}_{FS_HEMI_NAMES[hemi]}.gii")
+                path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+                                                      f"{training_mode}_decoder_{metric_2}_{FS_HEMI_NAMES[hemi]}.gii")
+                result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
+                                      nibabel.load(path_mean_acc_values_2).darrays[0].data
 
-            null_distribution_tfce_values_file = os.path.join(
-                permutation_results_dir(args),
-                f"tfce_values_null_distribution{get_hparam_suffix(args)}.p"
-            )
-            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              args.p_value_threshold)
-            threshold = significance_cutoff
-            cbar_min = 0
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-            # print(f"{result_metric} max tfce value across hemis: {np.nanmax(np.concatenate((result_values['left'], result_values['right'])))}")
-
-            # for hemi in HEMIS:
-            #     print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
-            #     result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
-            #     print([round(val) for val in result_values[hemi][result_values[hemi] > 2000][:20]])
-            # threshold = 1
-
-            # from t-val table:
-            # for p<0.05: 2.015
-            # for p<0.01: 3.365
-            # for p<0.001: 5.893
-
-            # from permutation testing:
-            # test statistic significance cutoff for p<0.05: 2.06
-            # min mean acc:
-            # 0.5308641975308642
-            # test statistic significance cutoff for p<0.01: 3.44
-            # min mean acc:
-            # 0.5740740740740741
-            # test statistic significance cutoff for p<0.001: 6.03
-            # min mean acc: 0.5902777777777778
-            # threshold = 2.015
-            # cbar_min = 0
-            # cbar_max = CBAR_T_VAL_MAX
-
+            threshold = 0.01
+            cbar_min = 0.01
+            cbar_max = 0.2  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         else:
-            raise RuntimeError(f"Unknown metric: {result_metric}")
+            training_mode, metric = result_metric.split('$')
+
+            for hemi in HEMIS:
+                path_mean_acc_values = os.path.join(permutation_results_dir(args), "acc_results_maps",
+                                                    f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                result_values[hemi] = nibabel.load(path_mean_acc_values).darrays[0].data
+
+            threshold = 0.5
+            cbar_min = 0.5
+            cbar_max = 0.75  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         print(f"{result_metric} cbar max: {cbar_max}")
-
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
@@ -187,53 +184,60 @@ def plot(args):
             atlas_labels, atlas_colors, names = nibabel.freesurfer.read_annot(atlas_path)
             names = [name.decode() for name in names]
 
-            # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi}_subcortical.annot")
-            # subcortical_atlas_path = os.path.join(ROOT_DIR, f"atlas_data/{hemi_fs}.test.annot")
-            # subcortical_atlas_labels, subcortical_atlas_colors, subcortical_names = nibabel.freesurfer.read_annot(subcortical_atlas_path)
-            # subcortical_names = [name.decode() for name in subcortical_names]
-            # names = names + subcortical_names
-            # atlas_colors = np.vstack((atlas_colors, subcortical_atlas_colors))
-            # add labels from subcortical atlas
-            # offset = np.max(atlas_labels) + 1
-            # label_to_id = {id: id if id == -1 else i + offset for i, id in enumerate(label_ids)}
-            # subcortical_atlas_labels_transformed = np.array([-1 if l == -1 else l + offset for l in subcortical_atlas_labels])
-            # subcortical_atlas_labels_transformed = np.array([l + offset for l in subcortical_atlas_labels])
-            # atlas_labels[atlas_labels == -1] = subcortical_atlas_labels_transformed[atlas_labels == -1]
+            if result_metric in rois_for_view:
+                for i, (view, rois) in enumerate(rois_for_view[result_metric][hemi].items()):
+                    regions_indices = [names.index(roi) for roi in rois]
+                    # label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
+                    label_names = [r for r in rois]
+                    # colors = [all_colors[label_names[regions_indices.index(i)]] if i in regions_indices else (0, 0, 0, 0) for i
+                    #           in range(np.nanmax(atlas_labels))]
+                    # cmap = ListedColormap(colors)
+                    atlas_labels_current_view = np.array([l if l in regions_indices else np.nan for l in atlas_labels])
+                    fig = plotting.plot_surf_stat_map(
+                        fsaverage[f"infl_{hemi}"],
+                        result_values[hemi],
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        hemi=hemi,
+                        view=view,
+                        colorbar=False,
+                        threshold=threshold,
+                        vmax=cbar_max,
+                        vmin=cbar_min,
+                        cmap=CMAP_POS_ONLY,
+                    )
+                    plot_surf_contours_custom(
+                        surf_mesh=fsaverage[f"infl_{hemi}"],
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        roi_map=atlas_labels_current_view,
+                        levels=regions_indices,
+                        hemi=hemi,
+                        figure=fig,
+                        colors=[CONTOUR_COLOR] * len(regions_indices),
+                    )
 
-            for i, (view, rois) in enumerate(rois_for_view[result_metric][hemi].items()):
-                regions_indices = [names.index(roi) for roi in rois]
-                # label_names = [label_names_dict[r] if r in label_names_dict else r.replace("-", " ") for r in rois]
-                label_names = [r for r in rois]
-                # colors = [all_colors[label_names[regions_indices.index(i)]] if i in regions_indices else (0, 0, 0, 0) for i
-                #           in range(np.nanmax(atlas_labels))]
-                # cmap = ListedColormap(colors)
-                atlas_labels_current_view = np.array([l if l in regions_indices else np.nan for l in atlas_labels])
-                fig = plotting.plot_surf_stat_map(
-                    fsaverage[f"infl_{hemi}"],
-                    result_values[hemi],
-                    bg_map=fsaverage[f"sulc_{hemi}"],
-                    hemi=hemi,
-                    view=view,
-                    colorbar=False,
-                    threshold=threshold,
-                    vmax=cbar_max,
-                    vmin=cbar_min,
-                    cmap=CMAP_POS_ONLY,
-                )
-                plot_surf_contours_custom(
-                    surf_mesh=fsaverage[f"infl_{hemi}"],
-                    bg_map=fsaverage[f"sulc_{hemi}"],
-                    roi_map=atlas_labels_current_view,
-                    levels=regions_indices,
-                    hemi=hemi,
-                    figure=fig,
-                    colors=[CONTOUR_COLOR] * len(regions_indices),
-                )
+                    title = f"{view}_{hemi}"
+                    path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
+                    save_plot_and_crop_img(path)
+                    print(f"saved {path}")
+            else:
+                for view in args.views:
+                    fig = plotting.plot_surf_stat_map(
+                        fsaverage[f"infl_{hemi}"],
+                        result_values[hemi],
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        hemi=hemi,
+                        view=view,
+                        colorbar=False,
+                        threshold=threshold,
+                        vmax=cbar_max,
+                        vmin=cbar_min,
+                        cmap=CMAP_POS_ONLY,
+                    )
 
-                title = f"{view}_{hemi}"
-                path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
-                save_plot_and_crop_img(path)
-                print(f"saved {path}")
+                    title = f"{view}_{hemi}"
+                    path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
+                    save_plot_and_crop_img(path)
+                    print(f"saved {path}")
 
         # plot for cbar:
         fig = plt.figure(figsize=(7, 6))
@@ -255,7 +259,7 @@ def plot(args):
 
 
 def create_composite_image(args):
-    for result_metric in METRICS:
+    for result_metric in T_VAL_METRICS + [METRIC_MOD_INVARIANT]:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
@@ -301,7 +305,7 @@ def get_args():
     parser = add_searchlight_permutation_args(parser)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
-    parser.add_argument("--p-value-threshold", type=float, default=1e-4)
+    parser.add_argument("--p-value-threshold", type=float, default=DEFAULT_P_VAL_THRESHOLD)
 
     return parser.parse_args()
 

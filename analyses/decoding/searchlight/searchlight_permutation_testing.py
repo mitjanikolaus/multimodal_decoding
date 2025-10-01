@@ -33,16 +33,16 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
 DEFAULT_N_JOBS = 10
 
 TFCE_VAL_METRICS = [
+    METRIC_MOD_INVARIANT,
+    METRIC_DIFF_ATTENTION_WITHIN_MODALITY,
+    METRIC_DIFF_ATTENTION_CROSS_MODALITY,
     METRIC_WITHIN_MODALITY_DECODING,
     METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD,
     METRIC_CROSS_DECODING,
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD,
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD,
-    METRIC_DIFF_ATTENTION_WITHIN_MODALITY,
-    METRIC_DIFF_ATTENTION_CROSS_MODALITY,
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY,
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY,
-    METRIC_MOD_INVARIANT,
 ]
 
 T_VAL_METRICS = [
@@ -75,6 +75,9 @@ T_VAL_METRICS = [
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
 ]
+
+
+DEFAULT_P_VAL_THRESHOLD = 1e-2
 
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
@@ -215,13 +218,11 @@ def create_results_cluster_masks(values, results_dir, metric, resolution, radius
 
 
 def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05):
-    print(f"{len(null_distribution_tfce_values)} permutations")
-
     null_distr = np.sort([
         np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
         for n in null_distribution_tfce_values
     ])
-    print(f"null distr max values: {null_distr[-5:]}")
+    print(f"null distr max values: {null_distr[-5:]} ({len(null_distribution_tfce_values)} permutations)")
 
     if p_value_threshold == 1 / len(null_distribution_tfce_values):
         significance_cutoff = np.max(null_distr)
@@ -292,7 +293,7 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, r
             tfce_values[hemi][metric][p_values[hemi] > p_value_threshold] = 0
             export_to_gifti(tfce_values[hemi][metric], path_out)
 
-    create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
+    # create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
 
 
 def get_edge_lengths_dicts_based_on_edges(resolution):
@@ -322,13 +323,19 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
         elif metric == METRIC_MOD_INVARIANT:
             values = np.nanmin(
                 (
-                    # # within-modality decoding is above chance
+                    # within-modality decoding is above chance
                     t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
                     t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
                     # cross-modality decoding is above chance
                     t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
                     t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
-                    # within-modality-decoding acc should increase with attention (diff attended vs. unattended > 0)
+                    # attention to mod_A is sufficient for cross-decoding
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
+                    # attention to mod_A is sufficient for within-modality decoding
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED])],
+                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED])],
+                    # within-modality-decoding acc increases with attention (diff attended vs. unattended > 0)
                     t_values[hemi][
                         '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
                     t_values[hemi][
@@ -337,7 +344,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
                         '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
                     t_values[hemi][
                         '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
-                    # cross-decoding acc should increase with attention (diff attended vs. unattended > 0)
+                    # cross-decoding acc increases with attention (diff attended vs. unattended > 0)
                     t_values[hemi][
                         '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
                     t_values[hemi][
@@ -346,9 +353,6 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
                         '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
                     t_values[hemi][
                         '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
-                    # attention to mod_A should be sufficient for cross-decoding (test_images_attended > 0.5 w/ mod-specific captions)
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
                 ), axis=0)
         elif metric == METRIC_WITHIN_MODALITY_DECODING:
             values = np.nanmin(
@@ -428,15 +432,6 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
             raise RuntimeError("Unknown metric: ", metric)
 
         max_score = np.nanmax(values)
-        if np.isnan(max_score):
-            print("encountered NaN in t-values while calculating tfce values")
-            tfce_values[hemi] = {metric: np.zeros_like(values)}
-            continue
-        if np.isinf(max_score):
-            print("encountered inf in t-values while calculating tfce values")
-            tfce_values[hemi] = {metric: np.zeros_like(values)}
-            continue
-
         if max_score <= 0:
             tfce_values[hemi] = {metric: np.zeros_like(values)}
             continue
@@ -446,7 +441,8 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
 
         if dh == "auto":
             step = max_score / 100
-            print(f"Automatically set dh to {step}")
+            if use_tqdm:
+                print(f"Automatically set dh to {step}")
         else:
             step = dh
 
@@ -704,10 +700,9 @@ def calc_test_statistics(args):
 
     p_values = {hemi: np.repeat(np.nan, tfce_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
-        print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi][args.metric])[-5:])
-        print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-5:])
-        print("calculating p values..")
-        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0]):
+        # print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi][args.metric])[-5:])
+        # print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-5:])
+        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0], desc=f"calculating p values for {hemi} hemi"):
             test_stat = tfce_values[hemi][args.metric][vertex]
             value_index = np.searchsorted(max_test_statistic_distr, test_stat)
             if value_index >= len(max_test_statistic_distr):
@@ -989,7 +984,7 @@ def get_args():
     parser.add_argument("--n-jobs", type=int, default=DEFAULT_N_JOBS)
     parser.add_argument("--n-permutations-group-level", type=int, default=1000)
 
-    parser.add_argument("--p-value-threshold", type=float, default=1e-2)
+    parser.add_argument("--p-value-threshold", type=float, default=DEFAULT_P_VAL_THRESHOLD)
     parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()
