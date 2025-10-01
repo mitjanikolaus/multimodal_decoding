@@ -352,10 +352,14 @@ def get_fmri_data_paths(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=
         else:
             mode_suffix = "_*"
         fmri_addresses_regex = os.path.join(base_path, f'betas_{split}{mode_suffix}', f"*{file_suffix}")
-    else:
+        fmri_betas_paths = sorted(glob(fmri_addresses_regex))
+    elif split == SPLIT_IMAGERY:
         fmri_addresses_regex = os.path.join(base_path, f'betas_{split}', f"*{file_suffix}")
-
-    fmri_betas_paths = sorted(glob(fmri_addresses_regex))
+        fmri_betas_paths = sorted(glob(fmri_addresses_regex))
+    else:
+        fmri_addresses_regex_1 = os.path.join(base_path, f'betas_{split}_{IMAGE}/', f"*{file_suffix}")
+        fmri_addresses_regex_2 = os.path.join(base_path, f'betas_{split}_{CAPTION}/', f"*{file_suffix}")
+        fmri_betas_paths = sorted(glob(fmri_addresses_regex_1)) + sorted(glob(fmri_addresses_regex_2))
 
     stim_ids = []
     stim_types = []
@@ -442,7 +446,7 @@ def get_latent_features(feats_config, subject, split, mode=MODALITY_AGNOSTIC):
 
 
 def get_fmri_surface_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC, hemi=HEMIS[0]):
-    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, suffix='.gii')
+    fmri_betas_paths, stim_ids, stim_types = get_fmri_data_paths(betas_dir, subject, split, mode, hemi, file_suffix='.gii')
 
     fmri_betas = []
     for idx in trange(len(fmri_betas_paths), desc=f"loading {subject} {mode} {hemi} hemi {split} fmri data"):
