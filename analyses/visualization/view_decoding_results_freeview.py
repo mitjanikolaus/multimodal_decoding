@@ -38,18 +38,20 @@ def run(args):
         if args.show_acc_maps:
             maps_paths = glob.glob(os.path.join(results_dir, "acc_results_maps", f"*_{hemi_fs}.gii"))
             for maps_path in maps_paths:
+                if 'agnostic_decoder' in maps_path:
+                    continue
                 if 'diff' in maps_path:
-                    low = 0.05
+                    low = 0.03
                     high = 0.1
                 else:
                     if 'test_caption' in maps_path:
-                        low = 0.55
-                        high = 0.65
+                        low = 0.53
+                        high = 0.7
                     elif 'test_image' in maps_path:
-                        low = 0.55
-                        high = 0.8
+                        low = 0.53
+                        high = 0.7
                     else:
-                        low = 0.55
+                        low = 0.53
                         high = 0.7
 
                 cmd += f":overlay={maps_path}:overlay_zorder=2:overlay_threshold={low},{high}"
