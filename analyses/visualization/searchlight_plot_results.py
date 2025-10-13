@@ -36,7 +36,7 @@ DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    for result_metric in T_VAL_METRICS + [METRIC_MOD_INVARIANT]:
+    for result_metric in  [METRIC_MOD_INVARIANT] + T_VAL_METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
@@ -79,6 +79,7 @@ def plot(args):
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
+                result_values[hemi] = np.log(result_values[hemi])
 
             #TODO
             # null_distribution_tfce_values_file = os.path.join(
@@ -88,7 +89,9 @@ def plot(args):
             # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
             #                                                   args.p_value_threshold)
-            significance_cutoff = 6.72
+            significance_cutoff = 17.64
+            significance_cutoff = np.log(significance_cutoff)
+
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
