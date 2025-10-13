@@ -10,7 +10,7 @@ import os
 import pickle
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, TFCE_VAL_METRICS, \
-    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_MOD_INVARIANT, T_VAL_METRICS_UNATTENDED
+    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_GW, T_VAL_METRICS_UNATTENDED
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
@@ -303,7 +303,7 @@ def create_composite_images_of_all_views(args):
 
 
 def create_composite_images_of_metrics(args):
-    for name, metrics in zip(['metrics_gw', 'metrics_unattended_stimuli'], [T_VAL_METRICS_MOD_INVARIANT+[METRIC_GW], T_VAL_METRICS_UNATTENDED]):
+    for name, metrics in zip(['metrics_gw', 'metrics_unattended_stimuli'], [T_VAL_METRICS_GW+[METRIC_GW], T_VAL_METRICS_UNATTENDED]):
         imgs = []
         for result_metric in metrics:
             results_path = os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
