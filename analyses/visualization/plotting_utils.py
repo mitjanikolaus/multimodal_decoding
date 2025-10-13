@@ -20,6 +20,9 @@ from nilearn.plotting.surface._utils import get_faces_on_edge
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
+from data import TEST_IMAGES, TEST_CAPTIONS, clean_metric_name
+from utils import DIFF
+
 CBAR_T_VAL_MAX = 15
 
 
@@ -148,8 +151,16 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                        cbar_tick_format,
                                        threshold)
             if '$' in metric:
-                label = metric.replace('$', '_')
                 ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
+                if metric.startswith(DIFF):
+                    _, training_mode, metric_1, metric_2 = metric.split('$')
+                    metric_1 = clean_metric_name(metric_1)
+                    metric_2 = clean_metric_name(metric_2)
+                    label = f"DIFF: {training_mode} decoder | {metric_1} - {metric_2}"
+                else:
+                    training_mode, metric_name = metric.split('$')
+                    metric_name = clean_metric_name(metric_name)
+                    label = f"{training_mode} decoder | {metric_name}"
 
             # elif metric.startswith("pairwise_acc"):
             #     # ticks = [0.5, 0.55, 0.6, 0.7, 0.8, 0.9]
@@ -161,7 +172,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             else:
                 ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks) / 1000) * 1000]
                 # ticks = [threshold, np.mean([threshold, np.max(ticks)]), np.max(ticks)]
-                label = f"{metric} (TFCE)"
+                label = f"TFCE"
                 # cbar_vmin = 0
 
             bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)

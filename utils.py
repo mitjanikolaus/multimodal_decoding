@@ -67,7 +67,7 @@ METRIC_DIFF_ATTENTION_CROSS_MODALITY = 'diff_attention_within'
 METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY = 'diff_attend_both_vs_other_cross'
 METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY = 'diff_attend_both_vs_other_within'
 
-METRIC_MOD_INVARIANT = 'mod_invariant'
+METRIC_GW = 'gw'
 
 DIFF = "diff"
 

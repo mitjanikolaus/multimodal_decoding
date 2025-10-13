@@ -383,6 +383,16 @@ DEFAULT_LANG_FEATURES = {
 }
 
 
+def clean_metric_name(metric_name):
+    if metric_name == TEST_IMAGES:
+        clean_name = 'image_attend_both'
+    elif metric_name == TEST_CAPTIONS:
+        clean_name = 'caption_attend_both'
+    else:
+        clean_name = metric_name.replace('test_', '')
+    return clean_name
+
+
 @dataclass
 class LatentFeatsConfig:
     model: str

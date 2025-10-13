@@ -24,7 +24,7 @@ from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_
     TEST_CAPTIONS_UNATTENDED
 from eval import LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CROSS_DECODING, \
-    DEFAULT_MODEL, METRIC_MOD_INVARIANT, METRIC_DIFF_ATTENTION_WITHIN_MODALITY, DIFF, METRIC_WITHIN_MODALITY_DECODING, \
+    DEFAULT_MODEL, METRIC_GW, METRIC_DIFF_ATTENTION_WITHIN_MODALITY, DIFF, METRIC_WITHIN_MODALITY_DECODING, \
     METRIC_DIFF_ATTENTION_CROSS_MODALITY, METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD, \
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY, \
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti, \
@@ -33,7 +33,7 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
 DEFAULT_N_JOBS = 10
 
 TFCE_VAL_METRICS = [
-    METRIC_MOD_INVARIANT,
+    METRIC_GW,
     METRIC_DIFF_ATTENTION_WITHIN_MODALITY,
     METRIC_DIFF_ATTENTION_CROSS_MODALITY,
     METRIC_WITHIN_MODALITY_DECODING,
@@ -58,12 +58,6 @@ T_VAL_METRICS = [
     # cross-modality decoding of attended stimuli
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    # within-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-    # cross-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
     # cross-modality decoding attention diff
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
@@ -74,6 +68,47 @@ T_VAL_METRICS = [
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    # within-modality decoding of unattended stimuli
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
+    # cross-modality decoding of unattended stimuli
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
+]
+
+
+T_VAL_METRICS_MOD_INVARIANT = [
+    # within-modality decoding
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
+    # cross-modal decoding
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+    # within-modality decoding of attended stimuli
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+    # cross-modality decoding of attended stimuli
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
+    # cross-modality decoding attention diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    # within-modality decoding attention diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+]
+
+T_VAL_METRICS_UNATTENDED = [
+    # within-modality decoding of unattended stimuli
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
+    # cross-modality decoding of unattended stimuli
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
 ]
 
 
@@ -320,40 +355,8 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
     for hemi in HEMIS:
         if metric in T_VAL_METRICS:
             values = t_values[hemi][metric]
-        elif metric == METRIC_MOD_INVARIANT:
-            values = np.nanmin(
-                (
-                    # within-modality decoding is above chance
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])],
-                    # cross-modality decoding is above chance
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])],
-                    # attention to mod_A is sufficient for cross-decoding
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])],
-                    # attention to mod_A is sufficient for within-modality decoding
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED])],
-                    # within-modality-decoding acc increases with attention (diff attended vs. unattended > 0)
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
-                    # cross-decoding acc increases with attention (diff attended vs. unattended > 0)
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])],
-                ), axis=0)
+        elif metric == METRIC_GW:
+            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT], axis=0)
         elif metric == METRIC_WITHIN_MODALITY_DECODING:
             values = np.nanmin(
                 (
@@ -702,7 +705,8 @@ def calc_test_statistics(args):
     for hemi in HEMIS:
         # print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi][args.metric])[-5:])
         # print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-5:])
-        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0], desc=f"calculating p values for {hemi} hemi"):
+        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0],
+                           desc=f"calculating p values for {hemi} hemi"):
             test_stat = tfce_values[hemi][args.metric][vertex]
             value_index = np.searchsorted(max_test_statistic_distr, test_stat)
             if value_index >= len(max_test_statistic_distr):
