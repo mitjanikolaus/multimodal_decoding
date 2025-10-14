@@ -172,7 +172,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             else:
                 ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks) / 1000) * 1000]
                 # ticks = [threshold, np.mean([threshold, np.max(ticks)]), np.max(ticks)]
-                label = f"TFCE"
+                label = f"log(TFCE)"
                 # cbar_vmin = 0
 
             bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)
