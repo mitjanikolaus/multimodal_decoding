@@ -69,6 +69,10 @@ METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY = 'diff_attend_both_vs_other_wit
 
 METRIC_GW = 'gw'
 METRIC_GW_2 = 'gw_2'
+METRIC_VISION = 'vision'
+METRIC_VISION_2 = 'vision_2'
+METRIC_LANG = 'lang'
+METRIC_LANG_2 = 'lang_2'
 
 DIFF = "diff"
 
