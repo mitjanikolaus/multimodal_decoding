@@ -74,6 +74,12 @@ T_VAL_METRICS = [
     # cross-modality decoding of unattended stimuli
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
+    # within-modality decoding attend-both vs. attend diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    # cross-modality decoding attend-both vs. attend diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
 ]
 
 
@@ -354,7 +360,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
         if metric in T_VAL_METRICS:
             values = t_values[hemi][metric]
         elif metric == METRIC_GW:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT], axis=0)
+            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
         elif metric == METRIC_WITHIN_MODALITY_DECODING:
             values = np.nanmin(
                 (
