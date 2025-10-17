@@ -68,6 +68,7 @@ METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY = 'diff_attend_both_vs_other_cr
 METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY = 'diff_attend_both_vs_other_within'
 
 METRIC_GW = 'gw'
+METRIC_GW_2 = 'gw_2'
 
 DIFF = "diff"
 
