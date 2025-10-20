@@ -787,7 +787,7 @@ def calc_t_values(scores):
     tvals = {hemi: dict() for hemi in HEMIS}
     for hemi in HEMIS:
         for metric in tqdm(T_VAL_METRICS, desc=f'calculating {hemi} hemi t vals'):
-            if metric.startswith(DIFF):
+            if metric.split('$')[0] == DIFF:
                 training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
                 scores_filtered = scores[
                     (scores.hemi == hemi) & (scores.training_mode == training_mode)]
@@ -796,7 +796,7 @@ def calc_t_values(scores):
                 data_2 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
                         scores_filtered.metric == metric_name_2)].value for subj in args.subjects])
                 data = data_1 - data_2
-            elif metric.startswith(DIFF_DECODERS):
+            elif metric.split('$')[0] == DIFF_DECODERS:
                 training_mode_1, training_mode_2, metric_name = metric.split('$')[1:]
                 scores_filtered = scores[
                     (scores.hemi == hemi) & (scores.metric == metric_name)]
