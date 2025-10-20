@@ -21,7 +21,7 @@ from analyses.decoding.searchlight.searchlight import SEARCHLIGHT_PERMUTATION_TE
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
     TRAINING_MODES, TEST_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, \
-    TEST_CAPTIONS_UNATTENDED
+    TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY_WEAK
 from eval import LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, METRIC_CROSS_DECODING, \
     DEFAULT_MODEL, METRIC_GW, METRIC_DIFF_ATTENTION_WITHIN_MODALITY, DIFF, METRIC_WITHIN_MODALITY_DECODING, \
@@ -29,7 +29,7 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY, \
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti, \
     METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_GW_2, METRIC_VISION, METRIC_LANG, METRIC_LANG_2, \
-    METRIC_VISION_2
+    METRIC_VISION_2, DIFF_DECODERS
 
 DEFAULT_N_JOBS = 10
 
@@ -86,6 +86,20 @@ T_VAL_METRICS = [
     # cross-modality decoding attend-both vs. attend diff
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    # diff mod-agnostic vs. mod-specific decoders
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
+    # diff different mod-specific decoders
+    '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+    '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
+    # imagery
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK]),
 ]
 
 
@@ -781,6 +795,15 @@ def calc_t_values(scores):
                         scores_filtered.metric == metric_name_1)].value for subj in args.subjects])
                 data_2 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
                         scores_filtered.metric == metric_name_2)].value for subj in args.subjects])
+                data = data_1 - data_2
+            elif metric.startswith(DIFF_DECODERS):
+                training_mode_1, training_mode_2, metric_name = metric.split('$')[1:]
+                scores_filtered = scores[
+                    (scores.hemi == hemi) & (scores.metric == metric_name)]
+                data_1 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
+                        scores_filtered.training_mode == training_mode_1)].value for subj in args.subjects])
+                data_2 = np.array([scores_filtered[(scores_filtered.subject == subj) & (
+                        scores_filtered.training_mode == training_mode_2)].value for subj in args.subjects])
                 data = data_1 - data_2
             else:
                 training_mode, metric_name = metric.split('$')

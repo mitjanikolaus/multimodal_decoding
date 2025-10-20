@@ -75,6 +75,7 @@ METRIC_LANG = 'lang'
 METRIC_LANG_2 = 'lang_2'
 
 DIFF = "diff"
+DIFF_DECODERS = "diffdecoders"
 
 ADDITIONAL_TEST_DATA_DIR = os.path.join(DATA_DIR, "additional_test")
 ADDITIONAL_TEST_FMRI_DATA_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "fmri")
