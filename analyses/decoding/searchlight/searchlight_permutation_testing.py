@@ -227,7 +227,7 @@ T_VAL_METRICS_UNATTENDED = [
 ]
 
 
-DEFAULT_P_VAL_THRESHOLD = 1e-3
+DEFAULT_P_VAL_THRESHOLD = 1e-2
 
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
