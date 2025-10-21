@@ -5,7 +5,7 @@ import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import load_per_subject_scores, \
     permutation_results_dir, add_searchlight_permutation_args
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, \
-    TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED
+    TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from utils import HEMIS, export_to_gifti, FS_HEMI_NAMES
 
 
@@ -66,34 +66,6 @@ def create_gifti_results_maps(args):
     n_vertices = len(scores.vertex.unique())
     print(f'n vertices: {n_vertices}')
 
-    metrics = scores.metric.unique()
-    print("Metrics: ", metrics)
-    for metric in metrics:
-        for hemi in HEMIS:
-            for training_mode in TRAINING_MODES:
-                for subj in args.subjects:
-                    score_hemi_metric_subject = scores[
-                        (scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric) & (
-                                scores.training_mode == training_mode)
-                        ]
-                    path_out = os.path.join(results_dir, subj,
-                                            f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                    os.makedirs(os.path.dirname(path_out), exist_ok=True)
-                    print(f'saving {path_out} ({len(score_hemi_metric_subject)} vertices)')
-                    export_to_gifti(score_hemi_metric_subject.value.values, path_out)
-
-                score_hemi_metric = scores[
-                    (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
-                    ].copy()
-                assert len(score_hemi_metric) == len(args.subjects) * n_vertices
-                score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
-                    {'value': 'mean'}).value.values
-                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | "
-                      f"max: {np.nanmax(score_hemi_metric.value):.3f}")
-                path_out = os.path.join(results_dir, f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
-                export_to_gifti(score_hemi_metric_avgd, path_out)
-
     for hemi in HEMIS:
         sc = scores[(scores.hemi == hemi)].copy().groupby(['vertex', 'training_mode', 'metric'],
                                                           as_index=False).aggregate({'value': 'mean'})
@@ -108,6 +80,36 @@ def create_gifti_results_maps(args):
         # path_out = os.path.join(results_dir, f"{METRIC_MOD_AGNOSTIC_AND_CROSS}_{FS_HEMI_NAMES[hemi]}.gii")
         # print(f'saving {path_out} ({len(mod_agnostic_and_cross)} vertices)')
         # export_to_gifti(mod_agnostic_and_cross, path_out)
+
+        agnostic = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_ATTENDED)]
+        specific = sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == TEST_IMAGES_ATTENDED)]
+        diff_agnostic_specific_images_attended = agnostic.value.values - specific.value.values
+        path_out = os.path.join(results_dir, f"diff_agnostic_specific_images_attended_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(diff_agnostic_specific_images_attended)} vertices)')
+        export_to_gifti(diff_agnostic_specific_images_attended, path_out)
+
+        agnostic = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_UNATTENDED)]
+        specific = sc[(sc.training_mode == MODALITY_SPECIFIC_IMAGES) & (sc.metric == TEST_IMAGES_UNATTENDED)]
+        diff_agnostic_specific_images_unattended = agnostic.value.values - specific.value.values
+        path_out = os.path.join(results_dir, f"diff_agnostic_specific_images_unattended_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(diff_agnostic_specific_images_unattended)} vertices)')
+        export_to_gifti(diff_agnostic_specific_images_unattended, path_out)
+
+        agnostic = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_CAPTIONS_ATTENDED)]
+        specific = sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == TEST_CAPTIONS_ATTENDED)]
+        diff_agnostic_specific_captions_attended = agnostic.value.values - specific.value.values
+        path_out = os.path.join(results_dir, f"diff_agnostic_specific_captions_attended_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(diff_agnostic_specific_captions_attended)} vertices)')
+        export_to_gifti(diff_agnostic_specific_captions_attended, path_out)
+
+        agnostic = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_CAPTIONS_UNATTENDED)]
+        specific = sc[(sc.training_mode == MODALITY_SPECIFIC_CAPTIONS) & (sc.metric == TEST_CAPTIONS_UNATTENDED)]
+        diff_agnostic_specific_captions_unattended = agnostic.value.values - specific.value.values
+        path_out = os.path.join(results_dir, f"diff_agnostic_specific_captions_unattended_{FS_HEMI_NAMES[hemi]}.gii")
+        print(f'saving {path_out} ({len(diff_agnostic_specific_captions_unattended)} vertices)')
+        export_to_gifti(diff_agnostic_specific_captions_unattended, path_out)
+
+
 
         attended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_ATTENDED)]
         unattended = sc[(sc.training_mode == MODALITY_AGNOSTIC) & (sc.metric == TEST_IMAGES_UNATTENDED)]
@@ -151,6 +153,33 @@ def create_gifti_results_maps(args):
             print(f'saving {path_out} ({len(diff_attended_unattended_captions)} vertices)')
             export_to_gifti(diff_attended_unattended_captions, path_out)
 
+    metrics = scores.metric.unique()
+    print("Metrics: ", metrics)
+    for metric in metrics:
+        for hemi in HEMIS:
+            for training_mode in TRAINING_MODES:
+                for subj in args.subjects:
+                    score_hemi_metric_subject = scores[
+                        (scores.subject == subj) & (scores.hemi == hemi) & (scores.metric == metric) & (
+                                scores.training_mode == training_mode)
+                        ]
+                    path_out = os.path.join(results_dir, subj,
+                                            f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+                    print(f'saving {path_out} ({len(score_hemi_metric_subject)} vertices)')
+                    export_to_gifti(score_hemi_metric_subject.value.values, path_out)
+
+                score_hemi_metric = scores[
+                    (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
+                    ].copy()
+                assert len(score_hemi_metric) == len(args.subjects) * n_vertices
+                score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
+                    {'value': 'mean'}).value.values
+                print(f"{metric} ({hemi} hemi) mean over subjects: {np.nanmean(score_hemi_metric_avgd):.3f} | "
+                      f"max: {np.nanmax(score_hemi_metric.value):.3f}")
+                path_out = os.path.join(results_dir, f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+                print(f'saving {path_out} ({len(score_hemi_metric_avgd)} vertices)')
+                export_to_gifti(score_hemi_metric_avgd, path_out)
 
 def get_args():
     parser = argparse.ArgumentParser()
