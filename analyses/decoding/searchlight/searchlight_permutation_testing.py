@@ -102,7 +102,6 @@ T_VAL_METRICS = [
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK]),
 ]
 
-
 T_VAL_METRICS_GW = [
     # within-modality decoding
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
@@ -144,7 +143,6 @@ T_VAL_METRICS_GW_2 = [
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
 ]
-
 
 T_VAL_METRICS_VISION = [
     # within-modality decoding
@@ -230,7 +228,6 @@ T_VAL_METRICS_LANG_2 = [
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
 ]
 
-
 T_VAL_METRICS_UNATTENDED = [
     # within-modality decoding of unattended stimuli
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
@@ -239,7 +236,6 @@ T_VAL_METRICS_UNATTENDED = [
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
 ]
-
 
 DEFAULT_P_VAL_THRESHOLD = 1e-2
 
@@ -811,7 +807,7 @@ def calc_t_values(scores):
                     (scores.hemi == hemi) & (scores.metric == metric_name) & (scores.training_mode == training_mode)]
                 data = np.array([scores_filtered[(scores_filtered.subject == subj)].value for subj in args.subjects])
 
-            popmean = 0 if metric.startswith(DIFF) else 0.5
+            popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
             tvals[hemi][metric] = calc_image_t_values(data, popmean)
 
     return tvals
@@ -957,15 +953,19 @@ def calc_t_values_null_distr(args, out_path):
                 for metric in T_VAL_METRICS:
                     data = np.zeros((len(args.subjects), vertex_range[1] - vertex_range[0]))
                     for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
-                        if metric.startswith(DIFF):
+                        if metric.split('$')[0] == DIFF:
                             training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
                             data[i] = preloaded_scores[subj][training_mode][idx][metric_name_1] - \
                                       preloaded_scores[subj][training_mode][idx][metric_name_2]
+                        elif metric.split('$')[0] == DIFF_DECODERS:
+                            training_mode_1, training_mode_2, metric_name = metric.split('$')[1:]
+                            data[i] = preloaded_scores[subj][training_mode_1][idx][metric_name] - \
+                                      preloaded_scores[subj][training_mode_2][idx][metric_name]
                         else:
                             training_mode, metric_name = metric.split('$')
                             data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
 
-                    popmean = 0 if metric.startswith(DIFF) else 0.5
+                    popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
                     t_values[metric] = calc_image_t_values(data, popmean)
                     dsets[metric][iteration] = t_values[metric].astype(np.float16)
 
