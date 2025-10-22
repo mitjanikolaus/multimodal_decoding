@@ -349,6 +349,6 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    plot(args)
+    # plot(args)
     create_composite_images_of_all_views(args)
     create_composite_images_of_metrics(args)
