@@ -10,7 +10,8 @@ import os
 import pickle
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, TFCE_VAL_METRICS, \
-    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_GW, T_VAL_METRICS_UNATTENDED
+    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_GW, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_IMAGERY, \
+    T_VAL_METRICS_DECODER_DIFF, T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
@@ -167,8 +168,8 @@ def plot(args):
             threshold = 0.01
             cbar_min = 0.01
             cbar_max = 0.2  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        elif  result_metric.split('$')[0] == DIFF_DECODERS:
-            _, training_mode_1, training_mode_2, metric_name  = result_metric.split('$')
+        elif result_metric.split('$')[0] == DIFF_DECODERS:
+            _, training_mode_1, training_mode_2, metric_name = result_metric.split('$')
 
             for hemi in HEMIS:
                 path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
@@ -317,7 +318,11 @@ def create_composite_images_of_all_views(args):
 
 
 def create_composite_images_of_metrics(args):
-    for name, metrics in zip(['metrics_gw', 'metrics_unattended_stimuli'], [T_VAL_METRICS_GW+[METRIC_GW], T_VAL_METRICS_UNATTENDED]):
+    for name, metrics in zip(
+            ['metrics_base', 'metrics_attention_diff', 'metrics_unattended_stimuli', 'metrics_decoder_diffs',
+             'metrics_imagery'],
+            [T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_DECODER_DIFF,
+             T_VAL_METRICS_IMAGERY]):
         imgs = []
         for result_metric in metrics:
             results_path = os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
