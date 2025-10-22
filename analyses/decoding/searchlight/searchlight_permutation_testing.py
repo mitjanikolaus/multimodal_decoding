@@ -509,7 +509,7 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
         masks[hemi] = masks[hemi].astype(np.uint8)
 
         path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-        tfce_values[hemi][metric][tfce_values[hemi][metric] <= tfce_value_threshold] = 0
+        tfce_values[hemi][metric][tfce_values[hemi][metric] < threshold] = 0
         export_to_gifti(tfce_values[hemi][metric], path_out)
 
     # create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
