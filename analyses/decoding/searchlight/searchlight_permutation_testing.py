@@ -310,7 +310,7 @@ T_VAL_METRICS_IMAGERY = [
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK]),
 ]
 
-DEFAULT_P_VAL_THRESHOLD = 1e-2
+DEFAULT_P_VAL_THRESHOLD = 1e-3
 
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
