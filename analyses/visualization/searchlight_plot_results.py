@@ -94,9 +94,10 @@ def plot(args):
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               args.p_value_threshold)
             # significance_cutoff = 17.64
+            print(f"{result_metric} significance cutoff: {significance_cutoff}")
+
             significance_cutoff = np.log(significance_cutoff)
 
-            print(f"{result_metric} significance cutoff: {significance_cutoff}")
             threshold = significance_cutoff
             cbar_min = 0
             # cbar_max = CBAR_TFCE_MAX_VALUE
