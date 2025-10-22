@@ -36,6 +36,7 @@ DEFAULT_N_JOBS = 10
 TFCE_VAL_METRICS = [
     METRIC_GW,
     METRIC_GW_2,
+    METRIC_GW_3,
     METRIC_GW_DIFF,
     '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
     METRIC_VISION,
@@ -138,6 +139,15 @@ T_VAL_METRICS_GW_2 = [
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+    # within-modality decoding attention diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    # cross-modality decoding attention diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+]
+
+T_VAL_METRICS_GW_3 = [
     # within-modality decoding attention diff
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
@@ -547,6 +557,8 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
         elif metric == METRIC_GW_2:
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
+        elif metric == METRIC_GW_3:
+            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
         elif metric == METRIC_GW_DIFF:
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
         elif metric == METRIC_VISION:
