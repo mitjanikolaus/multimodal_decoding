@@ -503,6 +503,7 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
         print(f"using tfce value threshold {tfce_value_threshold}")
     masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
     for hemi in HEMIS:
+        print(f'{hemi} hemi mask size for threshold {threshold:.2f}: {np.mean(tfce_values[hemi] >= threshold):.2f}')
         masks[hemi][tfce_values[hemi][metric] >= threshold] = 1
         masks[hemi][tfce_values[hemi][metric] < threshold] = 0
         masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
