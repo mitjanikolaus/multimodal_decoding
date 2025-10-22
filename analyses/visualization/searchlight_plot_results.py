@@ -311,7 +311,8 @@ def create_composite_images_of_all_views(args):
 
         composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
 
-        path = os.path.join(results_path, "searchlight_results", f"{result_metric.replace('_','-').replace('$','_')}.png")
+        path = os.path.join(results_path, "searchlight_results",
+                            f"{result_metric.replace('_', '-').replace('$', '_')}.png")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         composite_image.save(path, transparent=True)  # , facecolor="black")
         print('saved ', path)
@@ -319,14 +320,17 @@ def create_composite_images_of_all_views(args):
 
 def create_composite_images_of_metrics(args):
     for name, metrics in zip(
-            ['metrics_base', 'metrics_attention_diff', 'metrics_attention_diff_2', 'metrics_unattended_stimuli', 'metrics_decoder_diffs',
+            ['metrics_base', 'metrics_attention_diff', 'metrics_attention_diff_2', 'metrics_unattended_stimuli',
+             'metrics_decoder_diffs',
              'metrics_imagery'],
-            [T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_DECODER_DIFF,
+            [T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2, T_VAL_METRICS_UNATTENDED,
+             T_VAL_METRICS_DECODER_DIFF,
              T_VAL_METRICS_IMAGERY]):
         imgs = []
         for result_metric in metrics:
             results_path = os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
-                                        searchlight_mode_from_args(args), "searchlight_results", f"{result_metric}.png")
+                                        searchlight_mode_from_args(args), "searchlight_results",
+                                        f"{result_metric.replace('_', '-').replace('$', '_')}.png")
             imgs.append(Image.open(results_path))
         img_all_metrics = append_images(images=imgs, padding=20, horizontally=False)
         img_all_metrics_path = os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
