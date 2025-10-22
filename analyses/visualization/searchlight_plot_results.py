@@ -16,7 +16,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
     add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
-    save_plot_and_crop_img, append_images, METRIC_GW, DIFF
+    save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -153,7 +153,7 @@ def plot(args):
         #     # cbar_min = 0
         #     # cbar_max = CBAR_T_VAL_MAX
 
-        elif result_metric.startswith(DIFF):
+        elif result_metric.split('$')[0] == DIFF:
             _, training_mode, metric_1, metric_2 = result_metric.split('$')
 
             for hemi in HEMIS:
@@ -161,6 +161,20 @@ def plot(args):
                                                       f"{training_mode}_decoder_{metric_1}_{FS_HEMI_NAMES[hemi]}.gii")
                 path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
                                                       f"{training_mode}_decoder_{metric_2}_{FS_HEMI_NAMES[hemi]}.gii")
+                result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
+                                      nibabel.load(path_mean_acc_values_2).darrays[0].data
+
+            threshold = 0.01
+            cbar_min = 0.01
+            cbar_max = 0.2  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+        elif  result_metric.split('$')[0] == DIFF_DECODERS:
+            _, training_mode_1, training_mode_2, metric_name  = result_metric.split('$')
+
+            for hemi in HEMIS:
+                path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+                                                      f"{training_mode_1}_decoder_{metric_name}_{FS_HEMI_NAMES[hemi]}.gii")
+                path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+                                                      f"{training_mode_2}_decoder_{metric_name}_{FS_HEMI_NAMES[hemi]}.gii")
                 result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
