@@ -17,7 +17,8 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
     add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
-    save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS
+    save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, \
+    METRIC_LANG_2
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -37,7 +38,7 @@ DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    for result_metric in [METRIC_GW] + T_VAL_METRICS:
+    for result_metric in [METRIC_GW, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2] + T_VAL_METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
@@ -75,22 +76,21 @@ def plot(args):
 
         result_values = dict()
 
-        if result_metric in [METRIC_GW]:
+        if result_metric in [METRIC_GW, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
                 result_values[hemi] = np.log(result_values[hemi])
 
-            # TODO
-            # null_distribution_tfce_values_file = os.path.join(
-            #     permutation_results_dir(args),
-            #     f"tfce_values_null_distribution_{result_metric}.p"
-            # )
-            # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-            #                                                   args.p_value_threshold)
-            significance_cutoff = 17.64
+            null_distribution_tfce_values_file = os.path.join(
+                permutation_results_dir(args),
+                f"tfce_values_null_distribution_{result_metric}.p"
+            )
+            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                              args.p_value_threshold)
+            # significance_cutoff = 17.64
             significance_cutoff = np.log(significance_cutoff)
 
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
@@ -99,60 +99,6 @@ def plot(args):
             # cbar_max = CBAR_TFCE_MAX_VALUE
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             # print(f"{result_metric} max tfce value across hemis: {cbar_max}")
-
-        # elif result_metric.startswith("pairwise_acc"):
-        #     # cbar_min = ACC_COLORBAR_MIN
-        #     # cbar_max = COLORBAR_MAX
-        #     # threshold = ACC_COLORBAR_THRESHOLD
-        #     # subject_scores = load_per_subject_scores(args)
-        #     # for hemi in HEMIS:
-        #     #     score_hemi_avgd = np.nanmean([subject_scores[subj][hemi][result_metric] for subj in args.subjects],
-        #     #                                  axis=0)
-        #     #     result_values[hemi] = score_hemi_avgd
-        #
-        #     # t_values = pickle.load(open(os.path.join(permutation_results_dir(args), "t_values.p"), 'rb'))
-        #     # for hemi in HEMIS:
-        #     #     result_values[hemi] = t_values[hemi][args.metric]
-        #     tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
-        #     orig_result_values = pickle.load(open(tfce_values_path, "rb"))
-        #     for hemi in HEMIS:
-        #         result_values[hemi] = orig_result_values[hemi][args.metric]
-        #
-        #     null_distribution_tfce_values_file = os.path.join(
-        #         permutation_results_dir(args),
-        #         f"tfce_values_null_distribution_{result_metric}.p"
-        #     )
-        #     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-        #     significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-        #                                                       args.p_value_threshold)
-        #     threshold = significance_cutoff
-        #     cbar_min = 0
-        #     cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        #     # print(f"{result_metric} max tfce value across hemis: {np.nanmax(np.concatenate((result_values['left'], result_values['right'])))}")
-        #
-        #     # for hemi in HEMIS:
-        #     #     print(f"{hemi} hemi fraction of values above thresh: {np.mean(result_values[hemi] > significance_cutoffs[hemi])}")
-        #     #     result_values[hemi][result_values[hemi] < significance_cutoffs[hemi]] = 0
-        #     #     print([round(val) for val in result_values[hemi][result_values[hemi] > 2000][:20]])
-        #     # threshold = 1
-        #
-        #     # from t-val table:
-        #     # for p<0.05: 2.015
-        #     # for p<0.01: 3.365
-        #     # for p<0.001: 5.893
-        #
-        #     # from permutation testing:
-        #     # test statistic significance cutoff for p<0.05: 2.06
-        #     # min mean acc:
-        #     # 0.5308641975308642
-        #     # test statistic significance cutoff for p<0.01: 3.44
-        #     # min mean acc:
-        #     # 0.5740740740740741
-        #     # test statistic significance cutoff for p<0.001: 6.03
-        #     # min mean acc: 0.5902777777777778
-        #     # threshold = 2.015
-        #     # cbar_min = 0
-        #     # cbar_max = CBAR_T_VAL_MAX
 
         elif result_metric.split('$')[0] == DIFF:
             _, training_mode, metric_1, metric_2 = result_metric.split('$')
@@ -277,7 +223,7 @@ def plot(args):
 
 
 def create_composite_images_of_all_views(args):
-    for result_metric in T_VAL_METRICS + [METRIC_GW]:
+    for result_metric in [METRIC_GW, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2] + T_VAL_METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
