@@ -29,13 +29,15 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY, \
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti, \
     METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_GW_2, METRIC_VISION, METRIC_LANG, METRIC_LANG_2, \
-    METRIC_VISION_2, DIFF_DECODERS
+    METRIC_VISION_2, DIFF_DECODERS, METRIC_GW_DIFF
 
 DEFAULT_N_JOBS = 10
 
 TFCE_VAL_METRICS = [
     METRIC_GW,
     METRIC_GW_2,
+    METRIC_GW_DIFF,
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
     METRIC_VISION,
     METRIC_VISION_2,
     METRIC_LANG,
@@ -142,6 +144,11 @@ T_VAL_METRICS_GW_2 = [
     # cross-modality decoding attention diff
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+]
+
+T_VAL_METRICS_GW_DIFF = [
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
 ]
 
 T_VAL_METRICS_VISION = [
@@ -484,6 +491,8 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
         elif metric == METRIC_GW_2:
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
+        elif metric == METRIC_GW_DIFF:
+            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
         elif metric == METRIC_VISION:
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION], axis=0)
         elif metric == METRIC_LANG:
