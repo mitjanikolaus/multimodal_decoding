@@ -474,7 +474,7 @@ def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_thre
     return significance_cutoff, null_distr
 
 
-def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, resolution, radius=None,
+def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold, resolution, radius=None,
                  n_neighbors=None):
     print("Creating gifti results masks")
     p_values_path = os.path.join(results_dir, f"p_values_{metric}.p")
@@ -497,34 +497,20 @@ def create_masks(results_dir, metric, p_value_threshold, tfce_value_threshold, r
     tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
-    threshold = p_value_threshold
+    threshold = significance_cutoff
     if tfce_value_threshold is not None:
         threshold = tfce_value_threshold
         print(f"using tfce value threshold {tfce_value_threshold}")
-        masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
-        for hemi in HEMIS:
-            masks[hemi][tfce_values[hemi][metric] > tfce_value_threshold] = 1
-            masks[hemi][tfce_values[hemi][metric] <= tfce_value_threshold] = 0
-            masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
-            masks[hemi] = masks[hemi].astype(np.uint8)
+    masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
+    for hemi in HEMIS:
+        masks[hemi][tfce_values[hemi][metric] >= threshold] = 1
+        masks[hemi][tfce_values[hemi][metric] < threshold] = 0
+        masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
+        masks[hemi] = masks[hemi].astype(np.uint8)
 
-            path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-            tfce_values[hemi][metric][tfce_values[hemi][metric] <= tfce_value_threshold] = 0
-            export_to_gifti(tfce_values[hemi][metric], path_out)
-    else:
-        # p value masks
-        masks = copy.deepcopy(p_values)
-        for hemi in HEMIS:
-            print(
-                f'{hemi} hemi mask size for threshold {p_value_threshold}: {np.mean(p_values[hemi] <= p_value_threshold):.2f}')
-            masks[hemi][p_values[hemi] <= p_value_threshold] = 1
-            masks[hemi][p_values[hemi] > p_value_threshold] = 0
-            masks[hemi][np.isnan(p_values[hemi])] = 0
-            masks[hemi] = masks[hemi].astype(np.uint8)
-
-            path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-            tfce_values[hemi][metric][p_values[hemi] > p_value_threshold] = 0
-            export_to_gifti(tfce_values[hemi][metric], path_out)
+        path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+        tfce_values[hemi][metric][tfce_values[hemi][metric] <= tfce_value_threshold] = 0
+        export_to_gifti(tfce_values[hemi][metric], path_out)
 
     # create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
 
@@ -940,6 +926,7 @@ def calc_test_statistics(args):
 
         p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{args.metric}.p")
         pickle.dump(p_values, open(p_values_path, mode='wb'))
+        return significance_cutoff
 
 
 def calc_t_values_null_distr(args, out_path):
@@ -1227,6 +1214,6 @@ if __name__ == "__main__":
         args.metric = metric
         print(f"\n\nPermutation Testing for {args.metric}\n")
         create_null_distribution(args)
-        calc_test_statistics(args)
-        create_masks(permutation_results_dir(args), args.metric, args.p_value_threshold, args.tfce_value_threshold,
+        significance_cutoff = calc_test_statistics(args)
+        create_masks(permutation_results_dir(args), args.metric, significance_cutoff, args.tfce_value_threshold,
                      args.resolution, args.radius, args.n_neighbors)
