@@ -79,7 +79,7 @@ def plot(args):
 
         result_values = dict()
 
-        if result_metric in [METRIC_GW, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]:
+        if result_metric in [METRIC_GW, METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
@@ -348,6 +348,6 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    plot(args)
+    # plot(args)
     create_composite_images_of_all_views(args)
     create_composite_images_of_metrics(args)
