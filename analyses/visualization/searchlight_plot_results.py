@@ -311,7 +311,7 @@ def create_composite_images_of_all_views(args):
 
         composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
 
-        path = os.path.join(results_path, "searchlight_results", f"{result_metric}.png")
+        path = os.path.join(results_path, "searchlight_results", f"{result_metric.replace('_','-').replace('$','_')}.png")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         composite_image.save(path, transparent=True)  # , facecolor="black")
         print('saved ', path)
@@ -395,6 +395,6 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    plot(args)
+    # plot(args)
     create_composite_images_of_all_views(args)
     create_composite_images_of_metrics(args)
