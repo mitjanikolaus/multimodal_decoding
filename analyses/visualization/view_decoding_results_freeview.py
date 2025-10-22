@@ -5,7 +5,7 @@ import os
 from scipy.stats import pearsonr
 import nibabel as nib
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
-    add_searchlight_permutation_args, TFCE_VAL_METRICS
+    add_searchlight_permutation_args, TFCE_VAL_METRICS, T_VAL_METRICS
 from data import IMAGE, CAPTION
 from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
 
@@ -21,8 +21,8 @@ def run(args):
         results_dir = permutation_results_dir(args)
         mask_paths = []
         for metric in TFCE_VAL_METRICS:
-            mask_paths.append(
-                os.path.join(results_dir, "results_maps", f"tfce_values_{metric}_{hemi_fs}.gii"))
+            if metric not in T_VAL_METRICS:
+                mask_paths.append(os.path.join(results_dir, "results_maps", f"tfce_values_{metric}_{hemi_fs}.gii"))
 
             # if metric == METRIC_MOD_INVARIANT:
             #     clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
@@ -65,7 +65,8 @@ def run(args):
         results = {}
         for modality in [IMAGE, CAPTION]:
             for attention in ["attended", "unattended"]:
-                path = os.path.join(results_dir, "acc_results_maps", f'agnostic_decoder_test_{modality}_{attention}_{hemi_fs}.gii')
+                path = os.path.join(results_dir, "acc_results_maps",
+                                    f'agnostic_decoder_test_{modality}_{attention}_{hemi_fs}.gii')
                 data = nib.load(path)
                 results[f"test_{modality}_{attention}"] = data.darrays[0].data
 
@@ -79,7 +80,6 @@ def run(args):
 
         corr_caption = pearsonr(results['test_caption_attended'], results['test_caption_unattended'])
         print(f'{hemi_fs} corr_caption: {corr_caption[0]:.2f}')
-
 
     result_code = os.system(cmd)
     if result_code != 0:

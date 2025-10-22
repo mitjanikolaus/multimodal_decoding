@@ -18,7 +18,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, \
-    METRIC_LANG_2
+    METRIC_LANG_2, METRIC_GW_3, METRIC_GW_2
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -34,11 +34,14 @@ CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
+RESULT_METRICS = [METRIC_GW, METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG,
+                  METRIC_LANG_2] + T_VAL_METRICS
+
 
 def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
 
-    for result_metric in [METRIC_GW, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2] + T_VAL_METRICS:
+    for result_metric in RESULT_METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
@@ -223,7 +226,7 @@ def plot(args):
 
 
 def create_composite_images_of_all_views(args):
-    for result_metric in [METRIC_GW, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2] + T_VAL_METRICS:
+    for result_metric in RESULT_METRICS:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
                                         searchlight_mode_from_args(args)))
 
