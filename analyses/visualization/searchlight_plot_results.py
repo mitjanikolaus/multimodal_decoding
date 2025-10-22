@@ -11,7 +11,7 @@ import pickle
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, TFCE_VAL_METRICS, \
     T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_GW, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_IMAGERY, \
-    T_VAL_METRICS_DECODER_DIFF, T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF
+    T_VAL_METRICS_DECODER_DIFF, T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
@@ -319,9 +319,9 @@ def create_composite_images_of_all_views(args):
 
 def create_composite_images_of_metrics(args):
     for name, metrics in zip(
-            ['metrics_base', 'metrics_attention_diff', 'metrics_unattended_stimuli', 'metrics_decoder_diffs',
+            ['metrics_base', 'metrics_attention_diff', 'metrics_attention_diff_2', 'metrics_unattended_stimuli', 'metrics_decoder_diffs',
              'metrics_imagery'],
-            [T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_DECODER_DIFF,
+            [T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_DECODER_DIFF,
              T_VAL_METRICS_IMAGERY]):
         imgs = []
         for result_metric in metrics:
