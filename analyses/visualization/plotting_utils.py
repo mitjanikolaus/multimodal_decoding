@@ -156,11 +156,11 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                     _, training_mode, metric_1, metric_2 = metric.split('$')
                     metric_1 = clean_metric_name(metric_1)
                     metric_2 = clean_metric_name(metric_2)
-                    label = f"DIFF: {training_mode} decoder | {metric_1} - {metric_2}"
+                    label = f"{training_mode} decoder | {metric_1} - {metric_2}"
                 elif metric.split('$')[0] == DIFF_DECODERS:
                     _, training_mode_1, training_mode_2, metric_name = metric.split('$')
                     metric_name = clean_metric_name(metric_name)
-                    label = f"DIFF: {training_mode_1} decoder - {training_mode_2} decoder | {metric_name}"
+                    label = f"{training_mode_1} decoder - {training_mode_2} decoder | {metric_name}"
                 else:
                     training_mode, metric_name = metric.split('$')
                     metric_name = clean_metric_name(metric_name)
