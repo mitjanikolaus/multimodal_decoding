@@ -88,7 +88,7 @@ def plot(args):
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
-                result_values[hemi] = np.log(result_values[hemi])
+                # result_values[hemi] = np.log(result_values[hemi])
 
             null_distribution_tfce_values_file = os.path.join(
                 permutation_results_dir(args),
@@ -100,7 +100,7 @@ def plot(args):
             # significance_cutoff = 17.64
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
 
-            significance_cutoff = np.log(significance_cutoff)
+            # significance_cutoff = np.log(significance_cutoff)
 
             threshold = significance_cutoff
             cbar_min = 0
