@@ -18,7 +18,8 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, \
-    METRIC_LANG_2, METRIC_GW_3, METRIC_GW_2, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED
+    METRIC_LANG_2, METRIC_GW_3, METRIC_GW_2, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, \
+    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW_5
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
