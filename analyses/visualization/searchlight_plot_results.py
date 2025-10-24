@@ -37,7 +37,7 @@ DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
 TFCE_VAL_METRICS = [METRIC_GW_5, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW,
                     METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]
-RESULT_METRICS = TFCE_VAL_METRICS + T_VAL_METRICS
+RESULT_METRICS = T_VAL_METRICS + TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -117,7 +117,7 @@ def plot(args):
                 result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
-            threshold = 0.03
+            threshold = 0.05
             cbar_min = 0
             cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         elif result_metric.split('$')[0] == DIFF_DECODERS:
@@ -131,7 +131,7 @@ def plot(args):
                 result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
-            threshold = 0.03
+            threshold = 0.05
             cbar_min = 0
             cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         else:
@@ -142,7 +142,7 @@ def plot(args):
                                                     f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 result_values[hemi] = nibabel.load(path_mean_acc_values).darrays[0].data
 
-            threshold = 0.53
+            threshold = 0.55
             cbar_min = 0.5
             cbar_max = 0.75  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
