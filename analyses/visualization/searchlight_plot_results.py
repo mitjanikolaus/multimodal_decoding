@@ -35,9 +35,9 @@ CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
-RESULT_METRICS = T_VAL_METRICS + [METRIC_GW_4, METRIC_GW_5, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW, METRIC_GW_2,
-                  METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG,
-                  METRIC_LANG_2]
+TFCE_VAL_METRICS = [METRIC_GW_4, METRIC_GW_5, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW,
+                    METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]
+RESULT_METRICS = T_VAL_METRICS + TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -81,10 +81,7 @@ def plot(args):
 
         result_values = dict()
 
-        if result_metric in [METRIC_GW_5, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW,
-                             METRIC_GW_2,
-                             METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG,
-                             METRIC_LANG_2]:
+        if result_metric in TFCE_VAL_METRICS:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
@@ -121,7 +118,7 @@ def plot(args):
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
             threshold = 0.03
-            cbar_min = 0.03
+            cbar_min = 0
             cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         elif result_metric.split('$')[0] == DIFF_DECODERS:
             _, training_mode_1, training_mode_2, metric_name = result_metric.split('$')
@@ -135,7 +132,7 @@ def plot(args):
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
             threshold = 0.03
-            cbar_min = 0.03
+            cbar_min = 0
             cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         else:
             training_mode, metric = result_metric.split('$')
@@ -145,7 +142,7 @@ def plot(args):
                                                     f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
                 result_values[hemi] = nibabel.load(path_mean_acc_values).darrays[0].data
 
-            threshold = 0.5
+            threshold = 0.53
             cbar_min = 0.5
             cbar_max = 0.75  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
