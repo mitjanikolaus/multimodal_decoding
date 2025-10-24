@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 
-from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, TFCE_VAL_METRICS, \
-    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_GW, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_IMAGERY, \
+from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, \
+    T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_IMAGERY, \
     T_VAL_METRICS_DECODER_DIFF, T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
@@ -18,7 +18,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import permut
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, \
-    METRIC_LANG_2, METRIC_GW_3, METRIC_GW_2
+    METRIC_LANG_2, METRIC_GW_3, METRIC_GW_2, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -34,7 +34,8 @@ CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
-RESULT_METRICS = [METRIC_GW, METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG,
+RESULT_METRICS = [METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW, METRIC_GW_2,
+                  METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG,
                   METRIC_LANG_2] + T_VAL_METRICS
 
 
@@ -79,7 +80,8 @@ def plot(args):
 
         result_values = dict()
 
-        if result_metric in [METRIC_GW, METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]:
+        if result_metric in [METRIC_GW, METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG,
+                             METRIC_LANG_2]:
             tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
