@@ -227,47 +227,48 @@ def plot(args):
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=True)
 
+    create_composite_images_of_all_views(args, result_metric)
 
-def create_composite_images_of_all_views(args):
-    for result_metric in RESULT_METRICS:
-        results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
-                                        searchlight_mode_from_args(args)))
 
-        results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
+def create_composite_images_of_all_views(args, result_metric):
+    results_path = str(os.path.join(RESULTS_DIR, "searchlight", args.model, args.features, args.resolution,
+                                    searchlight_mode_from_args(args)))
 
-        images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in
-                          ["lateral"] for hemi in HEMIS]
-        images_medial = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"]
-                         for hemi in HEMIS]
-        # images_posterior = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
-        #                  in HEMIS]
+    results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{result_metric}_atlas"))
 
-        imgs_ventral = [Image.open(os.path.join(results_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
-        img_ventral = append_images(images=imgs_ventral, horizontally=False)
+    images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in
+                      ["lateral"] for hemi in HEMIS]
+    images_medial = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["medial"]
+                     for hemi in HEMIS]
+    # images_posterior = [Image.open(os.path.join(tfce_values_imgs_dir, f"{view}_{hemi}.png")) for view in ["posterior"] for hemi
+    #                  in HEMIS]
 
-        img_medial = append_images(images=images_medial, padding=20)
-        # img_posterior = append_images(images=images_posterior)
+    imgs_ventral = [Image.open(os.path.join(results_values_imgs_dir, f"ventral_{hemi}.png")) for hemi in HEMIS]
+    img_ventral = append_images(images=imgs_ventral, horizontally=False)
 
-        img_lateral = append_images(images=images_lateral, padding=20)
+    img_medial = append_images(images=images_medial, padding=20)
+    # img_posterior = append_images(images=images_posterior)
 
-        img_colorbar = Image.open(os.path.join(results_values_imgs_dir, "colorbar.png"))
-        offset_size = (img_colorbar.size[0], int(img_lateral.size[1] - img_colorbar.size[1]))
-        image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
-        img_colorbar = append_images([image_whitespace, img_colorbar], horizontally=False)
+    img_lateral = append_images(images=images_lateral, padding=20)
 
-        img_row_1 = append_images([img_lateral], padding=10)
-        img_row_2 = append_images([img_medial], padding=10)
-        img_row_3 = append_images([img_ventral, img_colorbar], padding=30)
+    img_colorbar = Image.open(os.path.join(results_values_imgs_dir, "colorbar.png"))
+    offset_size = (img_colorbar.size[0], int(img_lateral.size[1] - img_colorbar.size[1]))
+    image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
+    img_colorbar = append_images([image_whitespace, img_colorbar], horizontally=False)
 
-        # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
+    img_row_1 = append_images([img_lateral], padding=10)
+    img_row_2 = append_images([img_medial], padding=10)
+    img_row_3 = append_images([img_ventral, img_colorbar], padding=30)
 
-        composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
+    # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
-        path = os.path.join(results_path, "searchlight_results",
-                            f"{result_metric.replace('_', '-').replace('$', '_')}.png")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        composite_image.save(path, transparent=True)  # , facecolor="black")
-        print('saved ', path)
+    composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
+
+    path = os.path.join(results_path, "searchlight_results",
+                        f"{result_metric.replace('_', '-').replace('$', '_')}.png")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    composite_image.save(path, transparent=True)  # , facecolor="black")
+    print('saved ', path)
 
 
 def create_composite_images_of_metrics(args):
@@ -309,5 +310,4 @@ if __name__ == "__main__":
     args = get_args()
 
     plot(args)
-    create_composite_images_of_all_views(args)
     create_composite_images_of_metrics(args)
