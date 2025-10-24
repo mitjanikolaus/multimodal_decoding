@@ -39,6 +39,7 @@ TFCE_VAL_METRICS = [
     METRIC_GW_2,
     METRIC_GW_3,
     METRIC_GW_4,
+    METRIC_GW_5,
     METRIC_MOD_INVARIANT_ATTENDED,
     METRIC_MOD_INVARIANT_UNATTENDED,
     METRIC_GW_DIFF,
@@ -173,6 +174,15 @@ T_VAL_METRICS_GW_3 = [
 ]
 
 T_VAL_METRICS_GW_4 = [
+    # cross-modality decoding attention diff
+    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+]
+
+T_VAL_METRICS_GW_5 = [
+    # cross-modal decoding
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
     # cross-modality decoding attention diff
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
@@ -570,6 +580,8 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
         elif metric == METRIC_GW_4:
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
+        elif metric == METRIC_GW_5:
+            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
         elif metric == METRIC_MOD_INVARIANT_ATTENDED:
             values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_ATTENDED], axis=0)
         elif metric == METRIC_MOD_INVARIANT_UNATTENDED:
