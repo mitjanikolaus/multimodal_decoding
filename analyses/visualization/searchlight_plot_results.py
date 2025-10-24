@@ -227,7 +227,7 @@ def plot(args):
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=True)
 
-    create_composite_images_of_all_views(args, result_metric)
+        create_composite_images_of_all_views(args, result_metric)
 
 
 def create_composite_images_of_all_views(args, result_metric):
