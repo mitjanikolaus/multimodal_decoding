@@ -117,8 +117,8 @@ def plot(args):
                 result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
-            threshold = 0.05
-            cbar_min = 0.05
+            threshold = 0.04
+            cbar_min = 0.04
             cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         elif result_metric.split('$')[0] == DIFF_DECODERS:
             _, training_mode_1, training_mode_2, metric_name = result_metric.split('$')
@@ -131,8 +131,8 @@ def plot(args):
                 result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
                                       nibabel.load(path_mean_acc_values_2).darrays[0].data
 
-            threshold = 0.05
-            cbar_min = 0.05
+            threshold = 0.04
+            cbar_min = 0.04
             cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         else:
             training_mode, metric = result_metric.split('$')
