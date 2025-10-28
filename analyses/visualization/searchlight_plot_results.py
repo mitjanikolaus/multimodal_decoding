@@ -113,8 +113,8 @@ def plot(args):
             for hemi in HEMIS:
                 result_values[hemi] = t_values[hemi][result_metric]
 
-            threshold = 0.1
-            cbar_min = 0.1
+            threshold = 2
+            cbar_min = 2
             cbar_max = 5
 
         # elif result_metric.split('$')[0] == DIFF:
