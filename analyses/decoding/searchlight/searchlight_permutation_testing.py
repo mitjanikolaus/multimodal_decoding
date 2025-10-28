@@ -63,6 +63,9 @@ T_VAL_METRICS = [
     # cross-modality decoding of attended stimuli
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
+    # cross-modality decoding of unattended stimuli
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
     # cross-modality decoding attention diff
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
@@ -87,9 +90,7 @@ T_VAL_METRICS = [
     # within-modality decoding of unattended stimuli
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-    # cross-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
+
     # within-modality decoding attend-both vs. attend diff
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
