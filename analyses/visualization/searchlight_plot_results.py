@@ -88,8 +88,8 @@ def plot(args):
             for hemi in HEMIS:
                 result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
 
-            threshold = 2
-            cbar_min = 2
+            threshold = 1.5
+            cbar_min = 1.5
             cbar_max = 5
 
             # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
@@ -121,8 +121,8 @@ def plot(args):
             for hemi in HEMIS:
                 result_values[hemi] = t_values[hemi][result_metric]
 
-            threshold = 2
-            cbar_min = 2
+            threshold = 1.5
+            cbar_min = 1.5
             cbar_max = 5
 
         # elif result_metric.split('$')[0] == DIFF:
