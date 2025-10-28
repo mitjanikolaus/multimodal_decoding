@@ -568,114 +568,117 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
+def compute_composite_t_vals_for_metric(t_values, metric, hemi):
+    if metric in T_VAL_METRICS:
+        values = t_values[hemi][metric]
+    elif metric == METRIC_GW:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
+    elif metric == METRIC_GW_2:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
+    elif metric == METRIC_GW_3:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
+    elif metric == METRIC_GW_4:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
+    elif metric == METRIC_GW_5:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
+    elif metric == METRIC_MOD_INVARIANT_ATTENDED:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_ATTENDED], axis=0)
+    elif metric == METRIC_MOD_INVARIANT_UNATTENDED:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_UNATTENDED], axis=0)
+    elif metric == METRIC_GW_DIFF:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
+    elif metric == METRIC_VISION:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION], axis=0)
+    elif metric == METRIC_LANG:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG], axis=0)
+    elif metric == METRIC_VISION_2:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION_2], axis=0)
+    elif metric == METRIC_LANG_2:
+        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG_2], axis=0)
+    elif metric == METRIC_WITHIN_MODALITY_DECODING:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])]
+            ),
+            axis=0)
+    elif metric == METRIC_CROSS_DECODING:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]
+            ),
+            axis=0)
+    elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
+            ),
+            axis=0)
+    elif metric == METRIC_DIFF_ATTENTION_WITHIN_MODALITY:
+        values = np.nanmin(
+            (
+                t_values[hemi][
+                    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                t_values[hemi][
+                    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]
+            ),
+            axis=0)
+
+    elif metric == METRIC_DIFF_ATTENTION_CROSS_MODALITY:
+        values = np.nanmin(
+            (
+                t_values[hemi][
+                    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
+                t_values[hemi][
+                    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]
+            ),
+            axis=0)
+
+    elif metric == METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
+                t_values[hemi][
+                    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
+            ),
+            axis=0)
+
+    elif metric == METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
+                t_values[hemi][
+                    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
+            ),
+            axis=0)
+
+    elif metric == METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
+            ),
+            axis=0)
+
+    elif metric == METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
+        values = np.nanmin(
+            (
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED])]
+            ),
+            axis=0)
+    else:
+        raise RuntimeError("Unknown metric: ", metric)
+    return values
+
+
 def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices",
                      use_tqdm=False):
     tfce_values = dict()
-
     for hemi in HEMIS:
-        if metric in T_VAL_METRICS:
-            values = t_values[hemi][metric]
-        elif metric == METRIC_GW:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
-        elif metric == METRIC_GW_2:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
-        elif metric == METRIC_GW_3:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
-        elif metric == METRIC_GW_4:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
-        elif metric == METRIC_GW_5:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
-        elif metric == METRIC_MOD_INVARIANT_ATTENDED:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_ATTENDED], axis=0)
-        elif metric == METRIC_MOD_INVARIANT_UNATTENDED:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_UNATTENDED], axis=0)
-        elif metric == METRIC_GW_DIFF:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
-        elif metric == METRIC_VISION:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION], axis=0)
-        elif metric == METRIC_LANG:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG], axis=0)
-        elif metric == METRIC_VISION_2:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION_2], axis=0)
-        elif metric == METRIC_LANG_2:
-            values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG_2], axis=0)
-        elif metric == METRIC_WITHIN_MODALITY_DECODING:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])]
-                ),
-                axis=0)
-        elif metric == METRIC_CROSS_DECODING:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]
-                ),
-                axis=0)
-        elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-                ),
-                axis=0)
-        elif metric == METRIC_DIFF_ATTENTION_WITHIN_MODALITY:
-            values = np.nanmin(
-                (
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]
-                ),
-                axis=0)
-
-        elif metric == METRIC_DIFF_ATTENTION_CROSS_MODALITY:
-            values = np.nanmin(
-                (
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]
-                ),
-                axis=0)
-
-        elif metric == METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-                ),
-                axis=0)
-
-        elif metric == METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
-                    t_values[hemi][
-                        '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-                ),
-                axis=0)
-
-        elif metric == METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
-                ),
-                axis=0)
-
-        elif metric == METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
-            values = np.nanmin(
-                (
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED])],
-                    t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED])]
-                ),
-                axis=0)
-        else:
-            raise RuntimeError("Unknown metric: ", metric)
-
+        values = compute_composite_t_vals_for_metric(t_values, metric, hemi)
         max_score = np.nanmax(values)
         if max_score <= 0:
             tfce_values[hemi] = {metric: np.zeros_like(values)}
