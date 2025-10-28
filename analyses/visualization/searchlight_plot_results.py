@@ -37,7 +37,7 @@ DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
 TFCE_VAL_METRICS = [METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW_5, METRIC_GW,
                     METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]
-RESULT_METRICS = TFCE_VAL_METRICS + T_VAL_METRICS
+RESULT_METRICS = T_VAL_METRICS + TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -106,45 +106,56 @@ def plot(args):
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             # print(f"{result_metric} max tfce value across hemis: {cbar_max}")
 
-        elif result_metric.split('$')[0] == DIFF:
-            _, training_mode, metric_1, metric_2 = result_metric.split('$')
-
-            for hemi in HEMIS:
-                path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
-                                                      f"{training_mode}_decoder_{metric_1}_{FS_HEMI_NAMES[hemi]}.gii")
-                path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
-                                                      f"{training_mode}_decoder_{metric_2}_{FS_HEMI_NAMES[hemi]}.gii")
-                result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
-                                      nibabel.load(path_mean_acc_values_2).darrays[0].data
-
-            threshold = 0.03
-            cbar_min = 0.03
-            cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-        elif result_metric.split('$')[0] == DIFF_DECODERS:
-            _, training_mode_1, training_mode_2, metric_name = result_metric.split('$')
-
-            for hemi in HEMIS:
-                path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
-                                                      f"{training_mode_1}_decoder_{metric_name}_{FS_HEMI_NAMES[hemi]}.gii")
-                path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
-                                                      f"{training_mode_2}_decoder_{metric_name}_{FS_HEMI_NAMES[hemi]}.gii")
-                result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
-                                      nibabel.load(path_mean_acc_values_2).darrays[0].data
-
-            threshold = 0.03
-            cbar_min = 0.03
-            cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         else:
-            training_mode, metric = result_metric.split('$')
+            t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            t_values = pickle.load(open(t_values_path, 'rb'))
 
             for hemi in HEMIS:
-                path_mean_acc_values = os.path.join(permutation_results_dir(args), "acc_results_maps",
-                                                    f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-                result_values[hemi] = nibabel.load(path_mean_acc_values).darrays[0].data
+                result_values[hemi] = t_values[hemi][result_metric]
 
-            threshold = 0.53
-            cbar_min = 0.53
-            cbar_max = 0.75  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            threshold = 0.1
+            cbar_min = 0.1
+            cbar_max = 5
+
+        # elif result_metric.split('$')[0] == DIFF:
+        #     _, training_mode, metric_1, metric_2 = result_metric.split('$')
+        #
+        #     for hemi in HEMIS:
+        #         path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+        #                                               f"{training_mode}_decoder_{metric_1}_{FS_HEMI_NAMES[hemi]}.gii")
+        #         path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+        #                                               f"{training_mode}_decoder_{metric_2}_{FS_HEMI_NAMES[hemi]}.gii")
+        #         result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
+        #                               nibabel.load(path_mean_acc_values_2).darrays[0].data
+        #
+        #     threshold = 0.03
+        #     cbar_min = 0.03
+        #     cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+        # elif result_metric.split('$')[0] == DIFF_DECODERS:
+        #     _, training_mode_1, training_mode_2, metric_name = result_metric.split('$')
+        #
+        #     for hemi in HEMIS:
+        #         path_mean_acc_values_1 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+        #                                               f"{training_mode_1}_decoder_{metric_name}_{FS_HEMI_NAMES[hemi]}.gii")
+        #         path_mean_acc_values_2 = os.path.join(permutation_results_dir(args), "acc_results_maps",
+        #                                               f"{training_mode_2}_decoder_{metric_name}_{FS_HEMI_NAMES[hemi]}.gii")
+        #         result_values[hemi] = nibabel.load(path_mean_acc_values_1).darrays[0].data - \
+        #                               nibabel.load(path_mean_acc_values_2).darrays[0].data
+        #
+        #     threshold = 0.03
+        #     cbar_min = 0.03
+        #     cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+        # else:
+        #     training_mode, metric = result_metric.split('$')
+        #
+        #     for hemi in HEMIS:
+        #         path_mean_acc_values = os.path.join(permutation_results_dir(args), "acc_results_maps",
+        #                                             f"{training_mode}_decoder_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+        #         result_values[hemi] = nibabel.load(path_mean_acc_values).darrays[0].data
+        #
+        #     threshold = 0.53
+        #     cbar_min = 0.53
+        #     cbar_max = 0.75  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         print(f"{result_metric} cbar max: {cbar_max}")
         for hemi in HEMIS:
