@@ -907,7 +907,14 @@ def calc_t_values(scores):
                     assert len(data_1) == n_vertices
                     data_2 = scores_filtered[(scores_filtered.subject == subj) & (
                             scores_filtered.metric == metric_name_2)].value
+                    assert len(data_2) == n_vertices
+                    print(data_1.type)
+                    print(data_2.type)
+                    print(data_1.shape)
+                    print(data_2.shape)
+                    print((data_1 - data_2).shape)
                     data[i] = data_1 - data_2
+                    assert len(data[i]) == n_vertices
                 elif metric.split('$')[0] == DIFF_DECODERS:
                     training_mode_1, training_mode_2, metric_name = metric.split('$')[1:]
                     scores_filtered = scores[
@@ -917,11 +924,13 @@ def calc_t_values(scores):
                     data_2 = scores_filtered[(scores_filtered.subject == subj) & (
                             scores_filtered.training_mode == training_mode_2)].value
                     data[i] = data_1 - data_2
+                    assert len(data[i]) == n_vertices
                 else:
                     training_mode, metric_name = metric.split('$')
                     scores_filtered = scores[
                         (scores.hemi == hemi) & (scores.metric == metric_name) & (scores.training_mode == training_mode)]
                     data[i] = scores_filtered[(scores_filtered.subject == subj)].value
+                    assert len(data[i]) == n_vertices
 
             popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
             tvals[hemi][metric] = calc_image_t_values(data, popmean)
