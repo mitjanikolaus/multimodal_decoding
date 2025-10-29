@@ -974,8 +974,8 @@ def calc_test_statistics(args):
 
         print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
 
-        p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{args.metric}.p")
-        pickle.dump(p_values, open(p_values_path, mode='wb'))
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{args.metric}.p")
+    pickle.dump(p_values, open(p_values_path, mode='wb'))
     return significance_cutoff
 
 
