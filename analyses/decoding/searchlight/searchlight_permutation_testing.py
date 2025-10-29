@@ -902,11 +902,11 @@ def calc_t_values(scores):
                     scores_filtered = scores[
                         (scores.hemi == hemi) & (scores.training_mode == training_mode)]
                     data_1 = scores_filtered[(scores_filtered.subject == subj) & (
-                            scores_filtered.metric == metric_name_1)].value
+                            scores_filtered.metric == metric_name_1)].value.values
                     print(scores_filtered[(scores_filtered.subject == subj) & (scores_filtered.metric == metric_name_1)])
                     assert len(data_1) == n_vertices
                     data_2 = scores_filtered[(scores_filtered.subject == subj) & (
-                            scores_filtered.metric == metric_name_2)].value
+                            scores_filtered.metric == metric_name_2)].value.values
                     assert len(data_2) == n_vertices
                     print(data_1.type)
                     print(data_2.type)
@@ -920,16 +920,16 @@ def calc_t_values(scores):
                     scores_filtered = scores[
                         (scores.hemi == hemi) & (scores.metric == metric_name)]
                     data_1 = scores_filtered[(scores_filtered.subject == subj) & (
-                            scores_filtered.training_mode == training_mode_1)].value
+                            scores_filtered.training_mode == training_mode_1)].value.values
                     data_2 = scores_filtered[(scores_filtered.subject == subj) & (
-                            scores_filtered.training_mode == training_mode_2)].value
+                            scores_filtered.training_mode == training_mode_2)].value.values
                     data[i] = data_1 - data_2
                     assert len(data[i]) == n_vertices
                 else:
                     training_mode, metric_name = metric.split('$')
                     scores_filtered = scores[
                         (scores.hemi == hemi) & (scores.metric == metric_name) & (scores.training_mode == training_mode)]
-                    data[i] = scores_filtered[(scores_filtered.subject == subj)].value
+                    data[i] = scores_filtered[(scores_filtered.subject == subj)].value.values
                     assert len(data[i]) == n_vertices
 
             popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
