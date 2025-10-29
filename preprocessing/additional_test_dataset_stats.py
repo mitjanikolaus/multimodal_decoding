@@ -16,7 +16,7 @@ if __name__ == "__main__":
         path = os.path.join(ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, subject)
         print(f"Scanning for sessions in {path}")
         session_dirs = glob(os.path.join(path, 'ses-*'))
-        print(list(session_dirs))
+        print(f'found {len(session_dirs)} sessions')
         rep_counter = Counter()
         for session_dir in session_dirs:
             func_scans_dir = os.path.join(session_dir, 'func')
