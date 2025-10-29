@@ -21,6 +21,7 @@ if __name__ == "__main__":
         for session_dir in session_dirs:
             func_scans_dir = os.path.join(session_dir, 'func')
             event_files = glob(os.path.join(func_scans_dir, '*.tsv'))
+            print(f'found {len(event_files)} event files')
             for event_file in event_files:
                 events = pd.read_csv(event_file, delimiter='\t')
                 trial_types = events.trial_type.apply(lambda x: ID_TO_TRIAL_TYPE[x])
