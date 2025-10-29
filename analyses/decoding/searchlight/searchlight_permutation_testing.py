@@ -894,6 +894,7 @@ def calc_t_values(scores):
     for hemi in HEMIS:
         for metric in tqdm(T_VAL_METRICS, desc=f'calculating {hemi} hemi t vals'):
             n_vertices = len(scores[scores.hemi == hemi].vertex.unique())
+            print('n_vertices', n_vertices)
             data = np.zeros((len(args.subjects), n_vertices))
             for i, subj in enumerate(args.subjects):
                 if metric.split('$')[0] == DIFF:
@@ -902,6 +903,8 @@ def calc_t_values(scores):
                         (scores.hemi == hemi) & (scores.training_mode == training_mode)]
                     data_1 = scores_filtered[(scores_filtered.subject == subj) & (
                             scores_filtered.metric == metric_name_1)].value
+                    print(scores_filtered[(scores_filtered.subject == subj) & (scores_filtered.metric == metric_name_1)])
+                    assert len(data_1) == n_vertices
                     data_2 = scores_filtered[(scores_filtered.subject == subj) & (
                             scores_filtered.metric == metric_name_2)].value
                     data[i] = data_1 - data_2
