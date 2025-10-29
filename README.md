@@ -87,6 +87,14 @@ python preprocessing/make_spm_design_job_mat.py --subjects sub-01
 cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01;exit;"  -logfile matlab_output.txt && cd -
 ```
 
+Additionally, this has to be done for the additional test data (attention modulation and additional imagery trials):
+
+```
+python preprocessing/make_spm_design_job_mat_additional_test.py --subjects sub-01
+cd preprocessing && matlab -nodisplay -nosplash -nodesktop -r "run_spm_glm sub-01;exit;"  -logfile matlab_output.txt && cd -
+```
+
+
 __Note:__ Repeat these steps separately for each subject by adapting the subject identifier (`sub-01`) for both matlab
 and python scripts!
 
