@@ -27,6 +27,8 @@ if __name__ == "__main__":
                 trial_types = events.trial_type.apply(lambda x: ID_TO_TRIAL_TYPE[x])
                 conds = [TEST_IMAGES_ATTENDED, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED, IMAGERY]
                 trials = [e + "-" + t for e, t in zip(events.condition_name.astype(str), trial_types) if t in conds]
+                print(f'num perception trials: {len([t for t in trial_types if t in [TEST_IMAGES_ATTENDED, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED]])}')
+                print(f'num imagery trials: {len([t for t in trial_types if t in [IMAGERY]])}')
                 rep_counter.update(trials)
         entry = {'subject': subject}
 
