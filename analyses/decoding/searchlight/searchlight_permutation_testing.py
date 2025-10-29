@@ -976,7 +976,7 @@ def calc_test_statistics(args):
 
         p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{args.metric}.p")
         pickle.dump(p_values, open(p_values_path, mode='wb'))
-        return significance_cutoff
+    return significance_cutoff
 
 
 def calc_t_values_null_distr(args, out_path):
