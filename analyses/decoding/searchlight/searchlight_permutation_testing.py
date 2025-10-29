@@ -908,8 +908,6 @@ def calc_t_values(scores):
                     data_2 = scores_filtered[(scores_filtered.subject == subj) & (
                             scores_filtered.metric == metric_name_2)].value.values
                     assert len(data_2) == n_vertices
-                    print(data_1.type)
-                    print(data_2.type)
                     print(data_1.shape)
                     print(data_2.shape)
                     print((data_1 - data_2).shape)
