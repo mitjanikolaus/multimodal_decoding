@@ -102,9 +102,9 @@ def subject_performance_attention_mod(subj, bids_dir):
             data_unattended_stimuli = data[data.trial_type.isin([TRIAL_TYPE_TO_ID[TEST_IMAGES_UNATTENDED],TRIAL_TYPE_TO_ID[TEST_CAPTIONS_UNATTENDED]])]
             stim_ids = data_unattended_stimuli.condition_name.values
             one_back = [1 if stim_ids[n+1] == stim_ids[n] else 0 for n in range(len(stim_ids)-1)]
-            if np.sum(one_back) > 0:
-                print(one_back)
-                print(data_unattended_stimuli)
+            # if np.sum(one_back) > 0:
+            print(one_back)
+            print(data_unattended_stimuli)
     #         allowed = np.array([1 if t in CODES_PERCEPTION else 0 for t in trial_type]) == 1
     #         stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
     #         stim_ids.extend(list(condition[allowed]))
