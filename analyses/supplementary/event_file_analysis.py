@@ -5,7 +5,8 @@ import os
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR
+from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
+    SUBJECTS_ADDITIONAL_TEST
 
 
 def subject_performance(subj, bids_dir):
@@ -81,7 +82,7 @@ if __name__ == "__main__":
 
     results = []
     subject_stim_ids = dict()
-    for subj in SUBJECTS:
+    for subj in SUBJECTS_ADDITIONAL_TEST:
         fp, fn, stim_ids = subject_performance(subj, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
         subject_stim_ids[subj] = stim_ids
         # get_oneback_errors(subj)
