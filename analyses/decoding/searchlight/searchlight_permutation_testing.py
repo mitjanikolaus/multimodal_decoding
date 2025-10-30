@@ -419,7 +419,8 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
         print(f"using tfce value threshold {tfce_value_threshold}")
     masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
     for hemi in HEMIS:
-        print(f'{hemi} hemi mask size for threshold {threshold:.2f}: {np.mean(tfce_values[hemi][metric] >= threshold):.2f}')
+        print(
+            f'{hemi} hemi mask size for threshold {threshold:.2f}: {np.mean(tfce_values[hemi][metric] >= threshold):.2f}')
         masks[hemi][tfce_values[hemi][metric] >= threshold] = 1
         masks[hemi][tfce_values[hemi][metric] < threshold] = 0
         masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
@@ -732,7 +733,8 @@ def calc_t_values(scores):
                 else:
                     training_mode, metric_name = metric.split('$')
                     scores_filtered = scores[
-                        (scores.hemi == hemi) & (scores.metric == metric_name) & (scores.training_mode == training_mode)]
+                        (scores.hemi == hemi) & (scores.metric == metric_name) & (
+                                    scores.training_mode == training_mode)]
                     data[i] = scores_filtered[(scores_filtered.subject == subj)].value.values
 
             popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
@@ -801,7 +803,7 @@ def calc_t_values_null_distr(args, out_path):
 
         with h5py.File(tmp_file_path, 'w') as f:
             dsets = dict()
-            for metric in T_VAL_METRICS + TFCE_VAL_METRICS:
+            for metric in T_VAL_METRICS:
                 tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
                 dsets[metric] = f.create_dataset(metric, tvals_shape, dtype='float16')
 
@@ -930,8 +932,7 @@ def calc_t_values_null_distr(args, out_path):
     tmp_filenames = dict()
     for hemi in HEMIS:
         tmp_filenames[hemi] = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}_{hemi}.hdf5")
-                               for job_id in
-                               range(args.n_jobs)}
+                               for job_id in range(args.n_jobs)}
 
         # TODO single iter for debugging
         # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
