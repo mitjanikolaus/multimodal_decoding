@@ -117,8 +117,8 @@ def subject_performance_attention_mod(subj, bids_dir):
     #         confusion[1, 0] += np.logical_and(one_back != 0, response == 0).sum()
     #         confusion[1, 1] += np.logical_and(one_back != 0, response != 0).sum()
     #
-    # error_rate_false_positives = 100 * confusion[0, 1] / confusion[0].sum()
-    # error_rate_false_negatives = 100 * confusion[1, 0] / confusion[1].sum()
+    error_rate_false_positives = 100 * confusion[0, 1] / confusion[0].sum()
+    error_rate_false_negatives = 100 * confusion[1, 0] / confusion[1].sum()
     # # print(f"Stimuli per session: {stimuli_per_run}")
     # print(f"Mean stimuli per session: {np.mean(list(stimuli_per_run.values()))}")
     #
@@ -131,7 +131,7 @@ def subject_performance_attention_mod(subj, bids_dir):
     # print(f"{'stim':10s} {confusion[0, 0]:6d} {confusion[0, 1]:10d} {error_rate_false_positives:10.2f}")
     # print(f"{'oneback':10s} {confusion[1, 0]:6d} {confusion[1, 1]:10d} {error_rate_false_negatives:10.2f}")
     # print("")
-    # return error_rate_false_positives, error_rate_false_negatives, stim_ids
+    return error_rate_false_positives, error_rate_false_negatives, stim_ids
 
 if __name__ == "__main__":
     os.makedirs(RESULTS_DIR, exist_ok=True)
