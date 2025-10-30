@@ -41,7 +41,7 @@ TFCE_VAL_METRICS = [METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES
                     METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
                     METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW_5, METRIC_GW,
                     METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]
-RESULT_METRICS = TFCE_VAL_METRICS + T_VAL_METRICS
+RESULT_METRICS = T_VAL_METRICS + TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -141,7 +141,7 @@ def plot(args):
 
             threshold = 0.03
             cbar_min = 0.03
-            cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 0.1  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         elif result_metric.split('$')[0] == DIFF_DECODERS:
             _, training_mode_1, training_mode_2, metric_name = result_metric.split('$')
 
@@ -155,7 +155,7 @@ def plot(args):
 
             threshold = 0.03
             cbar_min = 0.03
-            cbar_max = 0.15  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 0.1  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
         else:
             training_mode, metric = result_metric.split('$')
 
