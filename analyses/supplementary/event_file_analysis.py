@@ -99,7 +99,7 @@ def subject_performance_attention_mod(subj, bids_dir):
             data = pd.read_csv(event, sep='\t')
             condition = np.array(data['condition_name'])
             trial_type = np.array(data['trial_type'])
-            data_unattended_stimuli = data[data.trial_type.isin[TRIAL_TYPE_TO_ID[TEST_IMAGES_UNATTENDED],TRIAL_TYPE_TO_ID[TEST_CAPTIONS_UNATTENDED]]]
+            data_unattended_stimuli = data[data.trial_type.isin([TRIAL_TYPE_TO_ID[TEST_IMAGES_UNATTENDED],TRIAL_TYPE_TO_ID[TEST_CAPTIONS_UNATTENDED]])]
             print(data_unattended_stimuli)
     #         allowed = np.array([1 if t in CODES_PERCEPTION else 0 for t in trial_type]) == 1
     #         stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
