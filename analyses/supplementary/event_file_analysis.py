@@ -119,9 +119,11 @@ if __name__ == "__main__":
         results.append({"subject": subj, "metric": "false_negatives", "value": fn})
 
     results = pd.DataFrame.from_records(results)
+    plt.figure(figsize=(7,5))
     sns.barplot(data=results, x="subject", y="value", hue="metric")
     sns.despine()
     plt.ylabel("Error rate (%)")
+    plt.tight_layout()
     plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis_attention_mod.png"), dpi=300)
     plt.show()
 
@@ -136,9 +138,11 @@ if __name__ == "__main__":
         results.append({"subject": subj, "metric": "false_negatives", "value": fn})
 
     results = pd.DataFrame.from_records(results)
+    plt.figure(figsize=(7,5))
     sns.barplot(data=results, x="subject", y="value", hue="metric")
     sns.despine()
     plt.ylabel("Error rate (%)")
+    plt.tight_layout()
     plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
     plt.show()
 
