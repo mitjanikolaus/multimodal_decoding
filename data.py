@@ -661,11 +661,8 @@ def apply_mask(mask, fmri_betas, args):
             n_vertices = len(fmri_betas[SPLIT_TRAIN][0])
             n_random_vertices = int(mask.split('random_')[1])
             print(f'creating mask based on {n_random_vertices} random vertices')
-            mask_flat = np.zeros(shape=n_vertices, dtype=int)
             locations_selected = np.random.choice(range(n_vertices), size=n_random_vertices, replace=False)
-            mask_flat[locations_selected] = 1
-            print(len(mask_flat))
-            print(np.sum(mask_flat))
+            mask_flat = np.array([1 if i in locations_selected else 0 for i in range(n_vertices)])
 
         if os.path.isfile(mask):
             mask = pickle.load(open(mask, 'rb'))
