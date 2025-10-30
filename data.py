@@ -656,6 +656,14 @@ def apply_mask(mask, fmri_betas, args):
     if mask is not None:
         if not args.surface:
             raise NotImplementedError("The --surface option needs to be specified when using masks")
+        if mask.startswith('random_'):
+            np.random.seed(1)
+            n_vertices = len(fmri_betas[SPLIT_TRAIN][0])
+            n_random_vertices = int(mask.split('random_')[1])
+            mask_flat = np.zeros(shape=n_vertices)
+            locations_selected = np.random.choice(range(n_vertices), size=n_random_vertices)
+            mask_flat[locations_selected] = 1
+
         if os.path.isfile(mask):
             mask = pickle.load(open(mask, 'rb'))
             mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
