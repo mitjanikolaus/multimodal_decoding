@@ -120,7 +120,8 @@ if __name__ == "__main__":
 
     results = pd.DataFrame.from_records(results)
     sns.barplot(data=results, x="subject", y="value", hue="metric")
-    plt.ylabel("Error rate")
+    sns.despine()
+    plt.ylabel("Error rate (%)")
     plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis_attention_mod.png"), dpi=300)
     plt.show()
 
@@ -136,7 +137,8 @@ if __name__ == "__main__":
 
     results = pd.DataFrame.from_records(results)
     sns.barplot(data=results, x="subject", y="value", hue="metric")
-    plt.ylabel("Error rate")
+    sns.despine()
+    plt.ylabel("Error rate (%)")
     plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
     plt.show()
 
