@@ -37,11 +37,11 @@ CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
-TFCE_VAL_METRICS = [METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES, METRIC_GW_4,
-                    METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
-                    METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW_5, METRIC_GW,
+TFCE_VAL_METRICS = [METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
+                    METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_ATTENTION_DIFF_CAPTIONS,
+                    METRIC_ATTENTION_DIFF_IMAGES, METRIC_GW_4, METRIC_GW_5, METRIC_GW,
                     METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]
-RESULT_METRICS = T_VAL_METRICS + TFCE_VAL_METRICS
+RESULT_METRICS = TFCE_VAL_METRICS + T_VAL_METRICS
 
 
 def plot(args):
@@ -99,7 +99,7 @@ def plot(args):
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
-                # result_values[hemi] = np.log(result_values[hemi])
+                result_values[hemi] = np.log(result_values[hemi])
 
             null_distribution_tfce_values_file = os.path.join(
                 permutation_results_dir(args),
@@ -109,7 +109,7 @@ def plot(args):
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               args.p_value_threshold)
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
-            # significance_cutoff = np.log(significance_cutoff)
+            significance_cutoff = np.log(significance_cutoff)
 
             threshold = significance_cutoff
             cbar_min = significance_cutoff
