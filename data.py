@@ -661,7 +661,7 @@ def apply_mask(mask, fmri_betas, args):
             n_vertices = len(fmri_betas[SPLIT_TRAIN][0])
             n_random_vertices = int(mask.split('random_')[1])
             print(f'creating mask based on {n_random_vertices} random vertices')
-            mask_flat = np.zeros(shape=n_vertices)
+            mask_flat = np.zeros(shape=n_vertices, dtype=int)
             locations_selected = np.random.choice(range(n_vertices), size=n_random_vertices)
             mask_flat[locations_selected] = 1
             print(len(mask_flat))
