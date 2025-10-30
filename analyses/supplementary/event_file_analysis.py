@@ -26,10 +26,11 @@ def subject_performance(subj, bids_dir):
         runs_per_session[ses] = len(events)
         for event in events:
             data = pd.read_csv(event, sep='\t')
+            condition = np.array(data['condition_name'])
             trial_type = np.array(data['trial_type'])
             allowed = [1 if t in CODES_PERCEPTION else 0 for t in trial_type]
             stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
-            stim_ids.extend(list(trial_type[trial_type in CODES_PERCEPTION]))
+            stim_ids.extend(list(condition[allowed == 1]))
 
             one_back = np.array(data['one_back'])[allowed]
             response = np.array(data['subj_resp'])[allowed]
