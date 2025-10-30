@@ -5,11 +5,11 @@ import os
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR
+from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR
 
 
-def subject_performance(subj):
-    path = os.path.join(FMRI_BIDS_DATA_DIR, subj)
+def subject_performance(subj, bids_dir):
+    path = os.path.join(bids_dir, subj)
     sess = sorted(list(glob(os.path.join(path, 'ses-*'))))
     print(f"Subject: {subj}\nNumber of sessions: {len(sess)}")
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     results = []
     subject_stim_ids = dict()
     for subj in SUBJECTS:
-        fp, fn, stim_ids = subject_performance(subj)
+        fp, fn, stim_ids = subject_performance(subj, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
         subject_stim_ids[subj] = stim_ids
         # get_oneback_errors(subj)
         results.append({"subject": subj, "metric": "false_positives", "value": fp})
@@ -93,4 +93,20 @@ if __name__ == "__main__":
     plt.ylabel("Error rate")
     plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
     plt.show()
+
+
+    # results = []
+    # subject_stim_ids = dict()
+    # for subj in SUBJECTS:
+    #     fp, fn, stim_ids = subject_performance(subj, FMRI_BIDS_DATA_DIR)
+    #     subject_stim_ids[subj] = stim_ids
+    #     # get_oneback_errors(subj)
+    #     results.append({"subject": subj, "metric": "false_positives", "value": fp})
+    #     results.append({"subject": subj, "metric": "false_negatives", "value": fn})
+    #
+    # results = pd.DataFrame.from_records(results)
+    # sns.barplot(data=results, x="subject", y="value", hue="metric")
+    # plt.ylabel("Error rate")
+    # plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
+    # plt.show()
 
