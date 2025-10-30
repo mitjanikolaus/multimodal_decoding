@@ -29,12 +29,13 @@ def subject_performance(subj, bids_dir):
             condition = np.array(data['condition_name'])
             trial_type = np.array(data['trial_type'])
             allowed = np.array([1 if t in CODES_PERCEPTION else 0 for t in trial_type])
-            print(allowed)
             stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
             stim_ids.extend(list(condition[allowed == 1]))
 
             one_back = np.array(data['one_back'])[allowed]
+            print(one_back)
             response = np.array(data['subj_resp'])[allowed]
+            print(response)
 
             confusion[0, 0] += np.logical_and(one_back == 0, response == 0).sum()
             confusion[0, 1] += np.logical_and(one_back == 0, response != 0).sum()
