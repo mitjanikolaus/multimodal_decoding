@@ -98,18 +98,18 @@ if __name__ == "__main__":
     plt.show()
 
 
-    # results = []
-    # subject_stim_ids = dict()
-    # for subj in SUBJECTS:
-    #     fp, fn, stim_ids = subject_performance(subj, FMRI_BIDS_DATA_DIR)
-    #     subject_stim_ids[subj] = stim_ids
-    #     # get_oneback_errors(subj)
-    #     results.append({"subject": subj, "metric": "false_positives", "value": fp})
-    #     results.append({"subject": subj, "metric": "false_negatives", "value": fn})
-    #
-    # results = pd.DataFrame.from_records(results)
-    # sns.barplot(data=results, x="subject", y="value", hue="metric")
-    # plt.ylabel("Error rate")
-    # plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
-    # plt.show()
+    results = []
+    subject_stim_ids = dict()
+    for subj in SUBJECTS:
+        fp, fn, stim_ids = subject_performance(subj, FMRI_BIDS_DATA_DIR)
+        subject_stim_ids[subj] = stim_ids
+        # get_oneback_errors(subj)
+        results.append({"subject": subj, "metric": "false_positives", "value": fp})
+        results.append({"subject": subj, "metric": "false_negatives", "value": fn})
+
+    results = pd.DataFrame.from_records(results)
+    sns.barplot(data=results, x="subject", y="value", hue="metric")
+    plt.ylabel("Error rate")
+    plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
+    plt.show()
 
