@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
     SUBJECTS_ADDITIONAL_TEST
 
+CODES_PERCEPTION = [1,2,4,5,40,50]
 
 def subject_performance(subj, bids_dir):
     path = os.path.join(bids_dir, subj)
@@ -25,10 +26,10 @@ def subject_performance(subj, bids_dir):
         runs_per_session[ses] = len(events)
         for event in events:
             data = pd.read_csv(event, sep='\t')
-            condition = np.array(data['condition_name'])
-            allowed = condition != 0
+            trial_type = np.array(data['trial_type'])
+            allowed = trial_type in CODES_PERCEPTION
             stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
-            stim_ids.extend(list(condition[condition != 0]))
+            stim_ids.extend(list(trial_type[trial_type in CODES_PERCEPTION]))
 
             one_back = np.array(data['one_back'])[allowed]
             response = np.array(data['subj_resp'])[allowed]
