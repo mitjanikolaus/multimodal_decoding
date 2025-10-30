@@ -32,7 +32,8 @@ def subject_performance(subj, bids_dir):
             stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
             stim_ids.extend(list(condition[allowed == 1]))
 
-            one_back = np.array(data['one_back'])[allowed]
+            # one_back = np.array(data['one_back'])[allowed]
+            one_back = np.array(data['one_back'])
             print(one_back)
             response = np.array(data['subj_resp'])[allowed]
             print(response)
