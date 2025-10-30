@@ -662,7 +662,7 @@ def apply_mask(mask, fmri_betas, args):
             n_random_vertices = int(mask.split('random_')[1])
             print(f'creating mask based on {n_random_vertices} random vertices')
             mask_flat = np.zeros(shape=n_vertices, dtype=int)
-            locations_selected = np.random.choice(range(n_vertices), size=n_random_vertices)
+            locations_selected = np.random.choice(range(n_vertices), size=n_random_vertices, replace=False)
             mask_flat[locations_selected] = 1
             print(len(mask_flat))
             print(np.sum(mask_flat))
@@ -683,6 +683,6 @@ def apply_mask(mask, fmri_betas, args):
                 masks_hemis[hemi] = np.array([1 if l in regions_indices else 0 for l in atlas_labels])
             mask_flat = np.concatenate((masks_hemis[HEMIS[0]], masks_hemis[HEMIS[1]]))
 
-        fmri_betas = {split: betas[:, mask_flat == 1].copy() for split, betas in fmri_betas.items()}
+        fmri_betas = {split: betas[:, mask_flat > 0].copy() for split, betas in fmri_betas.items()}
 
     return fmri_betas
