@@ -109,12 +109,6 @@ def get_oneback_errors(subj):
 if __name__ == "__main__":
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    results = pd.DataFrame.from_records(results)
-    sns.barplot(data=results, x="subject", y="value", hue="metric")
-    plt.ylabel("Error rate")
-    plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
-    plt.show()
-
     results = []
     subject_stim_ids = dict()
     for subj in SUBJECTS_ADDITIONAL_TEST:
