@@ -88,7 +88,7 @@ def get_data_default_feats(data):
         data_default_feats = data_default_feats[
             ((data_default_feats.model == model) & (data_default_feats.features == default_feats) & (
                     data_default_feats.vision_features == default_vision_feats) & (
-                     data_default_feats.lang_features == default_lang_feats)) | (data_default_feats.model != model)
+                     data_default_feats.lang_features == default_lang_feats) & (data_default_feats.test_features == default_feats)) | (data_default_feats.model != model)
             ]
 
     return data_default_feats
