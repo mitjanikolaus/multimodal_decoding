@@ -33,9 +33,7 @@ def subject_performance(subj, bids_dir):
             stim_ids.extend(list(condition[allowed]))
 
             one_back = np.array(data['one_back'])[allowed]
-            print(one_back)
             response = np.array(data['subj_resp'])[allowed]
-            print(response)
 
             confusion[0, 0] += np.logical_and(one_back == 0, response == 0).sum()
             confusion[0, 1] += np.logical_and(one_back == 0, response != 0).sum()
