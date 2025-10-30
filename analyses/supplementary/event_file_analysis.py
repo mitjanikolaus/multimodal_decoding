@@ -5,6 +5,8 @@ import os
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+from data import TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED
+from preprocessing.make_spm_design_job_mat_additional_test import TRIAL_TYPE_TO_ID
 from utils import SUBJECTS, FMRI_DATA_DIR, RESULTS_DIR, FMRI_BIDS_DATA_DIR, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR, \
     SUBJECTS_ADDITIONAL_TEST
 
@@ -79,37 +81,100 @@ def get_oneback_errors(subj):
                 print(event, indices)
 
 
+def subject_performance_attention_mod(subj, bids_dir):
+    path = os.path.join(bids_dir, subj)
+    sess = sorted(list(glob(os.path.join(path, 'ses-*'))))
+    print(f"Subject: {subj}\nNumber of sessions: {len(sess)}")
+
+    confusion = np.zeros((2, 2)).astype('int')
+    total_num_runs = 0
+    runs_per_session = dict()
+    stimuli_per_run = dict()
+    stim_ids = []
+    for ses in sess:
+        events = sorted(list(glob(os.path.join(ses, "func/*events*.tsv"))))
+        total_num_runs += len(events)
+        runs_per_session[ses] = len(events)
+        for event in events:
+            data = pd.read_csv(event, sep='\t')
+            condition = np.array(data['condition_name'])
+            trial_type = np.array(data['trial_type'])
+            data_unattended_stimuli = data[data.trial_type.isin[TRIAL_TYPE_TO_ID[TEST_IMAGES_UNATTENDED],TRIAL_TYPE_TO_ID[TEST_CAPTIONS_UNATTENDED]]]
+            print(data_unattended_stimuli)
+    #         allowed = np.array([1 if t in CODES_PERCEPTION else 0 for t in trial_type]) == 1
+    #         stimuli_per_run[event.split('/')[-1]] = np.sum(allowed)
+    #         stim_ids.extend(list(condition[allowed]))
+    #
+    #         one_back = np.array(data['one_back'])[allowed]
+    #         response = np.array(data['subj_resp'])[allowed]
+    #
+    #         confusion[0, 0] += np.logical_and(one_back == 0, response == 0).sum()
+    #         confusion[0, 1] += np.logical_and(one_back == 0, response != 0).sum()
+    #         confusion[1, 0] += np.logical_and(one_back != 0, response == 0).sum()
+    #         confusion[1, 1] += np.logical_and(one_back != 0, response != 0).sum()
+    #
+    # error_rate_false_positives = 100 * confusion[0, 1] / confusion[0].sum()
+    # error_rate_false_negatives = 100 * confusion[1, 0] / confusion[1].sum()
+    # # print(f"Stimuli per session: {stimuli_per_run}")
+    # print(f"Mean stimuli per session: {np.mean(list(stimuli_per_run.values()))}")
+    #
+    # # print(f"Runs per session: {runs_per_session}")
+    # print(f"Min runs per session: {np.min(list(runs_per_session.values()))}")
+    # print(f"Max runs per session: {np.max(list(runs_per_session.values()))}")
+    #
+    # print("Total number of runs: ", total_num_runs)
+    # print(f"{' ':10s} {'stim':>6s} {'oneback':>10s} {'error %':>10s}")
+    # print(f"{'stim':10s} {confusion[0, 0]:6d} {confusion[0, 1]:10d} {error_rate_false_positives:10.2f}")
+    # print(f"{'oneback':10s} {confusion[1, 0]:6d} {confusion[1, 1]:10d} {error_rate_false_negatives:10.2f}")
+    # print("")
+    # return error_rate_false_positives, error_rate_false_negatives, stim_ids
+
 if __name__ == "__main__":
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
     results = []
     subject_stim_ids = dict()
     for subj in SUBJECTS_ADDITIONAL_TEST:
-        fp, fn, stim_ids = subject_performance(subj, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
+        fp, fn, stim_ids = subject_performance_attention_mod(subj, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
         subject_stim_ids[subj] = stim_ids
         # get_oneback_errors(subj)
         results.append({"subject": subj, "metric": "false_positives", "value": fp})
         results.append({"subject": subj, "metric": "false_negatives", "value": fn})
 
-    results = pd.DataFrame.from_records(results)
-    sns.barplot(data=results, x="subject", y="value", hue="metric")
-    plt.ylabel("Error rate")
-    plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
-    plt.show()
+    # results = pd.DataFrame.from_records(results)
+    # sns.barplot(data=results, x="subject", y="value", hue="metric")
+    # plt.ylabel("Error rate")
+    # plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
+    # plt.show()
 
-
-    results = []
-    subject_stim_ids = dict()
-    for subj in SUBJECTS:
-        fp, fn, stim_ids = subject_performance(subj, FMRI_BIDS_DATA_DIR)
-        subject_stim_ids[subj] = stim_ids
-        # get_oneback_errors(subj)
-        results.append({"subject": subj, "metric": "false_positives", "value": fp})
-        results.append({"subject": subj, "metric": "false_negatives", "value": fn})
-
-    results = pd.DataFrame.from_records(results)
-    sns.barplot(data=results, x="subject", y="value", hue="metric")
-    plt.ylabel("Error rate")
-    plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
-    plt.show()
+    # results = []
+    # subject_stim_ids = dict()
+    # for subj in SUBJECTS_ADDITIONAL_TEST:
+    #     fp, fn, stim_ids = subject_performance(subj, ADDITIONAL_TEST_FMRI_RAW_BIDS_DATA_DIR)
+    #     subject_stim_ids[subj] = stim_ids
+    #     # get_oneback_errors(subj)
+    #     results.append({"subject": subj, "metric": "false_positives", "value": fp})
+    #     results.append({"subject": subj, "metric": "false_negatives", "value": fn})
+    #
+    # results = pd.DataFrame.from_records(results)
+    # sns.barplot(data=results, x="subject", y="value", hue="metric")
+    # plt.ylabel("Error rate")
+    # plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis_attention_mod.png"), dpi=300)
+    # plt.show()
+    #
+    #
+    # results = []
+    # subject_stim_ids = dict()
+    # for subj in SUBJECTS:
+    #     fp, fn, stim_ids = subject_performance(subj, FMRI_BIDS_DATA_DIR)
+    #     subject_stim_ids[subj] = stim_ids
+    #     # get_oneback_errors(subj)
+    #     results.append({"subject": subj, "metric": "false_positives", "value": fp})
+    #     results.append({"subject": subj, "metric": "false_negatives", "value": fn})
+    #
+    # results = pd.DataFrame.from_records(results)
+    # sns.barplot(data=results, x="subject", y="value", hue="metric")
+    # plt.ylabel("Error rate")
+    # plt.savefig(os.path.join(RESULTS_DIR, "event_file_analysis.png"), dpi=300)
+    # plt.show()
 
