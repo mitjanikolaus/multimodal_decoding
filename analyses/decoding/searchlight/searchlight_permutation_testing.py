@@ -28,9 +28,8 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
     METRIC_DIFF_ATTENTION_CROSS_MODALITY, METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD, \
     METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY, \
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti, \
-    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD, METRIC_GW_2, METRIC_VISION, METRIC_LANG, METRIC_LANG_2, \
-    METRIC_VISION_2, DIFF_DECODERS, METRIC_GW_DIFF, METRIC_GW_3, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, \
-    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW_5, METRIC_MOD_INVARIANT_ATTENDED_ALT, \
+    METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
+    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_MOD_INVARIANT_ATTENDED_ALT, \
     METRIC_MOD_INVARIANT_UNATTENDED_ALT, METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES
 
 DEFAULT_N_JOBS = 10
@@ -38,24 +37,12 @@ DEFAULT_N_JOBS = 10
 TFCE_VAL_METRICS = [
     METRIC_ATTENTION_DIFF_CAPTIONS,
     METRIC_ATTENTION_DIFF_IMAGES,
-    METRIC_GW,
-    METRIC_GW_2,
-    METRIC_GW_3,
-    METRIC_GW_4,
-    METRIC_GW_5,
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    # METRIC_GW,
     METRIC_MOD_INVARIANT_ATTENDED,
     METRIC_MOD_INVARIANT_UNATTENDED,
     METRIC_MOD_INVARIANT_ATTENDED_ALT,
     METRIC_MOD_INVARIANT_UNATTENDED_ALT,
-    METRIC_GW_DIFF,
     '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
-    METRIC_VISION,
-    METRIC_VISION_2,
-    METRIC_LANG,
-    METRIC_LANG_2,
     # METRIC_DIFF_ATTENTION_WITHIN_MODALITY,
     # METRIC_DIFF_ATTENTION_CROSS_MODALITY,
     # METRIC_WITHIN_MODALITY_DECODING,
@@ -68,11 +55,38 @@ TFCE_VAL_METRICS = [
 ]
 
 T_VAL_METRICS = [
+    # # within-modality decoding
+    # '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
+    # '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
+    # # cross-modal decoding
+    # '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
+    # '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+    # within-modality decoding of attended stimuli
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+    # within-modality decoding attention diff
+    # '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+    # within-modality decoding of unattended stimuli
+    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
+    # # within-modality decoding attend-both vs. attend diff
+    # '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    # # cross-modality decoding attend-both vs. attend diff
+    # '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    # imagery
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+    # '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
+    # '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK]),
     # cross-modality decoding attention diff
     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
+    # '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
     # cross-modality decoding of attended stimuli
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
@@ -80,45 +94,16 @@ T_VAL_METRICS = [
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
 
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding of attended stimuli
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # within-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-
-    # within-modality decoding attend-both vs. attend diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # cross-modality decoding attend-both vs. attend diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # imagery
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK]),
-    # diff mod-agnostic vs. mod-specific decoders
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    # diff different mod-specific decoders
-    '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
+    # # diff mod-agnostic vs. mod-specific decoders
+    # '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+    # '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
+    # '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
+    # '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+    # '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+    # '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
+    # # diff different mod-specific decoders
+    # '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+    # '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
 ]
 
 T_VAL_METRICS_MOD_INVARIANT_ATTENDED = [
@@ -151,62 +136,62 @@ T_VAL_METRICS_MOD_INVARIANT_UNATTENDED_ALT = [
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
 ]
 
-T_VAL_METRICS_GW = [
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-]
-
-T_VAL_METRICS_GW_2 = [
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-]
-
-T_VAL_METRICS_GW_3 = [
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-]
-
-T_VAL_METRICS_GW_4 = [
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-]
+# T_VAL_METRICS_GW = [
+#     # within-modality decoding
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+#     # cross-modal decoding
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+#     # within-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     # cross-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+# ]
+#
+# T_VAL_METRICS_GW_2 = [
+#     # within-modality decoding
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+#     # cross-modal decoding
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
+#     # within-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     # cross-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+# ]
+#
+# T_VAL_METRICS_GW_3 = [
+#     # within-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     # cross-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+# ]
+#
+# T_VAL_METRICS_GW_4 = [
+#     # cross-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+# ]
 
 T_VAL_METRICS_ATTENTION_DIFF_IMAGES = [
     # cross-modal decoding
@@ -222,103 +207,19 @@ T_VAL_METRICS_ATTENTION_DIFF_CAPTIONS = [
     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
 ]
 
-T_VAL_METRICS_GW_5 = [
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-]
-
-T_VAL_METRICS_GW_DIFF = [
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-]
-
-T_VAL_METRICS_VISION = [
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
-    # within-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-    # cross-modality decoding attend-both vs. attend diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-]
-
-T_VAL_METRICS_VISION_2 = [
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    # within-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-    # cross-modality decoding attend-both vs. attend diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-]
-
-T_VAL_METRICS_LANG = [
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
-    # within-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attend-both vs. attend diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
-]
-
-T_VAL_METRICS_LANG_2 = [
-    # within-modality decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    # cross-modal decoding
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
-    '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    # within-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    # cross-modality decoding attention diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED]),
-    # within-modality decoding of unattended stimuli
-    '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    # cross-modality decoding attend-both vs. attend diff
-    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_ATTENDED]),
-]
+# T_VAL_METRICS_GW_5 = [
+#     # cross-modal decoding
+#     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),
+#     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),
+#     # cross-modality decoding attention diff
+#     '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+#     '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+# ]
+#
+# T_VAL_METRICS_GW_DIFF = [
+#     '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
+#     '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
+# ]
 
 T_VAL_METRICS_BASE = [
     # within-modality decoding
@@ -364,19 +265,6 @@ T_VAL_METRICS_UNATTENDED = [
     # cross-modality decoding of unattended stimuli
     '$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),
-]
-
-T_VAL_METRICS_DECODER_DIFF = [
-    # diff mod-agnostic vs. mod-specific decoders
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED]),
-    '$'.join([DIFF_DECODERS, MODALITY_AGNOSTIC, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS]),
-    # diff different mod-specific decoders
-    '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES]),
-    '$'.join([DIFF_DECODERS, MODALITY_SPECIFIC_CAPTIONS, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS]),
 ]
 
 T_VAL_METRICS_IMAGERY = [
@@ -611,16 +499,16 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
 def compute_composite_t_vals_for_metric(t_values, metric, hemi):
     if metric in T_VAL_METRICS:
         values = t_values[hemi][metric]
-    elif metric == METRIC_GW:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
-    elif metric == METRIC_GW_2:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
-    elif metric == METRIC_GW_3:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
-    elif metric == METRIC_GW_4:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
-    elif metric == METRIC_GW_5:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
+    # elif metric == METRIC_GW:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
+    # elif metric == METRIC_GW_2:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
+    # elif metric == METRIC_GW_3:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
+    # elif metric == METRIC_GW_4:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
+    # elif metric == METRIC_GW_5:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
     elif metric == METRIC_ATTENTION_DIFF_IMAGES:
         values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_ATTENTION_DIFF_IMAGES], axis=0)
     elif metric == METRIC_ATTENTION_DIFF_CAPTIONS:
@@ -633,90 +521,16 @@ def compute_composite_t_vals_for_metric(t_values, metric, hemi):
         values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_ATTENDED_ALT], axis=0)
     elif metric == METRIC_MOD_INVARIANT_UNATTENDED_ALT:
         values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_UNATTENDED_ALT], axis=0)
-    elif metric == METRIC_GW_DIFF:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
-    elif metric == METRIC_VISION:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION], axis=0)
-    elif metric == METRIC_LANG:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG], axis=0)
-    elif metric == METRIC_VISION_2:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION_2], axis=0)
-    elif metric == METRIC_LANG_2:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG_2], axis=0)
-    elif metric == METRIC_WITHIN_MODALITY_DECODING:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS])]
-            ),
-            axis=0)
-    elif metric == METRIC_CROSS_DECODING:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES])]
-            ),
-            axis=0)
-    elif metric == METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_UNATTENDED])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-            ),
-            axis=0)
-    elif metric == METRIC_DIFF_ATTENTION_WITHIN_MODALITY:
-        values = np.nanmin(
-            (
-                t_values[hemi][
-                    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                t_values[hemi][
-                    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]
-            ),
-            axis=0)
-
-    elif metric == METRIC_DIFF_ATTENTION_CROSS_MODALITY:
-        values = np.nanmin(
-            (
-                t_values[hemi][
-                    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED])],
-                t_values[hemi][
-                    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED])]
-            ),
-            axis=0)
-
-    elif metric == METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
-                t_values[hemi][
-                    '$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-            ),
-            axis=0)
-
-    elif metric == METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([DIFF, MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES, TEST_IMAGES_UNATTENDED])],
-                t_values[hemi][
-                    '$'.join([DIFF, MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_UNATTENDED])]
-            ),
-            axis=0)
-
-    elif metric == METRIC_CROSS_DECODING_WITH_ATTENTION_TO_STIMULUS_MOD:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
-            ),
-            axis=0)
-
-    elif metric == METRIC_CROSS_DECODING_WITH_ATTENTION_TO_OTHER_MOD:
-        values = np.nanmin(
-            (
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED])]
-            ),
-            axis=0)
+    # elif metric == METRIC_GW_DIFF:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
+    # elif metric == METRIC_VISION:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION], axis=0)
+    # elif metric == METRIC_LANG:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG], axis=0)
+    # elif metric == METRIC_VISION_2:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION_2], axis=0)
+    # elif metric == METRIC_LANG_2:
+    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG_2], axis=0)
     else:
         raise RuntimeError("Unknown metric: ", metric)
     return values

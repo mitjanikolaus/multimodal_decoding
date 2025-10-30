@@ -11,16 +11,15 @@ import pickle
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import calc_significance_cutoff, \
     T_VAL_METRICS, DEFAULT_P_VAL_THRESHOLD, T_VAL_METRICS_UNATTENDED, T_VAL_METRICS_IMAGERY, \
-    T_VAL_METRICS_DECODER_DIFF, T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2, \
-    compute_composite_t_vals_for_metric
+    compute_composite_t_vals_for_metric, T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, \
+    T_VAL_METRICS_ATTENTION_DIFF_2
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
-    save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, \
-    METRIC_LANG_2, METRIC_GW_3, METRIC_GW_2, METRIC_GW_4, METRIC_MOD_INVARIANT_ATTENDED, \
-    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_GW_5, METRIC_MOD_INVARIANT_ATTENDED_ALT, \
+    save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
+    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_MOD_INVARIANT_ATTENDED_ALT, \
     METRIC_MOD_INVARIANT_UNATTENDED_ALT, METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
@@ -39,8 +38,7 @@ DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
 TFCE_VAL_METRICS = [METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
                     METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_ATTENTION_DIFF_CAPTIONS,
-                    METRIC_ATTENTION_DIFF_IMAGES, METRIC_GW_4, METRIC_GW_5, METRIC_GW,
-                    METRIC_GW_2, METRIC_GW_3, METRIC_VISION, METRIC_VISION_2, METRIC_LANG, METRIC_LANG_2]
+                    METRIC_ATTENTION_DIFF_IMAGES]
 RESULT_METRICS = TFCE_VAL_METRICS + T_VAL_METRICS
 
 
@@ -296,10 +294,8 @@ def create_composite_images_of_all_views(args, result_metric):
 def create_composite_images_of_metrics(args):
     for name, metrics in zip(
             ['metrics_base', 'metrics_attention_diff', 'metrics_attention_diff_2', 'metrics_unattended_stimuli',
-             'metrics_decoder_diffs',
-             'metrics_imagery'],
+                          'metrics_imagery'],
             [T_VAL_METRICS_BASE, T_VAL_METRICS_ATTENTION_DIFF, T_VAL_METRICS_ATTENTION_DIFF_2, T_VAL_METRICS_UNATTENDED,
-             T_VAL_METRICS_DECODER_DIFF,
              T_VAL_METRICS_IMAGERY]):
         imgs = []
         for result_metric in metrics:

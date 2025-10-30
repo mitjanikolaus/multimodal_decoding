@@ -68,21 +68,12 @@ METRIC_DIFF_ATTEND_BOTH_VS_OTHER_WITHIN_MODALITY = 'diff_attend_both_vs_other_cr
 METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY = 'diff_attend_both_vs_other_within'
 
 METRIC_GW = 'gw'
-METRIC_GW_2 = 'gw_2'
-METRIC_GW_3 = 'gw_3'
-METRIC_GW_4 = 'gw_4'
-METRIC_GW_5 = 'gw_5'
 METRIC_MOD_INVARIANT_ATTENDED = 'mod_invariant_attended'
 METRIC_MOD_INVARIANT_UNATTENDED = 'mod_invariant_unattended'
 METRIC_MOD_INVARIANT_ATTENDED_ALT = 'mod_invariant_attended_alt'
 METRIC_MOD_INVARIANT_UNATTENDED_ALT = 'mod_invariant_unattended_alt'
 METRIC_ATTENTION_DIFF_IMAGES = "attn_diff_images"
 METRIC_ATTENTION_DIFF_CAPTIONS = "attn_diff_captions"
-METRIC_GW_DIFF = 'gw_diff'
-METRIC_VISION = 'vision'
-METRIC_VISION_2 = 'vision_2'
-METRIC_LANG = 'lang'
-METRIC_LANG_2 = 'lang_2'
 
 DIFF = "diff"
 DIFF_DECODERS = "diffdecoders"
