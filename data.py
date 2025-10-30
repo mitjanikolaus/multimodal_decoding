@@ -661,16 +661,17 @@ def apply_mask(mask, fmri_betas, args):
             n_vertices = len(fmri_betas[SPLIT_TRAIN][0])
             n_random_vertices = int(mask.split('random_')[1])
             print(f'creating mask based on {n_random_vertices} random vertices')
+            mask_flat = np.zeros(shape=n_vertices, dtype=int)
             locations_selected = np.random.choice(range(n_vertices), size=n_random_vertices, replace=False)
-            mask_flat = np.array([1 if i in locations_selected else 0 for i in range(n_vertices)])
-
-        if os.path.isfile(mask):
+            mask_flat[locations_selected] = 1
+        elif os.path.isfile(mask):
             mask = pickle.load(open(mask, 'rb'))
             mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
         else:
             masks_hemis = dict()
             for hemi in HEMIS:
                 roi_names = mask.split('_')
+                print('mask based on rois: ', roi_names)
                 roi_names_hemi = [name.split('-')[1] for name in roi_names if name.split('-')[0] == hemi]
                 hemi_fs = FS_HEMI_NAMES[hemi]
                 atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.annot")
