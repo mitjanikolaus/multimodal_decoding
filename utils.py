@@ -74,6 +74,7 @@ METRIC_MOD_INVARIANT_ATTENDED_ALT = 'mod_invariant_attended_alt'
 METRIC_MOD_INVARIANT_UNATTENDED_ALT = 'mod_invariant_unattended_alt'
 METRIC_ATTENTION_DIFF_IMAGES = "attn_diff_images"
 METRIC_ATTENTION_DIFF_CAPTIONS = "attn_diff_captions"
+METRIC_MOD_INVARIANT_INCREASE = 'mod_invariant_increase'
 
 DIFF = "diff"
 DIFF_DECODERS = "diffdecoders"

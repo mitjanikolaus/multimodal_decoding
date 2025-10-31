@@ -30,11 +30,13 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
     METRIC_DIFF_ATTEND_BOTH_VS_OTHER_CROSS_MODALITY, FS_HEMI_NAMES, export_to_gifti, \
     METRIC_WITHIN_MODALITY_DECODING_WITH_ATTENTION_TO_OTHER_MOD, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
     METRIC_MOD_INVARIANT_UNATTENDED, METRIC_MOD_INVARIANT_ATTENDED_ALT, \
-    METRIC_MOD_INVARIANT_UNATTENDED_ALT, METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES
+    METRIC_MOD_INVARIANT_UNATTENDED_ALT, METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES, \
+    METRIC_MOD_INVARIANT_INCREASE
 
 DEFAULT_N_JOBS = 10
 
 TFCE_VAL_METRICS = [
+    METRIC_MOD_INVARIANT_INCREASE,
     METRIC_ATTENTION_DIFF_CAPTIONS,
     METRIC_ATTENTION_DIFF_IMAGES,
     # METRIC_GW,
@@ -463,6 +465,20 @@ def compute_composite_t_vals_for_metric(t_values, metric, hemi):
     #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
     # elif metric == METRIC_GW_5:
     #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
+    elif metric == METRIC_MOD_INVARIANT_INCREASE:
+        values_attn = np.nanmin(
+            [
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),]
+            ], axis=0
+        )
+        values_unattn = np.nanmin(
+            [
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),]
+            ], axis=0
+        )
+        values = values_attn - values_unattn
     elif metric == METRIC_ATTENTION_DIFF_IMAGES:
         values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_ATTENTION_DIFF_IMAGES], axis=0)
     elif metric == METRIC_ATTENTION_DIFF_CAPTIONS:
@@ -734,7 +750,7 @@ def calc_t_values(scores):
                     training_mode, metric_name = metric.split('$')
                     scores_filtered = scores[
                         (scores.hemi == hemi) & (scores.metric == metric_name) & (
-                                    scores.training_mode == training_mode)]
+                                scores.training_mode == training_mode)]
                     data[i] = scores_filtered[(scores_filtered.subject == subj)].value.values
 
             popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
