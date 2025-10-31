@@ -468,14 +468,14 @@ def compute_composite_t_vals_for_metric(t_values, metric, hemi):
     elif metric == METRIC_MOD_INVARIANT_INCREASE:
         values_attn = np.nanmin(
             [
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED]),],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED]),]
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
             ], axis=0
         )
         values_unattn = np.nanmin(
             [
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED]),],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED]),]
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED])],
+                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED])]
             ], axis=0
         )
         values = values_attn - values_unattn
