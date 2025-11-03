@@ -17,31 +17,30 @@ def create_masks(args):
     tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
+    tfce_values_flat = np.concatenate((tfce_values[HEMIS[0][metric]], tfce_values[HEMIS[1][metric]]))
+
     if args.n_vertices is not None:
         fname = f"{metric}_{args.n_vertices}_vertices.p"
 
-        masks = {hemi: np.zeros(shape=tfce_values[hemi][metric].shape, dtype=np.uint8) for hemi in HEMIS}
+        mask = np.zeros(shape=tfce_values_flat.shape, dtype=np.uint8)
         print(f"Creating {metric} mask with {args.n_vertices} vertices")
-        for hemi in HEMIS:
-            indices = np.argsort(tfce_values[hemi][metric])[-args.n_vertices:]
-            masks[hemi][indices] = 1
+        indices = np.argsort(tfce_values_flat)[-args.n_vertices:]
+        mask[indices] = 1
     else:
         thresh = args.tfce_value_threshold
         fname = f"{metric}_threshold_{round(thresh)}.p"
 
-        masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
+        mask = copy.deepcopy(tfce_values_flat)
         print(f"Creating {metric} mask with tfce value threshold: {args.tfce_value_threshold}")
-        for hemi in HEMIS:
-            print(
-                f'{hemi} hemi mask size for threshold {thresh:.2f}: {np.mean(tfce_values[hemi][metric] >= thresh):.2f}')
-            masks[hemi][tfce_values[hemi][metric] >= thresh] = 1
-            masks[hemi][tfce_values[hemi][metric] < thresh] = 0
-            masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
-            masks[hemi] = masks[hemi].astype(np.uint8)
+        print(f'mask size for threshold {thresh:.2f}: {np.mean(tfce_values >= thresh):.2f}')
+        mask[tfce_values_flat >= thresh] = 1
+        mask[tfce_values_flat < thresh] = 0
+        mask[np.isnan(tfce_values_flat)] = 0
+        mask = mask.astype(np.uint8)
 
     mask_path = os.path.join(results_dir, 'masks')
     os.makedirs(mask_path, exist_ok=True)
-    pickle.dump(masks, open(os.path.join(mask_path, fname), "wb"))
+    pickle.dump(mask, open(os.path.join(mask_path, fname), "wb"))
     print(f'saved {os.path.join(mask_path, fname)}')
 
 

@@ -666,7 +666,10 @@ def apply_mask(mask, fmri_betas, args):
             mask_flat[locations_selected] = 1
         elif os.path.isfile(mask):
             mask = pickle.load(open(mask, 'rb'))
-            mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
+            if type(mask) is dict:
+                mask_flat = np.concatenate((mask[HEMIS[0]], mask[HEMIS[1]]))
+            else:
+                mask_flat = mask
         else:
             masks_hemis = dict()
             for hemi in HEMIS:
