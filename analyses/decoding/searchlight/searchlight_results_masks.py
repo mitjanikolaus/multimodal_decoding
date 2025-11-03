@@ -17,13 +17,13 @@ def create_masks(args):
     tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
-    if args.num_vertices is not None:
-        fname = f"{metric}_{args.num_vertices}_vertices.p"
+    if args.n_vertices is not None:
+        fname = f"{metric}_{args.n_vertices}_vertices.p"
 
         masks = {hemi: np.zeros(shape=tfce_values[hemi][metric].shape, dtype=np.uint8) for hemi in HEMIS}
-        print(f"Creating {metric} mask with {args.num_vertices} vertices")
+        print(f"Creating {metric} mask with {args.n_vertices} vertices")
         for hemi in HEMIS:
-            indices = np.argsort(tfce_values[hemi][metric])[-args.num_vertices:]
+            indices = np.argsort(tfce_values[hemi][metric])[-args.n_vertices:]
             masks[hemi][indices] = 1
     else:
         thresh = args.tfce_value_threshold
@@ -50,7 +50,7 @@ def get_args():
     parser = add_searchlight_permutation_args(parser)
 
     # parser.add_argument("--p-value-threshold", type=float, default=DEFAULT_P_VAL_THRESHOLD)
-    parser.add_argument("--num-vertices", type=int, default=DEFAULT_NUM_VERTICES)
+    parser.add_argument("--n-vertices", type=int, default=DEFAULT_NUM_VERTICES)
     parser.add_argument("--tfce-value-threshold", type=float, default=None)
 
     return parser.parse_args()
