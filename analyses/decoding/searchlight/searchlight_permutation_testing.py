@@ -1095,7 +1095,7 @@ if __name__ == "__main__":
     for metric in args.metrics:
         args.metric = metric
         print(f"\n\nPermutation Testing for {args.metric}\n")
+        # create_null_distribution(args)
         significance_cutoff = calc_test_statistics(args)
-        create_null_distribution(args)
-        create_masks(permutation_results_dir(args), args.metric, significance_cutoff, args.tfce_value_threshold,
-                     args.resolution, args.radius, args.n_neighbors)
+        # create_masks(permutation_results_dir(args), args.metric, significance_cutoff, args.tfce_value_threshold,
+        #              args.resolution, args.radius, args.n_neighbors)
