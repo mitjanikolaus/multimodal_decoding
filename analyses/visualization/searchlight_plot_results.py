@@ -85,36 +85,36 @@ def plot(args):
         result_values = dict()
 
         if result_metric in TFCE_VAL_METRICS:
-            # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-            # t_values = pickle.load(open(t_values_path, 'rb'))
-            # for hemi in HEMIS:
-            #     result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
-            #
-            # threshold = 1.5
-            # cbar_min = 1.5
-            # cbar_max = 5
-
-            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
-            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            t_values = pickle.load(open(t_values_path, 'rb'))
             for hemi in HEMIS:
-                result_values[hemi] = orig_result_values[hemi][args.metric]
-                result_values[hemi] = np.log(result_values[hemi])
+                result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
 
-            null_distribution_tfce_values_file = os.path.join(
-                permutation_results_dir(args),
-                f"tfce_values_null_distribution_{result_metric}.p"
-            )
-            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              args.p_value_threshold)
-            print(f"{result_metric} significance cutoff: {significance_cutoff}")
-            significance_cutoff = np.log(significance_cutoff)
+            threshold = 1.5
+            cbar_min = 1.5
+            cbar_max = 5
 
-            threshold = significance_cutoff
-            cbar_min = significance_cutoff
-            # cbar_max = CBAR_TFCE_MAX_VALUE
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-            # print(f"{result_metric} max tfce value across hemis: {cbar_max}")
+            # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
+            # orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            # for hemi in HEMIS:
+            #     result_values[hemi] = orig_result_values[hemi][args.metric]
+            #     result_values[hemi] = np.log(result_values[hemi])
+            #
+            # null_distribution_tfce_values_file = os.path.join(
+            #     permutation_results_dir(args),
+            #     f"tfce_values_null_distribution_{result_metric}.p"
+            # )
+            # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   args.p_value_threshold)
+            # print(f"{result_metric} significance cutoff: {significance_cutoff}")
+            # significance_cutoff = np.log(significance_cutoff)
+            #
+            # threshold = significance_cutoff
+            # cbar_min = significance_cutoff
+            # # cbar_max = CBAR_TFCE_MAX_VALUE
+            # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # # print(f"{result_metric} max tfce value across hemis: {cbar_max}")
 
         # else:
         #     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
