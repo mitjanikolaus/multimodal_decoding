@@ -17,7 +17,7 @@ def create_masks(args):
     tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
-    tfce_values_flat = np.concatenate((tfce_values[HEMIS[0][metric]], tfce_values[HEMIS[1][metric]]))
+    tfce_values_flat = np.concatenate((tfce_values[HEMIS[0]][metric], tfce_values[HEMIS[1]][metric]))
 
     if args.n_vertices is not None:
         fname = f"{metric}_{args.n_vertices}_vertices.p"
@@ -32,7 +32,7 @@ def create_masks(args):
 
         mask = copy.deepcopy(tfce_values_flat)
         print(f"Creating {metric} mask with tfce value threshold: {args.tfce_value_threshold}")
-        print(f'mask size for threshold {thresh:.2f}: {np.mean(tfce_values >= thresh):.2f}')
+        print(f'mask size for threshold {thresh:.2f}: {np.mean(tfce_values_flat >= thresh):.2f}')
         mask[tfce_values_flat >= thresh] = 1
         mask[tfce_values_flat < thresh] = 0
         mask[np.isnan(tfce_values_flat)] = 0
