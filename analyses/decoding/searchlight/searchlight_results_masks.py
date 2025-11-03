@@ -42,7 +42,7 @@ def create_masks(args):
     mask_path = os.path.join(results_dir, 'masks')
     os.makedirs(mask_path, exist_ok=True)
     pickle.dump(masks, open(os.path.join(mask_path, fname), "wb"))
-    print(f'saved {mask_path}')
+    print(f'saved {os.path.join(mask_path, fname)}')
 
 
 def get_args():
