@@ -478,6 +478,8 @@ def compute_composite_t_vals_for_metric(t_values, metric, hemi):
                 t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED])]
             ], axis=0
         )
+        values_attn[values_attn < 0] = 0
+        values_unattn[values_unattn < 0] = 0
         values = values_attn - values_unattn
     elif metric == METRIC_ATTENTION_DIFF_IMAGES:
         values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_ATTENTION_DIFF_IMAGES], axis=0)
