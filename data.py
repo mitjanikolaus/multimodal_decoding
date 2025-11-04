@@ -599,22 +599,22 @@ def get_fmri_voxel_data(betas_dir, subject, split, mode=MODALITY_AGNOSTIC):
     return fmri_betas, stim_ids, stim_types
 
 
-def standardize_latents(latents):
-    scaler = StandardScaler().fit(latents[SPLIT_TRAIN])
+def standardize_latents(latents, fit_on_split=SPLIT_TRAIN):
+    scaler = StandardScaler().fit(latents[fit_on_split])
     latents = {split: scaler.transform(lat).astype(np.float32) for split, lat in latents.items()}
 
     return latents
 
 
-def standardize_fmri_betas(fmri_betas):
-    nan_locations = np.isnan(fmri_betas[SPLIT_TRAIN][0])
+def standardize_fmri_betas(fmri_betas, fit_on_split=SPLIT_TRAIN):
+    nan_locations = np.isnan(fmri_betas[fit_on_split][0])
     if TEST_IMAGES_ATTENDED in fmri_betas.keys():
         add_nan_locations = np.isnan(fmri_betas[TEST_IMAGES_ATTENDED][0])
         nan_locations = np.logical_or(nan_locations, add_nan_locations)
     print(f"Ignoring data from {np.sum(nan_locations)} nan locations.")
     fmri_betas = {split: betas[:, ~nan_locations] for split, betas in fmri_betas.items()}
 
-    scaler = StandardScaler().fit(fmri_betas[SPLIT_TRAIN])
+    scaler = StandardScaler().fit(fmri_betas[fit_on_split])
 
     fmri_betas = {split: scaler.transform(betas).astype(np.float32) for split, betas in fmri_betas.items()}
 
