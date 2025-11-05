@@ -60,8 +60,7 @@ def train_and_test(
                 'test_split': testing_split,
             }
 
-            print(result)
-            print(vertex_idx)
+            # print(result)
             scores.append(result)
 
     # if null_distr_dir is not None:
@@ -76,7 +75,7 @@ def train_and_test(
     #         scores_null_distr.append(scores_df)
     #
     #     pickle.dump(scores_null_distr, open(os.path.join(null_distr_dir, f"{vertex_idx:010d}.p"), "wb"))
-
+    scores = pd.DataFrame(scores)
     return scores
 
 
