@@ -48,7 +48,7 @@ def train_and_test(
     for training_split in ATTENTION_MOD_SPLITS:
         fmri_betas_train = fmri_betas_searchlight[training_split]
 
-        testing_splits = [split for split in TEST_SPLITS if split != training_split]
+        testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
         for testing_split in testing_splits:
             fmri_betas_test = fmri_betas_searchlight[testing_split]
             # print(f"testing set shape: {fmri_betas_test.shape} (split: {testing_split})")
