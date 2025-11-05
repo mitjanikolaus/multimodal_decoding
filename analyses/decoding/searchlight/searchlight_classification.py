@@ -32,9 +32,11 @@ from utils import DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, ADDITIONAL_
 
 DEFAULT_N_JOBS = 10
 
-SEARCHLIGHT_ADDITIONAL_TEST_CLASSIFICATION_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR, "searchlight_classification")
-SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(SEARCHLIGHT_ADDITIONAL_TEST_CLASSIFICATION_OUT_DIR,
-                                                           "permutation_testing_results")
+SEARCHLIGHT_ADDITIONAL_TEST_CLASSIFICATION_OUT_DIR = os.path.join(ADDITIONAL_TEST_DATA_DIR,
+                                                                  "searchlight_classification")
+SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR = os.path.join(
+    SEARCHLIGHT_ADDITIONAL_TEST_CLASSIFICATION_OUT_DIR,
+    "permutation_testing_results")
 
 
 def train_and_test(
@@ -170,7 +172,7 @@ def run(args):
             for split in fmri_betas.keys():
                 print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
 
-            print(f"\nSUBJECT: {subject}")
+            print(f"\nSUBJECT: {subject} | HEMI: {hemi}")
 
             results_dir = get_results_dir(
                 hemi, subject, searchlight_mode_from_args(args)
@@ -226,10 +228,7 @@ def run(args):
                 f"Max score: {scores_df[(scores_df.train_split == TEST_IMAGES_ATTENDED) & (scores_df.test_split == TEST_CAPTIONS_ATTENDED)].value.max():.2f}"
             )
 
-            results_file_path = get_results_file_path(
-                hemi, subject, searchlight_mode_from_args(args),
-                args.l2_regularization_alpha
-            )
+            results_file_path = get_results_file_path(hemi, subject, searchlight_mode_from_args(args), )
             scores_df.to_csv(results_file_path)
 
 
@@ -249,9 +248,9 @@ def get_results_dir(hemi, subject, mode):
     return results_dir
 
 
-def get_results_file_path(hemi, subject, mode, l2_regularization_alpha):
+def get_results_file_path(hemi, subject, mode):
     results_dir = get_results_dir(hemi, subject, mode)
-    return os.path.join(results_dir, f"alpha_{str(l2_regularization_alpha)}.csv")
+    return os.path.join(results_dir, f"results.csv")
 
 
 def get_args():
