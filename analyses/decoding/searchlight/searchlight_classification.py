@@ -61,6 +61,7 @@ def train_and_test(
             }
 
             print(result)
+            print(vertex_idx)
             scores.append(result)
 
     # if null_distr_dir is not None:
@@ -170,7 +171,7 @@ def run(args):
             for split in fmri_betas.keys():
                 print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
 
-            print(f"\nSUBJECT: {subject}  ")
+            print(f"\nSUBJECT: {subject}")
 
             results_dir = get_results_dir(
                 hemi, subject, searchlight_mode_from_args(args)
