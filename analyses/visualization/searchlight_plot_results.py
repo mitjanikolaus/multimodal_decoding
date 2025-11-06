@@ -284,9 +284,9 @@ def create_composite_images_of_all_views(args, result_metric):
     img_lateral = append_images(images=images_lateral, padding=20)
 
     img_colorbar = Image.open(os.path.join(results_values_imgs_dir, "colorbar.png"))
-    offset_size = (img_colorbar.size[0], int(img_lateral.size[1] - img_colorbar.size[1]))
-    image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
-    img_colorbar = append_images([image_whitespace, img_colorbar], horizontally=False)
+    # offset_size = (img_colorbar.size[0], int(img_lateral.size[1] - img_colorbar.size[1]))
+    # image_whitespace = Image.new('RGBA', offset_size, color=(255, 255, 255, 0))
+    # img_colorbar = append_images([image_whitespace, img_colorbar], horizontally=False)
 
     img_row_1 = append_images([img_lateral], padding=10)
     img_row_2 = append_images([img_medial], padding=10)
