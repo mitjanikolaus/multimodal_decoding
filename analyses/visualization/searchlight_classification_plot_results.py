@@ -9,6 +9,7 @@ import os
 
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.visualization.plotting_utils import plot_surf_stat_map_custom
+from data import ATTENTION_MOD_SPLITS
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images, FMRI_BETAS_DIR, SUBJECTS_ADDITIONAL_TEST, \
     DEFAULT_RESOLUTION
 from analyses.decoding.searchlight.searchlight_classification import get_results_file_path
@@ -135,10 +136,31 @@ def create_composite_images_of_all_views(train_test, results_path):
     composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
     composite_image = append_images([title, composite_image], padding=5, horizontally=False)
 
-    path = os.path.join(results_path, "searchlight_results", f"{train_test.replace('_', '-').replace('$', '_')}.png")
+    path = os.path.join(results_path, "searchlight_results", f"{train_test}.png")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     composite_image.save(path, transparent=True)  # , facecolor="black")
     print('saved ', path)
+
+
+def create_composite_images_of_metrics(args):
+    imgs = []
+    for training_split in ATTENTION_MOD_SPLITS:
+        testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
+        for testing_split in testing_splits:
+            train_test = training_split + ' -> ' + testing_split
+            results_path = os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args),
+                                        "searchlight_results",
+                                        f"{train_test}.png")
+            imgs.append(Image.open(results_path))
+    img_all_metrics = append_images(images=imgs, padding=20, horizontally=False)
+    img_all_metrics_path = os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args),
+                                        "searchlight_results", f"composite.png")
+
+    # Add background color
+    background = Image.new('RGBA', img_all_metrics.size, (255, 255, 255))
+    with_bg = Image.alpha_composite(background, img_all_metrics)
+
+    with_bg.save(img_all_metrics_path)
 
 
 def get_args():
@@ -162,4 +184,5 @@ if __name__ == "__main__":
     results_path = str(os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args)))
     create_composite_images_of_all_views(train_test, results_path)
 
-    plot(args)
+    # plot(args)
+    create_composite_images_of_metrics(args)
