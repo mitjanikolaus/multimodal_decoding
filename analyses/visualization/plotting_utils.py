@@ -206,11 +206,13 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
 
             # else:
             #     ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
-            figure.colorbar(
-                proxy_mappable, cax=cax, ticks=ticks, label=label,
+            cbar = figure.colorbar(
+                proxy_mappable, cax=cax, ticks=ticks, #label=label,
                 boundaries=bounds, spacing='proportional',
                 format=ScalarFormatter(useOffset=False), orientation='horizontal' if horizontal_cbar else 'vertical')
-            cax.xaxis.set_ticks_position('top')
+            cbar.set_label(label, labelpad=-40, y=0.1)
+            # cax.xaxis.set_ticks_position('top')
+
 
         p3dcollec.set_facecolors(face_colors)
         p3dcollec.set_edgecolors(face_colors)
