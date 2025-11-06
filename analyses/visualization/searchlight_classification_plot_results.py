@@ -97,10 +97,10 @@ def plot(args):
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=True)
 
-        create_composite_images_of_all_views(args, train_test, results_path)
+        create_composite_images_of_all_views(train_test, results_path)
 
 
-def create_composite_images_of_all_views(args, train_test, results_path):
+def create_composite_images_of_all_views(train_test, results_path):
     results_values_imgs_dir = str(os.path.join(results_path, "tmp", f"{train_test}"))
 
     images_lateral = [Image.open(os.path.join(results_values_imgs_dir, f"{view}_{hemi}.png")) for view in
@@ -126,9 +126,16 @@ def create_composite_images_of_all_views(args, train_test, results_path):
 
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
-    composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
+    plt.figure(figsize=(7, 0.5))
+    plt.text(0, 0, 'testt', fontsize=20)
+    plt.axis('off')
+    plt.savefig(os.path.join(results_values_imgs_dir, f"title.png"), dpi=300)
+    title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
 
-    path = os.path.join(results_path, "searchlight_results", f"{train_test.replace('_', '-').replace('$', '_')}.png")
+    composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
+    composite_image = append_images([title, composite_image], padding=5, horizontally=False)
+
+    path = os.path.join(results_path, "searchlight_results", f"{train_test.replace('_', '-').replace('$', '_')}.jpg")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     composite_image.save(path, transparent=True)  # , facecolor="black")
     print('saved ', path)
