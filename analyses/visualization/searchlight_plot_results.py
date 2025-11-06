@@ -108,14 +108,12 @@ def plot(args):
                     result_values[hemi] = np.log(result_values[hemi])
 
             if "imagery_weak" in result_metric:
-                # original_metric = result_metric
-                ref_metric = "images$imagery_weak"
+                ref_metric = "images$imagery_weak" #TODO: agnostic as ref?
                 null_distribution_tfce_values_file = os.path.join(
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
-                # result_metric = original_metric
-                cbar_max = 1800000
+                cbar_max = 1800000 #TODO
                 null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
                 significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
                                                                   args.p_value_threshold)
