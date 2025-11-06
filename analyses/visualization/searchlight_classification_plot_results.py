@@ -180,9 +180,9 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    train_test = 'test_caption_attended -> test_caption_unattended'
-    results_path = str(os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args)))
-    create_composite_images_of_all_views(train_test, results_path)
+    # train_test = 'test_caption_attended -> test_caption_unattended'
+    # results_path = str(os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args)))
+    # create_composite_images_of_all_views(train_test, results_path)
 
-    # plot(args)
+    plot(args)
     create_composite_images_of_metrics(args)
