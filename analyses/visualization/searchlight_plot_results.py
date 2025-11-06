@@ -28,11 +28,8 @@ HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-CMAP_POS_ONLY = "hot"
-ACC_COLORBAR_MIN = 0.5
-ACC_COLORBAR_THRESHOLD = 0.52
-
-CBAR_TFCE_MAX_VALUE = 400000
+# CMAP_POS_ONLY = "hot"
+CMAP_POS_ONLY = "gnuplot2"
 
 CONTOUR_COLOR = 'lightseagreen'
 
@@ -324,7 +321,7 @@ def create_composite_images_of_all_views(args, result_metric):
         title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
         composite_image = append_images([title, composite_image], padding=5, horizontally=False)
 
-    composite_image = append_images([composite_image, img_colorbar], padding=5, horizontally=True)
+    composite_image = append_images([composite_image, img_colorbar], padding=10, horizontally=True)
 
     path = os.path.join(results_path, "searchlight_results",
                         f"{result_metric.replace('_', '-').replace('$', '_')}.png")
