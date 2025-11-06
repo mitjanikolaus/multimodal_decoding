@@ -104,7 +104,8 @@ def plot(args):
             orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             for hemi in HEMIS:
                 result_values[hemi] = orig_result_values[hemi][args.metric]
-                result_values[hemi] = np.log(result_values[hemi])
+                if args.log_scale:
+                    result_values[hemi] = np.log(result_values[hemi])
 
             null_distribution_tfce_values_file = os.path.join(
                 permutation_results_dir(args),
@@ -113,8 +114,10 @@ def plot(args):
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                               args.p_value_threshold)
+            if args.log_scale:
+                significance_cutoff = np.log(significance_cutoff)
+
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
-            significance_cutoff = np.log(significance_cutoff)
 
             threshold = significance_cutoff
             cbar_min = significance_cutoff
@@ -343,6 +346,7 @@ def get_args():
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
     parser.add_argument("--p-value-threshold", type=float, default=DEFAULT_P_VAL_THRESHOLD)
+    parser.add_argument("--log-scale", action="store_true", default=False)
 
     return parser.parse_args()
 
