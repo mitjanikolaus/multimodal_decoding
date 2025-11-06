@@ -247,6 +247,7 @@ def plot(args):
             hemi=HEMIS[0],
             view=args.views[0],
             colorbar=True,
+            horizontal_cbar=False,
             threshold=threshold,
             vmax=cbar_max,
             vmin=cbar_min,
@@ -255,7 +256,7 @@ def plot(args):
             metric=result_metric,
         )
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
-                               horizontal_cbar=True)
+                               horizontal_cbar=False)
 
         create_composite_images_of_all_views(args, result_metric)
 

@@ -61,7 +61,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                  alpha='auto', vmin=None, vmax=None, cbar_vmin=None,
                                  cbar_vmax=None, cbar_tick_format='%.2g',
                                  title=None, output_file=None, darkness=0.7,
-                                 axes=None, figure=None, categorical_cmap=False, metric=None):
+                                 axes=None, figure=None, categorical_cmap=False, metric=None, horizontal_cbar=True):
     """Help for plot_surf.
 
     This function handles surface plotting when the selected
@@ -156,10 +156,12 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                 if metric in TFCE_VAL_METRICS:
                     # ticks = [round(threshold, 1), round(cbar_vmax, 1)-0.1]
                     if cbar_vmax > 1000:
-                        ticks = [round(threshold, -3), round(np.mean([round(threshold, -3), round(cbar_vmax, -3) - 1000]), 1),
+                        ticks = [round(threshold, -3),
+                                 round(np.mean([round(threshold, -3), round(cbar_vmax, -3) - 1000]), 1),
                                  round(cbar_vmax, -3) - 1000]
                     else:
-                        ticks = [int(threshold), round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1), round(cbar_vmax, 1)-0.1]
+                        ticks = [int(threshold), round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1),
+                                 round(cbar_vmax, 1) - 0.1]
                     cbar_vmin = ticks[0]
                     cbar_vmax = np.ceil(cbar_vmax)
                     label = f"TFCE"
@@ -205,7 +207,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks, label=label,
                 boundaries=bounds, spacing='proportional',
-                format=ScalarFormatter(useOffset=False), orientation='horizontal')
+                format=ScalarFormatter(useOffset=False), orientation='horizontal' if horizontal_cbar else 'vertical')
             cax.xaxis.set_ticks_position('top')
 
         p3dcollec.set_facecolors(face_colors)
@@ -226,6 +228,7 @@ def plot_surf_custom(
         colorbar=False, avg_method=None, threshold=None, alpha=None, vmin=None, vmax=None, cbar_vmin=None,
         cbar_vmax=None, cbar_tick_format="auto", title=None, title_font_size=18, output_file=None, axes=None,
         figure=None, bg_map=None, bg_on_data=False, keep_bg=False, darkness=0.7, categorical_cmap=False, metric=None,
+        horizontal_cbar=True,
 ):
     """Plot surfaces with optional background and data."""
 
@@ -267,7 +270,8 @@ def plot_surf_custom(
             vmin=vmin, vmax=vmax, cbar_vmin=cbar_vmin,
             cbar_vmax=cbar_vmax, cbar_tick_format=cbar_tick_format,
             title=title, bg_map=bg_map, bg_on_data=bg_on_data, keep_bg=keep_bg,
-            output_file=output_file, axes=axes, figure=figure, categorical_cmap=categorical_cmap, metric=metric)
+            output_file=output_file, axes=axes, figure=figure, categorical_cmap=categorical_cmap, metric=metric,
+            horizontal_cbar=horizontal_cbar)
 
     elif engine == 'plotly':
         raise NotImplementedError()
@@ -284,7 +288,8 @@ def plot_surf_stat_map_custom(
         surf_mesh, stat_map, hemi='left', view='lateral', engine='matplotlib', threshold=None, alpha=None, vmin=None,
         vmax=None, cmap='cold_hot', colorbar=True, symmetric_cbar="auto", cbar_tick_format="auto", title=None,
         title_font_size=18, output_file=None, axes=None, figure=None, avg_method=None,
-        bg_map=None, bg_on_data=False, keep_bg=False, categorical_cmap=False, metric=None, **kwargs
+        bg_map=None, bg_on_data=False, keep_bg=False, categorical_cmap=False, metric=None, horizontal_cbar=True,
+        **kwargs
 ):
     """Plot a stats map on a surface :term:`mesh` with optional background.    """
     check_extensions(stat_map, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS)
@@ -314,7 +319,7 @@ def plot_surf_stat_map_custom(
         title=title, title_font_size=title_font_size, output_file=output_file,
         axes=axes, figure=figure, cbar_vmin=cbar_vmin,
         bg_map=bg_map, bg_on_data=bg_on_data, keep_bg=keep_bg,
-        cbar_vmax=cbar_vmax, categorical_cmap=categorical_cmap, metric=metric, **kwargs
+        cbar_vmax=cbar_vmax, categorical_cmap=categorical_cmap, metric=metric, horizontal_cbar=horizontal_cbar, **kwargs
     )
     return display
 
