@@ -135,7 +135,7 @@ def create_composite_images_of_all_views(train_test, results_path):
     composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
     composite_image = append_images([title, composite_image], padding=5, horizontally=False)
 
-    path = os.path.join(results_path, "searchlight_results", f"{train_test.replace('_', '-').replace('$', '_')}.jpg")
+    path = os.path.join(results_path, "searchlight_results", f"{train_test.replace('_', '-').replace('$', '_')}.png")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     composite_image.save(path, transparent=True)  # , facecolor="black")
     print('saved ', path)
