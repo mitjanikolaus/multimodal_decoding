@@ -155,7 +155,11 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                 ticks = [round(threshold, 1), round(np.mean([threshold, cbar_vmax]), 1), round(cbar_vmax, 1)]
                 if metric in TFCE_VAL_METRICS:
                     # ticks = [round(threshold, 1), round(cbar_vmax, 1)-0.1]
-                    ticks = [int(threshold), round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1), round(cbar_vmax, 1)-0.1]
+                    if cbar_vmax > 1000:
+                        ticks = [round(threshold, -3), round(np.mean([round(threshold, -3), round(cbar_vmax, -3) - 1000]), 1),
+                                 round(cbar_vmax, -3) - 1000]
+                    else:
+                        ticks = [int(threshold), round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1), round(cbar_vmax, 1)-0.1]
                     cbar_vmin = ticks[0]
                     cbar_vmax = np.ceil(cbar_vmax)
                     label = f"TFCE"
