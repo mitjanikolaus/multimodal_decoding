@@ -9,20 +9,11 @@ import os
 
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.visualization.plotting_utils import plot_surf_stat_map_custom
-from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images, FMRI_BETAS_DIR, SUBJECTS_ADDITIONAL_TEST
+from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images, FMRI_BETAS_DIR, SUBJECTS_ADDITIONAL_TEST, \
+    DEFAULT_RESOLUTION
 from analyses.decoding.searchlight.searchlight_classification import get_results_file_path
 
-HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
-HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
-HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
-
 CMAP_POS_ONLY = "hot"
-ACC_COLORBAR_MIN = 0.5
-ACC_COLORBAR_THRESHOLD = 0.52
-
-CBAR_TFCE_MAX_VALUE = 400000
-
-CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
@@ -50,7 +41,7 @@ def get_subject_avg_results(all_results):
 
 
 def plot(args):
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=DEFAULT_RESOLUTION)
     all_results = load_results(args)
     avg_results = get_subject_avg_results(all_results)
 
