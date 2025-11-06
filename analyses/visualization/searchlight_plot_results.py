@@ -290,7 +290,7 @@ def create_composite_images_of_all_views(args, result_metric):
 
     img_row_1 = append_images([img_lateral], padding=10)
     img_row_2 = append_images([img_medial], padding=10)
-    img_row_3 = append_images([img_ventral, img_colorbar], padding=30)
+    img_row_3 = append_images([img_ventral], padding=30)
 
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
@@ -310,7 +310,7 @@ def create_composite_images_of_all_views(args, result_metric):
     title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
 
     composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
-    composite_image = append_images([title, composite_image], padding=5, horizontally=False)
+    composite_image = append_images([title, composite_image, img_colorbar], padding=5, horizontally=False)
 
     path = os.path.join(results_path, "searchlight_results",
                         f"{result_metric.replace('_', '-').replace('$', '_')}.png")
