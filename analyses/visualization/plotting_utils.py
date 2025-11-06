@@ -20,6 +20,7 @@ from nilearn.plotting.surface._utils import get_faces_on_edge
 from nilearn.surface import load_surf_mesh
 from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFER_DATA_EXTENSIONS, load_surf_data
 
+from analyses.decoding.searchlight.searchlight_permutation_testing import TFCE_VAL_METRICS
 from data import TEST_IMAGES, TEST_CAPTIONS, clean_metric_name
 from utils import DIFF, DIFF_DECODERS
 
@@ -152,7 +153,9 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                        threshold)
             if '$' in metric:
                 ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
-                if metric.split('$')[0] == DIFF:
+                if metric in TFCE_VAL_METRICS:
+                    label = f"log(TFCE)"
+                elif metric.split('$')[0] == DIFF:
                     _, training_mode, metric_1, metric_2 = metric.split('$')
                     metric_1 = clean_metric_name(metric_1)
                     metric_2 = clean_metric_name(metric_2)
