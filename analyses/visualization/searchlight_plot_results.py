@@ -290,17 +290,15 @@ def create_composite_images_of_all_views(args, result_metric):
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
     plt.figure(figsize=(10, 0.3))
-    if result_metric in TFCE_VAL_METRICS:
-        metric_name = result_metric
-        # metric_name = result_metric.replace('imagery_weak', 'imagery')
-        # metric_name = metric_name.replace('agnostic', 'agnostic decoder')
-    elif result_metric.split('$')[0] == DIFF:
+    if result_metric.split('$')[0] == DIFF:
         _, training_mode, metric_1, metric_2 = result_metric.split('$')
         metric_name = f"{training_mode} decoder | {metric_1} - {metric_2}"
-    else:
+    elif result_metric in T_VAL_METRICS:
         training_mode, metric = result_metric.split('$')
         metric = metric.replace('imagery_weak', 'imagery')
         metric_name = f"{training_mode} decoder | {metric}"
+    else:
+        metric_name = result_metric
 
     plt.text(-0.15, 0, metric_name, fontsize=20)
     plt.axis('off')
