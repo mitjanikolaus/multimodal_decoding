@@ -204,17 +204,15 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             else:
                 cax, _ = make_axes(axes, location='right', fraction=.15, shrink=.5, pad=.0, aspect=10.)
 
-            # else:
-            #     ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]
-            cbar = figure.colorbar(
+            figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks, #label=label,
                 boundaries=bounds, spacing='proportional',
                 format=ScalarFormatter(useOffset=False), orientation='horizontal' if horizontal_cbar else 'vertical')
-            if horizontal_cbar:
-                cbar.set_label(label)
-                cax.xaxis.set_ticks_position('top')
-            else:
-                cbar.set_label(label, labelpad=-40, y=0.1)
+            # if horizontal_cbar:
+            #     cbar.set_label(label)
+            #     cax.xaxis.set_ticks_position('top')
+            # else:
+            #     cbar.set_label(label, labelpad=-40, y=0.1)
 
         p3dcollec.set_facecolors(face_colors)
         p3dcollec.set_edgecolors(face_colors)
