@@ -289,7 +289,6 @@ def create_composite_images_of_all_views(args, result_metric):
 
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
-    plt.figure(figsize=(10, 0.3))
     if result_metric.split('$')[0] == DIFF:
         _, training_mode, metric_1, metric_2 = result_metric.split('$')
         metric_name = f"{training_mode} decoder | {metric_1} - {metric_2}"
@@ -299,8 +298,8 @@ def create_composite_images_of_all_views(args, result_metric):
         metric_name = f"{training_mode} decoder | {metric} decoding"
     else:
         metric_name = result_metric
-
-    plt.text(-0.15, 0, metric_name, fontsize=20)
+    plt.figure(figsize=(10, 0.4))
+    plt.text(-0.15, 0.1, metric_name, fontsize=20)
     plt.axis('off')
     plt.savefig(os.path.join(results_values_imgs_dir, f"title.png", ), transparent=True, dpi=300)
     title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
