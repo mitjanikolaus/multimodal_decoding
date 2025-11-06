@@ -38,12 +38,15 @@ CONTOUR_COLOR = 'lightseagreen'
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
-TARGET_TFCE_VAL_METRICS = [METRIC_MOD_INVARIANT_INCREASE, METRIC_MOD_INVARIANT_ATTENDED_ALT,
-                    METRIC_MOD_INVARIANT_UNATTENDED_ALT,
-                    METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, METRIC_ATTENTION_DIFF_CAPTIONS,
-                    METRIC_ATTENTION_DIFF_IMAGES]
+TARGET_TFCE_VAL_METRICS = [
+    METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED,
+    METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
+    # METRIC_MOD_INVARIANT_INCREASE
+]
 # RESULT_METRICS = TFCE_VAL_METRICS + TARGET_TFCE_VAL_METRICS
-RESULT_METRICS = ['$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),    '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),    '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])]
+RESULT_METRICS = ['$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+                  '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
+                  '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])]
 
 
 def plot(args):
@@ -287,7 +290,19 @@ def create_composite_images_of_all_views(args, result_metric):
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
     plt.figure(figsize=(10, 0.3))
-    plt.text(-0.15, 0, result_metric.replace('_', '-').replace('$', '_'), fontsize=20)
+    if result_metric in TFCE_VAL_METRICS:
+        metric_name = result_metric
+        # metric_name = result_metric.replace('imagery_weak', 'imagery')
+        # metric_name = metric_name.replace('agnostic', 'agnostic decoder')
+    elif result_metric.split('$')[0] == DIFF:
+        _, training_mode, metric_1, metric_2 = result_metric.split('$')
+        metric_name = f"{training_mode} decoder | {metric_1} - {metric_2}"
+    else:
+        training_mode, metric = result_metric.split('$')
+        metric = metric.replace('imagery_weak', 'imagery')
+        metric_name = f"{training_mode} decoder | {metric}"
+
+    plt.text(-0.15, 0, metric_name, fontsize=20)
     plt.axis('off')
     plt.savefig(os.path.join(results_values_imgs_dir, f"title.png", ), transparent=True, dpi=300)
     title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
