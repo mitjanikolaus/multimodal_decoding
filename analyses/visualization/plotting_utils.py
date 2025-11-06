@@ -210,9 +210,11 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                 proxy_mappable, cax=cax, ticks=ticks, #label=label,
                 boundaries=bounds, spacing='proportional',
                 format=ScalarFormatter(useOffset=False), orientation='horizontal' if horizontal_cbar else 'vertical')
-            cbar.set_label(label, labelpad=-40, y=0.1)
-            # cax.xaxis.set_ticks_position('top')
-
+            if horizontal_cbar:
+                cbar.set_label(label)
+                cax.xaxis.set_ticks_position('top')
+            else:
+                cbar.set_label(label, labelpad=-40, y=0.1)
 
         p3dcollec.set_facecolors(face_colors)
         p3dcollec.set_edgecolors(face_colors)
