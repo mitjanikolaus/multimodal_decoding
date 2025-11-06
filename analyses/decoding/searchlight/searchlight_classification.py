@@ -13,21 +13,15 @@ from nilearn.surface import surface
 from sklearn import neighbors
 from sklearn.exceptions import ConvergenceWarning
 import os
-import pickle
 
-from sklearn.linear_model import Ridge
 from tqdm import tqdm
 
-from analyses.decoding.ridge_regression_decoding import FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
-    calc_all_pairwise_accuracy_scores, LANG_FEAT_COMBINATION_CHOICES, standardize_latents, \
-    get_fmri_data_for_splits
-from data import get_latents_for_splits, SELECT_DEFAULT, LatentFeatsConfig, \
-    create_null_distr_shuffled_indices, standardize_fmri_betas, SPLIT_TRAIN, MODALITY_AGNOSTIC, \
-    TRAINING_MODES, ALL_SPLITS, TEST_SPLITS, NUM_STIMULI, TEST_IMAGES, TEST_CAPTIONS, SPLIT_IMAGERY, \
+from analyses.decoding.ridge_regression_decoding import get_fmri_data_for_splits
+from data import create_null_distr_shuffled_indices, MODALITY_AGNOSTIC, \
     ATTENTION_MOD_SPLITS, TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_UNATTENDED, TEST_IMAGES_ATTENDED, TEST_CAPTIONS_ATTENDED
 from eval import pairwise_accuracy
 
-from utils import DEFAULT_RESOLUTION, FMRI_BETAS_DIR, DEFAULT_MODEL, ADDITIONAL_TEST_DATA_DIR, SUBJECTS_ADDITIONAL_TEST, \
+from utils import DEFAULT_RESOLUTION, FMRI_BETAS_DIR, ADDITIONAL_TEST_DATA_DIR, SUBJECTS_ADDITIONAL_TEST, \
     HEMIS
 
 DEFAULT_N_JOBS = 10
@@ -228,7 +222,7 @@ def run(args):
                 f"Max score: {scores_df[(scores_df.train_split == TEST_IMAGES_ATTENDED) & (scores_df.test_split == TEST_CAPTIONS_ATTENDED)].value.max():.2f}"
             )
 
-            results_file_path = get_results_file_path(hemi, subject, searchlight_mode_from_args(args), )
+            results_file_path = get_results_file_path(hemi, subject, searchlight_mode_from_args(args))
             scores_df.to_csv(results_file_path)
 
 
