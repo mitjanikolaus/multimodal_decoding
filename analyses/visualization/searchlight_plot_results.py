@@ -296,7 +296,7 @@ def create_composite_images_of_all_views(args, result_metric):
     elif result_metric in T_VAL_METRICS:
         training_mode, metric = result_metric.split('$')
         metric = metric.replace('imagery_weak', 'imagery')
-        metric_name = f"{training_mode} decoder | {metric}"
+        metric_name = f"{training_mode} decoder | {metric} decoding"
     else:
         metric_name = result_metric
 
