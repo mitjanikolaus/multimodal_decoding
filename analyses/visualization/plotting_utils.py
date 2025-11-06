@@ -158,7 +158,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                     ticks = [int(threshold), round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1), round(cbar_vmax, 1)-0.1]
                     cbar_vmin = ticks[0]
                     cbar_vmax = np.ceil(cbar_vmax)
-                    label = f"log(TFCE)"
+                    label = f"TFCE"
                 elif metric.split('$')[0] == DIFF:
                     _, training_mode, metric_1, metric_2 = metric.split('$')
                     metric_1 = clean_metric_name(metric_1)
@@ -186,7 +186,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             else:
                 ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks) / 1000) * 1000]
                 # ticks = [threshold, np.mean([threshold, np.max(ticks)]), np.max(ticks)]
-                label = f"log(TFCE)"
+                label = f"TFCE"
                 # cbar_vmin = 0
 
             bounds = np.linspace(cbar_vmin, cbar_vmax, our_cmap.N)
