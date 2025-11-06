@@ -58,7 +58,7 @@ def plot(args):
 
             threshold = 0.53
             cbar_min = 0.5
-            cbar_max = 0.57  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 0.6
 
         for hemi in HEMIS:
             for view in args.views:
