@@ -58,7 +58,7 @@ def plot(args):
 
             threshold = 0.53
             cbar_min = 0.5
-            cbar_max = 0.55  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 0.57  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         for hemi in HEMIS:
             for view in args.views:
@@ -147,7 +147,7 @@ def create_composite_images_of_metrics(args):
     for training_split in ATTENTION_MOD_SPLITS:
         testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
         for testing_split in testing_splits:
-            train_test = training_split.replace('_', '-') + ' -> ' + testing_split.replace('_', '-')
+            train_test = training_split + ' -> ' + testing_split
             results_path = os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args),
                                         "searchlight_results",
                                         f"{train_test}.png")
