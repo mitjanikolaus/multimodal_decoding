@@ -199,8 +199,10 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             # we need to create a proxy mappable
             proxy_mappable = ScalarMappable(cmap=our_cmap, norm=norm)
             proxy_mappable.set_array(surf_map_faces)
-            cax, _ = make_axes(axes, location='bottom', fraction=.15,
-                               shrink=.5, pad=.0, aspect=10.)
+            if horizontal_cbar:
+                cax, _ = make_axes(axes, location='bottom', fraction=.15, shrink=.5, pad=.0, aspect=10.)
+            else:
+                cax, _ = make_axes(axes, location='right', fraction=.15, shrink=.5, pad=.0, aspect=10.)
 
             # else:
             #     ticks = [0.5, 0.6, threshold, 0.7, 0.8, 0.9]

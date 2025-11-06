@@ -129,8 +129,8 @@ def save_plot_and_crop_img(path, crop_to_content=True, crop_cbar=False, horizont
             image = image.crop((0, int(image.size[1] - image.size[1] / 5), image.size[0], image.size[1]))
         else:
             # image = image
-            image = image.crop((0, 0, image.size[0], (int(image.size[1] - image.size[1] / 5))))
-            # image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
+            # image = image.crop((0, 0, image.size[0], (int(image.size[1] - image.size[1] / 5))))
+            image = image.crop((int(image.size[0] - image.size[0] / 5), 0, image.size[0], image.size[1]))
     if crop_to_content:
         image = image.crop(image.getbbox())
     image.save(path)
