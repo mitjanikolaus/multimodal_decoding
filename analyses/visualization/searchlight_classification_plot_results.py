@@ -127,7 +127,7 @@ def create_composite_images_of_all_views(train_test, results_path):
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
     plt.figure(figsize=(10, 0.3))
-    plt.text(-0.05, 0, train_test, fontsize=20)
+    plt.text(-0.15, 0, train_test, fontsize=20)
     plt.axis('off')
     plt.savefig(os.path.join(results_values_imgs_dir, f"title.png", ), transparent=True, dpi=300)
     title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
