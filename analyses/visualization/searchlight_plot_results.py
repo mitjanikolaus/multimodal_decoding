@@ -306,23 +306,25 @@ def create_composite_images_of_all_views(args, result_metric):
 
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
-    if result_metric.split('$')[0] == DIFF:
-        _, training_mode, metric_1, metric_2 = result_metric.split('$')
-        metric_name = f"{training_mode} decoder | {metric_1} - {metric_2}"
-    elif result_metric in T_VAL_METRICS:
-        training_mode, metric = result_metric.split('$')
-        metric = metric.replace('imagery_weak', 'imagery')
-        metric_name = f"{training_mode} decoder | {metric} decoding"
-    else:
-        metric_name = result_metric
-    plt.figure(figsize=(10, 0.4))
-    plt.text(-0.15, 0.1, metric_name, fontsize=20)
-    plt.axis('off')
-    plt.savefig(os.path.join(results_values_imgs_dir, f"title.png", ), transparent=True, dpi=300)
-    title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
-
     composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
-    composite_image = append_images([title, composite_image], padding=5, horizontally=False)
+
+    if args.plot_title:
+        if result_metric.split('$')[0] == DIFF:
+            _, training_mode, metric_1, metric_2 = result_metric.split('$')
+            metric_name = f"{training_mode} decoder | {metric_1} - {metric_2}"
+        elif result_metric in T_VAL_METRICS:
+            training_mode, metric = result_metric.split('$')
+            metric = metric.replace('imagery_weak', 'imagery')
+            metric_name = f"{training_mode} decoder | {metric} decoding"
+        else:
+            metric_name = result_metric
+        plt.figure(figsize=(10, 0.4))
+        plt.text(-0.15, 0.1, metric_name, fontsize=20)
+        plt.axis('off')
+        plt.savefig(os.path.join(results_values_imgs_dir, f"title.png", ), transparent=True, dpi=300)
+        title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
+        composite_image = append_images([title, composite_image], padding=5, horizontally=False)
+
     composite_image = append_images([composite_image, img_colorbar], padding=5, horizontally=True)
 
     path = os.path.join(results_path, "searchlight_results",
@@ -362,6 +364,7 @@ def get_args():
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
     parser.add_argument("--p-value-threshold", type=float, default=DEFAULT_P_VAL_THRESHOLD)
     parser.add_argument("--log-scale", action="store_true", default=False)
+    parser.add_argument("--plot-title", action="store_true", default=False)
 
     return parser.parse_args()
 

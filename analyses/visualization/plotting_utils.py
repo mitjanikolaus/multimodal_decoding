@@ -152,7 +152,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                        cbar_tick_format,
                                        threshold)
             if '$' in metric:
-                ticks = [round(threshold, 1), round(np.mean([threshold, cbar_vmax]), 1), round(cbar_vmax, 1)]
+                ticks = [round(threshold, 1), round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
                 if metric in TFCE_VAL_METRICS:
                     # ticks = [round(threshold, 1), round(cbar_vmax, 1)-0.1]
                     # if cbar_vmax > 1000:
@@ -202,7 +202,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             if horizontal_cbar:
                 cax, _ = make_axes(axes, location='bottom', fraction=.15, shrink=.5, pad=.0, aspect=10.)
             else:
-                cax, _ = make_axes(axes, location='right', fraction=.15, shrink=.5, pad=.0, aspect=10.)
+                cax, _ = make_axes(axes, location='right', fraction=.15, shrink=.4, pad=.0, aspect=10.)
 
             figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks, #label=label,
