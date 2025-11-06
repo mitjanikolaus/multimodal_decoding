@@ -39,7 +39,7 @@ TARGET_TFCE_VAL_METRICS = [
     METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
     # METRIC_MOD_INVARIANT_INCREASE
 ]
-RESULT_METRICS = TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
+RESULT_METRICS = T_VAL_METRICS + TARGET_TFCE_VAL_METRICS
 # RESULT_METRICS = ['$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
 #                   '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
 #                   '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])]
@@ -181,7 +181,7 @@ def plot(args):
 
             threshold = 0.53
             cbar_min = 0.5
-            cbar_max = 0.75  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 0.7#5  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
         print(f"{result_metric} cbar max: {cbar_max}")
         for hemi in HEMIS:
