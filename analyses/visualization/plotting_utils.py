@@ -152,7 +152,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                        cbar_tick_format,
                                        threshold)
             if '$' in metric:
-                ticks = [round(threshold, 1), round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
+                ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
                 if metric in TFCE_VAL_METRICS:
                     # ticks = [round(threshold, 1), round(cbar_vmax, 1)-0.1]
                     # if cbar_vmax > 1000:
