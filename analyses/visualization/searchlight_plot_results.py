@@ -310,7 +310,8 @@ def create_composite_images_of_all_views(args, result_metric):
     title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
 
     composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
-    composite_image = append_images([title, composite_image, img_colorbar], padding=5, horizontally=False)
+    composite_image = append_images([title, composite_image], padding=5, horizontally=False)
+    composite_image = append_images([composite_image, img_colorbar], padding=5, horizontally=True)
 
     path = os.path.join(results_path, "searchlight_results",
                         f"{result_metric.replace('_', '-').replace('$', '_')}.png")
