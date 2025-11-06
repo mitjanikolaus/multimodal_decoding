@@ -173,6 +173,9 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             #     # cbar_vmax = CBAR_T_VAL_MAX
             #     ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
             #     label = metric.replace("pairwise_acc_", "")
+            elif ' -> ' in metric:
+                ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
+                label = f'acc {metric}'
             else:
                 ticks = [threshold, round(np.mean([threshold, np.max(ticks)]), -4), int(np.max(ticks) / 1000) * 1000]
                 # ticks = [threshold, np.mean([threshold, np.max(ticks)]), np.max(ticks)]
