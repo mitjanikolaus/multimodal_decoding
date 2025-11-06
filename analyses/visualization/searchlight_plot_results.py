@@ -112,8 +112,10 @@ def plot(args):
                 f"tfce_values_null_distribution_{result_metric}.p"
             )
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                              args.p_value_threshold)
+            # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+            #                                                   args.p_value_threshold)
+            significance_cutoff = 170967
+            cbar_max = 1796482
             if args.log_scale:
                 significance_cutoff = np.log(significance_cutoff)
 
@@ -121,8 +123,7 @@ def plot(args):
 
             threshold = significance_cutoff
             cbar_min = significance_cutoff
-            # cbar_max = CBAR_TFCE_MAX_VALUE
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             # print(f"{result_metric} max tfce value across hemis: {cbar_max}")
 
         # else:
