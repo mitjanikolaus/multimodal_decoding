@@ -112,7 +112,7 @@ def plot(args):
                 ref_metric = "images$imagery_weak"
                 null_distribution_tfce_values_file = os.path.join(
                     permutation_results_dir(args),
-                    f"tfce_values_null_distribution_{result_metric}.p"
+                    f"tfce_values_null_distribution_{ref_metric}.p"
                 )
                 # result_metric = original_metric
                 cbar_max = 1800000
