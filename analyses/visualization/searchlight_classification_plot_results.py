@@ -58,7 +58,7 @@ def plot(args):
 
             threshold = 0.53
             cbar_min = 0.5
-            cbar_max = 0.7
+            cbar_max = 0.75
 
         for hemi in HEMIS:
             for view in args.views:
