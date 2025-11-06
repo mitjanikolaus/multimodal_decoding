@@ -154,7 +154,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             if '$' in metric:
                 ticks = [round(threshold, 1), round(np.mean([threshold, cbar_vmax]), 1), round(cbar_vmax, 1)]
                 if metric in TFCE_VAL_METRICS:
-                    ticks = [round(threshold, 1), round(np.mean([threshold, cbar_vmax]), 1), int(cbar_vmax)]
+                    ticks = [round(threshold, 1), round(cbar_vmax, 1)-0.1]
                     cbar_vmin = ticks[0]
                     label = f"log(TFCE)"
                 elif metric.split('$')[0] == DIFF:
