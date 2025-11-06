@@ -46,7 +46,7 @@ def plot(args):
     all_results = load_results(args)
     avg_results = get_subject_avg_results(all_results)
 
-    for train_test in ['test_image_attended -> test_image_unattended']:#avg_results.index.get_level_values(0).unique():
+    for train_test in avg_results.index.get_level_values(0).unique(): #['test_image_attended -> test_image_unattended']:
         results_path = str(os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args)))
 
         atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{train_test}"))
@@ -56,9 +56,9 @@ def plot(args):
         for hemi in HEMIS:
             result_values[hemi] = avg_results.loc[train_test, hemi].value.values
 
-            threshold = 0.53
-            cbar_min = 0.5
-            cbar_max = 0.75
+        threshold = 0.53
+        cbar_min = 0.5
+        cbar_max = 0.75
 
         for hemi in HEMIS:
             for view in args.views:
