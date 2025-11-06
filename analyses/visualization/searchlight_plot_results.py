@@ -286,7 +286,14 @@ def create_composite_images_of_all_views(args, result_metric):
 
     # roi_legend = Image.open(os.path.join(tfce_values_imgs_dir, f"legend.png"))
 
+    plt.figure(figsize=(10, 0.3))
+    plt.text(-0.15, 0, result_metric.replace('_', '-').replace('$', '_'), fontsize=20)
+    plt.axis('off')
+    plt.savefig(os.path.join(results_values_imgs_dir, f"title.png", ), transparent=True, dpi=300)
+    title = Image.open(os.path.join(results_values_imgs_dir, "title.png"))
+
     composite_image = append_images([img_row_1, img_row_2, img_row_3], padding=5, horizontally=True)
+    composite_image = append_images([title, composite_image], padding=5, horizontally=False)
 
     path = os.path.join(results_path, "searchlight_results",
                         f"{result_metric.replace('_', '-').replace('$', '_')}.png")
