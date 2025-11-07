@@ -27,8 +27,8 @@ HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-CMAP_POS_ONLY = "hot"
-# CMAP_POS_ONLY = "gnuplot2"
+# CMAP_POS_ONLY = "hot"
+CMAP_POS_ONLY = "magma"
 
 CONTOUR_COLOR = 'lightseagreen'
 
@@ -39,10 +39,10 @@ TARGET_TFCE_VAL_METRICS = [
     METRIC_MOD_INVARIANT_ATTENDED_ALT, METRIC_MOD_INVARIANT_UNATTENDED_ALT,
     # METRIC_MOD_INVARIANT_INCREASE
 ]
-RESULT_METRICS = T_VAL_METRICS + TARGET_TFCE_VAL_METRICS
-# RESULT_METRICS = ['$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
-#                   '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
-#                   '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])]
+# RESULT_METRICS = T_VAL_METRICS + TARGET_TFCE_VAL_METRICS
+RESULT_METRICS = ['$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+                  '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
+                  '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])]
 
 def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
