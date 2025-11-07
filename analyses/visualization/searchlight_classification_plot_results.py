@@ -56,7 +56,7 @@ def plot(args):
         for hemi in HEMIS:
             result_values[hemi] = avg_results.loc[train_test, hemi].value.values
 
-        threshold = 0.53
+        threshold = 0.51
         cbar_min = 0.5
         cbar_max = 0.75
 
