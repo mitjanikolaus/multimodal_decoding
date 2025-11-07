@@ -103,7 +103,7 @@ def plot(args):
                     result_values[hemi] = np.log(result_values[hemi])
 
             if "imagery_weak" in result_metric:
-                ref_metric = "images$imagery_weak" #TODO: agnostic as ref?
+                ref_metric = "agnostic$imagery_weak"
                 null_distribution_tfce_values_file = os.path.join(
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{ref_metric}.p"
