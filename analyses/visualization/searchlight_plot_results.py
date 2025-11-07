@@ -109,6 +109,8 @@ def plot(args):
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
                 cbar_max = 1800000 #TODO
+                if args.log_scale:
+                    cbar_max = np.log(cbar_max)
                 null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
                 significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
                                                                   args.p_value_threshold)
