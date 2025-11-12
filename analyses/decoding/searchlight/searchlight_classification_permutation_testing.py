@@ -21,7 +21,7 @@ from analyses.decoding.searchlight.searchlight_classification import SEARCHLIGHT
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
     TRAINING_MODES, TEST_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, \
-    TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY_WEAK, ATTENTION_MOD_SPLITS
+    TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY_WEAK, ATTENTION_MOD_SPLITS, IDS_IMAGES_TEST
 from eval import LIMITED_CANDIDATE_LATENTS
 from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, DEFAULT_MODEL, FS_HEMI_NAMES, \
     export_to_gifti, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
@@ -546,75 +546,46 @@ def calc_t_values_null_distr(args, out_path):
 
         with h5py.File(tmp_file_path, 'w') as f:
             dsets = dict()
-            for metric in T_VAL_METRICS:
-                tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
-                dsets[metric] = f.create_dataset(metric, tvals_shape, dtype='float16')
+            tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
+            dsets['tvals'] = f.create_dataset('tvals', tvals_shape, dtype='float16')
 
             preloaded_scores = dict()
             for subj in subjects:
-                preloaded_scores[subj] = dict()
-                for training_mode in TRAINING_MODES:
-                    preloaded_scores[subj][training_mode] = dict()
+                # preloaded_scores[subj] = dict()
+                # preloaded_scores[subj][training_mode] = dict()
 
-                    if training_mode == MODALITY_AGNOSTIC:
-                        feats_config = LatentFeatsConfig(
-                            args.model,
-                            args.features,
-                            args.test_features,
-                            args.vision_features,
-                            args.lang_features,
-                            logging=False
-                        )
-                    elif training_mode == MODALITY_SPECIFIC_IMAGES:
-                        feats_config = LatentFeatsConfig(
-                            args.mod_specific_images_model,
-                            args.mod_specific_images_features,
-                            args.mod_specific_images_test_features,
-                            args.vision_features,
-                            args.lang_features,
-                            logging=False
-                        )
-                    elif training_mode == MODALITY_SPECIFIC_CAPTIONS:
-                        feats_config = LatentFeatsConfig(
-                            args.mod_specific_captions_model,
-                            args.mod_specific_captions_features,
-                            args.mod_specific_captions_test_features,
-                            args.vision_features,
-                            args.lang_features,
-                            logging=False
-                        )
-                    else:
-                        raise RuntimeError(f"Unknown training mode: {training_mode}")
+                # base_path = get_results_file_path(
+                #     feats_config, hemi, subj, training_mode,
+                #     searchlight_mode_from_args(args), args.l2_regularization_alpha,
+                # )
+                if proc_id == args.n_jobs - 1:
+                    vertex_iter = trange(vertex_range[0], vertex_range[1],
+                                         desc=f"loading scores for {subj} {hemi} hemi")
+                else:
+                    vertex_iter = range(vertex_range[0], vertex_range[1])
+                preloaded_scores[subj] = []
 
-                    base_path = get_results_file_path(
-                        feats_config, hemi, subj, training_mode,
-                        searchlight_mode_from_args(args), args.l2_regularization_alpha,
-                    )
-                    if proc_id == args.n_jobs - 1:
-                        vertex_iter = trange(vertex_range[0], vertex_range[1],
-                                             desc=f"loading scores for {subj} {hemi} hemi {training_mode} decoder")
-                    else:
-                        vertex_iter = range(vertex_range[0], vertex_range[1])
-                    preloaded_scores[subj][training_mode] = []
+                gathered_over_vertices = dict()
 
-                    gathered_over_vertices = dict()
+                for vertex_id in vertex_iter:
+                    gathered_over_vertices[vertex_id] = []
+                    # scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
+                    #                            f"{vertex_id:010d}.p")
+                    # scores_vertex = pickle.load(open(scores_path, "rb"))
+                    # for scores_perm in scores_vertex:
+                    #     scores_perm = scores_perm[(scores_perm.latents == latents_mode) & (
+                    #             scores_perm.standardized_predictions == standardized_predictions)]
+                    #     metrics = scores_perm[['metric', 'value']].set_index('metric').value.to_dict()
 
-                    for vertex_id in vertex_iter:
-                        gathered_over_vertices[vertex_id] = []
-                        scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
-                                                   f"{vertex_id:010d}.p")
-                        scores_vertex = pickle.load(open(scores_path, "rb"))
-                        for scores_perm in scores_vertex:
-                            scores_perm = scores_perm[(scores_perm.latents == latents_mode) & (
-                                    scores_perm.standardized_predictions == standardized_predictions)]
-                            metrics = scores_perm[['metric', 'value']].set_index('metric').value.to_dict()
-                            gathered_over_vertices[vertex_id].append(metrics)
-                    for perm_id in range(len(gathered_over_vertices[vertex_range[0]])):
-                        gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in
-                                                      range(vertex_range[0], vertex_range[1])]) for metric in
-                                    gathered_over_vertices[vertex_range[0]][perm_id].keys()}
-                        # saving in format [subj][training_mode][perm_id][metric]
-                        preloaded_scores[subj][training_mode].append(gathered)
+                #         gathered_over_vertices[vertex_id].append(metrics)
+                # for perm_id in range(len(gathered_over_vertices[vertex_range[0]])):
+                #     gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in
+                #                                   range(vertex_range[0], vertex_range[1])]) for metric in
+                #                 gathered_over_vertices[vertex_range[0]][perm_id].keys()}
+                    # saving in format [subj][training_mode][perm_id][metric]
+                    values = [np.mean(np.random.choice([0,1], len(IDS_IMAGES_TEST)*len(IDS_IMAGES_TEST))) for _ in
+                                                  range(vertex_range[0], vertex_range[1])]
+                    preloaded_scores[subj].append(values)
 
             if proc_id == args.n_jobs - 1:
                 permutations_iterator = tqdm(enumerate(permutations), total=len(permutations),
@@ -629,12 +600,12 @@ def calc_t_values_null_distr(args, out_path):
                     for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
                         if metric.split('$')[0] == DIFF:
                             training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
-                            data[i] = preloaded_scores[subj][training_mode][idx][metric_name_1] - \
-                                      preloaded_scores[subj][training_mode][idx][metric_name_2]
+                            data[i] = preloaded_scores[subj][idx][metric_name_1] - \
+                                      preloaded_scores[subj][idx][metric_name_2]
                         elif metric.split('$')[0] == DIFF_DECODERS:
                             training_mode_1, training_mode_2, metric_name = metric.split('$')[1:]
-                            data[i] = preloaded_scores[subj][training_mode_1][idx][metric_name] - \
-                                      preloaded_scores[subj][training_mode_2][idx][metric_name]
+                            data[i] = preloaded_scores[subj][idx][metric_name] - \
+                                      preloaded_scores[subj][idx][metric_name]
                         else:
                             training_mode, metric_name = metric.split('$')
                             data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
@@ -792,6 +763,7 @@ def get_args():
     return parser.parse_args()
 
 if __name__ == "__main__":
+    os.makedirs(SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
     # create_null_distribution(args)
 
