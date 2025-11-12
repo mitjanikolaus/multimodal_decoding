@@ -16,7 +16,8 @@ from nilearn.surface import surface
 from scipy.spatial.distance import cdist
 from tqdm import tqdm, trange
 
-from analyses.decoding.searchlight.searchlight_classification import SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR, \
+from analyses.decoding.searchlight.searchlight_classification import \
+    SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR, \
     searchlight_mode_from_args, get_results_file_path, get_adjacency_matrix
 from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
     FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
@@ -31,8 +32,8 @@ from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR,
 
 DEFAULT_N_JOBS = 10
 
-
 DEFAULT_P_VAL_THRESHOLD = 1e-3
+N_VERTICES = 163842
 
 
 def calc_clusters(scores, threshold, edge_lengths=None, return_clusters=True,
@@ -549,43 +550,29 @@ def calc_t_values_null_distr(args, out_path):
             tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
             dsets['tvals'] = f.create_dataset('tvals', tvals_shape, dtype='float16')
 
-            preloaded_scores = dict()
-            for subj in subjects:
-                # preloaded_scores[subj] = dict()
-                # preloaded_scores[subj][training_mode] = dict()
+            # preloaded_scores = dict()
+            # for subj in subjects:
+            # preloaded_scores[subj] = dict()
+            # preloaded_scores[subj][training_mode] = dict()
 
-                # base_path = get_results_file_path(
-                #     feats_config, hemi, subj, training_mode,
-                #     searchlight_mode_from_args(args), args.l2_regularization_alpha,
-                # )
-                if proc_id == args.n_jobs - 1:
-                    vertex_iter = trange(vertex_range[0], vertex_range[1],
-                                         desc=f"loading scores for {subj} {hemi} hemi")
-                else:
-                    vertex_iter = range(vertex_range[0], vertex_range[1])
-                preloaded_scores[subj] = []
-
-                gathered_over_vertices = dict()
-
-                for vertex_id in vertex_iter:
-                    gathered_over_vertices[vertex_id] = []
-                    # scores_path = os.path.join(os.path.dirname(base_path), "null_distr",
-                    #                            f"{vertex_id:010d}.p")
-                    # scores_vertex = pickle.load(open(scores_path, "rb"))
-                    # for scores_perm in scores_vertex:
-                    #     scores_perm = scores_perm[(scores_perm.latents == latents_mode) & (
-                    #             scores_perm.standardized_predictions == standardized_predictions)]
-                    #     metrics = scores_perm[['metric', 'value']].set_index('metric').value.to_dict()
-
-                #         gathered_over_vertices[vertex_id].append(metrics)
-                # for perm_id in range(len(gathered_over_vertices[vertex_range[0]])):
-                #     gathered = {metric: np.array([gathered_over_vertices[i][perm_id][metric] for i in
-                #                                   range(vertex_range[0], vertex_range[1])]) for metric in
-                #                 gathered_over_vertices[vertex_range[0]][perm_id].keys()}
-                    # saving in format [subj][training_mode][perm_id][metric]
-                    values = [np.mean(np.random.choice([0,1], len(IDS_IMAGES_TEST)*len(IDS_IMAGES_TEST))) for _ in
-                                                  range(vertex_range[0], vertex_range[1])]
-                    preloaded_scores[subj].append(values)
+            # base_path = get_results_file_path(
+            #     feats_config, hemi, subj, training_mode,
+            #     searchlight_mode_from_args(args), args.l2_regularization_alpha,
+            # )
+            # if proc_id == args.n_jobs - 1:
+            #     vertex_iter = trange(vertex_range[0], vertex_range[1],
+            #                          desc=f"loading scores for {subj} {hemi} hemi")
+            # else:
+            #     vertex_iter = range(vertex_range[0], vertex_range[1])
+            # preloaded_scores[subj] = []
+            #
+            # gathered_over_vertices = dict()
+            #
+            # for vertex_id in vertex_iter:
+            #     gathered_over_vertices[vertex_id] = []
+            #     values = [np.mean(np.random.choice([0,1], len(IDS_IMAGES_TEST)*len(IDS_IMAGES_TEST))) for _ in
+            #                                   range(vertex_range[0], vertex_range[1])]
+            #     preloaded_scores[subj].append(values)
 
             if proc_id == args.n_jobs - 1:
                 permutations_iterator = tqdm(enumerate(permutations), total=len(permutations),
@@ -594,53 +581,44 @@ def calc_t_values_null_distr(args, out_path):
                 permutations_iterator = enumerate(permutations)
 
             for iteration, permutation in permutations_iterator:
-                t_values = dict()
-                for metric in T_VAL_METRICS:
-                    data = np.zeros((len(args.subjects), vertex_range[1] - vertex_range[0]))
-                    for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
-                        if metric.split('$')[0] == DIFF:
-                            training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
-                            data[i] = preloaded_scores[subj][idx][metric_name_1] - \
-                                      preloaded_scores[subj][idx][metric_name_2]
-                        elif metric.split('$')[0] == DIFF_DECODERS:
-                            training_mode_1, training_mode_2, metric_name = metric.split('$')[1:]
-                            data[i] = preloaded_scores[subj][idx][metric_name] - \
-                                      preloaded_scores[subj][idx][metric_name]
-                        else:
-                            training_mode, metric_name = metric.split('$')
-                            data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
+                # t_values = dict()
+                data = np.zeros((len(args.subjects), vertex_range[1] - vertex_range[0]))
+                for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
+                    # training_mode, metric_name = metric.split('$')
+                    data[i] = [np.mean(np.random.choice([0, 1], len(IDS_IMAGES_TEST) * len(IDS_IMAGES_TEST))) for _ in
+                               range(vertex_range[0], vertex_range[1])]
+                    # data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
 
-                    popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
-                    t_values[metric] = calc_image_t_values(data, popmean)
-                    dsets[metric][iteration] = t_values[metric].astype(np.float16)
+                popmean = 0.5  # if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
+                t_values = calc_image_t_values(data, popmean)
+                dsets[iteration] = t_values.astype(np.float16)
 
-    feats_config = LatentFeatsConfig(
-        args.model,
-        args.features,
-        args.test_features,
-        args.vision_features,
-        args.lang_features,
-        logging=False
-    )
-    base_path = get_results_file_path(
-        feats_config, HEMIS[0], args.subjects[0], MODALITY_AGNOSTIC,
-        searchlight_mode_from_args(args), args.l2_regularization_alpha,
-    )
-    scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
-    null_distr_filepaths = list(glob(os.path.join(scores_dir, "*.p")))
-    n_vertices = len(null_distr_filepaths)
+    # feats_config = LatentFeatsConfig(
+    #     args.model,
+    #     args.features,
+    #     args.test_features,
+    #     args.vision_features,
+    #     args.lang_features,
+    #     logging=False
+    # )
+    # base_path = get_results_file_path(
+    #     feats_config, HEMIS[0], args.subjects[0], MODALITY_AGNOSTIC,
+    #     searchlight_mode_from_args(args), args.l2_regularization_alpha,
+    # )
+    # scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
+    # null_distr_filepaths = list(glob(os.path.join(scores_dir, "*.p")))
 
-    n_permutations = len(pickle.load(open(null_distr_filepaths[0], "rb")))
+    n_permutations = 100
     permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
     permutations = [next(permutations_iter) for _ in range(args.n_permutations_group_level)]
 
     print('n_permutations: ', n_permutations)
-    print('n_vertices: ', n_vertices)
+    # print('n_vertices: ', n_vertices)
 
-    n_per_job = math.ceil(n_vertices / args.n_jobs)
+    n_per_job = math.ceil(N_VERTICES / args.n_jobs)
     print(f"n vertices per job: {n_per_job}")
 
-    vertex_ranges = [(job_id * n_per_job, min((job_id + 1) * n_per_job, n_vertices)) for job_id in range(args.n_jobs)]
+    vertex_ranges = [(job_id * n_per_job, min((job_id + 1) * n_per_job, N_VERTICES)) for job_id in range(args.n_jobs)]
     print('vertex ranges for jobs: ', vertex_ranges)
 
     tmp_filenames = dict()
@@ -668,14 +646,12 @@ def calc_t_values_null_distr(args, out_path):
         for hemi in HEMIS:
             tmp_files = {job_id: h5py.File(tmp_filenames[hemi][job_id], 'r') for job_id in range(args.n_jobs)}
 
-            for metric in tmp_files[0].keys():
-                tvals_shape = (args.n_permutations_group_level, n_vertices)
-                all_t_vals_file.create_dataset(f'{hemi}__{metric}', tvals_shape, dtype='float32', fillvalue=np.nan)
+            tvals_shape = (args.n_permutations_group_level, N_VERTICES)
+            all_t_vals_file.create_dataset(f'{hemi}', tvals_shape, dtype='float32', fillvalue=np.nan)
 
             for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
-                for metric in tmp_files[0].keys():
-                    data_tvals = np.concatenate([tmp_files[job_id][metric][i] for job_id in range(args.n_jobs)])
-                    all_t_vals_file[f'{hemi}__{metric}'][i] = data_tvals
+                data_tvals = np.concatenate([tmp_files[job_id][i] for job_id in range(args.n_jobs)])
+                all_t_vals_file[f'{hemi}'][i] = data_tvals
 
     print("finished assemble")
 
@@ -709,8 +685,7 @@ def create_null_distribution(args):
                                 desc="Calculating tfce values for null distribution") if proc_id == args.n_jobs - 1 else indices
                 tfce_values = []
                 for iteration in iterator:
-                    vals = {hemi: {metric: t_vals[f"{hemi}__{metric}"][iteration] for metric in T_VAL_METRICS} for hemi
-                            in HEMIS}
+                    vals = {hemi: t_vals[f"{hemi}"][iteration] for hemi in HEMIS}
                     tfce_values.append(
                         calc_tfce_values(
                             vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
@@ -762,10 +737,11 @@ def get_args():
 
     return parser.parse_args()
 
+
 if __name__ == "__main__":
     os.makedirs(SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
-    # create_null_distribution(args)
+    create_null_distribution(args)
 
     for training_split in ATTENTION_MOD_SPLITS:
         testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
