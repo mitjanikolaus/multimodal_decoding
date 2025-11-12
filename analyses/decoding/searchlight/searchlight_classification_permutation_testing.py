@@ -565,7 +565,7 @@ def calc_t_values_null_distr(args, out_path):
 
                 popmean = 0.5  # if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
                 t_values = calc_image_t_values(data, popmean)
-                dsets[iteration] = t_values.astype(np.float16)
+                dsets['tvals'][iteration] = t_values.astype(np.float16)
 
     n_permutations = 100
     permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
@@ -585,21 +585,21 @@ def calc_t_values_null_distr(args, out_path):
         tmp_filenames[hemi] = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}_{hemi}.hdf5")
                                for job_id in range(args.n_jobs)}
 
-        # # TODO single iter for debugging
-        # # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
-        # #                           args.subjects, hemi)
-        # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-        #     delayed(calc_permutation_t_values)(
-        #         vertex_ranges[id],
-        #         permutations,
-        #         id,
-        #         tmp_filenames[hemi][id],
-        #         args.subjects,
-        #         hemi,
-        #     )
-        #     for id in range(args.n_jobs)
-        # )
-        # print(f'finished calculating null distr t-vals for {hemi} hemi')
+        # TODO single iter for debugging
+        # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
+        #                           args.subjects, hemi)
+        Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+            delayed(calc_permutation_t_values)(
+                vertex_ranges[id],
+                permutations,
+                id,
+                tmp_filenames[hemi][id],
+                args.subjects,
+                hemi,
+            )
+            for id in range(args.n_jobs)
+        )
+        print(f'finished calculating null distr t-vals for {hemi} hemi')
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
         for hemi in HEMIS:
@@ -609,7 +609,7 @@ def calc_t_values_null_distr(args, out_path):
             all_t_vals_file.create_dataset(f'{hemi}', tvals_shape, dtype='float32', fillvalue=np.nan)
 
             for i in tqdm(range(args.n_permutations_group_level), desc="assembling results"):
-                data_tvals = np.concatenate([tmp_files[job_id][i] for job_id in range(args.n_jobs)])
+                data_tvals = np.concatenate([tmp_files[job_id]['tvals'][i] for job_id in range(args.n_jobs)])
                 all_t_vals_file[f'{hemi}'][i] = data_tvals
 
     print("finished assemble")
