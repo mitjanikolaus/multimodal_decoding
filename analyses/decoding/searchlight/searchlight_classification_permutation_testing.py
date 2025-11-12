@@ -738,7 +738,7 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    # create_null_distribution(args)
+    create_null_distribution(args)
 
     for training_split in ATTENTION_MOD_SPLITS:
         testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
