@@ -493,6 +493,7 @@ def calc_test_statistics(args):
         print(f"Calculating t-values")
         per_subject_scores = load_per_subject_scores(args)
         t_values = calc_t_values(per_subject_scores)
+        os.makedirs(os.path.dirname(t_values_path), exist_ok=True)
         pickle.dump(t_values, open(t_values_path, 'wb'))
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
@@ -739,7 +740,6 @@ def get_args():
 
 
 if __name__ == "__main__":
-    os.makedirs(SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR, exist_ok=True)
     args = get_args()
     create_null_distribution(args)
 
