@@ -512,10 +512,7 @@ def calc_test_statistics(args):
         print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
         print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
 
-    null_distribution_tfce_values_file = os.path.join(
-        permutation_results_dir(args),
-        f"tfce_values_null_distribution_{args.metric}.p"
-    )
+    null_distribution_tfce_values_file = os.path.join(permutation_results_dir(args), f"tfce_values_null_distribution.p")
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
     significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
                                                                              args.p_value_threshold)
