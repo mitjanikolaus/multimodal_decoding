@@ -666,7 +666,7 @@ def permutation_results_dir(args):
 
 def create_null_distribution(args):
     tfce_values_null_distribution_path = os.path.join(
-        permutation_results_dir(args), f"tfce_values_null_distribution_{args.metric}.p"
+        permutation_results_dir(args), f"tfce_values_null_distribution.p"
     )
     if not os.path.isfile(tfce_values_null_distribution_path):
         t_values_null_distribution_path = os.path.join(
