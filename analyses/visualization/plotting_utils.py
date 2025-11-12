@@ -160,7 +160,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                     #              round(np.mean([round(threshold, -3), round(cbar_vmax, -3) - 1000]), 1),
                     #              round(cbar_vmax, -3)]
                     # else:
-                    ticks = [int(threshold), round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1),
+                    ticks = [threshold, round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1),
                              round(cbar_vmax, 1) - 0.1]
                     cbar_vmin = ticks[0]
                     # cbar_vmax = np.ceil(cbar_vmax)
