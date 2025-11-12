@@ -548,30 +548,6 @@ def calc_t_values_null_distr(args, out_path):
             tvals_shape = (len(permutations), vertex_range[1] - vertex_range[0])
             dsets['tvals'] = f.create_dataset('tvals', tvals_shape, dtype='float16')
 
-            # preloaded_scores = dict()
-            # for subj in subjects:
-            # preloaded_scores[subj] = dict()
-            # preloaded_scores[subj][training_mode] = dict()
-
-            # base_path = get_results_file_path(
-            #     feats_config, hemi, subj, training_mode,
-            #     searchlight_mode_from_args(args), args.l2_regularization_alpha,
-            # )
-            # if proc_id == args.n_jobs - 1:
-            #     vertex_iter = trange(vertex_range[0], vertex_range[1],
-            #                          desc=f"loading scores for {subj} {hemi} hemi")
-            # else:
-            #     vertex_iter = range(vertex_range[0], vertex_range[1])
-            # preloaded_scores[subj] = []
-            #
-            # gathered_over_vertices = dict()
-            #
-            # for vertex_id in vertex_iter:
-            #     gathered_over_vertices[vertex_id] = []
-            #     values = [np.mean(np.random.choice([0,1], len(IDS_IMAGES_TEST)*len(IDS_IMAGES_TEST))) for _ in
-            #                                   range(vertex_range[0], vertex_range[1])]
-            #     preloaded_scores[subj].append(values)
-
             if proc_id == args.n_jobs - 1:
                 permutations_iterator = tqdm(enumerate(permutations), total=len(permutations),
                                              desc="calculating null distr t-vals")
@@ -583,28 +559,13 @@ def calc_t_values_null_distr(args, out_path):
                 data = np.zeros((len(args.subjects), vertex_range[1] - vertex_range[0]))
                 for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
                     # training_mode, metric_name = metric.split('$')
-                    data[i] = [np.mean(np.random.choice([0, 1], len(IDS_IMAGES_TEST) * len(IDS_IMAGES_TEST))) for _ in
-                               range(vertex_range[0], vertex_range[1])]
+                    data[i] = np.array([np.mean(np.random.choice([0, 1], len(IDS_IMAGES_TEST) * len(IDS_IMAGES_TEST))) for _ in
+                               range(vertex_range[0], vertex_range[1])])
                     # data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
 
                 popmean = 0.5  # if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
                 t_values = calc_image_t_values(data, popmean)
                 dsets[iteration] = t_values.astype(np.float16)
-
-    # feats_config = LatentFeatsConfig(
-    #     args.model,
-    #     args.features,
-    #     args.test_features,
-    #     args.vision_features,
-    #     args.lang_features,
-    #     logging=False
-    # )
-    # base_path = get_results_file_path(
-    #     feats_config, HEMIS[0], args.subjects[0], MODALITY_AGNOSTIC,
-    #     searchlight_mode_from_args(args), args.l2_regularization_alpha,
-    # )
-    # scores_dir = os.path.join(os.path.dirname(base_path), "null_distr")
-    # null_distr_filepaths = list(glob(os.path.join(scores_dir, "*.p")))
 
     n_permutations = 100
     permutations_iter = itertools.permutations(range(n_permutations), len(args.subjects))
@@ -624,21 +585,21 @@ def calc_t_values_null_distr(args, out_path):
         tmp_filenames[hemi] = {job_id: os.path.join(os.path.dirname(out_path), f"temp_t_vals", f"{job_id}_{hemi}.hdf5")
                                for job_id in range(args.n_jobs)}
 
-        # TODO single iter for debugging
-        # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
-        #                           args.subjects, hemi)
-        Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
-            delayed(calc_permutation_t_values)(
-                vertex_ranges[id],
-                permutations,
-                id,
-                tmp_filenames[hemi][id],
-                args.subjects,
-                hemi,
-            )
-            for id in range(args.n_jobs)
-        )
-        print(f'finished calculating null distr t-vals for {hemi} hemi')
+        # # TODO single iter for debugging
+        # # calc_permutation_t_values(vertex_ranges[-1], permutations, args.n_jobs - 1, tmp_filenames[hemi][args.n_jobs - 1],
+        # #                           args.subjects, hemi)
+        # Parallel(n_jobs=args.n_jobs, mmap_mode=None, max_nbytes=None)(
+        #     delayed(calc_permutation_t_values)(
+        #         vertex_ranges[id],
+        #         permutations,
+        #         id,
+        #         tmp_filenames[hemi][id],
+        #         args.subjects,
+        #         hemi,
+        #     )
+        #     for id in range(args.n_jobs)
+        # )
+        # print(f'finished calculating null distr t-vals for {hemi} hemi')
 
     with h5py.File(out_path, 'w') as all_t_vals_file:
         for hemi in HEMIS:
