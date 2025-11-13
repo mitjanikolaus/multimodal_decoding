@@ -12,7 +12,7 @@ from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, TEST_IMAGES_ATT
 from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES, DIFF, DIFF_DECODERS
 
-DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
+DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 ACC_COLORBAR_MAX = 0.8
 COLORBAR_THRESHOLD_MIN = 0.5
 
@@ -21,7 +21,8 @@ COLORBAR_DIFFERENCE_MAX = 0.3
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.05
 
 CMAP = "cold_hot"
-CMAP_POS_ONLY = "hot"
+# CMAP_POS_ONLY = "hot"
+CMAP_POS_ONLY = "magma"
 
 DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
@@ -190,7 +191,8 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
 
                 cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
 
-                imgs_views = [title_img] + imgs_views + [cbar]
+                # imgs_views = [title_img] + imgs_views + [cbar]
+                imgs_views = imgs_views + [cbar]
                 img_views = append_images(images=imgs_views, padding=200)
                 imgs_metrics.append(img_views)
 
