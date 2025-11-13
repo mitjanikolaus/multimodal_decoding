@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import os
 
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
-from analyses.decoding.searchlight.searchlight_classification_permutation_testing import permutation_results_dir
+from analyses.decoding.searchlight.searchlight_classification_permutation_testing import permutation_results_dir, \
+    calc_significance_cutoff
 from analyses.visualization.plotting_utils import plot_surf_stat_map_custom
 from data import ATTENTION_MOD_SPLITS
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images, FMRI_BETAS_DIR, SUBJECTS_ADDITIONAL_TEST, \
@@ -20,6 +21,7 @@ CMAP_POS_ONLY = "hot"
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 
+DEFAULT_P_VAL_THRESHOLD = 0.05
 
 def load_results(args):
     all_results = []
@@ -46,9 +48,17 @@ def get_subject_avg_results(all_results):
 def plot(args, plot_acc=False):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     vals_to_plot = None
+    significance_cutoff = None
     if plot_acc:
         all_results = load_results(args)
         vals_to_plot = get_subject_avg_results(all_results)
+    else:
+        null_distribution_tfce_values_file = os.path.join(permutation_results_dir(args),
+                                                          f"tfce_values_null_distribution.p")
+        null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+        significance_cutoff, _ = calc_significance_cutoff(
+            null_distribution_tfce_values, args.p_value_threshold
+        )
 
     for training_split in ATTENTION_MOD_SPLITS:
         testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
@@ -75,8 +85,8 @@ def plot(args, plot_acc=False):
                 cbar_min = 0.5
                 cbar_max = 0.75
             else:
-                threshold = 104122.75
-                cbar_min = 104122.75
+                threshold = significance_cutoff
+                cbar_min = significance_cutoff
                 cbar_max = 400000
 
             for hemi in HEMIS:
@@ -192,6 +202,8 @@ def get_args():
     parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
+
+    parser.add_argument("--p-value-threshold", type=float, default=DEFAULT_P_VAL_THRESHOLD)
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
