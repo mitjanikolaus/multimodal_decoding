@@ -219,7 +219,7 @@ def run(args):
         #                                                    SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
         #                        file_suffix="_attention_mod", training_mode=training_mode)
         #
-        create_composite_image(args, results_dir, training_mode=training_mode)
+        create_composite_image(args, results_dir, training_mode=training_mode, metrics=[SPLIT_IMAGERY_WEAK])
 
 
     # metrics = [TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
