@@ -1,18 +1,16 @@
 import argparse
 
 import numpy as np
-from IPython.core.pylabtools import figsize
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from matplotlib.figure import Figure
 from nilearn import datasets, plotting
 import os
-from analyses.decoding.searchlight.searchlight_permutation_testing import CHANCE_VALUES, \
-    add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir, add_diff_metrics
+from analyses.decoding.searchlight.searchlight_permutation_testing import add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, TEST_IMAGES_ATTENDED, \
     TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, \
     MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from eval import DIFF_METRICS
-from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES
+from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES, DIFF, DIFF_DECODERS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral", "posterior"]
 ACC_COLORBAR_MAX = 0.8
@@ -42,9 +40,9 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     print(f"plotting acc scores. {subfolder}")
 
-    for metric in DIFF_METRICS + TEST_SPLITS:
+    for metric in TEST_SPLITS: # + DIFF_METRICS:
         threshold = COLORBAR_THRESHOLD_MIN
-        chance_value = CHANCE_VALUES.get(metric, 0.5)
+        chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
@@ -207,27 +205,27 @@ def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    # scores = load_per_subject_scores(args)
+    scores = load_per_subject_scores(args)
     # scores = add_diff_metrics(scores)
 
-    # for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
-    #     plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
+    for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
+        plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
+
+        # create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
+        #                                                    SPLIT_TEST_CAPTIONS_ATTENDED,
+        #                                                    SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
+        #                        file_suffix="_attention_mod", training_mode=training_mode)
+        #
+        # create_composite_image(args, results_dir, training_mode=training_mode)
+
+
+    # metrics = [TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
+    # create_composite_image(args, results_dir, metrics=metrics,
+    #                        file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_IMAGES)
     #
-    #     create_composite_image(args, results_dir, metrics=[SPLIT_TEST_IMAGES_ATTENDED, SPLIT_TEST_IMAGES_UNATTENDED,
-    #                                                        SPLIT_TEST_CAPTIONS_ATTENDED,
-    #                                                        SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
-    #                            file_suffix="_attention_mod", training_mode=training_mode)
-    #
-    #     create_composite_image(args, results_dir, training_mode=training_mode)
-
-
-    metrics = [TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
-    create_composite_image(args, results_dir, metrics=metrics,
-                           file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_IMAGES)
-
-    metrics = [TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, 'diff_attended_unattended_images']
-    create_composite_image(args, results_dir, metrics=metrics,
-                           file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_CAPTIONS)
+    # metrics = [TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, 'diff_attended_unattended_images']
+    # create_composite_image(args, results_dir, metrics=metrics,
+    #                        file_suffix="_cross_decoding", training_mode=MODALITY_SPECIFIC_CAPTIONS)
 
     print("done")
 
