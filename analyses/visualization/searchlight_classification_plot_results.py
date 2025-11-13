@@ -1,4 +1,5 @@
 import argparse
+import pickle
 
 import pandas as pd
 from PIL import Image
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 import os
 
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
+from analyses.decoding.searchlight.searchlight_classification_permutation_testing import permutation_results_dir
 from analyses.visualization.plotting_utils import plot_surf_stat_map_custom
 from data import ATTENTION_MOD_SPLITS
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images, FMRI_BETAS_DIR, SUBJECTS_ADDITIONAL_TEST, \
@@ -41,64 +43,76 @@ def get_subject_avg_results(all_results):
     return avg_results
 
 
-def plot(args):
+def plot(args, plot_acc=False):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=DEFAULT_RESOLUTION)
-    all_results = load_results(args)
-    avg_results = get_subject_avg_results(all_results)
+    vals_to_plot = None
+    if plot_acc:
+        all_results = load_results(args)
+        vals_to_plot = get_subject_avg_results(all_results)
 
-    for train_test in avg_results.index.get_level_values(0).unique(): #['test_image_attended -> test_image_unattended']:
-        results_path = str(os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args)))
+    for training_split in ATTENTION_MOD_SPLITS:
+        testing_splits = [split for split in ATTENTION_MOD_SPLITS if split != training_split]
+        for testing_split in testing_splits:
+            train_test = training_split + ' -> ' + testing_split
+            results_path = str(os.path.join(RESULTS_DIR, "searchlight_classification", searchlight_mode_from_args(args)))
+            atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{train_test}"))
+            os.makedirs(atlas_tmp_results_dir, exist_ok=True)
 
-        atlas_tmp_results_dir = str(os.path.join(results_path, "tmp", f"{train_test}"))
-        os.makedirs(atlas_tmp_results_dir, exist_ok=True)
+            metric_name = f'{training_split}-{testing_split}'
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_name}.p")
+            if not plot_acc:
+                vals_to_plot = pickle.load(open(tfce_values_path, "rb"))
 
-        result_values = dict()
-        for hemi in HEMIS:
-            result_values[hemi] = avg_results.loc[train_test, hemi].value.values
+            result_values = dict()
+            for hemi in HEMIS:
+                if plot_acc:
+                    result_values[hemi] = vals_to_plot.loc[train_test, hemi].value.values
+                else:
+                    result_values[hemi] = vals_to_plot[hemi]
 
-        threshold = 0.52
-        cbar_min = 0.5
-        cbar_max = 0.75
+            threshold = 0.52
+            cbar_min = 0.5
+            cbar_max = 0.75
 
-        for hemi in HEMIS:
-            for view in args.views:
-                fig = plotting.plot_surf_stat_map(
-                    fsaverage[f"infl_{hemi}"],
-                    result_values[hemi],
-                    bg_map=fsaverage[f"sulc_{hemi}"],
-                    hemi=hemi,
-                    view=view,
-                    colorbar=False,
-                    threshold=threshold,
-                    vmax=cbar_max,
-                    vmin=cbar_min,
-                    cmap=CMAP_POS_ONLY,
-                )
+            for hemi in HEMIS:
+                for view in args.views:
+                    fig = plotting.plot_surf_stat_map(
+                        fsaverage[f"infl_{hemi}"],
+                        result_values[hemi],
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        hemi=hemi,
+                        view=view,
+                        colorbar=False,
+                        threshold=threshold,
+                        vmax=cbar_max,
+                        vmin=cbar_min,
+                        cmap=CMAP_POS_ONLY,
+                    )
 
-                title = f"{view}_{hemi}"
-                path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
-                save_plot_and_crop_img(path)
-                print(f"saved {path}")
+                    title = f"{view}_{hemi}"
+                    path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
+                    save_plot_and_crop_img(path)
+                    print(f"saved {path}")
 
-        # plot for cbar:
-        fig = plt.figure(figsize=(7, 6))
-        plot_surf_stat_map_custom(
-            fsaverage[f"infl_{HEMIS[0]}"],
-            result_values[HEMIS[0]],
-            hemi=HEMIS[0],
-            view=args.views[0],
-            colorbar=True,
-            threshold=threshold,
-            vmax=cbar_max,
-            vmin=cbar_min,
-            cmap=CMAP_POS_ONLY,
-            figure=fig,
-            metric=train_test,
-        )
-        save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
-                               horizontal_cbar=True)
+            # plot for cbar:
+            fig = plt.figure(figsize=(7, 6))
+            plot_surf_stat_map_custom(
+                fsaverage[f"infl_{HEMIS[0]}"],
+                result_values[HEMIS[0]],
+                hemi=HEMIS[0],
+                view=args.views[0],
+                colorbar=True,
+                threshold=threshold,
+                vmax=cbar_max,
+                vmin=cbar_min,
+                cmap=CMAP_POS_ONLY,
+                figure=fig,
+                metric=train_test,
+            )
+            save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
+                                   horizontal_cbar=True)
 
-        create_composite_images_of_all_views(train_test, results_path)
+            create_composite_images_of_all_views(train_test, results_path)
 
 
 def create_composite_images_of_all_views(train_test, results_path):
