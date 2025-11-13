@@ -173,9 +173,9 @@ def create_results_cluster_masks(values, results_dir, metric, resolution, radius
     print(df.style.format(precision=3).to_latex(hrules=True))
 
 
-def calc_significance_cutoff(null_distribution_tfce_values, metric, p_value_threshold=0.05):
+def calc_significance_cutoff(null_distribution_tfce_values, p_value_threshold=0.05):
     null_distr = np.sort([
-        np.nanmax(np.concatenate((n[HEMIS[0]][metric], n[HEMIS[1]][metric])))
+        np.nanmax(np.concatenate((n[HEMIS[0]], n[HEMIS[1]])))
         for n in null_distribution_tfce_values
     ])
     print(f"null distr max values: {null_distr[-5:]} ({len(null_distribution_tfce_values)} permutations)")
@@ -256,7 +256,8 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
-def calc_tfce_values(t_values, edge_lengths_dicts, metric=None, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices",
+def calc_tfce_values(t_values, edge_lengths_dicts, metric=None, h=2, e=1, dh=0.1,
+                     cluster_extents_measure="num_vertices",
                      use_tqdm=False):
     tfce_values = dict()
     for hemi in HEMIS:
@@ -442,7 +443,7 @@ def calc_test_statistics(args, metric_name):
     else:
         t_values = pickle.load(open(t_values_path, 'rb'))
 
-    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{args.metric}.p")
+    tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_name}.p")
     if not os.path.isfile(tfce_values_path):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
@@ -453,21 +454,22 @@ def calc_test_statistics(args, metric_name):
         tfce_values = pickle.load(open(tfce_values_path, 'rb'))
 
     for hemi in HEMIS:
-        print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi][args.metric]):.2f} | ", end="")
-        print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi][args.metric]):.2f}")
+        print(f"mean tfce value ({hemi} hemi): {np.nanmean(tfce_values[hemi]):.2f} | ", end="")
+        print(f"max tfce value ({hemi} hemi): {np.nanmax(tfce_values[hemi]):.2f}")
 
     null_distribution_tfce_values_file = os.path.join(permutation_results_dir(args), f"tfce_values_null_distribution.p")
     null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                                             args.p_value_threshold)
+    significance_cutoff, max_test_statistic_distr = calc_significance_cutoff(
+        null_distribution_tfce_values, args.p_value_threshold
+    )
 
-    p_values = {hemi: np.repeat(np.nan, tfce_values[hemi][args.metric].shape) for hemi, t_vals in t_values.items()}
+    p_values = {hemi: np.repeat(np.nan, tfce_values[hemi].shape) for hemi, t_vals in t_values.items()}
     for hemi in HEMIS:
-        # print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi][args.metric])[-5:])
+        # print(f"{hemi} hemi largest test statistic values: ", np.sort(tfce_values[hemi])[-5:])
         # print(f"{hemi} hemi largest test statistic null distr values: ", max_test_statistic_distr[-5:])
-        for vertex in tqdm(np.argwhere(tfce_values[hemi][args.metric] > 0)[:, 0],
+        for vertex in tqdm(np.argwhere(tfce_values[hemi] > 0)[:, 0],
                            desc=f"calculating p values for {hemi} hemi"):
-            test_stat = tfce_values[hemi][args.metric][vertex]
+            test_stat = tfce_values[hemi][vertex]
             value_index = np.searchsorted(max_test_statistic_distr, test_stat)
             if value_index >= len(max_test_statistic_distr):
                 p_value = 1 - (len(max_test_statistic_distr) - 1) / (len(max_test_statistic_distr))
@@ -477,7 +479,7 @@ def calc_test_statistics(args, metric_name):
 
         print(f"smallest p value ({hemi}): {np.min(p_values[hemi][p_values[hemi] > 0]):.5f}")
 
-    p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{args.metric}.p")
+    p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{metric_name}.p")
     pickle.dump(p_values, open(p_values_path, mode='wb'))
     return significance_cutoff
 
@@ -503,8 +505,9 @@ def calc_t_values_null_distr(args, out_path):
                 data = np.zeros((len(args.subjects), vertex_range[1] - vertex_range[0]))
                 for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
                     # training_mode, metric_name = metric.split('$')
-                    data[i] = np.array([np.mean(np.random.choice([0, 1], len(IDS_IMAGES_TEST) * len(IDS_IMAGES_TEST))) for _ in
-                               range(vertex_range[0], vertex_range[1])])
+                    data[i] = np.array(
+                        [np.mean(np.random.choice([0, 1], len(IDS_IMAGES_TEST) * len(IDS_IMAGES_TEST))) for _ in
+                         range(vertex_range[0], vertex_range[1])])
                     # data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
 
                 popmean = 0.5  # if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
@@ -650,7 +653,6 @@ if __name__ == "__main__":
         for testing_split in testing_splits:
             print(f"\n\nPermutation Testing for train: {training_split} | test: {testing_split}\n")
             metric_name = f'{training_split}-{testing_split}'
-            # args.metric = metric_name
             significance_cutoff = calc_test_statistics(args, metric_name)
-            # create_masks(permutation_results_dir(args), args.metric, significance_cutoff, args.tfce_value_threshold,
-            #              args.resolution, args.radius, args.n_neighbors)
+            create_masks(permutation_results_dir(args), metric_name, significance_cutoff, args.tfce_value_threshold,
+                         args.resolution, args.radius, args.n_neighbors)
