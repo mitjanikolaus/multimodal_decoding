@@ -223,18 +223,18 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
     if tfce_value_threshold is not None:
         threshold = tfce_value_threshold
         print(f"using tfce value threshold {tfce_value_threshold}")
-    masks = {hemi: copy.deepcopy(tfce_values[hemi][metric]) for hemi in HEMIS}
+    masks = {hemi: copy.deepcopy(tfce_values[hemi]) for hemi in HEMIS}
     for hemi in HEMIS:
         print(
-            f'{hemi} hemi mask size for threshold {threshold:.2f}: {np.mean(tfce_values[hemi][metric] >= threshold):.2f}')
-        masks[hemi][tfce_values[hemi][metric] >= threshold] = 1
-        masks[hemi][tfce_values[hemi][metric] < threshold] = 0
-        masks[hemi][np.isnan(tfce_values[hemi][metric])] = 0
+            f'{hemi} hemi mask size for threshold {threshold:.2f}: {np.mean(tfce_values[hemi] >= threshold):.2f}')
+        masks[hemi][tfce_values[hemi] >= threshold] = 1
+        masks[hemi][tfce_values[hemi] < threshold] = 0
+        masks[hemi][np.isnan(tfce_values[hemi])] = 0
         masks[hemi] = masks[hemi].astype(np.uint8)
 
         path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-        tfce_values[hemi][metric][tfce_values[hemi][metric] < threshold] = 0
-        export_to_gifti(tfce_values[hemi][metric], path_out)
+        tfce_values[hemi][tfce_values[hemi] < threshold] = 0
+        export_to_gifti(tfce_values[hemi], path_out)
 
     # create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
 
