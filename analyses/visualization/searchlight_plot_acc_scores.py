@@ -8,7 +8,7 @@ import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, TEST_IMAGES_ATTENDED, \
     TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, \
-    MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
+    MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK
 from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES, DIFF, DIFF_DECODERS
 
@@ -40,7 +40,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     print(f"plotting acc scores. {subfolder}")
 
-    for metric in TEST_SPLITS: # + DIFF_METRICS:
+    for metric in [SPLIT_IMAGERY_WEAK]: #TEST_SPLITS: # + DIFF_METRICS:
         threshold = COLORBAR_THRESHOLD_MIN
         chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
@@ -77,6 +77,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 )
                 title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"{title}.png"))
+                print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
 
         if score_hemi_metric_avgd is not None:
             plotting.plot_surf_stat_map(
@@ -128,6 +129,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                         out_path = os.path.join(acc_scores_pngs_dir, subject, f"{title}.png")
                         os.makedirs(os.path.dirname(out_path), exist_ok=True)
                         save_plot_and_crop_img(out_path)
+                        print(f'saved {out_path}')
 
 
 def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mode=MODALITY_AGNOSTIC, file_suffix="", make_per_subject_plots=True):
