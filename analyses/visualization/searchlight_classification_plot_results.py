@@ -70,9 +70,14 @@ def plot(args, plot_acc=False):
                 else:
                     result_values[hemi] = vals_to_plot[hemi]
 
-            threshold = 0.52
-            cbar_min = 0.5
-            cbar_max = 0.75
+            if plot_acc:
+                threshold = 0.52
+                cbar_min = 0.5
+                cbar_max = 0.75
+            else:
+                threshold = 104122.75
+                cbar_min = 104122.75
+                cbar_max = 400000
 
             for hemi in HEMIS:
                 for view in args.views:
