@@ -506,8 +506,9 @@ def calc_t_values_null_distr(args, out_path):
                 for i, (idx, subj) in enumerate(zip(permutation, args.subjects)):
                     # training_mode, metric_name = metric.split('$')
                     data[i] = np.array(
-                        [np.mean(np.random.choice([0, 1], len(IDS_IMAGES_TEST) * len(IDS_IMAGES_TEST))) for _ in
-                         range(vertex_range[0], vertex_range[1])])
+                        [np.mean(np.random.choice([0, 1], (len(IDS_IMAGES_TEST) - 1) * len(IDS_IMAGES_TEST))) for _ in
+                         range(vertex_range[0], vertex_range[1])]
+                    )
                     # data[i] = preloaded_scores[subj][training_mode][idx][metric_name]
 
                 popmean = 0.5  # if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
