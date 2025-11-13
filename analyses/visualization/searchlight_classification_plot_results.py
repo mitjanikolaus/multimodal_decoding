@@ -44,7 +44,7 @@ def get_subject_avg_results(all_results):
 
 
 def plot(args, plot_acc=False):
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=DEFAULT_RESOLUTION)
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
     vals_to_plot = None
     if plot_acc:
         all_results = load_results(args)
@@ -192,6 +192,8 @@ def get_args():
     parser.add_argument("--n-neighbors", type=int, default=None)
 
     parser.add_argument("--views", nargs="+", type=str, default=DEFAULT_VIEWS)
+
+    parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
     return parser.parse_args()
 
