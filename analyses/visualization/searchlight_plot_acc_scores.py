@@ -93,7 +93,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                 symmetric_cbar=False if chance_value == 0.5 else True,
             )
-            save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True)
+            save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
+                               horizontal_cbar=False, crop_to_content=True)
 
         if make_per_subject_plots:
             for subject in args.subjects:
@@ -216,7 +217,7 @@ def run(args):
         #                                                    SPLIT_TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
         #                        file_suffix="_attention_mod", training_mode=training_mode)
         #
-        # create_composite_image(args, results_dir, training_mode=training_mode)
+        create_composite_image(args, results_dir, training_mode=training_mode)
 
 
     # metrics = [TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
