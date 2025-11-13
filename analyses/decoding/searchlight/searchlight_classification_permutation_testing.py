@@ -256,70 +256,14 @@ def get_edge_lengths_dicts_based_on_edges(resolution):
     return edge_lengths_dicts
 
 
-def compute_composite_t_vals_for_metric(t_values, metric, hemi):
-    if metric in T_VAL_METRICS:
-        values = t_values[hemi][metric]
-    # elif metric == METRIC_GW:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW], axis=0)
-    # elif metric == METRIC_GW_2:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_2], axis=0)
-    # elif metric == METRIC_GW_3:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_3], axis=0)
-    # elif metric == METRIC_GW_4:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_4], axis=0)
-    # elif metric == METRIC_GW_5:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_5], axis=0)
-    elif metric == METRIC_MOD_INVARIANT_INCREASE:
-        values_attn = np.nanmin(
-            [
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_ATTENDED])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_ATTENDED])]
-            ], axis=0
-        )
-        values_unattn = np.nanmin(
-            [
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_IMAGES, TEST_CAPTIONS_UNATTENDED])],
-                t_values[hemi]['$'.join([MODALITY_SPECIFIC_CAPTIONS, TEST_IMAGES_UNATTENDED])]
-            ], axis=0
-        )
-        values_attn[values_attn < 0] = 0
-        values_unattn[values_unattn < 0] = 0
-        values = values_attn - values_unattn
-    elif metric == METRIC_ATTENTION_DIFF_IMAGES:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_ATTENTION_DIFF_IMAGES], axis=0)
-    elif metric == METRIC_ATTENTION_DIFF_CAPTIONS:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_ATTENTION_DIFF_CAPTIONS], axis=0)
-    elif metric == METRIC_MOD_INVARIANT_ATTENDED:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_ATTENDED], axis=0)
-    elif metric == METRIC_MOD_INVARIANT_UNATTENDED:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_UNATTENDED], axis=0)
-    elif metric == METRIC_MOD_INVARIANT_ATTENDED_ALT:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_ATTENDED_ALT], axis=0)
-    elif metric == METRIC_MOD_INVARIANT_UNATTENDED_ALT:
-        values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_MOD_INVARIANT_UNATTENDED_ALT], axis=0)
-    # elif metric == METRIC_GW_DIFF:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_GW_DIFF], axis=0)
-    # elif metric == METRIC_VISION:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION], axis=0)
-    # elif metric == METRIC_LANG:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG], axis=0)
-    # elif metric == METRIC_VISION_2:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_VISION_2], axis=0)
-    # elif metric == METRIC_LANG_2:
-    #     values = np.nanmin([t_values[hemi][m] for m in T_VAL_METRICS_LANG_2], axis=0)
-    else:
-        raise RuntimeError("Unknown metric: ", metric)
-    return values
-
-
-def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices",
+def calc_tfce_values(t_values, edge_lengths_dicts, metric=None, h=2, e=1, dh=0.1, cluster_extents_measure="num_vertices",
                      use_tqdm=False):
     tfce_values = dict()
     for hemi in HEMIS:
-        values = compute_composite_t_vals_for_metric(t_values, metric, hemi)
+        values = t_values[hemi][metric] if metric is not None else t_values[hemi]
         max_score = np.nanmax(values)
         if max_score <= 0:
-            tfce_values[hemi] = {metric: np.zeros_like(values)}
+            tfce_values[hemi] = np.zeros_like(values)
             continue
 
         if dh == 0:
@@ -334,7 +278,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
 
         score_threshs = np.arange(step, max_score + step, step)
 
-        tfce_values[hemi] = {metric: np.zeros(shape=values.shape, dtype=np.float32)}
+        tfce_values[hemi] = np.zeros(shape=values.shape, dtype=np.float32)
 
         iterator = tqdm(score_threshs) if use_tqdm else score_threshs
         for score_thresh in iterator:
@@ -356,7 +300,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
             cluster_tfces = (cluster_extents ** e) * (score_thresh ** h) * step
             nodes_above_thresh_not_in_clusters = set(np.argwhere(values > score_thresh)[:, 0])
             for cluster, cluster_tfce in zip(clusters, cluster_tfces):
-                tfce_values[hemi][metric][list(cluster)] += cluster_tfce
+                tfce_values[hemi][list(cluster)] += cluster_tfce
                 nodes_above_thresh_not_in_clusters = nodes_above_thresh_not_in_clusters.difference(cluster)
 
             # increase tfce values for nodes out of clusters
@@ -364,7 +308,7 @@ def calc_tfce_values(t_values, edge_lengths_dicts, metric, h=2, e=1, dh=0.1, clu
                 if len(nodes_above_thresh_not_in_clusters) > 0:
                     single_node_tfce = (1 ** e) * (score_thresh ** h) * step
                     locations = list(nodes_above_thresh_not_in_clusters)
-                    tfce_values[hemi][metric][locations] += single_node_tfce
+                    tfce_values[hemi][locations] += single_node_tfce
 
     return tfce_values
 
@@ -487,7 +431,7 @@ def calc_t_values(scores):
     return tvals
 
 
-def calc_test_statistics(args):
+def calc_test_statistics(args, metric_name):
     t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
     if not os.path.isfile(t_values_path):
         print(f"Calculating t-values")
@@ -502,7 +446,7 @@ def calc_test_statistics(args):
     if not os.path.isfile(tfce_values_path):
         print("calculating tfce..")
         edge_lengths = get_edge_lengths_dicts_based_on_edges(args.resolution)
-        tfce_values = calc_tfce_values(t_values, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e,
+        tfce_values = calc_tfce_values(t_values, edge_lengths, metric=metric_name, h=args.tfce_h, e=args.tfce_e,
                                        dh=args.tfce_dh, use_tqdm=True)
         pickle.dump(tfce_values, open(tfce_values_path, "wb"))
     else:
@@ -647,7 +591,7 @@ def create_null_distribution(args):
                     vals = {hemi: t_vals[f"{hemi}"][iteration] for hemi in HEMIS}
                     tfce_values.append(
                         calc_tfce_values(
-                            vals, edge_lengths, args.metric, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
+                            vals, edge_lengths, h=args.tfce_h, e=args.tfce_e, dh=args.tfce_dh,
                         )
                     )
                 return tfce_values
@@ -706,7 +650,7 @@ if __name__ == "__main__":
         for testing_split in testing_splits:
             print(f"\n\nPermutation Testing for train: {training_split} | test: {testing_split}\n")
             metric_name = f'{training_split}-{testing_split}'
-            args.metric = metric_name
-            significance_cutoff = calc_test_statistics(args)
+            # args.metric = metric_name
+            significance_cutoff = calc_test_statistics(args, metric_name)
             # create_masks(permutation_results_dir(args), args.metric, significance_cutoff, args.tfce_value_threshold,
             #              args.resolution, args.radius, args.n_neighbors)
