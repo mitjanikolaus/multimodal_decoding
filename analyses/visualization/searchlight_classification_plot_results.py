@@ -195,6 +195,8 @@ def get_args():
 
     parser.add_argument("--resolution", type=str, default=DEFAULT_RESOLUTION)
 
+    parser.add_argument("--plot-acc", action="store_true", default=False)
+
     return parser.parse_args()
 
 
