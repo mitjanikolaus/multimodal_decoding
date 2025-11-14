@@ -264,8 +264,8 @@ def plot(args):
                     )
                     hemi_label = 'L' if hemi == 'left' else 'R'
                     if view in ['medial', 'lateral']:
-                        y_pos = 0.7
-                        x_pos = 0.15 if hemi == 'left' else 0.9
+                        y_pos = 0.65
+                        x_pos = 0.15 if hemi == 'left' else 0.85
                     else:
                         y_pos = 0.6 if hemi == 'left' else 0.4
                         x_pos = 0.15
