@@ -117,6 +117,8 @@ def plot(args):
                 print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
 
+                print(p_values[hemi][t_values[hemi] < 0])
+
             if "imagery_weak" in result_metric:
                 ref_metric = "agnostic$imagery_weak"
                 null_distribution_tfce_values_file = os.path.join(
