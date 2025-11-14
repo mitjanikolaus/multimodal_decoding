@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 import os
 
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
-from analyses.decoding.searchlight.searchlight_classification_permutation_testing import permutation_results_dir, \
+from analyses.decoding.searchlight_classification.searchlight_classification_permutation_testing import permutation_results_dir, \
     calc_significance_cutoff
 from analyses.visualization.plotting_utils import plot_surf_stat_map_custom
 from data import ATTENTION_MOD_SPLITS
 from utils import RESULTS_DIR, HEMIS, save_plot_and_crop_img, append_images, FMRI_BETAS_DIR, SUBJECTS_ADDITIONAL_TEST, \
     DEFAULT_RESOLUTION
-from analyses.decoding.searchlight.searchlight_classification import get_results_file_path
+from analyses.decoding.searchlight_classification.searchlight_classification import get_results_file_path
 
 CMAP_POS_ONLY = "hot"
 

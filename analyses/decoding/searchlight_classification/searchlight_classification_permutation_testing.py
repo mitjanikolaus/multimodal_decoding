@@ -9,26 +9,19 @@ import pandas as pd
 from joblib import Parallel, delayed
 from nilearn import datasets
 import os
-from glob import glob
 import pickle
 
 from nilearn.surface import surface
 from scipy.spatial.distance import cdist
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
-from analyses.decoding.searchlight.searchlight_classification import \
+from analyses.decoding.searchlight_classification.searchlight_classification import \
     SEARCHLIGHT_CLASSIFICATION_PERMUTATION_TESTING_RESULTS_DIR, \
     searchlight_mode_from_args, get_results_file_path, get_adjacency_matrix
-from data import MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SELECT_DEFAULT, \
-    FEATURE_COMBINATION_CHOICES, LatentFeatsConfig, VISION_FEAT_COMBINATION_CHOICES, LANG_FEAT_COMBINATION_CHOICES, \
-    TRAINING_MODES, TEST_IMAGES, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED, \
-    TEST_CAPTIONS_UNATTENDED, SPLIT_IMAGERY_WEAK, ATTENTION_MOD_SPLITS, IDS_IMAGES_TEST
+from data import ATTENTION_MOD_SPLITS, IDS_IMAGES_TEST
 from eval import LIMITED_CANDIDATE_LATENTS
-from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, DEFAULT_MODEL, FS_HEMI_NAMES, \
-    export_to_gifti, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
-    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_MOD_INVARIANT_ATTENDED_ALT, \
-    METRIC_MOD_INVARIANT_UNATTENDED_ALT, METRIC_ATTENTION_DIFF_CAPTIONS, METRIC_ATTENTION_DIFF_IMAGES, \
-    METRIC_MOD_INVARIANT_INCREASE, DIFF
+from utils import SUBJECTS_ADDITIONAL_TEST, HEMIS, DEFAULT_RESOLUTION, DATA_DIR, FS_HEMI_NAMES, \
+    export_to_gifti
 
 DEFAULT_N_JOBS = 10
 
