@@ -263,6 +263,7 @@ def plot(args):
                         cmap=CMAP_POS_ONLY,
                     )
                     hemi_label = 'L' if hemi == 'left' else 'R'
+                    print(hemi_label)
                     fig.text(0, 0, hemi_label, fontsize=20)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
