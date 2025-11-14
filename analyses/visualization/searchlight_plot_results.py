@@ -264,11 +264,11 @@ def plot(args):
                     )
                     hemi_label = 'L' if hemi == 'left' else 'R'
                     if view in ['medial', 'lateral']:
-                        y_pos = 0.6
-                        x_pos = 0 if hemi == 'left' else 0.9
+                        y_pos = 0.7
+                        x_pos = 0.5 if hemi == 'left' else 0.9
                     else:
-                        y_pos = 0.4 if hemi == 'left' else 0.1
-                        x_pos = 0
+                        y_pos = 0.6 if hemi == 'left' else 0.4
+                        x_pos = 0.2
                     fig.text(x_pos, y_pos, hemi_label, fontsize=20)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
