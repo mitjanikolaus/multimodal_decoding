@@ -113,7 +113,7 @@ def plot(args):
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
-                cbar_max = 2.5 #TODO
+                cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
                 # if args.log_scale:
                 #     cbar_max = np.log(cbar_max)
                 # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
