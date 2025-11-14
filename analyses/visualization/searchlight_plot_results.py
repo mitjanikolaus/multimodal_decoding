@@ -99,15 +99,23 @@ def plot(args):
             # orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{result_metric}.p")
             p_values = pickle.load(open(p_values_path, "rb"))
+            t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            t_values = pickle.load(open(t_values_path, "rb"))
 
             for hemi in HEMIS:
                 # result_values[hemi] = orig_result_values[hemi][args.metric]
                 # if args.log_scale:
                 #     result_values[hemi] = np.log(result_values[hemi])
-                result_values[hemi] = - np.log10(p_values[hemi])
-                print(f'{hemi} hemi max pval: {np.nanmax(result_values[hemi])}')
-                plt.hist(result_values[hemi])
-                plt.savefig(f'pvals_hist_{hemi}.png')
+
+                # result_values[hemi] = - np.log10(p_values[hemi])
+                # print(f'{hemi} hemi max pval: {np.nanmax(result_values[hemi])}')
+                # plt.hist(result_values[hemi])
+                # plt.savefig(f'pvals_hist_{hemi}.png')
+
+                result_values[hemi] = t_values[hemi][args.metric]
+                result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
+                print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
+                print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
 
             if "imagery_weak" in result_metric:
                 ref_metric = "agnostic$imagery_weak"
@@ -115,13 +123,14 @@ def plot(args):
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
-                cbar_max = 3.1
+                cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
                 # if args.log_scale:
                 #     cbar_max = np.log(cbar_max)
                 # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
                 # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
                 #                                                   args.p_value_threshold)
-                significance_cutoff = - np.log10(args.p_value_threshold)
+                significance_cutoff = int(np.nanmin(np.concatenate((result_values['left'], result_values['right'])))) #TODO
+
             else:
                 null_distribution_tfce_values_file = os.path.join(
                     permutation_results_dir(args),
