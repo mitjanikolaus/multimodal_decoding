@@ -129,7 +129,7 @@ def plot(args):
                 # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
                 # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
                 #                                                   args.p_value_threshold)
-                significance_cutoff = int(np.nanmin(np.concatenate((result_values['left'], result_values['right'])))) #TODO
+                significance_cutoff = 0#int(np.nanmin(np.concatenate((result_values['left'], result_values['right'])))) #TODO
 
             else:
                 null_distribution_tfce_values_file = os.path.join(
