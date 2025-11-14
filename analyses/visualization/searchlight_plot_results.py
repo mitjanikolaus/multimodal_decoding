@@ -120,7 +120,7 @@ def plot(args):
                 plt.figure()
                 plt.hist(result_values[hemi])
                 plt.savefig(f'tvals_hist_{hemi}.png')
-                print(p_values[hemi][result_values[hemi] < 0])
+                print(p_values[hemi][result_values[hemi] < 0][~np.isnan(p_values[hemi][result_values[hemi] < 0])])
 
             if "imagery_weak" in result_metric:
                 ref_metric = "agnostic$imagery_weak"
@@ -128,7 +128,7 @@ def plot(args):
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
-                cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+                cbar_max = 10 #np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
                 # if args.log_scale:
                 #     cbar_max = np.log(cbar_max)
                 # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
