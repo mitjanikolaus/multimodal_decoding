@@ -106,6 +106,8 @@ def plot(args):
                 #     result_values[hemi] = np.log(result_values[hemi])
                 result_values[hemi] = - np.log10(p_values[hemi])
                 print(f'{hemi} hemi max pval: {np.nanmax(result_values[hemi])}')
+                plt.hist(result_values[hemi])
+                plt.savefig(f'pvals_hist_{hemi}.png')
 
             if "imagery_weak" in result_metric:
                 ref_metric = "agnostic$imagery_weak"
