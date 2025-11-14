@@ -118,11 +118,11 @@ def plot(args):
                 result_values[hemi] = t_values[hemi][args.metric]
                 print(result_values[hemi][p_values[hemi] > args.p_value_threshold])
                 print(f'{hemi} hemi mean tval before: {np.nanmean(result_values[hemi])}')
-                result_values[hemi][p_values[hemi] > args.p_value_threshold] = -1
+                result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 print(f'{hemi} hemi mean tval: {np.nanmean(result_values[hemi])}')
                 print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
-                result_values[hemi][np.isnan(result_values[hemi])] = -1
+                result_values[hemi][result_values[hemi]  < 0] = np.nan
 
                 plt.figure()
                 plt.hist(result_values[hemi])
