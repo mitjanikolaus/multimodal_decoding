@@ -113,6 +113,7 @@ def plot(args):
                 # plt.savefig(f'pvals_hist_{hemi}.png')
 
                 result_values[hemi] = t_values[hemi][args.metric]
+                print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
                 result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
