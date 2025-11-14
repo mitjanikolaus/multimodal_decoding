@@ -95,12 +95,17 @@ def plot(args):
             # cbar_min = 1.5
             # cbar_max = 5
 
-            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
-            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
+            # orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{result_metric}.p")
+            p_values = pickle.load(open(p_values_path, "rb"))
+
             for hemi in HEMIS:
-                result_values[hemi] = orig_result_values[hemi][args.metric]
-                if args.log_scale:
-                    result_values[hemi] = np.log(result_values[hemi])
+                # result_values[hemi] = orig_result_values[hemi][args.metric]
+                # if args.log_scale:
+                #     result_values[hemi] = np.log(result_values[hemi])
+                result_values[hemi] = - np.log10(p_values[hemi])
+                print(f'{hemi} hemi max pval: {np.max(result_values[hemi])}')
 
             if "imagery_weak" in result_metric:
                 ref_metric = "agnostic$imagery_weak"
@@ -108,12 +113,13 @@ def plot(args):
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
-                cbar_max = 1800000 #TODO
-                if args.log_scale:
-                    cbar_max = np.log(cbar_max)
-                null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-                significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
-                                                                  args.p_value_threshold)
+                cbar_max = 4 #TODO
+                # if args.log_scale:
+                #     cbar_max = np.log(cbar_max)
+                # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+                # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
+                #                                                   args.p_value_threshold)
+                significance_cutoff = - np.log10(args.p_value_threshold)
             else:
                 null_distribution_tfce_values_file = os.path.join(
                     permutation_results_dir(args),
@@ -121,12 +127,13 @@ def plot(args):
                 )
                 cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
-                null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-                significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                                                                  args.p_value_threshold)
+                # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+                # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                #                                                   args.p_value_threshold)
+                significance_cutoff = - np.log10(args.p_value_threshold)
 
-            if args.log_scale:
-                significance_cutoff = np.log(significance_cutoff)
+            # if args.log_scale:
+            #     significance_cutoff = np.log(significance_cutoff)
 
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
 
