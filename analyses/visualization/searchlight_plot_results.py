@@ -263,7 +263,13 @@ def plot(args):
                         cmap=CMAP_POS_ONLY,
                     )
                     hemi_label = 'L' if hemi == 'left' else 'R'
-                    fig.text(0, 0.8, hemi_label, fontsize=20)
+                    if view in ['medial', 'lateral']:
+                        y_pos = 0.6
+                        x_pos = 0 if hemi == 'left' else 0.9
+                    else:
+                        y_pos = 0.4 if hemi == 'left' else 0.1
+                        x_pos = 0
+                    fig.text(x_pos, y_pos, hemi_label, fontsize=20)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
                     plt.savefig(path)
