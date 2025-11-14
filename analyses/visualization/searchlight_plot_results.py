@@ -116,18 +116,8 @@ def plot(args):
                 plt.savefig(f'pvals_hist_{hemi}.png')
 
                 result_values[hemi] = t_values[hemi][args.metric]
-                print(result_values[hemi][p_values[hemi] > args.p_value_threshold])
-                print(f'{hemi} hemi mean tval before: {np.nanmean(result_values[hemi])}')
                 result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
-                print(f'{hemi} hemi mean tval: {np.nanmean(result_values[hemi])}')
-                print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
-                print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
                 result_values[hemi][result_values[hemi]  < 0] = np.nan
-
-                plt.figure()
-                plt.hist(result_values[hemi])
-                plt.savefig(f'tvals_hist_{hemi}.png')
-                print(p_values[hemi][result_values[hemi] < 0][~np.isnan(p_values[hemi][result_values[hemi] < 0])])
 
             if "imagery_weak" in result_metric:
                 ref_metric = "agnostic$imagery_weak"
@@ -272,7 +262,7 @@ def plot(args):
                         vmin=cbar_min,
                         cmap=CMAP_POS_ONLY,
                     )
-                    plt.text(0, 0, 'L' if hemi == 'left' else 'R', fontsize=20)
+                    plt.text(x=0, y=0, s='L' if hemi == 'left' else 'R', fontsize=20)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
                     save_plot_and_crop_img(path)
