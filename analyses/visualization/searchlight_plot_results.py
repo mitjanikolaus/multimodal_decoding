@@ -265,9 +265,9 @@ def plot(args):
                     hemi_label = 'L' if hemi == 'left' else 'R'
                     if view in ['medial', 'lateral']:
                         y_pos = 0.65 if view == 'lateral' else 0.66
-                        x_pos = 0.15 #if hemi == 'left' else 0.85
+                        x_pos = 0.15
                     else:
-                        y_pos = 0.6 if hemi == 'left' else 0.4
+                        y_pos = 0.58 if hemi == 'left' else 0.4
                         x_pos = 0.15
                     fig.text(x_pos, y_pos, hemi_label, fontsize=20)
                     title = f"{view}_{hemi}"
