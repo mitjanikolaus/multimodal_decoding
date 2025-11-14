@@ -122,6 +122,8 @@ def plot(args):
                 print(f'{hemi} hemi mean tval: {np.nanmean(result_values[hemi])}')
                 print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
+                result_values[hemi][np.isnan(result_values[hemi])] = -1
+                print(f'{hemi} hemi mean tval after: {np.nanmean(result_values[hemi])}')
 
                 plt.figure()
                 plt.hist(result_values[hemi])
