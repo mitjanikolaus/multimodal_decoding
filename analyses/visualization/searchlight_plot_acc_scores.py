@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 from nilearn import datasets, plotting
 import os
 from analyses.decoding.searchlight.searchlight_permutation_testing import add_searchlight_permutation_args, load_per_subject_scores, permutation_results_dir
+from analyses.visualization.plotting_utils import add_hemi_label
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, TEST_IMAGES_ATTENDED, \
     TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, \
     MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK
@@ -62,7 +63,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
             )
 
             for i, view in enumerate(args.views):
-                plotting.plot_surf_stat_map(
+                fig = plotting.plot_surf_stat_map(
                     fsaverage[f"infl_{hemi}"],
                     score_hemi_metric_avgd,
                     hemi=hemi,
@@ -76,6 +77,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
                 )
+                add_hemi_label(fig, hemi, view)
                 title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"{title}.png"))
                 print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
@@ -112,7 +114,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     assert len(score_hemi_metric) == FS_NUM_VERTICES, score_hemi_metric
 
                     for i, view in enumerate(args.views):
-                        plotting.plot_surf_stat_map(
+                        fig = plotting.plot_surf_stat_map(
                             fsaverage[f"infl_{hemi}"],
                             score_hemi_metric,
                             hemi=hemi,
@@ -126,6 +128,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                             cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                             symmetric_cbar=False if chance_value == 0.5 else True,
                         )
+                        add_hemi_label(fig, hemi, view)
                         title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
                         out_path = os.path.join(acc_scores_pngs_dir, subject, f"{title}.png")
                         os.makedirs(os.path.dirname(out_path), exist_ok=True)

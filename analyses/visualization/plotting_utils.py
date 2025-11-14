@@ -27,6 +27,17 @@ from utils import DIFF, DIFF_DECODERS
 CBAR_T_VAL_MAX = 15
 
 
+def add_hemi_label(fig, hemi, view):
+    hemi_label = 'L' if hemi == 'left' else 'R'
+    if view in ['medial', 'lateral']:
+        y_pos = 0.65 if view == 'lateral' else 0.66
+        x_pos = 0.15
+    else:
+        y_pos = 0.58 if hemi == 'left' else 0.4
+        x_pos = 0.15
+    fig.text(x_pos, y_pos, hemi_label, fontsize=20)
+
+
 def destrieux_label_names():
     long_names = {}
     with open("atlas_data/destrieux.txt") as file:

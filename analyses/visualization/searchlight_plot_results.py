@@ -16,7 +16,7 @@ from analyses.decoding.searchlight.searchlight_permutation_testing import calc_s
 from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
-from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom
+from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom, add_hemi_label
 from data import MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
@@ -262,14 +262,7 @@ def plot(args):
                         vmin=cbar_min,
                         cmap=CMAP_POS_ONLY,
                     )
-                    hemi_label = 'L' if hemi == 'left' else 'R'
-                    if view in ['medial', 'lateral']:
-                        y_pos = 0.65 if view == 'lateral' else 0.66
-                        x_pos = 0.15
-                    else:
-                        y_pos = 0.58 if hemi == 'left' else 0.4
-                        x_pos = 0.15
-                    fig.text(x_pos, y_pos, hemi_label, fontsize=20)
+                    add_hemi_label(fig, hemi, view)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
                     # plt.savefig(path)
