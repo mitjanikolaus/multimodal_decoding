@@ -123,7 +123,6 @@ def plot(args):
                 print(f'{hemi} hemi max tval: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min tval: {np.nanmin(result_values[hemi])}')
                 result_values[hemi][np.isnan(result_values[hemi])] = -1
-                print(f'{hemi} hemi mean tval after: {np.nanmean(result_values[hemi])}')
 
                 plt.figure()
                 plt.hist(result_values[hemi])
@@ -142,7 +141,7 @@ def plot(args):
                 # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
                 # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
                 #                                                   args.p_value_threshold)
-                significance_cutoff = 0#int(np.nanmin(np.concatenate((result_values['left'], result_values['right'])))) #TODO
+                significance_cutoff = 0.1#int(np.nanmin(np.concatenate((result_values['left'], result_values['right'])))) #TODO
 
             else:
                 null_distribution_tfce_values_file = os.path.join(
@@ -216,7 +215,7 @@ def plot(args):
             cbar_min = 0.5
             cbar_max = 0.7#5  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
-        print(f"{result_metric} cbar max: {cbar_max}")
+        print(f"{result_metric} cbar max: {cbar_max} threshold: {threshold}")
         for hemi in HEMIS:
             hemi_fs = FS_HEMI_NAMES[hemi]
             # atlas_path = os.path.join(FREESURFER_HOME_DIR, f"subjects/fsaverage/label/{hemi_fs}.aparc.a2009s.annot")
