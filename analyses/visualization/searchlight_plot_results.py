@@ -266,7 +266,8 @@ def plot(args):
                     fig.text(1, 0, hemi_label, fontsize=20)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
-                    save_plot_and_crop_img(path)
+                    plt.savefig(path)
+                    # save_plot_and_crop_img(path)
                     print(f"saved {path}")
 
         # plot for cbar:
