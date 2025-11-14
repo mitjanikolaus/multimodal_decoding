@@ -262,7 +262,8 @@ def plot(args):
                         vmin=cbar_min,
                         cmap=CMAP_POS_ONLY,
                     )
-                    plt.text(x=0, y=0, s='L' if hemi == 'left' else 'R', fontsize=20)
+                    hemi_label = 'L' if hemi == 'left' else 'R'
+                    plt.text(x=0, y=0, s=hemi_label, fontsize=20)
                     title = f"{view}_{hemi}"
                     path = os.path.join(atlas_tmp_results_dir, f"{title}.png")
                     save_plot_and_crop_img(path)
