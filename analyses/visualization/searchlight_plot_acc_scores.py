@@ -217,7 +217,7 @@ def run(args):
     # scores = add_diff_metrics(scores)
 
     for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
-        plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
+        # plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
 
         create_composite_image(args, results_dir, metrics=[TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED,
                                                            TEST_CAPTIONS_ATTENDED,
