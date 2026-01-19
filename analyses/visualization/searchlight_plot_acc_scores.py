@@ -213,11 +213,11 @@ def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    # scores = load_per_subject_scores(args)
+    scores = load_per_subject_scores(args)
     # scores = add_diff_metrics(scores)
 
-    for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
-        # plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
+    for training_mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, MODALITY_AGNOSTIC]:
+        plot_acc_scores(scores, args, results_dir, training_mode=training_mode)
 
         create_composite_image(args, results_dir, metrics=[TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED,
                                                            TEST_CAPTIONS_ATTENDED,
