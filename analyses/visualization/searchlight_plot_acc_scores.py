@@ -59,7 +59,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
         score_hemi_metric_avgd = None
 
         for hemi in HEMIS:
-            if metric.split('$')[0] == DIFF:
+            if metric.startswith(DIFF):
                 training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
                 scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode)]
                 score_hemi_metric_1_avgd = scores_filtered[scores_filtered.metric == metric_name_1].groupby('vertex').aggregate(
@@ -121,7 +121,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
         if make_per_subject_plots:
             for subject in args.subjects:
                 for hemi in HEMIS:
-                    if metric.split('$')[0] == DIFF:
+                    if metric.startswith(DIFF):
                         training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
                         scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode) & (
                                         scores.subject == subject)]
