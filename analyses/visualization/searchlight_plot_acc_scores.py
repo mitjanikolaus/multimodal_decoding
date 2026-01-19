@@ -10,7 +10,6 @@ from analyses.visualization.plotting_utils import add_hemi_label
 from data import TRAINING_MODES, MODALITY_AGNOSTIC, TEST_SPLITS, TEST_IMAGES_ATTENDED, \
     TEST_IMAGES_UNATTENDED, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, \
     MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK
-from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES, DIFF, DIFF_DECODERS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
@@ -31,6 +30,11 @@ DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
 
 PLOT_NULL_DISTR_NUM_SAMPLES = 10
+
+DIFF_METRICS = [
+    '$'.join([DIFF, TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED]),
+    '$'.join([DIFF, TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED]),
+]
 
 
 def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODALITY_AGNOSTIC,
@@ -59,8 +63,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
         score_hemi_metric_avgd = None
 
         for hemi in HEMIS:
-            if metric.startswith(DIFF):
-                training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
+            if metric.split('$')[0] == DIFF:
+                metric_name_1, metric_name_2 = metric.split('$')[1:]
                 scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode)]
                 score_hemi_metric_1_avgd = scores_filtered[scores_filtered.metric == metric_name_1].groupby('vertex').aggregate(
                     {'value': 'mean'}).value.values
@@ -121,8 +125,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
         if make_per_subject_plots:
             for subject in args.subjects:
                 for hemi in HEMIS:
-                    if metric.startswith(DIFF):
-                        training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
+                    if metric.split('$')[0] == DIFF:
+                        metric_name_1, metric_name_2 = metric.split('$')[1:]
                         scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode) & (
                                         scores.subject == subject)]
                         score_hemi_metric_1 = scores_filtered[scores_filtered.metric == metric_name_1].groupby(

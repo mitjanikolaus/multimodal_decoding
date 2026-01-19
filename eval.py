@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from data import CAPTION, IMAGE, SPLIT_IMAGERY, TEST_SPLITS, TEST_IMAGES, SPLIT_IMAGERY_WEAK, \
     TEST_IMAGES_ATTENDED, TEST_CAPTIONS, TEST_CAPTIONS_ATTENDED, TEST_IMAGES_UNATTENDED, \
     TEST_CAPTIONS_UNATTENDED
+from utils import DIFF
 
 ACC_MODALITY_AGNOSTIC = "pairwise_acc_modality_agnostic"
 ACC_CAPTIONS = "pairwise_acc_captions"
@@ -59,22 +60,6 @@ CORR_CAPTIONS_MOD_SPECIFIC_IMAGES = "corr_captions_mod_specific_images"
 METRIC_CROSS_ENCODING = "cross_encoding"
 
 DISTANCE_METRIC_COSINE = "cosine"
-
-
-DIFF_METRICS = ['diff_attended_unattended_images', 'diff_attended_unattended_captions', 'diff_images_captions_attended', 'diff_images_captions_unattended']
-
-CHANCE_VALUES = {
-    TEST_IMAGES: 0.5,
-    TEST_IMAGES_ATTENDED: 0.5,
-    TEST_IMAGES_UNATTENDED: 0.5,
-    TEST_CAPTIONS: 0.5,
-    TEST_CAPTIONS_ATTENDED: 0.5,
-    TEST_CAPTIONS_UNATTENDED: 0.5,
-    SPLIT_IMAGERY: 0.5,
-    SPLIT_IMAGERY_WEAK: 0.5,
-}
-for metric in DIFF_METRICS:
-    CHANCE_VALUES[metric] = 0
 
 
 def get_distance_matrix_csls(predictions, latents, knn=100, metric=DISTANCE_METRIC_COSINE):
@@ -144,7 +129,8 @@ def get_all_candidate_latents(split, latents):
     return all_candidate_latents
 
 
-def calc_all_pairwise_accuracy_scores(latents, predictions, standardize_predictions_conds, metric="cosine", standardize_latents=False):
+def calc_all_pairwise_accuracy_scores(latents, predictions, standardize_predictions_conds, metric="cosine",
+                                      standardize_latents=False):
     results = []
 
     for split in TEST_SPLITS:
