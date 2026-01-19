@@ -42,7 +42,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     print(f"plotting acc scores. {subfolder}")
 
-    for metric in [SPLIT_IMAGERY_WEAK]: #TEST_SPLITS: # + DIFF_METRICS:
+    for metric in [TEST_SPLITS]: # + DIFF_METRICS:
         threshold = COLORBAR_THRESHOLD_MIN
         chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
@@ -222,9 +222,10 @@ def run(args):
         create_composite_image(args, results_dir, metrics=[TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED,
                                                            TEST_CAPTIONS_ATTENDED,
                                                            TEST_CAPTIONS_UNATTENDED],# + DIFF_METRICS,
-                               file_suffix="_attention_mod", training_mode=training_mode)
+                               file_suffix="_attention_mod", training_mode=training_mode,
+                               make_per_subject_plots=False)
 
-        # create_composite_image(args, results_dir, training_mode=training_mode, metrics=[SPLIT_IMAGERY_WEAK])
+        create_composite_image(args, results_dir, training_mode=training_mode, metrics=[SPLIT_IMAGERY_WEAK])
 
 
     # metrics = [TEST_CAPTIONS_ATTENDED, TEST_CAPTIONS_UNATTENDED, 'diff_attended_unattended_captions']
