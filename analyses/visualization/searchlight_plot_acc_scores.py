@@ -59,11 +59,20 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
         score_hemi_metric_avgd = None
 
         for hemi in HEMIS:
-            score_hemi_metric = scores[
-                (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
-                ].copy()
-            score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
-                {'value': 'mean'}).value.values
+            if metric.split('$')[0] == DIFF:
+                training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
+                scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode)]
+                score_hemi_metric_1_avgd = scores_filtered[scores_filtered.metric == metric_name_1].groupby('vertex').aggregate(
+                    {'value': 'mean'}).value.values
+                score_hemi_metric_2_avgd = scores_filtered[scores_filtered.metric == metric_name_2].groupby('vertex').aggregate(
+                    {'value': 'mean'}).value.values
+                score_hemi_metric_avgd = score_hemi_metric_1_avgd - score_hemi_metric_2_avgd
+            else:
+                score_hemi_metric = scores[
+                    (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode)
+                    ].copy()
+                score_hemi_metric_avgd = score_hemi_metric.groupby('vertex').aggregate(
+                    {'value': 'mean'}).value.values
             print(
                 f"metric: {metric} {hemi} hemi mean over subjects: {np.nanmean(score_hemi_metric_avgd):.2f} | "
                 f"max: {np.nanmax(score_hemi_metric_avgd):.2f}"
@@ -109,13 +118,24 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
         if make_per_subject_plots:
             for subject in args.subjects:
-                score_hemi_metric = None
                 for hemi in HEMIS:
-                    score_hemi_metric = scores[
-                        (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode) & (
-                                    scores.subject == subject)
-                        ].copy()
-                    score_hemi_metric = score_hemi_metric.value.values
+                    if metric.split('$')[0] == DIFF:
+                        training_mode, metric_name_1, metric_name_2 = metric.split('$')[1:]
+                        scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode) & (
+                                        scores.subject == subject)]
+                        score_hemi_metric_1 = scores_filtered[scores_filtered.metric == metric_name_1].groupby(
+                            'vertex').aggregate(
+                            {'value': 'mean'}).value.values
+                        score_hemi_metric_2 = scores_filtered[scores_filtered.metric == metric_name_2].groupby(
+                            'vertex').aggregate(
+                            {'value': 'mean'}).value.values
+                        score_hemi_metric = score_hemi_metric_1 - score_hemi_metric_2
+                    else:
+                        score_hemi_metric = scores[
+                            (scores.hemi == hemi) & (scores.metric == metric) & (scores.training_mode == training_mode) & (
+                                        scores.subject == subject)
+                            ].copy()
+                        score_hemi_metric = score_hemi_metric.value.values
                     print(
                         f"{metric} ({hemi} hemi) mean for {subject}: {np.nanmean(score_hemi_metric):.3f} | max: {np.nanmax(score_hemi_metric):.3f}")
                     assert len(score_hemi_metric) == FS_NUM_VERTICES, score_hemi_metric
