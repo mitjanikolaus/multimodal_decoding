@@ -68,8 +68,6 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 scores_filtered = scores[(scores.hemi == hemi) & (scores.training_mode == training_mode)]
                 score_hemi_metric_1_avgd = scores_filtered[scores_filtered.metric == metric_name_1].groupby('vertex').aggregate(
                     {'value': 'mean'}).value.values
-                print(score_hemi_metric_1_avgd)
-                print(len(score_hemi_metric_1_avgd))
                 score_hemi_metric_2_avgd = scores_filtered[scores_filtered.metric == metric_name_2].groupby('vertex').aggregate(
                     {'value': 'mean'}).value.values
                 score_hemi_metric_avgd = score_hemi_metric_1_avgd - score_hemi_metric_2_avgd
