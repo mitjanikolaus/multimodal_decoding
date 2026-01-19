@@ -14,10 +14,12 @@ from eval import DIFF_METRICS
 from utils import HEMIS, save_plot_and_crop_img, append_images, FS_NUM_VERTICES, DIFF, DIFF_DECODERS
 
 DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
-ACC_COLORBAR_MAX = 0.8
+ACC_COLORBAR_MAX = 0.7
+ACC_COLORBAR_MAX_IMAGERY = 0.8
+
 COLORBAR_THRESHOLD_MIN = 0.5
 
-COLORBAR_DIFFERENCE_MAX = 0.3
+COLORBAR_DIFFERENCE_MAX = 0.1
 
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.05
 
@@ -42,12 +44,17 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     print(f"plotting acc scores. {subfolder}")
 
-    for metric in TEST_SPLITS: # + DIFF_METRICS:
+    for metric in TEST_SPLITS + DIFF_METRICS:
         threshold = COLORBAR_THRESHOLD_MIN
         chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
+
+        if chance_value == 0.5:
+            acc_colorbar_max = ACC_COLORBAR_MAX_IMAGERY if "imagery" in metric else ACC_COLORBAR_MAX
+        else:
+            acc_colorbar_max = COLORBAR_DIFFERENCE_MAX
 
         score_hemi_metric_avgd = None
 
@@ -72,7 +79,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     bg_on_data=True,
                     colorbar=False,
                     threshold=threshold,
-                    vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                    vmax=acc_colorbar_max,
                     vmin=0.5 if chance_value == 0.5 else None,
                     cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
@@ -92,7 +99,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 bg_on_data=True,
                 colorbar=True,
                 threshold=threshold,
-                vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                vmax=acc_colorbar_max,
                 vmin=0.5 if chance_value == 0.5 else None,
                 cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                 symmetric_cbar=False if chance_value == 0.5 else True,
@@ -123,7 +130,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                             bg_on_data=True,
                             colorbar=False,
                             threshold=threshold,
-                            vmax=ACC_COLORBAR_MAX if chance_value == 0.5 else COLORBAR_DIFFERENCE_MAX,
+                            vmax=acc_colorbar_max,
                             vmin=0.5 if chance_value == 0.5 else None,
                             cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
                             symmetric_cbar=False if chance_value == 0.5 else True,
@@ -221,11 +228,11 @@ def run(args):
         plot_acc_scores(scores, args, results_dir, training_mode=training_mode,
                         make_per_subject_plots=make_per_subject_plots)
 
-        create_composite_image(args, results_dir, metrics=[TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED,
-                                                           TEST_CAPTIONS_ATTENDED,
-                                                           TEST_CAPTIONS_UNATTENDED],# + DIFF_METRICS,
-                               file_suffix="_attention_mod", training_mode=training_mode,
-                               make_per_subject_plots=make_per_subject_plots)
+        # create_composite_image(args, results_dir, metrics=[TEST_IMAGES_ATTENDED, TEST_IMAGES_UNATTENDED,
+        #                                                    TEST_CAPTIONS_ATTENDED,
+        #                                                    TEST_CAPTIONS_UNATTENDED] + DIFF_METRICS,
+        #                        file_suffix="_attention_mod", training_mode=training_mode,
+        #                        make_per_subject_plots=make_per_subject_plots)
 
         create_composite_image(args, results_dir, training_mode=training_mode, metrics=[SPLIT_IMAGERY_WEAK],
                                make_per_subject_plots=make_per_subject_plots)
