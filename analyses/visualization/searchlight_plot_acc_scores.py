@@ -213,7 +213,7 @@ def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    scores = load_per_subject_scores(args)
+    # scores = load_per_subject_scores(args)
     # scores = add_diff_metrics(scores)
 
     for training_mode in [MODALITY_AGNOSTIC, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
