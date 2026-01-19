@@ -44,7 +44,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     for metric in [TEST_SPLITS]: # + DIFF_METRICS:
         threshold = COLORBAR_THRESHOLD_MIN
-        chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
+        chance_value = 0 if ('$' in metric) and (metric.split('$')[0] in [DIFF, DIFF_DECODERS]) else 0.5
         print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
