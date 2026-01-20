@@ -24,8 +24,8 @@ COLORBAR_DIFFERENCE_MAX = 0.1
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.05
 
 CMAP = "cold_hot"
-# CMAP_POS_ONLY = "hot"
-CMAP_POS_ONLY = "magma"
+CMAP_POS_ONLY = "hot"
+CMAP_POS_ONLY_IMAGERY = "magma"
 
 DEFAULT_T_VALUE_THRESH = 1  # 0.824
 DEFAULT_TFCE_VAL_THRESH = 10
@@ -95,7 +95,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     threshold=threshold,
                     vmax=acc_colorbar_max,
                     vmin=0.5 if chance_value == 0.5 else None,
-                    cmap=CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                    cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False,# if chance_value == 0.5 else True,
                 )
                 add_hemi_label(fig, hemi, view)
@@ -115,7 +115,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 threshold=threshold,
                 vmax=acc_colorbar_max,
                 vmin=0.5 if chance_value == 0.5 else None,
-                cmap=CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,
+                # if chance_value == 0.5 else CMAP,
                 symmetric_cbar=False,# if chance_value == 0.5 else True,
             )
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
@@ -157,7 +158,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                             threshold=threshold,
                             vmax=acc_colorbar_max,
                             vmin=0.5 if chance_value == 0.5 else None,
-                            cmap=CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                            cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,
+                            # if chance_value == 0.5 else CMAP,
                             symmetric_cbar=False,# if chance_value == 0.5 else True,
                         )
                         add_hemi_label(fig, hemi, view)
