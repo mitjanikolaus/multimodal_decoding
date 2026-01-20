@@ -16,7 +16,8 @@ DEFAULT_VIEWS = ["lateral", "medial", "ventral"]
 ACC_COLORBAR_MAX = 0.7
 ACC_COLORBAR_MAX_IMAGERY = 0.8
 
-COLORBAR_THRESHOLD_MIN = 0.5
+COLORBAR_THRESHOLD_MIN = 0.53
+COLORBAR_THRESHOLD_MIN_IMAGERY = 0.5
 
 COLORBAR_DIFFERENCE_MAX = 0.1
 
@@ -49,7 +50,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
     print(f"plotting acc scores. {subfolder}")
 
     for metric in DIFF_METRICS + TEST_SPLITS:
-        threshold = COLORBAR_THRESHOLD_MIN
+        threshold = COLORBAR_THRESHOLD_MIN_IMAGERY if "imagery" in metric else COLORBAR_THRESHOLD_MIN
         chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
@@ -94,8 +95,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                     threshold=threshold,
                     vmax=acc_colorbar_max,
                     vmin=0.5 if chance_value == 0.5 else None,
-                    cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
-                    symmetric_cbar=False if chance_value == 0.5 else True,
+                    cmap=CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                    symmetric_cbar=False,# if chance_value == 0.5 else True,
                 )
                 add_hemi_label(fig, hemi, view)
                 title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
@@ -114,8 +115,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 threshold=threshold,
                 vmax=acc_colorbar_max,
                 vmin=0.5 if chance_value == 0.5 else None,
-                cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
-                symmetric_cbar=False if chance_value == 0.5 else True,
+                cmap=CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                symmetric_cbar=False,# if chance_value == 0.5 else True,
             )
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                horizontal_cbar=False, crop_to_content=True)
@@ -156,8 +157,8 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                             threshold=threshold,
                             vmax=acc_colorbar_max,
                             vmin=0.5 if chance_value == 0.5 else None,
-                            cmap=CMAP_POS_ONLY if chance_value == 0.5 else CMAP,
-                            symmetric_cbar=False if chance_value == 0.5 else True,
+                            cmap=CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                            symmetric_cbar=False,# if chance_value == 0.5 else True,
                         )
                         add_hemi_label(fig, hemi, view)
                         title = f"{training_mode}_decoder_{metric}_{view}_{hemi}"
