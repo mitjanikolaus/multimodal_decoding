@@ -17,7 +17,6 @@ from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom, add_hemi_label
-from data import MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
     METRIC_MOD_INVARIANT_UNATTENDED
@@ -26,8 +25,7 @@ HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
 HCP_ATLAS_RH = os.path.join(HCP_ATLAS_DIR, "rh.HCP-MMP1.annot")
 
-# CMAP_POS_ONLY = "hot"
-CMAP_POS_ONLY = "magma"
+CMAP_POS_ONLY = "hot"
 
 CONTOUR_COLOR = 'lightseagreen'
 
@@ -38,9 +36,7 @@ TARGET_TFCE_VAL_METRICS = [
     # METRIC_MOD_INVARIANT_INCREASE
 ]
 RESULT_METRICS = TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
-# RESULT_METRICS = ['$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
-#                   '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
-#                   '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])]
+
 
 def plot(args):
     fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
@@ -67,18 +63,6 @@ def plot(args):
                     "ventral": [],
                 }
             },
-            # ACC_IMAGERY_MOD_AGNOSTIC: {
-            #     "left": {
-            #         "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-            #         "lateral": ['inferiorparietal', 'supramarginal', 'middletemporal', 'bankssts'],
-            #         "ventral": ['inferiortemporal', 'fusiform'],
-            #     },
-            #     "right": {
-            #         "medial": ['precuneus', 'isthmuscingulate', 'parahippocampal'],
-            #         "lateral": ['inferiorparietal', 'middletemporal', 'bankssts'],
-            #         "ventral": ['inferiortemporal', 'fusiform'],
-            #     },
-            # }
         }
 
         result_values = dict()
@@ -93,27 +77,22 @@ def plot(args):
             # cbar_min = 1.5
             # cbar_max = 5
 
-            # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
-            # orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
+            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{result_metric}.p")
             p_values = pickle.load(open(p_values_path, "rb"))
-            t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-            t_values = pickle.load(open(t_values_path, "rb"))
+            # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            # t_values = pickle.load(open(t_values_path, "rb"))
 
             for hemi in HEMIS:
-                # result_values[hemi] = orig_result_values[hemi][args.metric]
-                # if args.log_scale:
-                #     result_values[hemi] = np.log(result_values[hemi])
+                result_values[hemi] = orig_result_values[hemi][args.metric]
+                if args.log_scale:
+                    result_values[hemi] = np.log(result_values[hemi])
 
                 # result_values[hemi] = - np.log10(p_values[hemi])
                 # print(f'{hemi} hemi max pval: {np.nanmax(result_values[hemi])}')
-                # plt.hist(result_values[hemi])
-                # plt.savefig(f'pvals_hist_{hemi}.png')
-                plt.figure()
-                plt.hist(p_values[hemi])
-                plt.savefig(f'pvals_hist_{hemi}.png')
 
-                result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
+                # result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
                 # result_values[hemi] = t_values[hemi][args.metric]
                 result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 result_values[hemi][result_values[hemi]  < 0] = np.nan
@@ -125,6 +104,8 @@ def plot(args):
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
                 cbar_max = 10 #np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+                CMAP_POS_ONLY = "magma"
+
                 # if args.log_scale:
                 #     cbar_max = np.log(cbar_max)
                 # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
