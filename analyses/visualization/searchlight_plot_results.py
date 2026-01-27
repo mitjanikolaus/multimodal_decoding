@@ -122,13 +122,13 @@ def plot(args):
                 )
                 cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
-                # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
-                # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
-                #                                                   args.p_value_threshold)
-                significance_cutoff = - np.log10(args.p_value_threshold)
+                null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+                significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
+                                                                  args.p_value_threshold)
+                # significance_cutoff = - np.log10(args.p_value_threshold)
 
-            # if args.log_scale:
-            #     significance_cutoff = np.log(significance_cutoff)
+                if args.log_scale:
+                    significance_cutoff = np.log(significance_cutoff)
 
             print(f"{result_metric} significance cutoff: {significance_cutoff}")
 
