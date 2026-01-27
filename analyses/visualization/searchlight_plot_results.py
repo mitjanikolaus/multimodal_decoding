@@ -113,7 +113,8 @@ def plot(args):
                 plt.hist(p_values[hemi])
                 plt.savefig(f'pvals_hist_{hemi}.png')
 
-                result_values[hemi] = t_values[hemi][args.metric]
+                result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
+                # result_values[hemi] = t_values[hemi][args.metric]
                 result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 result_values[hemi][result_values[hemi]  < 0] = np.nan
 
