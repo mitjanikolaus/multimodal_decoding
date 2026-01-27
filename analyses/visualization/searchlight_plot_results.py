@@ -104,7 +104,7 @@ def plot(args):
                     f"tfce_values_null_distribution_{ref_metric}.p"
                 )
                 cbar_max = 10 #np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
-                CMAP_POS_ONLY = "magma"
+                cmap = "magma"
 
                 # if args.log_scale:
                 #     cbar_max = np.log(cbar_max)
@@ -114,6 +114,8 @@ def plot(args):
                 significance_cutoff = 0#int(np.nanmin(np.concatenate((result_values['left'], result_values['right'])))) #TODO
 
             else:
+                cmap = CMAP_POS_ONLY
+
                 null_distribution_tfce_values_file = os.path.join(
                     permutation_results_dir(args),
                     f"tfce_values_null_distribution_{result_metric}.p"
@@ -212,7 +214,7 @@ def plot(args):
                         threshold=threshold,
                         vmax=cbar_max,
                         vmin=cbar_min,
-                        cmap=CMAP_POS_ONLY,
+                        cmap=cmap,
                     )
                     plot_surf_contours_custom(
                         surf_mesh=fsaverage[f"infl_{hemi}"],
@@ -240,7 +242,7 @@ def plot(args):
                         threshold=threshold,
                         vmax=cbar_max,
                         vmin=cbar_min,
-                        cmap=CMAP_POS_ONLY,
+                        cmap=cmap,
                     )
                     add_hemi_label(fig, hemi, view)
                     title = f"{view}_{hemi}"
@@ -261,7 +263,7 @@ def plot(args):
             threshold=threshold,
             vmax=cbar_max,
             vmin=cbar_min,
-            cmap=CMAP_POS_ONLY,
+            cmap=cmap,
             figure=fig,
             metric=result_metric,
         )
