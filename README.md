@@ -1,5 +1,10 @@
 # multimodal_decoding
 
+## Data
+
+The fMRI data can be downloaded from openneuro:
+https://openneuro.org/datasets/ds007272.
+
 ## Decoding analysis
 ```
 python analyses/decoding/ridge_regression_decoding.py
