@@ -35,7 +35,7 @@ TARGET_TFCE_VAL_METRICS = [
     METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED,
     # METRIC_MOD_INVARIANT_INCREASE
 ]
-RESULT_METRICS = T_VAL_METRICS + TARGET_TFCE_VAL_METRICS
+RESULT_METRICS = TARGET_TFCE_VAL_METRICS #T_VAL_METRICS
 
 
 def plot(args):
@@ -103,8 +103,8 @@ def plot(args):
             cbar_min = significance_cutoff
 
         elif result_metric in TFCE_VAL_METRICS:
-            # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
-            # t_values = pickle.load(open(t_values_path, 'rb'))
+            t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            t_values = pickle.load(open(t_values_path, 'rb'))
             # for hemi in HEMIS:
             #     result_values[hemi] = compute_composite_t_vals_for_metric(t_values, result_metric, hemi)
             #
@@ -112,15 +112,16 @@ def plot(args):
             # cbar_min = 1.5
             # cbar_max = 5
 
-            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
-            orig_result_values = pickle.load(open(tfce_values_path, "rb"))
+            # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
+            # orig_result_values = pickle.load(open(tfce_values_path, "rb"))
             p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{result_metric}.p")
             p_values = pickle.load(open(p_values_path, "rb"))
             # t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
             # t_values = pickle.load(open(t_values_path, "rb"))
 
             for hemi in HEMIS:
-                result_values[hemi] = orig_result_values[hemi][args.metric]
+                # result_values[hemi] = orig_result_values[hemi][args.metric]
+                result_values[hemi] = t_values[hemi][args.metric]
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
 
