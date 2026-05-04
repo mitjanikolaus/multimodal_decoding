@@ -399,6 +399,8 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
 
     tfce_values_path = os.path.join(results_dir, f"tfce_values_{metric}.p")
     tfce_values = pickle.load(open(tfce_values_path, "rb"))
+    t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
+    t_values = pickle.load(open(t_values_path, "rb"))
 
     threshold = significance_cutoff
     if tfce_value_threshold is not None:
@@ -416,6 +418,10 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
         path_out = os.path.join(results_maps_path, f"tfce_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
         tfce_values[hemi][metric][tfce_values[hemi][metric] < threshold] = 0
         export_to_gifti(tfce_values[hemi][metric], path_out)
+
+        t_values[hemi][metric][t_values[hemi][metric] < 0] = 0
+        path_out = os.path.join(results_maps_path, f"t_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
+        export_to_gifti(t_values[hemi][metric], path_out)
 
     # create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
 
