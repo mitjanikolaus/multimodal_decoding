@@ -71,14 +71,15 @@ def plot(args):
             t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
             t_values = pickle.load(open(t_values_path, "rb"))
 
-            # tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
-            # orig_tfce_values = pickle.load(open(tfce_values_path, "rb"))
+            tfce_values_path = os.path.join(permutation_results_dir(args), f"tfce_values_{result_metric}.p")
+            orig_tfce_values = pickle.load(open(tfce_values_path, "rb"))
 
             p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{result_metric}.p")
             p_values = pickle.load(open(p_values_path, "rb"))
 
             for hemi in HEMIS:
-                result_values[hemi] = t_values[hemi][args.metric]
+                # result_values[hemi] = t_values[hemi][args.metric]
+                result_values[hemi] = orig_tfce_values[hemi][args.metric]
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
 
@@ -90,11 +91,12 @@ def plot(args):
                 permutation_results_dir(args),
                 f"tfce_values_null_distribution_{ref_metric}.p"
             )
-            cbar_max = 10  # np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # cbar_max = 10
+            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             cmap = "magma"
 
-            # if args.log_scale:
-            #     cbar_max = np.log(cbar_max)
+            if args.log_scale:
+                cbar_max = np.log(cbar_max)
             # null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             # significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
             #                                                   args.p_value_threshold)
