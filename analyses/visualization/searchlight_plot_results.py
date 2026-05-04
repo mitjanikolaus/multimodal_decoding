@@ -84,7 +84,7 @@ def plot(args):
                     result_values[hemi] = np.log(result_values[hemi])
 
                 result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
-                result_values[hemi][result_values[hemi]  < 0] = np.nan
+                result_values[hemi][result_values[hemi]  <= 0] = np.nan
 
             ref_metric = "agnostic$imagery_weak"
             null_distribution_tfce_values_file = os.path.join(
