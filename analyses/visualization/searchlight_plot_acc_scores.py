@@ -290,7 +290,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                         colorbar=False,
                         threshold=threshold,
                         vmax=acc_colorbar_max,
-                        vmin=0.5 if chance_value == 0.5 else 0,
+                        vmin=0.5 if chance_value == 0.5 else -acc_colorbar_max,
                         cmap=CMAP if "imagery" in metric else CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
                         symmetric_cbar=False if chance_value == 0.5 else True,
                     )
@@ -310,7 +310,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     colorbar=True,
                     threshold=threshold,
                     vmax=acc_colorbar_max,
-                    vmin=0.5 if chance_value == 0.5 else 0,
+                    vmin=0.5 if chance_value == 0.5 else -acc_colorbar_max,
                     cmap=CMAP if "imagery" in metric else CMAP_POS_ONLY,
                     # if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
