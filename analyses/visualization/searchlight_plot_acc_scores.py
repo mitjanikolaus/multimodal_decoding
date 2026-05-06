@@ -244,13 +244,88 @@ def create_composite_image(args, results_path, metrics=TEST_SPLITS, training_mod
             imgs_metrics.save(path, transparent=True)
             print(f'saved {path}')
 
+def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=args.resolution)
+
+    acc_scores_pngs_dir = str(os.path.join(results_path, "acc_diff_scores"))
+    if subfolder:
+        acc_scores_pngs_dir = os.path.join(acc_scores_pngs_dir, subfolder)
+    os.makedirs(acc_scores_pngs_dir, exist_ok=True)
+
+    print(f"plotting acc diff scores. {subfolder}")
+
+    for metric in [SPLIT_IMAGERY_WEAK]:
+        for comparison_train_mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS]:
+            threshold = COLORBAR_THRESHOLD_MIN_IMAGERY if "imagery" in metric else COLORBAR_THRESHOLD_MIN
+            chance_value = 0
+            print(f"{metric} | chance value: {chance_value}")
+            if chance_value == 0:
+                threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
+            if chance_value == 0.5:
+                acc_colorbar_max = ACC_COLORBAR_MAX_IMAGERY if "imagery" in metric else ACC_COLORBAR_MAX
+            else:
+                acc_colorbar_max = COLORBAR_DIFFERENCE_MAX
+
+            score_hemi_metric_avgd = None
+
+            for hemi in HEMIS:
+                scores_agnostic = scores[(scores.hemi == hemi) & (scores.training_mode == MODALITY_AGNOSTIC) & (scores.metric == metric)]
+                scores_specific = scores[(scores.hemi == hemi) & (scores.training_mode == comparison_train_mode) & (scores.metric == metric)]
+                scores_agnostic_avgd = scores_agnostic.groupby('vertex').aggregate({'value': 'mean'}).value.values
+                scores_specific_avgd = scores_specific.groupby('vertex').aggregate({'value': 'mean'}).value.values
+                score_hemi_metric_avgd = scores_agnostic_avgd - scores_specific_avgd
+                print(
+                    f"metric: {metric} {hemi} hemi mean over subjects: {np.nanmean(score_hemi_metric_avgd):.2f} | "
+                    f"max: {np.nanmax(score_hemi_metric_avgd):.2f}"
+                )
+
+                for i, view in enumerate(args.views):
+                    fig = plotting.plot_surf_stat_map(
+                        fsaverage[f"infl_{hemi}"],
+                        score_hemi_metric_avgd,
+                        hemi=hemi,
+                        view=view,
+                        bg_map=fsaverage[f"sulc_{hemi}"],
+                        bg_on_data=True,
+                        colorbar=False,
+                        threshold=threshold,
+                        vmax=acc_colorbar_max,
+                        vmin=0.5 if chance_value == 0.5 else 0,
+                        cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                        symmetric_cbar=False,# if chance_value == 0.5 else True,
+                    )
+                    add_hemi_label(fig, hemi, view)
+                    title = f"diff_mod_agnostic_{comparison_train_mode}_decoder_{metric}_{view}_{hemi}"
+                    save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"{title}.png"))
+                    print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
+
+            if score_hemi_metric_avgd is not None:
+                plotting.plot_surf_stat_map(
+                    fsaverage[f"infl_{HEMIS[0]}"],
+                    score_hemi_metric_avgd,
+                    hemi=HEMIS[0],
+                    view=args.views[0],
+                    bg_map=fsaverage[f"sulc_{HEMIS[0]}"],
+                    bg_on_data=True,
+                    colorbar=True,
+                    threshold=threshold,
+                    vmax=acc_colorbar_max,
+                    vmin=0.5 if chance_value == 0.5 else 0,
+                    cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,
+                    # if chance_value == 0.5 else CMAP,
+                    symmetric_cbar=False,# if chance_value == 0.5 else True,
+                )
+                save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
+                                   horizontal_cbar=False, crop_to_content=True)
+
 
 def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
     os.makedirs(results_dir, exist_ok=True)
 
     scores = load_per_subject_scores(args)
-    # scores = add_diff_metrics(scores)
+
+    plot_acc_diff_scores(scores, args, results_dir)
 
     make_per_subject_plots = False
     for training_mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, MODALITY_AGNOSTIC]:
