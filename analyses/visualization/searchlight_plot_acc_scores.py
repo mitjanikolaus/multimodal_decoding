@@ -291,8 +291,8 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                         threshold=threshold,
                         vmax=acc_colorbar_max,
                         vmin=0.5 if chance_value == 0.5 else 0,
-                        cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
-                        symmetric_cbar=False,# if chance_value == 0.5 else True,
+                        cmap=CMAP if "imagery" in metric else CMAP_POS_ONLY,# if chance_value == 0.5 else CMAP,
+                        symmetric_cbar=False if chance_value == 0.5 else True,
                     )
                     add_hemi_label(fig, hemi, view)
                     title = f"diff_mod_agnostic_{comparison_train_mode}_decoder_{metric}_{view}_{hemi}"
@@ -311,9 +311,9 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     threshold=threshold,
                     vmax=acc_colorbar_max,
                     vmin=0.5 if chance_value == 0.5 else 0,
-                    cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,
+                    cmap=CMAP if "imagery" in metric else CMAP_POS_ONLY,
                     # if chance_value == 0.5 else CMAP,
-                    symmetric_cbar=False,# if chance_value == 0.5 else True,
+                    symmetric_cbar=False if chance_value == 0.5 else True,
                 )
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                    horizontal_cbar=False, crop_to_content=True)
