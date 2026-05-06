@@ -5,9 +5,21 @@ import os
 from scipy.stats import pearsonr
 import nibabel as nib
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
-    add_searchlight_permutation_args, TFCE_VAL_METRICS, T_VAL_METRICS
-from data import IMAGE, CAPTION
-from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS
+    add_searchlight_permutation_args
+from data import IMAGE, CAPTION, MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK
+from utils import ROOT_DIR, FREESURFER_HOME_DIR, HEMIS_FS, METRIC_MOD_INVARIANT_INCREASE, METRIC_MOD_INVARIANT_ATTENDED, \
+    METRIC_MOD_INVARIANT_UNATTENDED
+
+METRICS = [
+    METRIC_MOD_INVARIANT_INCREASE,
+    METRIC_MOD_INVARIANT_ATTENDED,
+    METRIC_MOD_INVARIANT_UNATTENDED,
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+]
+
+T_VAL_METRICS = [
+    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+]
 
 
 def run(args):
@@ -20,26 +32,29 @@ def run(args):
 
         results_dir = permutation_results_dir(args)
         mask_paths = []
-        for metric in TFCE_VAL_METRICS:
-            if metric not in T_VAL_METRICS:
-                mask_paths.append(os.path.join(results_dir, "results_maps", f"tfce_values_{metric}_{hemi_fs}.gii"))
 
-            # if metric == METRIC_MOD_INVARIANT:
-            #     clusters_dir = os.path.join(results_dir, "results_maps", f"clusters{get_hparam_suffix(args)}")
-            #     for file in glob.glob(clusters_dir + f"/{hemi_fs}*"):
-            #         mask_paths.append(file)
+        for metric in T_VAL_METRICS:
+            mask_paths.append(os.path.join(results_dir, "results_maps", f"t_values_{metric}_{hemi_fs}.gii"))
+            print(mask_paths)
+
+        for metric in METRICS:
+            mask_paths.append(os.path.join(results_dir, "results_maps", f"tfce_values_{metric}_{hemi_fs}.gii"))
 
         for mask_path in mask_paths:
             if os.path.isfile(mask_path):
-                cmd += f":overlay={mask_path}:overlay_zorder=2"
+                cmd += f":overlay='{mask_path}':overlay_zorder=2"
             else:
                 print(f"missing mask: {mask_path}")
+
 
         if args.show_acc_maps:
             maps_paths = glob.glob(os.path.join(results_dir, "acc_results_maps", f"*_{hemi_fs}.gii"))
             for maps_path in maps_paths:
+                # if not (('agnostic_decoder' in maps_path) and ('imagery' in maps_path)):
+                #     continue
                 if 'agnostic_decoder' in maps_path:
-                    continue
+                    if not 'imagery' in maps_path:
+                        continue
                 if 'diff' in maps_path:
                     low = 0.03
                     high = 0.1
@@ -49,6 +64,10 @@ def run(args):
                         high = 0.7
                     elif 'test_image' in maps_path:
                         low = 0.53
+                        high = 0.7
+                    elif 'imagery' in maps_path:
+                        print(maps_path)
+                        low = 0.6
                         high = 0.7
                     else:
                         low = 0.53
