@@ -75,11 +75,15 @@ def run(args):
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
                 fmri_betas = apply_mask(mask, fmri_betas_full, args)
+                subsample_ids = dict()
                 if args.subsample_betas:
                     print('subsampling betas')
                     for split in args.training_splits:
                         num_samples = fmri_betas[split].shape[0]
-                        fmri_betas[split] = fmri_betas[split][np.random.choice(num_samples, int(num_samples*args.subsample_betas), replace=False)]
+                        subsample = np.random.choice(num_samples, int(num_samples * args.subsample_betas),
+                                                     replace=False)
+                        subsample_ids[split] = subsample
+                        fmri_betas[split] = fmri_betas[split][subsample]
                 fmri_betas = standardize_fmri_betas(fmri_betas)
                 for split in fmri_betas.keys():
                     print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
@@ -105,6 +109,11 @@ def run(args):
                         continue
 
                     latents = get_latents_for_splits(subject, feats_config, ALL_SPLITS, training_mode)
+                    if args.subsample_betas:
+                        print('subsampling latents')
+                        for split in args.training_splits:
+                            latents[split] = latents[split][subsample_ids[split]]
+
                     latents = standardize_latents(latents)
                     print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
 
