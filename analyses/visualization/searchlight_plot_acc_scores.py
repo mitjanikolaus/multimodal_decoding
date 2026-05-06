@@ -318,6 +318,39 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                    horizontal_cbar=False, crop_to_content=True)
 
+            # imgs_metrics = []
+            imgs_views = []
+            for view in args.views:
+                imgs_hemis = []
+                for hemi in HEMIS:
+                    imgs_hemis.append(Image.open(
+                        os.path.join(acc_scores_pngs_dir, f"diff_mod_agnostic_{comparison_train_mode}_decoder_{metric}_{view}_{hemi}")))
+                img_hemi = append_images(images=imgs_hemis, padding=10,
+                                         horizontally=False if view == 'ventral' else True)
+                imgs_views.append(img_hemi)
+
+            fig = Figure(facecolor="none", figsize=(14, 6))
+            fig.text(0, 0.9, metric, fontsize=50, fontweight='bold')
+            fig.savefig(results_path + 'tmptitle.png')
+            title_img = Image.open(results_path + 'tmptitle.png')
+            os.remove(results_path + 'tmptitle.png')
+
+            cbar = Image.open(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"))
+
+            # imgs_views = [title_img] + imgs_views + [cbar]
+            imgs_views = imgs_views + [cbar]
+
+            img_views = append_images(images=imgs_views, padding=200)
+            # imgs_metrics.append(img_views)
+
+            path = os.path.join(results_path, f"diff_mod_agnostic_{comparison_train_mode}_{metric}.png")
+            img_views.save(path, transparent=True)
+            print(f'saved {path}')
+
+            # imgs_metrics = append_images(images=imgs_metrics, padding=50, horizontally=False)
+            # path = os.path.join(results_path, f"diff_mod_agnostic_{comparison_train_mode}.png")
+            # imgs_metrics.save(path, transparent=True)
+
 
 def run(args):
     results_dir = os.path.join(permutation_results_dir(args), "results")
