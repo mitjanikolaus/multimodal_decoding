@@ -75,6 +75,11 @@ def run(args):
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
                 fmri_betas = apply_mask(mask, fmri_betas_full, args)
+                if args.subsample_betas:
+                    print('subsampling betas')
+                    for split in args.training_splits:
+                        num_samples = fmri_betas[split].shape[0]
+                        fmri_betas[split] = fmri_betas[split][np.random.choice(num_samples, int(num_samples*args.subsample_betas), replace=False)]
                 fmri_betas = standardize_fmri_betas(fmri_betas)
                 for split in fmri_betas.keys():
                     print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
@@ -174,6 +179,9 @@ def get_args():
     parser.add_argument("--betas-dir", type=str, default=FMRI_BETAS_DIR)
 
     parser.add_argument("--training-splits", type=str, nargs="+", default=[SPLIT_TRAIN])
+
+    parser.add_argument("--subsample-betas", type=float, default=None)
+
     parser.add_argument("--imagery-samples-weight", type=int, default=None)
 
     parser.add_argument("--training-modes", type=str, nargs="+", default=[MODALITY_AGNOSTIC],
