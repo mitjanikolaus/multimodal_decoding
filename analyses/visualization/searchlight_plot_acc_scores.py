@@ -324,7 +324,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                 imgs_hemis = []
                 for hemi in HEMIS:
                     imgs_hemis.append(Image.open(
-                        os.path.join(acc_scores_pngs_dir, f"diff_mod_agnostic_{comparison_train_mode}_decoder_{metric}_{view}_{hemi}")))
+                        os.path.join(acc_scores_pngs_dir, f"diff_mod_agnostic_{comparison_train_mode}_decoder_{metric}_{view}_{hemi}.png")))
                 img_hemi = append_images(images=imgs_hemis, padding=10,
                                          horizontally=False if view == 'ventral' else True)
                 imgs_views.append(img_hemi)
