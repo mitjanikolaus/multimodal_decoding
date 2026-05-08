@@ -177,7 +177,7 @@ def run(args):
                     pickle.dump(predicted_latents, open(predictions_file_path, 'wb'))
 
                     scores_to_print = scores_df[scores_df.standardized_predictions == True]
-                    scores_to_print = scores_to_print[scores_to_print.latents == 'all_candidate_latents']
+                    scores_to_print = scores_to_print[scores_to_print.latents == 'limited_candidate_latents']
                     print(scores_to_print.to_string(index=False))
                     print('\n\n')
 
