@@ -92,7 +92,8 @@ def plot(args):
                 f"tfce_values_null_distribution_{ref_metric}.p"
             )
             # cbar_max = 10
-            cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            cbar_max = 2.3e6
             cmap = "magma"
 
             if args.log_scale:
