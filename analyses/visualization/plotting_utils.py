@@ -174,6 +174,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                     if 'imagery' in metric:
                         ticks = [threshold, 1e6, 2e6]
                         cbar_vmin = ticks[0]
+                        cbar_vmax = 2.3e6
                     else:
                         ticks = [threshold, round(np.mean([int(threshold), np.ceil(cbar_vmax)]), 1),
                                  round(cbar_vmax, 1)]
