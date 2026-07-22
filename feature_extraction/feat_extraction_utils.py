@@ -68,7 +68,7 @@ class CoCoDataset(Dataset):
 
 
 class FeatureExtractor:
-    def __init__(self, model, prepocessor=None, model_name=None, batch_size=10, device="cpu", move_model=True):
+    def __init__(self, model, prepocessor=None, model_name=None, batch_size=10, device="cpu", move_model=True, hidden=None):
         super().__init__()
         print(f"Feature extraction for {model_name} on {device}")
 
@@ -79,6 +79,9 @@ class FeatureExtractor:
         self.model.eval()
 
         self.preprocessor = prepocessor
+
+        if hidden:
+            self.hidden = hidden
 
         self.model_name = model_name
 
