@@ -54,7 +54,8 @@ class ResNetFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs, output_hidden_states=self.hidden is not None)
 
         if self.hidden is not None:
-            feats = outputs.hidden_states[self.hidden].mean(dim=1).reshape((self.dloader.batch_size, -1))
+            feats = outputs.hidden_states[self.hidden].mean(dim=1)
+            feats = feats.reshape((feats.shape[0], -1))
             print(feats.shape)
             feats_vision = feats
         else:
@@ -76,6 +77,13 @@ if __name__ == "__main__":
     feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
     model = ResNetModel.from_pretrained(model_name)
     extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-1", BATCH_SIZE, device, hidden=1)
+    extractor.extract_features()
+
+
+    model_name = 'microsoft/resnet-18'
+    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    model = ResNetModel.from_pretrained(model_name)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-2", BATCH_SIZE, device, hidden=2)
     extractor.extract_features()
 
     model_name = 'microsoft/resnet-18'
