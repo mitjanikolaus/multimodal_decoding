@@ -80,7 +80,7 @@ class FeatureExtractor:
 
         self.preprocessor = prepocessor
 
-        if hidden:
+        if hidden is not None:
             self.hidden = hidden
 
         self.model_name = model_name
