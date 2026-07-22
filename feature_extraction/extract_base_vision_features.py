@@ -56,7 +56,7 @@ class ResNetFeatureExtractor(FeatureExtractor):
         if self.hidden is not None:
             feats = outputs.hidden_states[self.hidden].mean(dim=1)
             feats = feats.reshape((feats.shape[0], -1))
-            print(feats.shape)
+            # print(feats.shape)
             feats_vision = feats
         else:
             feats_vision = outputs.pooler_output.squeeze()
