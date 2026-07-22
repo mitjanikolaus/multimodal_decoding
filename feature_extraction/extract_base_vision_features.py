@@ -8,7 +8,7 @@ from data import VISION_MEAN_FEAT_KEY, VISION_CLS_FEAT_KEY
 from feature_extraction.feat_extraction_utils import FeatureExtractor
 
 
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 SUFFIX = "*bf(1)"
 
 
@@ -54,10 +54,9 @@ class ResNetFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs, output_hidden_states=self.hidden is not None)
 
         if self.hidden is not None:
-            print(len(outputs.hidden_states))
-            print(outputs.hidden_states[0].shape)
-            print(outputs.hidden_states[self.hidden].shape)
-            feats_vision = outputs.hidden_states[self.hidden].squeeze()
+            feats = outputs.hidden_states[self.hidden].reshape((self.dloader.batch_size, -1))
+            print(feats.shape)
+            feats_vision = feats
         else:
             feats_vision = outputs.pooler_output.squeeze()
 
@@ -67,10 +66,10 @@ class ResNetFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model_name = 'microsoft/resnet-152'
+    model_name = 'microsoft/resnet-18'
     feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
     model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-152-hidden-1", BATCH_SIZE, device, hidden=1)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-1", BATCH_SIZE, device, hidden=1)
     extractor.extract_features()
 
     # model_name = 'microsoft/resnet-18'
