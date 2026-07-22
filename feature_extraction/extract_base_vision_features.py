@@ -54,7 +54,8 @@ class ResNetFeatureExtractor(FeatureExtractor):
             outputs = self.model(**inputs, output_hidden_states=self.hidden is not None)
 
         if self.hidden is not None:
-            print(outputs.hidden_states.shape)
+            print(outputs.hidden_states)
+            print(outputs.hidden_states[0].shape)
             print(outputs.hidden_states[self.hidden].shape)
             feats_vision = outputs.hidden_states[self.hidden].squeeze()
         else:
