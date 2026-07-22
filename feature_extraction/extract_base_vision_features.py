@@ -69,7 +69,25 @@ if __name__ == "__main__":
     model_name = 'microsoft/resnet-18'
     feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
     model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-2", BATCH_SIZE, device, hidden=2)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-0", BATCH_SIZE, device, hidden=0)
+    extractor.extract_features()
+
+    model_name = 'microsoft/resnet-18'
+    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    model = ResNetModel.from_pretrained(model_name)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-1", BATCH_SIZE, device, hidden=1)
+    extractor.extract_features()
+
+    model_name = 'microsoft/resnet-18'
+    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    model = ResNetModel.from_pretrained(model_name)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-3", BATCH_SIZE, device, hidden=3)
+    extractor.extract_features()
+
+    model_name = 'microsoft/resnet-18'
+    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    model = ResNetModel.from_pretrained(model_name)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-4", BATCH_SIZE, device, hidden=4)
     extractor.extract_features()
 
     # model_name = 'microsoft/resnet-18'
