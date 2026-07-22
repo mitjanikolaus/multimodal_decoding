@@ -67,10 +67,10 @@ class ResNetFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model_name = 'microsoft/resnet-18'
+    model_name = 'microsoft/resnet-152'
     feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
     model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-1", BATCH_SIZE, device, hidden=1)
+    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-152-hidden-1", BATCH_SIZE, device, hidden=1)
     extractor.extract_features()
 
     # model_name = 'microsoft/resnet-18'
