@@ -51,7 +51,7 @@ class ResNetFeatureExtractor(FeatureExtractor):
         inputs = self.preprocessor(images=images, return_tensors="pt")
         inputs = inputs.to(self.device)
         with torch.no_grad():
-            outputs = self.model(**inputs, output_hidden_states=True if self.hidden is not None)
+            outputs = self.model(**inputs, output_hidden_states=self.hidden is not None)
 
         if self.hidden is not None:
             print(outputs.hidden_states.shape)
