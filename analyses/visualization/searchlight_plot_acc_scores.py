@@ -300,7 +300,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
 
             if score_hemi_metric_avgd is not None:
-                plotting.plot_surf_stat_map(
+                fig = plotting.plot_surf_stat_map(
                     fsaverage[f"infl_{HEMIS[0]}"],
                     score_hemi_metric_avgd,
                     hemi=HEMIS[0],
@@ -315,6 +315,9 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     # if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
                 )
+                fig.figure.axes[0].tick_params(axis="both", labelsize=25)
+                fig.figure.axes[1].tick_params(axis="both", labelsize=25)
+                fig.figure.axes[0].images[-1].colorbar.ax.set_ylabel('Accuracy')
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                    horizontal_cbar=False, crop_to_content=True)
 
