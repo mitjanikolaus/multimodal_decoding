@@ -22,7 +22,7 @@ from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFE
 
 from analyses.decoding.searchlight.searchlight_permutation_testing import TFCE_VAL_METRICS
 from data import TEST_IMAGES, TEST_CAPTIONS, clean_metric_name
-from utils import DIFF, DIFF_DECODERS
+from utils import DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED
 
 CBAR_T_VAL_MAX = 15
 
@@ -221,7 +221,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                 cax, _ = make_axes(axes, location='right', fraction=.15, shrink=.4, pad=.0, aspect=10.)
 
             label_to_display = None
-            if 'imagery' in metric:
+            if ('imagery' in metric) or (metric in [METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED]) :
                 label_to_display = label
 
             cbar = figure.colorbar(
