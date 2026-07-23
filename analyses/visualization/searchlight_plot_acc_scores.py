@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 from PIL import Image
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from nilearn import datasets, plotting
 import os
@@ -104,6 +105,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
 
         if score_hemi_metric_avgd is not None:
+            fig = plt.figure(figsize=(11, 6))
             plotting.plot_surf_stat_map(
                 fsaverage[f"infl_{HEMIS[0]}"],
                 score_hemi_metric_avgd,
@@ -118,6 +120,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,
                 # if chance_value == 0.5 else CMAP,
                 symmetric_cbar=False,# if chance_value == 0.5 else True,
+                figure=fig,
             )
             save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                horizontal_cbar=False, crop_to_content=True)
@@ -300,6 +303,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
 
             if score_hemi_metric_avgd is not None:
+                fig = plt.figure(figsize=(11, 6))
                 fig = plotting.plot_surf_stat_map(
                     fsaverage[f"infl_{HEMIS[0]}"],
                     score_hemi_metric_avgd,
@@ -314,6 +318,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     cmap=CMAP if "imagery" in metric else CMAP_POS_ONLY,
                     # if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
+                    figure=fig,
                 )
                 fig.figure.axes[0].tick_params(axis="both", labelsize=25)
                 fig.figure.axes[1].tick_params(axis="both", labelsize=25)
