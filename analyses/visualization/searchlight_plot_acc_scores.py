@@ -54,6 +54,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     for metric in DIFF_METRICS + TEST_SPLITS:
         threshold = COLORBAR_THRESHOLD_MIN_IMAGERY if "imagery" in metric else COLORBAR_THRESHOLD_MIN
+        print('colorbar threshold: ', threshold)
         chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
@@ -317,7 +318,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     threshold=threshold,
                     vmax=acc_colorbar_max,
                     vmin=0.5 if chance_value == 0.5 else -acc_colorbar_max,
-                    cmap=CMAP if "imagery" in metric else CMAP_POS_ONLY,
+                    cmap=CMAP_POS_ONLY_IMAGERY if "imagery" in metric else CMAP_POS_ONLY,
                     # if chance_value == 0.5 else CMAP,
                     symmetric_cbar=False if chance_value == 0.5 else True,
                     figure=fig,
