@@ -317,7 +317,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                 )
                 fig.figure.axes[0].tick_params(axis="both", labelsize=25)
                 fig.figure.axes[1].tick_params(axis="both", labelsize=25)
-                fig.figure.axes[0].colorbar.ax.set_ylabel('Accuracy')
+                # fig.figure.axes[0].colorbar.ax.set_ylabel('Accuracy')
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                    horizontal_cbar=False, crop_to_content=True)
 
