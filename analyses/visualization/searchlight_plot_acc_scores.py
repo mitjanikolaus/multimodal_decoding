@@ -369,7 +369,7 @@ def run(args):
 
     scores = load_per_subject_scores(args)
 
-    plot_acc_diff_scores(scores, args, results_dir)
+    # plot_acc_diff_scores(scores, args, results_dir)
 
     make_per_subject_plots = False
     for training_mode in [MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS, MODALITY_AGNOSTIC]:
