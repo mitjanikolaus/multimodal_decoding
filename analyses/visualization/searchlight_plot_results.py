@@ -273,7 +273,7 @@ def plot(args):
                     print(f"saved {path}")
 
         # plot for cbar:
-        fig = plt.figure(figsize=(8, 6))
+        fig = plt.figure(figsize=(11, 6))
         plot_surf_stat_map_custom(
             fsaverage[f"infl_{HEMIS[0]}"],
             result_values[HEMIS[0]],
