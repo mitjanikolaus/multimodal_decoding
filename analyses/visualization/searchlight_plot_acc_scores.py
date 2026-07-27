@@ -107,7 +107,7 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
                 print(f'saved {os.path.join(acc_scores_pngs_dir, f"{title}.png")}')
 
         if score_hemi_metric_avgd is not None:
-            fig = plt.figure(figsize=(11, 6))
+            fig = plt.figure(figsize=(6, 3))
             plotting.plot_surf_stat_map(
                 fsaverage[f"infl_{HEMIS[0]}"],
                 score_hemi_metric_avgd,
