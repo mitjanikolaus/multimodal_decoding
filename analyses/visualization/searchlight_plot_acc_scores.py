@@ -25,9 +25,9 @@ COLORBAR_DIFFERENCE_MAX = 0.1
 COLORBAR_DIFFERENCE_THRESHOLD_MIN = 0.03
 
 CMAP = "cold_hot"
-CMAP_POS_ONLY = "hot"
-CMAP_POS_ONLY_IMAGERY = "hot"
-# CMAP_POS_ONLY_IMAGERY = "magma"
+CMAP_POS_ONLY = "cold_hot"
+# CMAP_POS_ONLY_IMAGERY = "hot"
+CMAP_POS_ONLY_IMAGERY = "magma"
 
 
 DEFAULT_T_VALUE_THRESH = 1  # 0.824
@@ -54,11 +54,11 @@ def plot_acc_scores(scores, args, results_path, subfolder="", training_mode=MODA
 
     for metric in DIFF_METRICS + TEST_SPLITS:
         threshold = COLORBAR_THRESHOLD_MIN_IMAGERY if "imagery" in metric else COLORBAR_THRESHOLD_MIN
-        print('colorbar threshold: ', threshold)
         chance_value = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
         print(f"{metric} | chance value: {chance_value}")
         if chance_value == 0:
             threshold = COLORBAR_DIFFERENCE_THRESHOLD_MIN
+        print('colorbar threshold: ', threshold)
 
         if chance_value == 0.5:
             acc_colorbar_max = ACC_COLORBAR_MAX_IMAGERY if "imagery" in metric else ACC_COLORBAR_MAX
@@ -307,7 +307,7 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
 
             if score_hemi_metric_avgd is not None:
                 fig = plt.figure(figsize=(11, 6))
-                fig = plotting.plot_surf_stat_map(
+                plotting.plot_surf_stat_map(
                     fsaverage[f"infl_{HEMIS[0]}"],
                     score_hemi_metric_avgd,
                     hemi=HEMIS[0],
@@ -323,9 +323,6 @@ def plot_acc_diff_scores(scores, args, results_path, subfolder=""):
                     symmetric_cbar=False if chance_value == 0.5 else True,
                     figure=fig,
                 )
-                fig.figure.axes[0].tick_params(axis="both", labelsize=25)
-                fig.figure.axes[1].tick_params(axis="both", labelsize=25)
-                # fig.figure.axes[0].colorbar.ax.set_ylabel('Accuracy')
                 save_plot_and_crop_img(os.path.join(acc_scores_pngs_dir, f"colorbar_{metric}.png"), crop_cbar=True,
                                    horizontal_cbar=False, crop_to_content=True)
 
