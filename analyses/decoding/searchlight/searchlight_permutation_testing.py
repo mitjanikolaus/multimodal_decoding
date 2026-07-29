@@ -575,13 +575,11 @@ def load_per_subject_scores(args, hemis=HEMIS, latents=LIMITED_CANDIDATE_LATENTS
                 feats_config_mod_agnostic, hemi, subject, MODALITY_AGNOSTIC,
                 searchlight_mode_from_args(args), args.l2_regularization_alpha
             )
-            scores_agnostic = pd.read_csv(results_mod_agnostic_file, index_col=0)
-
-            # scores_agnostic = results_agnostic['scores']
-            # nan_locations = results_agnostic['nan_locations']
-            # n_neighbors = results_agnostic['n_neighbors'] if 'n_neighbors' in results_agnostic else None
-            # per_subject_n_neighbors[subject][hemi] = n_neighbors
-            # per_subject_nan_locations[subject][hemi] = nan_locations
+            if os.path.isfile(results_mod_agnostic_file):
+                scores_agnostic = pd.read_csv(results_mod_agnostic_file, index_col=0)
+            else:
+                print(f"Missing modality-agnostic results: {results_mod_agnostic_file}")
+                scores_agnostic = None
 
             feats_config_mod_specific_images = LatentFeatsConfig(
                 args.mod_specific_images_model,
