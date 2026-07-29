@@ -987,6 +987,7 @@ def create_null_distribution(args):
     tfce_values_null_distribution_path = os.path.join(
         permutation_results_dir(args), f"tfce_values_null_distribution_{args.metric}.p"
     )
+    print(f"looking for existing null distr tfce vals at {tfce_values_null_distribution_path}")
     if not os.path.isfile(tfce_values_null_distribution_path):
         t_values_null_distribution_path = os.path.join(
             permutation_results_dir(args), f"t_values_null_distribution.hdf5"
