@@ -419,10 +419,13 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
         tfce_values[hemi][metric][tfce_values[hemi][metric] < threshold] = 0
         export_to_gifti(tfce_values[hemi][metric], path_out)
 
-        print(t_values[hemi])
-        t_values[hemi][metric][t_values[hemi][metric] < 0] = 0
+        if metric not in t_values[hemi]:
+            tvals_metric = compute_composite_t_vals_for_metric(t_values, metric, hemi)
+        else:
+            tvals_metric = t_values[hemi][metric]
+        tvals_metric[tvals_metric < 0] = 0
         path_out = os.path.join(results_maps_path, f"t_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
-        export_to_gifti(t_values[hemi][metric], path_out)
+        export_to_gifti(tvals_metric, path_out)
 
     # create_results_cluster_masks(masks, results_dir, metric, resolution, radius, n_neighbors, threshold)
 
