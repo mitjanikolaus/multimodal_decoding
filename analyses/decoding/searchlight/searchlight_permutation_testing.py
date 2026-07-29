@@ -419,6 +419,7 @@ def create_masks(results_dir, metric, significance_cutoff, tfce_value_threshold,
         tfce_values[hemi][metric][tfce_values[hemi][metric] < threshold] = 0
         export_to_gifti(tfce_values[hemi][metric], path_out)
 
+        print(t_values[hemi])
         t_values[hemi][metric][t_values[hemi][metric] < 0] = 0
         path_out = os.path.join(results_maps_path, f"t_values_{metric}_{FS_HEMI_NAMES[hemi]}.gii")
         export_to_gifti(t_values[hemi][metric], path_out)
