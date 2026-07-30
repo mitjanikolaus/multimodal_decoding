@@ -138,7 +138,8 @@ class FeatureExtractor:
     def extract_features(self):
         all_feats = dict()
         for ids, captions, img_paths in tqdm(self.dloader):
-            ids = [id.item() for id in ids]
+            if isinstance(ids[0], int):
+                ids = [id.item() for id in ids]
             for id in ids:
                 all_feats[id] = dict()
 
