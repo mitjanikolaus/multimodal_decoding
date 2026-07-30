@@ -17,6 +17,7 @@ from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom, add_hemi_label
+from data import MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK, MODALITY_SPECIFIC_IMAGES
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
     METRIC_MOD_INVARIANT_UNATTENDED
@@ -35,7 +36,9 @@ TARGET_TFCE_VAL_METRICS = [
     METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED,
     # METRIC_MOD_INVARIANT_INCREASE
 ]
-RESULT_METRICS = TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
+IMAGERY_DECODER_COMPARISON = "imagery_decoder_comparison_agnostic_images"
+
+RESULT_METRICS = [IMAGERY_DECODER_COMPARISON] #+ TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
 
 
 def plot(args):
@@ -66,8 +69,31 @@ def plot(args):
         }
 
         result_values = dict()
+        if result_metric == IMAGERY_DECODER_COMPARISON:
+            metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
+            tfce_values_1_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_1}.p")
+            orig_tfce_values_1 = pickle.load(open(tfce_values_1_path, "rb"))
 
-        if "imagery_weak" in result_metric:
+            metric_2 = '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK])
+            tfce_values_2_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_2}.p")
+            orig_tfce_values_2 = pickle.load(open(tfce_values_2_path, "rb"))
+
+            for hemi in HEMIS:
+                # result_values[hemi] = t_values[hemi][args.metric]
+                result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
+                if args.log_scale:
+                    result_values[hemi] = np.log(result_values[hemi])
+
+                # TODO
+                # result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
+                # result_values[hemi][result_values[hemi]  <= 0] = np.nan
+
+            significance_cutoff = -1000 #TODO
+            threshold = significance_cutoff
+            cbar_min = significance_cutoff
+            cbar_max = -significance_cutoff
+
+        elif "imagery_weak" in result_metric:
             t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
             t_values = pickle.load(open(t_values_path, "rb"))
 
