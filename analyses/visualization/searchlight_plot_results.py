@@ -88,10 +88,10 @@ def plot(args):
                 # result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 # result_values[hemi][result_values[hemi]  <= 0] = np.nan
 
-            significance_cutoff = -1000 #TODO
+            significance_cutoff = 1000 #TODO
             threshold = significance_cutoff
-            cbar_min = significance_cutoff
-            cbar_max = -significance_cutoff
+            cbar_min = -significance_cutoff
+            cbar_max = significance_cutoff
             cmap = "cold_hot"
 
         elif "imagery_weak" in result_metric:
