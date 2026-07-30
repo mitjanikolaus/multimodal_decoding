@@ -92,6 +92,7 @@ def plot(args):
             threshold = significance_cutoff
             cbar_min = significance_cutoff
             cbar_max = -significance_cutoff
+            cmap = "cold_hot"
 
         elif "imagery_weak" in result_metric:
             t_values_path = os.path.join(permutation_results_dir(args), "t_values.p")
