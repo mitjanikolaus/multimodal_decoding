@@ -4,6 +4,7 @@ from imagebind import data
 import torch
 from imagebind.models import imagebind_model
 from imagebind.models.imagebind_model import ModalityType
+from torch.utils.data import DataLoader
 
 from feature_extraction.feat_extraction_utils import FeatureExtractor, CoCoDatasetOriginalCaptions
 from data import VISION_CLS_FEAT_KEY, LANG_CLS_FEAT_KEY
@@ -39,7 +40,7 @@ class ImagebindFeatureExtractorOriginalCaptions(FeatureExtractor):
             model, prepocessor, model_name, batch_size, device, move_model, hidden
         )
         self.ds = CoCoDatasetOriginalCaptions()
-
+        self.dloader = DataLoader(self.ds, shuffle=False, batch_size=batch_size)
 
     def extract_features_from_batch(self, ids, captions, img_paths):
         inputs = {
