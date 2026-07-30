@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -65,6 +66,46 @@ class CoCoDataset(Dataset):
         cap = self.captions[coco_id]
 
         return img, cap
+
+
+STIM_INFO_PATH_ORIGINAL_CAPS = os.path.expanduser("~/data/coco/annotations_trainval2014/annotations/captions_val2014.json")
+
+class CoCoDatasetOriginalCaptions(Dataset):
+
+    def __init__(self, stim_info_path=STIM_INFO_PATH_ORIGINAL_CAPS, mode='caption'):
+        r"""
+        Args:
+            `coco_root` (str): address to the coco2017 root folder (= the parent directory of `images` folder)
+            `stimuli_ids_path` (pickle): address to file containing information about the preselected coco entries
+            `mode` (str): can be `caption` or `image` to load captions or images, respectively. Default: `image`
+        """
+        super().__init__()
+        data = json.load(open(stim_info_path))
+
+        ids = set([item["image_id"] for item in data["annotations"]])
+        # use only first 100 images
+        ids = list(ids)[:100]
+        self.stimuli_ids = []
+        self.captions = []
+        for coco_id in ids:
+            caps = [item['caption'] for item in data['annotations'] if item['image_id'] == coco_id]
+            assert len(caps) == 5
+            for i in range(5):
+                sub_id = f"{coco_id}_{i}"
+                self.stimuli_ids.append(sub_id)
+                self.captions.append(caps[i])
+
+        self.mode = mode
+
+    def __len__(self):
+        return len(self.captions)
+
+    def __getitem__(self, index):
+        id = self.stimuli_ids[index]
+        assert self.mode == 'caption'
+
+        cap = self.captions[id]
+        return cap, id
 
 
 class FeatureExtractor:
