@@ -102,14 +102,14 @@ class CoCoDatasetOriginalCaptions(Dataset):
         self.mode = mode
 
     def __len__(self):
-        return len(self.captions)
+        return len(self.stimuli_ids)
 
     def __getitem__(self, index):
         id = self.stimuli_ids[index]
         assert self.mode == 'caption'
 
-        cap = self.captions[id]
-        return cap, id
+        cap = self.captions[index]
+        return id, cap, None
 
 
 class FeatureExtractor:
