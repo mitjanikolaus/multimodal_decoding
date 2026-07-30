@@ -90,7 +90,7 @@ def plot(args):
                 # result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 # result_values[hemi][result_values[hemi]  <= 0] = np.nan
 
-            significance_cutoff = 1000 #TODO tood
+            significance_cutoff = 100 #TODO tood
 
             threshold = 0
             cbar_min = -significance_cutoff
@@ -295,6 +295,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
+                        symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
                     )
                     add_hemi_label(fig, hemi, view)
                     title = f"{view}_{hemi}"
@@ -318,6 +319,7 @@ def plot(args):
             cmap=cmap,
             figure=fig,
             metric=result_metric,
+            symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
         )
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=False, crop_to_content=True)
