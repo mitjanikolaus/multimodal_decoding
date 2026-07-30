@@ -56,8 +56,9 @@ class ImagebindFeatureExtractorOriginalCaptions(FeatureExtractor):
 
 if __name__ == "__main__":
     model = imagebind_model.imagebind_huge(pretrained=True)
-    ImagebindFeatureExtractorOriginalCaptions(model, None, "imagebind_original_captions", BATCH_SIZE, device)
-    
+    extractor = ImagebindFeatureExtractorOriginalCaptions(model, None, "imagebind_original_captions", BATCH_SIZE, device)
+    extractor.extract_features()
+
     # model = imagebind_model.imagebind_huge(pretrained=True)
     # extractor = ImagebindFeatureExtractor(model, None, "imagebind", BATCH_SIZE, device)
     # extractor.extract_features()
