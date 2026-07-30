@@ -68,6 +68,8 @@ def plot(args):
             },
         }
 
+        cmap = CMAP_POS_ONLY
+
         result_values = dict()
         if result_metric == IMAGERY_DECODER_COMPARISON:
             metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
@@ -88,8 +90,9 @@ def plot(args):
                 # result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
                 # result_values[hemi][result_values[hemi]  <= 0] = np.nan
 
-            significance_cutoff = 1000 #TODO
-            threshold = significance_cutoff
+            significance_cutoff = 1000 #TODO tood
+
+            threshold = 0
             cbar_min = -significance_cutoff
             cbar_max = significance_cutoff
             cmap = "cold_hot"
@@ -263,6 +266,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
+                        symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
                     )
                     plot_surf_contours_custom(
                         surf_mesh=fsaverage[f"infl_{hemi}"],
