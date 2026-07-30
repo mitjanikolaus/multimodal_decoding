@@ -109,7 +109,7 @@ class CoCoDatasetOriginalCaptions(Dataset):
         assert self.mode == 'caption'
 
         cap = self.captions[index]
-        return id, cap, None
+        return id, cap, ""
 
 
 class FeatureExtractor:
