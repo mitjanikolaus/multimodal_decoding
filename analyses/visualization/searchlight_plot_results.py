@@ -118,7 +118,7 @@ def plot(args):
 
             threshold = None
             cbar_min = -100000#-100000# -significance_cutoff
-            cbar_max = None #100000
+            cbar_max = 100000 #100000
             cmap = "cold_hot"
 
         elif "imagery_weak" in result_metric:
