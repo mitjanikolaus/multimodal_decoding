@@ -340,6 +340,8 @@ def plot(args):
             threshold=threshold,
             vmax=cbar_max,
             vmin=cbar_min,
+            cbar_min=cbar_min,
+            cbar_max=cbar_max,
             cmap=cmap,
             figure=fig,
             metric=result_metric,
