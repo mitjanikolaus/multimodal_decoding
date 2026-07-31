@@ -87,6 +87,17 @@ def plot(args):
             p_values_2_path = os.path.join(permutation_results_dir(args), f"p_values_{metric_2}.p")
             p_values_2 = pickle.load(open(p_values_2_path, "rb"))
 
+            ref_metric = "agnostic$imagery_weak"
+            null_distribution_tfce_values_file = os.path.join(
+                permutation_results_dir(args),
+                f"tfce_values_null_distribution_{ref_metric}.p"
+            )
+            null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
+            significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
+                                                              args.p_value_threshold)
+            print(f"significance cutoff: {significance_cutoff}")
+
+
             for hemi in HEMIS:
                 # result_values[hemi] = t_values[hemi][args.metric]
                 orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
@@ -101,7 +112,7 @@ def plot(args):
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] <= 0) & (orig_tfce_values_2[hemi][metric_2] <= 0)] = np.nan
                 result_values[hemi][(p_values_1[hemi] > args.p_value_threshold) & (p_values_2[hemi] > args.p_value_threshold)] = np.nan
 
-            significance_cutoff = 0 #TODO
+                result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] <= significance_cutoff)] = np.nan
 
             threshold = 0
             cbar_min = None# -significance_cutoff
