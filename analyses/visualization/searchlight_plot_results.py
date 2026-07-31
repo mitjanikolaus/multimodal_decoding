@@ -91,6 +91,9 @@ def plot(args):
                 orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1]  <= 0] = 0
                 orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2]  <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
+                print(f'{hemi} max val: {np.nanmax(result_values[hemi])}')
+                print(f'{hemi} min val: {np.nanmin(result_values[hemi])}')
+
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
 
