@@ -100,6 +100,10 @@ def plot(args):
                 orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
                 orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
+
+                # result_values[hemi] = np.zeros_like(orig_tfce_values_1[hemi][metric_1])
+                # result_values[hemi][(orig_tfce_values_1[hemi][metric_1] <= 0) & (orig_tfce_values_2[hemi][metric_2] <= 0)] = 100000
+
                 print(f'{hemi} hemi max val: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min val: {np.nanmin(result_values[hemi])}')
 
@@ -112,7 +116,7 @@ def plot(args):
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = np.nan
 
             threshold = None
-            cbar_min = None#-100000# -significance_cutoff
+            cbar_min = -100000#-100000# -significance_cutoff
             cbar_max = None #100000
             cmap = "cold_hot"
 
