@@ -113,7 +113,7 @@ def plot(args):
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = np.nan
 
             threshold = None
-            cbar_min = -100000# -significance_cutoff
+            cbar_min = None#-100000# -significance_cutoff
             cbar_max = None #100000
             cmap = "cold_hot"
 
