@@ -70,8 +70,9 @@ def plot(args):
         cmap = CMAP_POS_ONLY
 
         result_values = dict()
+        print(f'plotting results for {result_metric}')
+
         if result_metric == METRIC_IMAGERY_DECODER_COMPARISON:
-            print(f'plotting results for {result_metric}')
             metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
             tfce_values_1_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_1}.p")
             orig_tfce_values_1 = pickle.load(open(tfce_values_1_path, "rb"))
@@ -96,13 +97,13 @@ def plot(args):
                                                               args.p_value_threshold)
 
             for hemi in HEMIS:
-                # result_values[hemi] = t_values[hemi][args.metric]
                 orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
                 orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
-                result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
+                # result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
 
-                # result_values[hemi] = np.zeros_like(orig_tfce_values_1[hemi][metric_1])
-                # result_values[hemi][(orig_tfce_values_1[hemi][metric_1] <= 0) & (orig_tfce_values_2[hemi][metric_2] <= 0)] = 100000
+                result_values[hemi] = np.zeros_like(orig_tfce_values_1[hemi][metric_1])
+                result_values[hemi][(p_values_1[hemi] > args.p_value_threshold) & (p_values_2[hemi] <= args.p_value_threshold)] = -50000
+                result_values[hemi][(p_values_1[hemi] <= args.p_value_threshold) & (p_values_2[hemi] > args.p_value_threshold)] = 50000
 
                 print(f'{hemi} hemi max val: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min val: {np.nanmin(result_values[hemi])}')
@@ -289,7 +290,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
-                        symmetric_cbar=True #TODO if result_metric == IMAGERY_DECODER_COMPARISON else False,
+                        symmetric_cbar=True if result_metric == METRIC_IMAGERY_DECODER_COMPARISON else False,
                     )
                     plot_surf_contours_custom(
                         surf_mesh=fsaverage[f"infl_{hemi}"],
@@ -318,7 +319,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
-                        symmetric_cbar=True #TODO if result_metric == IMAGERY_DECODER_COMPARISON else False,
+                        symmetric_cbar=True if result_metric == METRIC_IMAGERY_DECODER_COMPARISON else False,
                     )
                     add_hemi_label(fig, hemi, view)
                     title = f"{view}_{hemi}"
@@ -342,7 +343,7 @@ def plot(args):
             cmap=cmap,
             figure=fig,
             metric=result_metric,
-            symmetric_cbar=True  # TODO if result_metric == IMAGERY_DECODER_COMPARISON else False,
+            symmetric_cbar=True if result_metric == METRIC_IMAGERY_DECODER_COMPARISON else False,
         )
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=False, crop_to_content=True)
