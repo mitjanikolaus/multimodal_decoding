@@ -20,7 +20,7 @@ from analyses.visualization.plotting_utils import plot_surf_contours_custom, plo
 from data import MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK, MODALITY_SPECIFIC_IMAGES
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
-    METRIC_MOD_INVARIANT_UNATTENDED
+    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_IMAGERY_DECODER_COMPARISON
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -36,9 +36,8 @@ TARGET_TFCE_VAL_METRICS = [
     METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED,
     # METRIC_MOD_INVARIANT_INCREASE
 ]
-IMAGERY_DECODER_COMPARISON = "imagery_decoder_comparison_agnostic_images"
 
-RESULT_METRICS = [IMAGERY_DECODER_COMPARISON] #+ TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
+RESULT_METRICS = [METRIC_IMAGERY_DECODER_COMPARISON] #+ TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
 
 
 def plot(args):
@@ -71,7 +70,7 @@ def plot(args):
         cmap = CMAP_POS_ONLY
 
         result_values = dict()
-        if result_metric == IMAGERY_DECODER_COMPARISON:
+        if result_metric == METRIC_IMAGERY_DECODER_COMPARISON:
             print(f'plotting results for {result_metric}')
             metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
             tfce_values_1_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_1}.p")
