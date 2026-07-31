@@ -288,7 +288,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
-                        symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
+                        # symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
                     )
                     plot_surf_contours_custom(
                         surf_mesh=fsaverage[f"infl_{hemi}"],
@@ -317,7 +317,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
-                        symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
+                        # symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
                     )
                     add_hemi_label(fig, hemi, view)
                     title = f"{view}_{hemi}"
