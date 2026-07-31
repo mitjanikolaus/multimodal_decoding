@@ -72,6 +72,7 @@ def plot(args):
 
         result_values = dict()
         if result_metric == IMAGERY_DECODER_COMPARISON:
+            print(f'plotting results for {result_metric}')
             metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
             tfce_values_1_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_1}.p")
             orig_tfce_values_1 = pickle.load(open(tfce_values_1_path, "rb"))
@@ -91,8 +92,8 @@ def plot(args):
                 orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
                 orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
-                print(f'{hemi} max val: {np.nanmax(result_values[hemi])}')
-                print(f'{hemi} min val: {np.nanmin(result_values[hemi])}')
+                print(f'{hemi} hemi max val: {np.nanmax(result_values[hemi])}')
+                print(f'{hemi} hemi min val: {np.nanmin(result_values[hemi])}')
 
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
@@ -100,11 +101,11 @@ def plot(args):
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] <= 0) & (orig_tfce_values_2[hemi][metric_2] <= 0)] = np.nan
                 result_values[hemi][(p_values_1[hemi] > args.p_value_threshold) & (p_values_2[hemi] > args.p_value_threshold)] = np.nan
 
-            significance_cutoff = 100000
+            significance_cutoff = 0 #TODO
 
             threshold = 0
-            cbar_min = -significance_cutoff
-            cbar_max = significance_cutoff
+            cbar_min = None# -significance_cutoff
+            cbar_max = 100000
             cmap = "cold_hot"
 
         elif "imagery_weak" in result_metric:
