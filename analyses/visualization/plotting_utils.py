@@ -166,6 +166,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             if metric == METRIC_IMAGERY_DECODER_COMPARISON:
                 ticks = [cbar_vmin, round(np.mean([0, cbar_vmin]), 1), 0, round(np.mean([0, cbar_vmax]), 1), cbar_vmax]
                 label = f'difference in TFCE'
+                cbar_vmin = ticks[0]
 
             elif '$' in metric:
                 ticks = [threshold, round(np.mean([threshold, cbar_vmax]), 1), cbar_vmax]
