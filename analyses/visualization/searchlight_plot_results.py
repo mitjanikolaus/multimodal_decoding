@@ -88,8 +88,8 @@ def plot(args):
 
             for hemi in HEMIS:
                 # result_values[hemi] = t_values[hemi][args.metric]
-                orig_tfce_values_1[hemi][orig_tfce_values_1[hemi] <= 0] = 0
-                orig_tfce_values_2[hemi][orig_tfce_values_2[hemi] <= 0] = 0
+                orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1]  <= 0] = 0
+                orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2]  <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
