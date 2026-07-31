@@ -80,11 +80,22 @@ def plot(args):
             tfce_values_2_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_2}.p")
             orig_tfce_values_2 = pickle.load(open(tfce_values_2_path, "rb"))
 
+            p_values_1_path = os.path.join(permutation_results_dir(args), f"p_values_{metric_1}.p")
+            p_values_1 = pickle.load(open(p_values_1_path, "rb"))
+
+            p_values_2_path = os.path.join(permutation_results_dir(args), f"p_values_{metric_2}.p")
+            p_values_2 = pickle.load(open(p_values_2_path, "rb"))
+
             for hemi in HEMIS:
                 # result_values[hemi] = t_values[hemi][args.metric]
+                orig_tfce_values_1[hemi][orig_tfce_values_1[hemi] <= 0] = 0
+                orig_tfce_values_2[hemi][orig_tfce_values_2[hemi] <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
+
+                result_values[hemi][(p_values_1[hemi] > args.p_value_threshold) & (p_values_2[hemi] > args.p_value_threshold)] = np.nan
+                # result_values[hemi][result_values[hemi]  <= 0] = np.nan
 
                 # TODO
                 # result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
