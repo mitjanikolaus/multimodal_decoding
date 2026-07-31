@@ -341,7 +341,7 @@ def plot(args):
             cmap=cmap,
             figure=fig,
             metric=result_metric,
-            symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
+            # symmetric_cbar=True if result_metric == IMAGERY_DECODER_COMPARISON else False,
         )
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=False, crop_to_content=True)
