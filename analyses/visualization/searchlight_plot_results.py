@@ -206,6 +206,7 @@ def plot(args):
                 permutation_results_dir(ref_args),
                 f"tfce_values_null_distribution_{result_metric}.p"
             )
+            print(f'loading null distr tfce vals from {null_distribution_tfce_values_file}')
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
 
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
