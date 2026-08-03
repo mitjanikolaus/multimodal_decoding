@@ -235,6 +235,9 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             print(f'ticks {ticks}')
             print(f'bounds {ticks}')
             print(f'norm {norm}')
+            print(f'norm.clip {norm.clip}')
+            print(f'norm.vmin {norm.vmin}')
+            print(f'norm.vmax {norm.vmax}')
 
             cbar = figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks, label=label_to_display,
