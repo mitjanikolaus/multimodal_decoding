@@ -101,11 +101,11 @@ def plot(args):
                 orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
 
-                result_values[hemi] = np.zeros_like(orig_tfce_values_1[hemi][metric_1])
-                result_values[hemi][
-                    (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = 50000
-                result_values[hemi][
-                    (orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = -50000
+                # result_values[hemi] = np.zeros_like(orig_tfce_values_1[hemi][metric_1])
+                # result_values[hemi][
+                #     (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = 50000
+                # result_values[hemi][
+                #     (orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = -50000
 
                 print(
                     f"area for which mod-agno is significant and mod-spec not: {np.mean((orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff))}")
