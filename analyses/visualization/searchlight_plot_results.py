@@ -1,4 +1,5 @@
 import argparse
+import copy
 
 import nibabel.freesurfer
 import numpy as np
@@ -197,7 +198,7 @@ def plot(args):
 
             ref_args = args
             if result_metric in [METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED]:
-                ref_args = args.copy()
+                ref_args = copy.deepcopy(args)
                 ref_args.model = "imagebind"
                 ref_args.mod_specific_images_model = "imagebind"
                 ref_args.mod_specific_captions_model = "imagebind"
