@@ -196,18 +196,16 @@ def plot(args):
 
             cmap = CMAP_POS_ONLY
 
-            ref_args = args
-            if result_metric in [METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED]:
-                ref_args = copy.deepcopy(args)
-                ref_args.model = "imagebind"
-                ref_args.mod_specific_images_model = "imagebind"
-                ref_args.mod_specific_captions_model = "imagebind"
             null_distribution_tfce_values_file = os.path.join(
-                permutation_results_dir(ref_args),
+                permutation_results_dir(args),
                 f"tfce_values_null_distribution_{result_metric}.p"
             )
             print(f'loading null distr tfce vals from {null_distribution_tfce_values_file}')
             cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
+            if result_metric == METRIC_MOD_INVARIANT_ATTENDED:
+                cbar_max = 233000
+            elif result_metric == METRIC_MOD_INVARIANT_UNATTENDED:
+                cbar_max = 28000
 
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, args.metric,
