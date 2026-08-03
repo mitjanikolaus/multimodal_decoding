@@ -159,7 +159,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             ticks = _get_ticks(cbar_vmin, cbar_vmax,
                                cbar_tick_format, threshold)
             our_cmap, norm = _get_cmap(cmap,
-                                       threshold,
+                                       vmin,
                                        vmax,
                                        cbar_tick_format,
                                        threshold)
