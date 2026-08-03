@@ -37,7 +37,7 @@ TARGET_TFCE_VAL_METRICS = [
     # METRIC_MOD_INVARIANT_INCREASE
 ]
 
-RESULT_METRICS = [METRIC_IMAGERY_DECODER_COMPARISON] #+ TARGET_TFCE_VAL_METRICS + T_VAL_METRICS
+RESULT_METRICS = [METRIC_IMAGERY_DECODER_COMPARISON] + T_VAL_METRICS #+ TARGET_TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -144,22 +144,11 @@ def plot(args):
             p_values_path = os.path.join(permutation_results_dir(args), f"p_values_{result_metric}.p")
             p_values = pickle.load(open(p_values_path, "rb"))
 
-            for hemi in HEMIS:
-                # result_values[hemi] = t_values[hemi][args.metric]
-                result_values[hemi] = orig_tfce_values[hemi][args.metric]
-                if args.log_scale:
-                    result_values[hemi] = np.log(result_values[hemi])
-
-                result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
-                result_values[hemi][result_values[hemi]  <= 0] = np.nan
-
             ref_metric = "agnostic$imagery_weak"
             null_distribution_tfce_values_file = os.path.join(
                 permutation_results_dir(args),
                 f"tfce_values_null_distribution_{ref_metric}.p"
             )
-            # cbar_max = 10
-            # cbar_max = np.nanmax(np.concatenate((result_values['left'], result_values['right'])))
             cbar_max = 2.3e6
             cmap = "magma"
 
@@ -168,7 +157,18 @@ def plot(args):
             null_distribution_tfce_values = pickle.load(open(null_distribution_tfce_values_file, 'rb'))
             significance_cutoff, _ = calc_significance_cutoff(null_distribution_tfce_values, ref_metric,
                                                               args.p_value_threshold)
-            # significance_cutoff = 0  # int(np.nanmin(np.concatenate((result_values['left'], result_values['right']))))
+
+            for hemi in HEMIS:
+                # result_values[hemi] = t_values[hemi][args.metric]
+                result_values[hemi] = orig_tfce_values[hemi][args.metric]
+                if args.log_scale:
+                    result_values[hemi] = np.log(result_values[hemi])
+
+                # result_values[hemi][p_values[hemi] > args.p_value_threshold] = np.nan
+                result_values[hemi][orig_tfce_values[hemi] < significance_cutoff] = np.nan
+
+                result_values[hemi][result_values[hemi]  <= 0] = np.nan
+
             threshold = significance_cutoff
             cbar_min = significance_cutoff
 
