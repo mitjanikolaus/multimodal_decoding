@@ -76,7 +76,8 @@ METRIC_ATTENTION_DIFF_IMAGES = "attn_diff_images"
 METRIC_ATTENTION_DIFF_CAPTIONS = "attn_diff_captions"
 METRIC_MOD_INVARIANT_INCREASE = 'mod_invariant_increase'
 
-METRIC_IMAGERY_DECODER_COMPARISON = "imagery_decoder_comparison_agnostic_images"
+METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES = "imagery_decoder_comparison_agnostic_images"
+METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS = "imagery_decoder_comparison_agnostic_captions"
 
 DIFF = "diff"
 DIFF_DECODERS = "diffdecoders"

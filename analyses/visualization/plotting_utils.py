@@ -23,7 +23,7 @@ from nilearn.surface.surface import check_extensions, DATA_EXTENSIONS, FREESURFE
 from analyses.decoding.searchlight.searchlight_permutation_testing import TFCE_VAL_METRICS
 from data import TEST_IMAGES, TEST_CAPTIONS, clean_metric_name
 from utils import DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED, \
-    METRIC_IMAGERY_DECODER_COMPARISON
+    METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES
 
 CBAR_T_VAL_MAX = 15
 
@@ -163,7 +163,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                        vmax,
                                        cbar_tick_format,
                                        threshold)
-            if metric == METRIC_IMAGERY_DECODER_COMPARISON:
+            if metric == METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES:
                 ticks = [vmin, round(np.mean([0, vmin]), 1), 0, round(np.mean([0, vmax]), 1), vmax]
                 label = f'difference in TFCE'
                 cbar_vmin = ticks[0]

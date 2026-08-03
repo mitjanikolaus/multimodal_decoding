@@ -17,10 +17,11 @@ from analyses.decoding.searchlight.searchlight import searchlight_mode_from_args
 from analyses.decoding.searchlight.searchlight_permutation_testing import permutation_results_dir, \
     add_searchlight_permutation_args
 from analyses.visualization.plotting_utils import plot_surf_contours_custom, plot_surf_stat_map_custom, add_hemi_label
-from data import MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK, MODALITY_SPECIFIC_IMAGES
+from data import MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK, MODALITY_SPECIFIC_IMAGES, MODALITY_SPECIFIC_CAPTIONS
 from utils import RESULTS_DIR, HEMIS, FREESURFER_HOME_DIR, FS_HEMI_NAMES, \
     save_plot_and_crop_img, append_images, METRIC_GW, DIFF, DIFF_DECODERS, METRIC_MOD_INVARIANT_ATTENDED, \
-    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_IMAGERY_DECODER_COMPARISON
+    METRIC_MOD_INVARIANT_UNATTENDED, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES, \
+    METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS
 
 HCP_ATLAS_DIR = os.path.join("atlas_data", "hcp_surface")
 HCP_ATLAS_LH = os.path.join(HCP_ATLAS_DIR, "lh.HCP-MMP1.annot")
@@ -37,7 +38,7 @@ TARGET_TFCE_VAL_METRICS = [
     # METRIC_MOD_INVARIANT_INCREASE
 ]
 
-RESULT_METRICS = [METRIC_IMAGERY_DECODER_COMPARISON] + T_VAL_METRICS #+ TARGET_TFCE_VAL_METRICS
+RESULT_METRICS = [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES] + T_VAL_METRICS #+ TARGET_TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -72,12 +73,19 @@ def plot(args):
         result_values = dict()
         print(f'plotting results for {result_metric}')
 
-        if result_metric == METRIC_IMAGERY_DECODER_COMPARISON:
+        if result_metric in [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS]:
             metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
             tfce_values_1_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_1}.p")
             orig_tfce_values_1 = pickle.load(open(tfce_values_1_path, "rb"))
 
-            metric_2 = '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK])
+            if result_metric == METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS:
+                metric_2 = '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])
+
+            elif result_metric == METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES:
+                metric_2 = '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK])
+            else:
+                metric_2 = None
+
             tfce_values_2_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_2}.p")
             orig_tfce_values_2 = pickle.load(open(tfce_values_2_path, "rb"))
 
@@ -298,7 +306,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
-                        symmetric_cbar=True if result_metric == METRIC_IMAGERY_DECODER_COMPARISON else False,
+                        symmetric_cbar=True if result_metric in [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS] else False,
                     )
                     plot_surf_contours_custom(
                         surf_mesh=fsaverage[f"infl_{hemi}"],
@@ -327,7 +335,7 @@ def plot(args):
                         vmax=cbar_max,
                         vmin=cbar_min,
                         cmap=cmap,
-                        symmetric_cbar=True if result_metric == METRIC_IMAGERY_DECODER_COMPARISON else False,
+                        symmetric_cbar=True if result_metric in [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS] else False,
                     )
                     add_hemi_label(fig, hemi, view)
                     title = f"{view}_{hemi}"
@@ -351,7 +359,7 @@ def plot(args):
             cmap=cmap,
             figure=fig,
             metric=result_metric,
-            symmetric_cbar=True if result_metric == METRIC_IMAGERY_DECODER_COMPARISON else False,
+            symmetric_cbar=True if result_metric in [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS] else False,
         )
         save_plot_and_crop_img(os.path.join(atlas_tmp_results_dir, "colorbar.png"), crop_cbar=True,
                                horizontal_cbar=False, crop_to_content=True)
