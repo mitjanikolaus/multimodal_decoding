@@ -231,6 +231,11 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
             if ('imagery' in metric) or (metric in [METRIC_MOD_INVARIANT_ATTENDED, METRIC_MOD_INVARIANT_UNATTENDED]) :
                 label_to_display = label
 
+            print('cbar\n\n')
+            print(f'ticks {ticks}')
+            print(f'bounds {ticks}')
+            print(f'norm {norm}')
+
             cbar = figure.colorbar(
                 proxy_mappable, cax=cax, ticks=ticks, label=label_to_display,
                 boundaries=bounds, spacing='proportional',
