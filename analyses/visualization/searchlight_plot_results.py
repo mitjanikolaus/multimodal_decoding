@@ -114,9 +114,9 @@ def plot(args):
                     (orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = -50000
 
                 print(
-                    f"area for which mod-agno is significant and mod-spec not: {np.mean(orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)}")
+                    f"area for which mod-agno is significant and mod-spec not: {np.mean((orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff))}")
                 print(
-                    f"area for which mod-spec is significant and mod-agno not: {np.mean(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)}")
+                    f"area for which mod-spec is significant and mod-agno not: {np.mean((orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff))}")
 
                 print(f'{hemi} hemi max val: {np.nanmax(result_values[hemi])}')
                 print(f'{hemi} hemi min val: {np.nanmin(result_values[hemi])}')
