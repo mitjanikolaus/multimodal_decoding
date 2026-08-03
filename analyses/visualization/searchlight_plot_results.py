@@ -89,12 +89,6 @@ def plot(args):
             tfce_values_2_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_2}.p")
             orig_tfce_values_2 = pickle.load(open(tfce_values_2_path, "rb"))
 
-            p_values_1_path = os.path.join(permutation_results_dir(args), f"p_values_{metric_1}.p")
-            p_values_1 = pickle.load(open(p_values_1_path, "rb"))
-
-            p_values_2_path = os.path.join(permutation_results_dir(args), f"p_values_{metric_2}.p")
-            p_values_2 = pickle.load(open(p_values_2_path, "rb"))
-
             ref_metric = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
             null_distribution_tfce_values_file = os.path.join(
                 permutation_results_dir(args),
@@ -108,13 +102,8 @@ def plot(args):
                 orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
                 orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
                 result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
-                result_values[hemi][
-                        (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = 0
-                # result_values[hemi] = np.zeros_like(orig_tfce_values_1[hemi][metric_1])
                 # result_values[hemi][
-                #     (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = 50000
-                # result_values[hemi][
-                #     (orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = -50000
+                #         (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = 0
 
                 print(
                     f"area for which mod-agno is significant and mod-spec not: {np.mean((orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff))}")
@@ -128,7 +117,6 @@ def plot(args):
                     result_values[hemi] = np.log(result_values[hemi])
 
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] <= 0) & (orig_tfce_values_2[hemi][metric_2] <= 0)] = np.nan
-                # result_values[hemi][(p_values_1[hemi] > args.p_value_threshold) & (p_values_2[hemi] > args.p_value_threshold)] = np.nan
 
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = np.nan
 
