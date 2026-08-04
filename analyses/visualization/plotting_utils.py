@@ -165,7 +165,7 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                                        threshold)
             if metric in [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS]:
                 ticks = [vmin, round(np.mean([0, vmin]), 1), 0, round(np.mean([0, vmax]), 1), vmax]
-                label = f'difference (t-values)'
+                label = f'difference (TFCE)'
                 cbar_vmin = ticks[0]
                 cbar_vmax = ticks[-1]
 
