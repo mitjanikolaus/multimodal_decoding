@@ -114,8 +114,8 @@ def plot(args):
                 # t_values_2[hemi][metric_2][t_values_2[hemi][metric_2] <= 0] = 0
                 # result_values[hemi] = t_values_1[hemi][metric_1] - t_values_2[hemi][metric_2]
 
-                # result_values[hemi][
-                #         (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = 0
+                result_values[hemi][
+                        (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = 0
 
                 print(f"{hemi} hemi:")
                 print(
