@@ -118,26 +118,26 @@ def plot(args):
                 result_values[hemi][
                         (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = 0
 
+                print(f"{hemi} hemi:")
                 print(
                     f"area for which mod-agno is significant and mod-spec not: {np.mean((orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)):.3f}")
                 print(
                     f"area for which mod-spec is significant and mod-agno not: {np.mean((orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)):.3f}")
 
-                print(f'{hemi} hemi max val: {np.nanmax(result_values[hemi])}')
-                print(f'{hemi} hemi min val: {np.nanmin(result_values[hemi])}')
-
                 if args.log_scale:
                     result_values[hemi] = np.log(result_values[hemi])
 
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] <= 0) & (orig_tfce_values_2[hemi][metric_2] <= 0)] = np.nan
-
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = np.nan
+
+                print(f'max val: {np.nanmax(result_values[hemi])}')
+                print(f'min val: {np.nanmin(result_values[hemi])}')
 
             threshold = None
             # cbar_min = -1000000
             # cbar_max = 1000000
-            cbar_min = -10
-            cbar_max = 10
+            cbar_min = -8
+            cbar_max = 8
             cmap = "cold_hot"
 
         elif "imagery_weak" in result_metric:
