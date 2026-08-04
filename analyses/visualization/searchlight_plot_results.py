@@ -133,7 +133,7 @@ def plot(args):
 
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = np.nan
 
-            # threshold = 0.1
+            threshold = None
             # cbar_min = -1000000
             # cbar_max = 1000000
             cbar_min = -10
