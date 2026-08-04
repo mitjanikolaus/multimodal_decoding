@@ -39,7 +39,7 @@ TARGET_TFCE_VAL_METRICS = [
     # METRIC_MOD_INVARIANT_INCREASE
 ]
 
-RESULT_METRICS = TARGET_TFCE_VAL_METRICS + [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES] + T_VAL_METRICS
+RESULT_METRICS = [METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS, METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_IMAGES] + T_VAL_METRICS + TARGET_TFCE_VAL_METRICS
 
 
 def plot(args):
@@ -78,6 +78,10 @@ def plot(args):
             metric_1 = '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK])
             tfce_values_1_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_1}.p")
             orig_tfce_values_1 = pickle.load(open(tfce_values_1_path, "rb"))
+            args.metric = metric_1
+            t_values_1_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            t_values_1 = pickle.load(open(t_values_1_path, "rb"))
+
 
             if result_metric == METRIC_IMAGERY_DECODER_COMPARISON_AGNOSTIC_CAPTIONS:
                 metric_2 = '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK])
@@ -87,6 +91,9 @@ def plot(args):
             else:
                 metric_2 = None
 
+            args.metric = metric_2
+            t_values_2_path = os.path.join(permutation_results_dir(args), "t_values.p")
+            t_values_2 = pickle.load(open(t_values_2_path, "rb"))
             tfce_values_2_path = os.path.join(permutation_results_dir(args), f"tfce_values_{metric_2}.p")
             orig_tfce_values_2 = pickle.load(open(tfce_values_2_path, "rb"))
 
@@ -100,9 +107,14 @@ def plot(args):
                                                               args.p_value_threshold)
 
             for hemi in HEMIS:
-                orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
-                orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
-                result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
+                # orig_tfce_values_1[hemi][metric_1][orig_tfce_values_1[hemi][metric_1] <= 0] = 0
+                # orig_tfce_values_2[hemi][metric_2][orig_tfce_values_2[hemi][metric_2] <= 0] = 0
+                # result_values[hemi] = orig_tfce_values_1[hemi][metric_1] - orig_tfce_values_2[hemi][metric_2]
+
+                t_values_1[hemi][metric_1][t_values_1[hemi][metric_1] <= 0] = 0
+                t_values_2[hemi][metric_2][t_values_2[hemi][metric_2] <= 0] = 0
+                result_values[hemi] = t_values_1[hemi][metric_1] - t_values_2[hemi][metric_2]
+
                 # result_values[hemi][
                 #         (orig_tfce_values_1[hemi][metric_1] >= significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] >= significance_cutoff)] = 0
 
@@ -122,8 +134,10 @@ def plot(args):
                 result_values[hemi][(orig_tfce_values_1[hemi][metric_1] < significance_cutoff) & (orig_tfce_values_2[hemi][metric_2] < significance_cutoff)] = np.nan
 
             threshold = None
-            cbar_min = -1000000#-100000# -significance_cutoff
-            cbar_max = 1000000 #100000
+            # cbar_min = -1000000
+            # cbar_max = 1000000
+            cbar_min = -10
+            cbar_max = 10
             cmap = "cold_hot"
 
         elif "imagery_weak" in result_metric:
