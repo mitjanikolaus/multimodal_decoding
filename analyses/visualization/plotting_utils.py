@@ -243,7 +243,8 @@ def _plot_surf_matplotlib_custom(coords, faces, surf_map=None, bg_map=None, bg_o
                 proxy_mappable, cax=cax, ticks=ticks, label=label_to_display,
                 boundaries=bounds, spacing='proportional',
                 format=ScalarFormatter(useOffset=False), orientation='horizontal' if horizontal_cbar else 'vertical')
-            cbar.ax.tick_params(labelsize=25)
+            # cbar.ax.tick_params(labelsize=25)
+            cbar.set_label(label_to_display, size=50)
             # if horizontal_cbar:
             #     cbar.set_label(label)
             #     cax.xaxis.set_ticks_position('top')
