@@ -746,12 +746,6 @@ def calc_t_values(scores):
                     scores_filtered = scores[
                         (scores.hemi == hemi) & (scores.metric == metric_name) & (
                                 scores.training_mode == training_mode)]
-                    print(scores.hemi.unique())
-                    print(scores.metric.unique())
-                    print(scores.training_mode.unique())
-                    print(scores_filtered)
-                    print(scores_filtered[(scores_filtered.subject == subj)])
-                    print(subj)
                     data[i] = scores_filtered[(scores_filtered.subject == subj)].value.values
 
             popmean = 0 if metric.split('$')[0] in [DIFF, DIFF_DECODERS] else 0.5
