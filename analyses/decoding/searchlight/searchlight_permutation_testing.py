@@ -45,7 +45,7 @@ TFCE_VAL_METRICS = [
 
 T_VAL_METRICS = [
     # imagery
-    '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
+    # '$'.join([MODALITY_AGNOSTIC, SPLIT_IMAGERY_WEAK]),
     '$'.join([MODALITY_SPECIFIC_IMAGES, SPLIT_IMAGERY_WEAK]),
     '$'.join([MODALITY_SPECIFIC_CAPTIONS, SPLIT_IMAGERY_WEAK]),
     # # within-modality decoding
