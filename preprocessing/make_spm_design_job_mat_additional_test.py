@@ -112,7 +112,7 @@ def run(args):
 
         jobs, conditions = define_fmri_betas_jobs(
             output_dir, subject, task_name, args, event_file_path_func=event_file_path_additional_test,
-            condition_proc_func=preprocess_additional_test_event_files, shift=args.shift,
+            condition_proc_func=preprocess_additional_test_event_files
         )
         print("Number of conditions: ", len(conditions))
 
@@ -146,8 +146,6 @@ def get_args():
     parser.add_argument("--preprocessing-datasink-dir", type=str, default=ADDITIONAL_TEST_FMRI_PREPROCESSED_DATASINK_DIR)
 
     parser.add_argument("--output-dir", type=str, default=FMRI_BETAS_DIR)
-
-    parser.add_argument("--shift", type=bool, action="store_true", help="shift the onset times for  all stimuli to test for effect of previous stimulus ")
 
     return parser.parse_args()
 
