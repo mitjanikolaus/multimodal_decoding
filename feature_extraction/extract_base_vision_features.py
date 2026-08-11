@@ -67,36 +67,36 @@ class ResNetFeatureExtractor(FeatureExtractor):
 
 
 if __name__ == "__main__":
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-0", BATCH_SIZE, device, hidden=0)
-    extractor.extract_features()
-
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-1", BATCH_SIZE, device, hidden=1)
-    extractor.extract_features()
-
-
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-2", BATCH_SIZE, device, hidden=2)
-    extractor.extract_features()
-
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-3", BATCH_SIZE, device, hidden=3)
-    extractor.extract_features()
-
-    model_name = 'microsoft/resnet-18'
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
-    model = ResNetModel.from_pretrained(model_name)
-    extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-4", BATCH_SIZE, device, hidden=4)
-    extractor.extract_features()
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-0", BATCH_SIZE, device, hidden=0)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-1", BATCH_SIZE, device, hidden=1)
+    # extractor.extract_features()
+    #
+    #
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-2", BATCH_SIZE, device, hidden=2)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-3", BATCH_SIZE, device, hidden=3)
+    # extractor.extract_features()
+    #
+    # model_name = 'microsoft/resnet-18'
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+    # model = ResNetModel.from_pretrained(model_name)
+    # extractor = ResNetFeatureExtractor(model, feature_extractor, "resnet-18-hidden-4", BATCH_SIZE, device, hidden=4)
+    # extractor.extract_features()
 
     # model_name = 'microsoft/resnet-18'
     # feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
@@ -122,22 +122,22 @@ if __name__ == "__main__":
     # extractor = ResNetFeatureExtractor(model, feature_extractor, "Resnet-152-random", BATCH_SIZE, device)
     # extractor.extract_features()
     #
-    # model_name = 'google/vit-base-patch16-384'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "vit-b-16", BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'google/vit-large-patch16-384'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "vit-l-16", BATCH_SIZE, device)
-    # extractor.extract_features()
-    #
-    # model_name = 'google/vit-huge-patch14-224-in21k'
-    # feature_extractor = ViTImageProcessor.from_pretrained(model_name)
-    # model = ViTModel.from_pretrained(model_name)
-    # extractor = ViTFeatureExtractor(model, feature_extractor, "vit-h-14", BATCH_SIZE, device)
-    # extractor.extract_features()
+    model_name = 'google/vit-base-patch16-384'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-b-16", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'google/vit-large-patch16-384'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-l-16", BATCH_SIZE, device)
+    extractor.extract_features()
+
+    model_name = 'google/vit-huge-patch14-224-in21k'
+    feature_extractor = ViTImageProcessor.from_pretrained(model_name)
+    model = ViTModel.from_pretrained(model_name)
+    extractor = ViTFeatureExtractor(model, feature_extractor, "vit-h-14", BATCH_SIZE, device)
+    extractor.extract_features()
 
 
