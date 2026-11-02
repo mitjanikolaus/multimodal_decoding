@@ -23,7 +23,7 @@ DEFAULT_ALPHAS = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
 
 
 def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DEFAULT_RESOLUTION,
-                training_splits=[SPLIT_TRAIN], imagery_samples_weight=None):
+                training_splits=[SPLIT_TRAIN], imagery_samples_weight=None, subsample_betas=None):
     run_str = f"{feats_config.model}_{feats_config.combined_feats}"
     run_str += f"_{feats_config.vision_features}"
     run_str += f"_{feats_config.lang_features}"
@@ -46,6 +46,9 @@ def get_run_str(betas_dir, feats_config, mask=None, surface=False, resolution=DE
 
     if imagery_samples_weight is not None:
         run_str += f"_imagery_samples_weight_{imagery_samples_weight}"
+
+    if subsample_betas is not None:
+        run_str += f"_subsample_betas_{subsample_betas}"
 
     return run_str
 
@@ -100,7 +103,7 @@ def run(args):
                         print(f"Mask: {os.path.basename(mask)}")
 
                     run_str = get_run_str(args.betas_dir, feats_config, mask, args.surface, args.resolution,
-                                          args.training_splits, args.imagery_samples_weight)
+                                          args.training_splits, args.imagery_samples_weight, args.subsample_betas)
                     results_file_path = os.path.join(
                         DECODER_ADDITIONAL_TEST_OUT_DIR, training_mode, subject, run_str, RESULTS_FILE
                     )
@@ -163,6 +166,7 @@ def run(args):
                     scores_df["surface"] = args.surface
                     scores_df["resolution"] = args.resolution
                     scores_df["imagery_samples_weight"] = args.imagery_samples_weight
+                    scores_df["subsample_betas"] = args.subsample_betas
 
                     print(
                         f"Best alpha: {best_alpha}"
