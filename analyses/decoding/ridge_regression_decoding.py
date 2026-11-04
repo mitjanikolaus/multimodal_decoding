@@ -13,7 +13,7 @@ from sklearn.model_selection import GridSearchCV
 from data import LatentFeatsConfig, SELECT_DEFAULT, FEATURE_COMBINATION_CHOICES, VISION_FEAT_COMBINATION_CHOICES, \
     LANG_FEAT_COMBINATION_CHOICES, apply_mask, standardize_fmri_betas, \
     standardize_latents, MODALITY_AGNOSTIC, TRAINING_MODES, SPLIT_TRAIN, get_fmri_data, \
-    ALL_SPLITS, TEST_SPLITS, get_latents_for_splits, SPLIT_IMAGERY_WEAK
+    ALL_SPLITS, TEST_SPLITS, get_latents_for_splits, SPLIT_IMAGERY_WEAK, IMAGE, CAPTION
 from eval import pairwise_accuracy, calc_all_pairwise_accuracy_scores
 from utils import FMRI_BETAS_DIR, RESULTS_FILE, DEFAULT_MODEL, DEFAULT_RESOLUTION, \
     DECODER_ADDITIONAL_TEST_OUT_DIR, PREDICTIONS_FILE, HEMIS, SUBJECTS_ADDITIONAL_TEST
@@ -78,15 +78,30 @@ def run(args):
             for mask in args.masks:
                 mask = None if mask in ["none", "None"] else mask
                 fmri_betas = apply_mask(mask, fmri_betas_full, args)
-                subsample_ids = dict()
+                subsample_ids_imgs = dict()
+                subsample_ids_caps = dict()
                 if args.subsample_betas:
                     print('subsampling betas')
                     for split in args.training_splits:
-                        num_samples = fmri_betas[split].shape[0]
-                        subsample = np.random.choice(num_samples, int(num_samples * args.subsample_betas),
+                        num_images = np.sum(stim_types[split] == IMAGE)
+                        num_captions = np.sum(stim_types[split] == CAPTION)
+                        subsample_imgs = np.random.choice(num_images, int(num_images * args.subsample_betas),
                                                      replace=False)
-                        subsample_ids[split] = subsample
-                        fmri_betas[split] = fmri_betas[split][subsample]
+                        subsample_caps = np.random.choice(num_captions, int(num_captions * args.subsample_betas),
+                                                     replace=False)
+                        print(f'Num images: {num_images}')
+                        print(f'Num captions: {num_captions}')
+                        subsample_ids_imgs[split] = subsample_imgs
+                        subsample_ids_caps[split] = subsample_caps
+
+                        betas_images = fmri_betas[split][stim_types[split] == IMAGE]
+                        betas_images_subs = betas_images[subsample_imgs]
+
+                        betas_captions = fmri_betas[split][stim_types[split] == CAPTION]
+                        betas_captions_subs = betas_captions[subsample_caps]
+
+                        fmri_betas[split] = np.concatenate((betas_images_subs, betas_captions_subs))
+                        print(f'subsample size: {len(fmri_betas[split])}')
                 fmri_betas = standardize_fmri_betas(fmri_betas)
                 for split in fmri_betas.keys():
                     print(f"{split} fMRI betas shape: {fmri_betas[split].shape}")
@@ -115,7 +130,13 @@ def run(args):
                     if args.subsample_betas:
                         print('subsampling latents')
                         for split in args.training_splits:
-                            latents[split] = latents[split][subsample_ids[split]]
+                            latents_images = latents[split][stim_types[split] == IMAGE]
+                            latents_images_subs = latents_images[subsample_ids_imgs[split]]
+
+                            latents_captions = latents[split][stim_types[split] == CAPTION]
+                            latents_captions_subs = latents_captions[subsample_ids_caps[split]]
+
+                            latents[split] = np.concatenate((latents_images_subs, latents_captions_subs))
 
                     latents = standardize_latents(latents)
                     print(f"train latents shape: {latents[SPLIT_TRAIN].shape}")
